@@ -3,7 +3,7 @@
 let HOARD_CARRY=null;
 {const _nl=nextLevel;nextLevel=function(){
   const stash=Math.max(0,Math.round(G.stash||0));
-  HOARD_CARRY={stash,raid:{n:RAID.n,thr:RAID.thr},trophies:TROPHIES.slice(),hpBonus:D.hpBonus||0,hpUps:D.hpUps||0};
+  HOARD_CARRY={stash,raid:{n:RAID.n,thr:RAID.thr},trophies:TROPHIES.slice(),hpBonus:D.hpBonus||0,hpUps:D.hpUps||0,feastBonus:D.feastBonus||0,food:D.food||0,glutN:D.glutN||0};
   G.bank-=stash*5; // the carried hoard keeps scoring 5/gold from the new level's score, so don't bank it twice
   let r;try{r=_nl.apply(this,arguments);}finally{HOARD_CARRY=null;}
   if(stash>0){const msg=`Hoard carried over: ${stash} gold`;G.hoardCarry=stash;
@@ -11,6 +11,7 @@ let HOARD_CARRY=null;
     float(LAIR.x,LAIR.y-80,msg,'#ffd84a');if(typeof showToast==='function')showToast('💰 '+msg);}
   return r;};}
 {const _ng=newGame;newGame=function(){const c=HOARD_CARRY;const r=_ng.apply(this,arguments);
+  if(c){D.food=c.food||0;D.glutN=c.glutN||0;D.feastBonus=c.feastBonus||0;}
   if(c&&c.hpBonus>0){D.hpBonus=c.hpBonus;D.hpUps=c.hpUps;D.baseMaxHp=D.maxHp;D.maxHp+=c.hpBonus;D.hp=D.maxHp;} // monster-feast max-health bonus stays on the same life
   if(c){G.stash=c.stash;G.hoardCarry=c.stash;if(typeof HOARD!=='undefined'){HOARD.shown=c.stash;HOARD.bump=0;}
     RAID.n=c.raid.n;RAID.thr=c.raid.thr;RAID.cd=Math.max(RAID.cd,45);RAID.cur=null; // thresholds already passed stay passed

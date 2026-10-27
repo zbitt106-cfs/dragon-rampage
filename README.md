@@ -34,7 +34,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partCS.js: claw scratch while swimming
 - partHC.js: the hoard and trophies carry over between castle levels
 - partFM.js: the FIRE meter
-- partMH.js: eating the kraken or a sand worm raises max health
+- partMH.js: max-health growth: monster feasts (kraken / sand worm +50) and Glutton food milestones (+5)
 - partGH.js: northern mountain-goat herds and the mountain lions that hunt them
 - partKM.js: the kingdom-wide militia (every villager arms up and guards their own post)
 - part6.js: main loop, HUD, minimap and world map, title screen
@@ -184,7 +184,9 @@ All sound is generated in code with Web Audio; there are no audio files. The mus
 
 ## The dragon's body
 - **FIRE meter:** fire breath has its own red bar. It drains while you breathe fire and refills when you stop. If it runs dry, you have to catch your breath before it works again.
-- **Max health grows:** eating the giant squid (kraken) or a sand worm permanently raises max health by 10% and fully heals you, for the rest of that life.
+- **Max health grows (Monster feast):** eating the giant squid (kraken) or a sand worm gives **+50 permanent max health** each, plus a full heal and a *"Max health up! (+50)"* banner.
+- **Glutton:** everything you eat adds food (about its size): villager 10, knight 18, mounted knight 40, chicken 5, sheep 14, goat 12, mountain goat 15, cow 26, camel 30, bear 40, fish bite 5, shark 20, **whale 75**, sand worm 100, kraken 150, and so on. Each *whale's worth* of food (75) fills a milestone for **+5 permanent max health** (*"A whale's worth eaten! Max health +5"*). The cost scales: the 1st +5 needs 1 whale's worth, the 2nd 2 more, the 3rd 3 more, and it never stops. The pause menu and the Tally show a *"Next +5: 47%"* progress bar.
+- Both bonuses stay on the same life across castle levels, reset on death or a new game, and are kept in saves. The health bar grows with max health but is capped on screen, and always shows the number.
 - **Claw scratch:** while swimming, the stomp button (Q / Shift, pad B, or touch, which reads SCRATCH) becomes a quick claw swipe that hits boats, sea creatures and the squid.
 - **The hoard carries over:** your lair's gold pile and trophy banners stay when you move up a castle level. They reset only on a new game or when the dragon dies.
 

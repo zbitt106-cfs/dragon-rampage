@@ -92,9 +92,10 @@ function pmBtn(x,y,w,h,label,f,on,col){panel(x,y,w,h);if(on){ctx.strokeStyle='#f
 function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;PM.hit=[];
   ctx.fillStyle='rgba(6,4,10,.66)';ctx.fillRect(0,0,VW,VH);
   const aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,PM.scr==='tally'?680:600),x0=S.l+(aw-W)/2,cx=x0+W/2;
-  if(PM.scr==='main'){const rh=touch?46:38,H=86+PM_MAIN.length*(rh+8)+44,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
+  if(PM.scr==='main'){const rh=touch?46:38,H=86+PM_MAIN.length*(rh+8)+72,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
     txt('PAUSED',cx,y0+44,36,'#ffd24a','center');
     PM_MAIN.forEach(([l,a],i)=>pmBtn(x0+30,y0+70+i*(rh+8),W-60,rh,l,()=>{PM.sel=i;pmAct(a);},PM.sel===i));
+    if(typeof drawGlutBar==='function')drawGlutBar(x0+30,y0+H-52,W-60,18);
     txt(touch?'Tap a choice · II resumes':'↑/↓ + Enter (A) choose · P / Esc / Start resume · R / Back restart',cx,y0+H-16,touch?13:12,'#bbb','center',false);}
   else if(PM.scr==='tally')drawTallyScreen(x0,W,S,ah,touch);
   else drawSlots(x0,W,S,ah,touch);
@@ -108,7 +109,8 @@ function drawTallyScreen(x0,W,S,ah,touch){const cx=x0+W/2,y0=S.t+8,H=ah-16;panel
   const tg=tallyTotal('game'),ta=tallyTotal('all');
   txt(`Total gobbled / defeated:  this game ${tg}  ·  all-time ${ta}`,cx,y0+52,fs,'#fff','center');
   txt(`♛ Princess Elizabeth captured (not a kill, she's never hurt!):  this game ${TALLY.prGame}  ·  all-time ${TALLY.prAll}`,cx,y0+70,sm?10.5:12.5,'#ffb0dc','center',false);
-  const colA=x0+W-24,colG=x0+W-(sm?96:130),ly=y0+92;txt('This game',colG,ly,sm?11:13,'#f0c070','right');txt('All-time',colA,ly,sm?11:13,'#f0c070','right');
+  if(typeof drawGlutBar==='function')drawGlutBar(x0+16,y0+78,W-32,16);
+  const colA=x0+W-24,colG=x0+W-(sm?96:130),ly=y0+112;txt('This game',colG,ly,sm?11:13,'#f0c070','right');txt('All-time',colA,ly,sm?11:13,'#f0c070','right');
   const rh=touch?26:22,top=ly+8,foot=touch?56:46,listH=H-(top-y0)-foot,vis=Math.max(3,Math.floor(listH/rh));PM.vis=vis;PM.rh=rh;
   const rows=tallyRows(),mx=Math.max(0,rows.length-vis);PM.scroll=clamp(PM.scroll,0,mx);
   PM.hit.push({x:x0,y:top,w:W,h:vis*rh,list:1});
