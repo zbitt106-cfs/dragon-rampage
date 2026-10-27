@@ -5,9 +5,9 @@ const FAUNA={
   wolf:{hp:14,sp:110,bite:2,aggro:240,cd:1.4,say:'Grr! Nip! -2',zone:'forest'},
   bear:{hp:44,sp:75,bite:5,aggro:170,cd:2,say:'ROAR! Bear swipe! -5',zone:'forest'},
   horse:{hp:18,sp:120,flee:240,zone:'paddock'},fish:{hp:2,zone:'water'},beaver:{hp:7,sp:50,flee:160,zone:'shore'},
-  mgoat:{hp:12,sp:95,flee:230,zone:'mountain'},goat:{hp:10,sp:80,flee:210,zone:'hills'},
+  mgoat:{hp:12,sp:105,flee:260,zone:'mountain'},cougar:{hp:30,sp:100,bite:4,aggro:210,cd:1.8,say:'Rrrowr! Claw swipe! -4',zone:'peaks'},goat:{hp:10,sp:80,flee:210,zone:'hills'},
   crab:{hp:3,sp:40,flee:120,zone:'beach'},seal:{hp:18,sp:35,flee:150,zone:'beach'}};
-const FAUNA_PLAN=[['deer',12],['rabbit',12],['fox',6],['boar',6],['wolf',3],['bear',3],['horse',9],['fish',14],['beaver',6],['mgoat',10],['goat',10],['crab',12],['seal',6]]; // wolf counts packs of 3
+const FAUNA_PLAN=[['deer',12],['rabbit',12],['fox',6],['boar',6],['wolf',3],['bear',3],['horse',9],['fish',14],['beaver',6],['mgoat',22],['cougar',3],['goat',10],['crab',12],['seal',6]]; // wolf counts packs of 3
 const ZONES={
   forest:{ok:(x,y)=>regionKey(x,y)==='forest',s:()=>({x:R(-2900,-300),y:R(-100,4200)})},
   water:{ok:(x,y)=>!inSea(x,y)&&(inLake(x,y)||riverD(x,y)<RIVW-8),s:()=>{if(rnd()<.6){const a=R(0,TAU),r=R(0,.8);return{x:LAKE.x+Math.cos(a)*LAKE.rx*r,y:LAKE.y+Math.sin(a)*LAKE.ry*r};}
@@ -17,19 +17,24 @@ const ZONES={
   hills:{ok:(x,y)=>regionKey(x,y)==='hills',s:()=>rnd()<.25?{x:R(2700,3150),y:R(950,1650)}:{x:R(3300,5000),y:R(-50,2950)}},
   beach:{ok:onBeach,s:()=>{if(rnd()<.75){const y=R(-50,4300);return{x:coastX(y)-R(20,150),y};}const x=R(400,5300);return{x,y:coastY(x)-R(20,130)};}},
   paddock:{ok:()=>true,s:()=>{const P=PADDOCKS[RI(0,PADDOCKS.length-1)];return{x:P.x+R(15,P.w-15),y:P.y+R(15,P.h-15),P};}},
+  // the slopes around Dragon Peak: a healthy mountain-goat herd lives here
+  summit:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+420&&!inSea(x,y)&&d2(x,y,LAIR.x,LAIR.y)>230&&d2(x,y,LAIR.x,LAIR.y)<1300,s:()=>{const a=R(0,TAU),r=R(300,1150);return{x:LAIR.x+Math.cos(a)*r,y:LAIR.y+Math.sin(a)*r*.75};}},
+  // mountain lions prowl the snowy mountains and the eastern hills
+  peaks:{ok:(x,y)=>(y<frostY(x)-120&&y>WY0+420&&x>WX0+300&&!inSea(x,y))||regionKey(x,y)==='hills',s:()=>rnd()<.6?{x:R(-2000,5000),y:R(-1900,-500)}:{x:R(3300,5000),y:R(-50,2950)}},
   any:{ok:(x,y)=>!inSea(x,y),s:()=>({x:D.x,y:D.y})}};
 let packId=0;
-function spawnWild(sp,far,at){const F=FAUNA[sp],Z=ZONES[F.zone];let p=at||null;
+function spawnWild(sp,far,at){const F=FAUNA[sp],zk=sp==='mgoat'&&rnd()<.7?'summit':F.zone,Z=ZONES[zk];let p=at||null;
   for(let t=0;!p&&t<80;t++){const q=Z.s();if(Z.ok(q.x,q.y)&&(!far||d2(q.x,q.y,D.x,D.y)>750))p=q;}if(!p)return;
-  const big=sp==='bear'||sp==='wolf',hw=big?900:sp==='crab'||sp==='seal'?260:600,hh=big?700:sp==='crab'||sp==='seal'?260:450;
+  const big=sp==='bear'||sp==='wolf'||sp==='cougar',hw=big?900:sp==='crab'||sp==='seal'?260:600,hh=big?700:sp==='crab'||sp==='seal'?260:450;
   const home=p.P||(F.zone==='shore'?{x:p.x-80,y:p.y-50,w:160,h:100}:{x:p.x-hw/2,y:p.y-hh/2,w:hw,h:hh});const n=sp==='wolf'?3:1,pk=sp==='wolf'?++packId:0;
-  for(let i=0;i<n;i++)units.push(mkUnit('animal',p.x+R(-30,30)*(n>1),p.y+R(-20,20)*(n>1),{species:sp,wild:true,zone:F.zone,home,strict:!!p.P,hp:F.hp,maxHp:F.hp,free:true,pack:pk,t:R(0,3),jt:0}));}
+  for(let i=0;i<n;i++)units.push(mkUnit('animal',p.x+R(-30,30)*(n>1),p.y+R(-20,20)*(n>1),{species:sp,wild:true,zone:zk,home,strict:!!p.P,hp:F.hp,maxHp:F.hp,free:true,pack:pk,t:R(0,3),jt:0}));}
 function initFauna(){for(const[sp,n]of FAUNA_PLAN)for(let i=0;i<n;i++)spawnWild(sp,false);}
 function updFauna(dt){G.faunaT=(G.faunaT||0)-dt;if(G.faunaT>0)return;G.faunaT=5;
   for(const[sp,n]of FAUNA_PLAN){const have=sp==='wolf'?new Set(units.filter(u=>!u.dead&&u.species==='wolf'&&u.pack).map(u=>u.pack)).size:units.filter(u=>!u.dead&&u.wild&&u.species===sp&&!u.bolted).length;
     if(have<n)spawnWild(sp,true);}}
 function updWild(u,dt){const F=FAUNA[u.species],Z=ZONES[u.zone],dd=dist(u,D),ox=u.x,oy=u.y;u.cd=(u.cd||0)-dt;u.t-=dt;
   if(u.species==='fish'){updFish(u,dt,dd);return;}
+  u.leap=Math.max(0,(u.leap||0)-dt);if(u.species==='cougar'&&updCougar(u,dt,dd,ox,oy))return;
   if(u.bolted>0){u.bolted-=dt;const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*50,u.y+Math.sin(a)*50,150,dt);if(u.bolted<=0)u.home={x:u.x-300,y:u.y-200,w:600,h:400};return;}
   if(F.bite&&!G.over&&!G.won&&!(u.burn>0)){const low=D.alt<.4;
     if(u.state==='back'){u.t2-=dt;const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp*.8,dt);if(u.t2<=0)u.state='idle';if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}return;}
@@ -40,7 +45,7 @@ function updWild(u,dt){const F=FAUNA[u.species],Z=ZONES[u.zone],dd=dist(u,D),ox=
       if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}return;}
     if(u.state==='hunt')u.state='idle';
     if(u.species==='bear'&&D.alt>.5&&dd<220){u.rear=1;}else u.rear=0;}
-  if((F.flee&&dd<F.flee*(D.alt>.5?.8:1))||u.burn>0){const a=Math.atan2(u.y-D.y,u.x-D.x)+R(-.4,.4);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp,dt);u.tgt=null;}
+  if((F.flee&&dd<F.flee*(D.alt>.5?.8:1))||u.burn>0){const a=Math.atan2(u.y-D.y,u.x-D.x)+R(-.4,.4);if(u.species==='mgoat'||u.species==='goat'){if(!u.leap){u.leap=.55;if(dd<700&&rnd()<.5)puff(u.x,u.y,3,u.zone==='summit'?'rgba(240,245,255,':'rgba(160,140,110,',40,3);}}moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp,dt);u.tgt=null;}
   else{if(!u.tgt||u.t<=0){u.t=R(2,6);const H=u.home;u.tgt={x:H.x+R(0,H.w),y:H.y+R(0,H.h)};}
     if(moveTo(u,u.tgt.x,u.tgt.y,F.sp*(u.species==='crab'?.6:.22),dt))u.tgt=null;}
   if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;u.tgt=null;}
@@ -50,7 +55,7 @@ function updFish(u,dt,dd){const Z=ZONES.water,ox=u.x,oy=u.y;
   else{u.x+=Math.sin(G.t*.5+u.id*9)*12*dt;u.y+=Math.cos(G.t*.4+u.id*7)*6*dt;if(u.t<=0){u.t=R(1.5,4.5);u.jt=.9;u.vx=R(-45,45);u.vy=R(-12,12);u.face=u.vx>0?1:-1;if(dd<450&&rnd()<.3)float(u.x,u.y-34,'Splash!','#bfe6ff');}}
   if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;u.vx*=-1;}}
 const fishZ=u=>u.jt>0?Math.sin(Math.PI*(.9-u.jt)/.9)*30:0;
-function drawFauna(u){const x=u.x,y=u.y,s=u.species,f=u.face||1,b=Math.abs(Math.sin(u.anim))*1.2,legs=(lx,c,len,w)=>line(x+lx,y-len,x+lx+Math.sin(u.anim+lx)*1.5,y+1,c,w||1.6);
+function drawFauna(u){if(u.species==='cougar'){drawCougar(u);return;}if(DES_SP.has(u.species)){drawDesertFauna(u);return;}const x=u.x,y=u.y,s=u.species,f=u.face||1,b=(s==='mgoat'||s==='goat')&&u.leap>0?Math.sin(Math.min(1,(.55-u.leap)/.55)*Math.PI)*12:Math.abs(Math.sin(u.anim))*1.2,legs=(lx,c,len,w)=>line(x+lx,y-len,x+lx+Math.sin(u.anim+lx)*1.5,y+1,c,w||1.6);
   if(s==='fish'){if(u.jt>0){const z=fishZ(u);ell(x,y+1,6,2,'rgba(30,60,120,.3)');ctx.save();ctx.translate(x,y-z);ctx.rotate(f*(u.jt-.45)*1.6);ell(0,0,8,3.5,'#e8904a');poly([-f*7,0,-f*13,-4,-f*13,4],'#e07a3a');ell(f*4,-1,1.2,1.2,'#222');ctx.restore();}
     else{ctx.strokeStyle='rgba(220,240,255,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(x,y,5+Math.sin(G.t*3+u.id*20)*2,2,0,0,TAU);ctx.stroke();}return;}
   ell(x,y+1,s==='bear'||s==='horse'?13:s==='crab'?6:9,3.5,'rgba(0,0,0,.2)');
@@ -101,14 +106,15 @@ const PATROL_MIX=[['knight','knight','archer'],['cavalry','cavalry','cavalry'],[
 function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},{x:CABIN.x+110,y:CABIN.y+70},{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60}];}
 function spawnPatrol(){const lvl=G.lvl,mix=[...PATROL_MIX[RI(0,PATROL_MIX.length-1)]];for(let i=1;i<lvl;i++)mix.push(['knight','archer','cavalry'][RI(0,2)]);if(G.easy&&mix.length>2)mix.pop();
   const p={id:++patrolId,members:[],engaged:false,wp:null},hpM=1+.2*(lvl-1),colr=['#c33','#33c','#cc3','#3a3'][RI(0,3)];
-  mix.forEach((k,i)=>{const x=GATE.x+R(-20,20),y=GATE.y+10+i*6;let u;
-    if(k==='cavalry')u=mkCavalry(x,y,{colr});else if(k==='archer')u=mkUnit('archer',x,y,{hp:22,maxHp:22,shootT:R(1,3)});else u=mkUnit('knight',x,y,{hp:45,maxHp:45,atk:0,colr});
+  const wg=waveGates();mix.forEach((k,i)=>{const x=GATE.x+R(-20,20),y=GATE.y+10+i*6;let u;
+    if(k==='archer'&&G.waveNum<wg.arch)k='foot';if(k==='cavalry'&&G.waveNum<wg.cav)k=G.waveNum<3?'foot':'knight'; // early patrols: foot soldiers & knights only
+    if(k==='foot')u=mkUnit('knight',x,y,{hp:24,maxHp:24,atk:0,foot:true,colr});else if(k==='cavalry')u=mkCavalry(x,y,{colr});else if(k==='archer')u=mkUnit('archer',x,y,{hp:22,maxHp:22,shootT:R(1,3)});else u=mkUnit('knight',x,y,{hp:45,maxHp:45,atk:0,colr});
     u.hp=u.maxHp=Math.round(u.maxHp*hpM);u.patrol=p;u.born=G.t;p.members.push(u);});
   // the banner carrier leads the column
   let bi=p.members.findIndex(u=>u.type==='knight'&&!u.mounted);if(bi<0)bi=p.members.findIndex(u=>u.type==='knight');const bc=p.members[bi>=0?bi:0];bc.banner=true;p.members.splice(p.members.indexOf(bc),1);p.members.unshift(bc);
   units.push(...p.members);patrols.push(p);G.gateOpenT=Math.max(G.gateOpenT,2);return p;}
 function engagePatrol(p){if(p.engaged)return;p.engaged=true;p.engT=G.t;const L=p.members.find(u=>!u.dead);if(L)float(L.x,L.y-50,'Patrol: "There\'s the dragon!"','#ffe0a0');}
-function updPatrols(dt){G.patrolT-=dt;const cap=(G.easy?2:3)+Math.min(2,G.lvl-1);
+function updPatrols(dt){G.patrolT-=dt;const cap=(G.easy?2:3)+Math.min(2,G.lvl-1)+treasPatrols();
   if(G.patrolT<=0){G.patrolT=G.easy?70:45;if(patrols.length<cap&&units.length<420)spawnPatrol();}
   const P=patrolPoints();
   for(const p of patrols){p.members=p.members.filter(u=>!u.dead);if(!p.members.length){p.dead=true;continue;}const L=p.members[0],dl=dist(L,D);

@@ -12,7 +12,7 @@ function drawWorld(){
   for(const c of cells)if(vis(c))drawCell(c);
   FARMS.forEach(f=>{const P=f.pen;if(P.x<x1&&P.x+P.w>x0&&P.y<y1&&P.y+P.h>y0)drawPen(P);});PADDOCKS.forEach(P=>{if(P.x<x1&&P.x+P.w>x0&&P.y<y1&&P.y+P.h>y0)drawPen(P);});
   for(const r of ROCKS)if(vis(r)){if(GFX_HI){drawRockHi(r);continue;}ell(r.x,r.y,r.r,r.r*.6,r.c<.5?'#7d7466':'#8f8676');ell(r.x-r.r*.2,r.y-r.r*.2,r.r*.5,r.r*.3,'rgba(255,255,255,.15)');}
-  drawCastle();drawMine();drawCamp();drawLair();drawWells();
+  drawFlora(x0,y0,x1,y1);drawCastle();drawMine();drawCamp();drawLair();drawWells();drawCoins();for(const u of units)if(u.species==='sandworm'&&!u.dead&&u.ws==='under'&&Math.abs(u.x-cam.x)<1400&&Math.abs(u.y-cam.y)<1000)drawWormMound(u);
   // catapult warning circles on the ground
   for(const b of boulders){if(b.done)continue;const f=b.t/b.T;ctx.fillStyle=`rgba(220,30,20,${.12+.25*f})`;ctx.beginPath();ctx.ellipse(b.tx,b.ty,b.r,b.r*.7,0,0,TAU);ctx.fill();
     ctx.strokeStyle=`rgba(255,60,40,${.6+.4*Math.sin(G.t*20)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(b.tx,b.ty,b.r,b.r*.7,0,0,TAU);ctx.stroke();
@@ -24,8 +24,9 @@ function drawWorld(){
   for(const s of ships)if(vis(s))list.push([s.y,8,s]);
   const dragonLow=D.alt<.15;if(dragonLow)list.push([D.y+10,5,D]);
   list.sort((a,b)=>a[0]-b[0]);
-  for(const [,k,o] of list){if(k===0)drawTree(o);else if(k===1)drawStruct(o);else if(k===8)drawShip(o);else if(k===2){if(o.type==='sea')drawSeaUnit(o);else if(o.type==='knight'){drawKnight(o);if(o.post==='guard')ell(o.x,o.y+2,8,3,'rgba(255,220,120,.25)');}else if(o.type==='animal')drawAnimal(o);else drawPerson(o);if(o.banner&&!o.mounted)drawFlag(o.x-8,o.y-16,o);}
+  for(const [,k,o] of list){if(k===0)drawTree(o);else if(k===1){drawStruct(o);if(!KDEF[o.kind])drawDamage(o);}else if(k===8)drawShip(o);else if(k===2&&o.flounder)drawFlounder(o);else if(k===2){if(o.type==='sea')drawSeaUnit(o);else if(o.type==='knight'){drawKnight(o);if(o.post==='guard')ell(o.x,o.y+2,8,3,'rgba(255,220,120,.25)');}else if(o.type==='animal')drawAnimal(o);else drawPerson(o);if(o.tax)drawTaxSack(o);if(o.banner&&!o.mounted)drawFlag(o.x-8,o.y-16,o);}
     else if(k===3)drawSiege(o);else if(k===4)drawCart(o);else if(k===6)drawBird(o,false);else if(k===7)drawDecor(o);else drawDragon();}
+  drawCrashFx();
   for(const bd of birds)if(!bd.dead&&vis(bd)&&bd.state!=='ground'&&bd.state!=='perch'&&bd.z<heightOf()+5)drawBird(bd,true);
   // scorpion aiming lines
   for(const g of siege)if(!g.dead&&g.kind==='scorpion'&&g.state==='aim'){const lock=g.t<.35;ctx.setLineDash(lock?[]:[10,8]);
@@ -34,8 +35,8 @@ function drawWorld(){
   if(!dragonLow)drawDragon();drawSeaTop(x0,y0,x1,y1);
   for(const bd of birds)if(!bd.dead&&vis(bd)&&bd.state!=='ground'&&bd.state!=='perch'&&bd.z>=heightOf()+5)drawBird(bd,true);
   // projectiles
-  for(const p of projs){const a=Math.atan2(p.vy,p.vx),L=p.kind==='bolt'?26:12;ell(p.x,p.y,3,1.5,'rgba(0,0,0,.25)');
-    line(p.x-Math.cos(a)*L,p.y-p.z-Math.sin(a)*L,p.x,p.y-p.z,p.kind==='bolt'?'#3a2a1a':'#6b4a26',p.kind==='bolt'?4:1.6);
+  for(const p of projs){const a=Math.atan2(p.vy,p.vx),L=p.kind==='bolt'?26:p.kind==='spear'?18:12;ell(p.x,p.y,3,1.5,'rgba(0,0,0,.25)');
+    line(p.x-Math.cos(a)*L,p.y-p.z-Math.sin(a)*L,p.x,p.y-p.z,p.kind==='bolt'?'#3a2a1a':'#6b4a26',p.kind==='bolt'?4:p.kind==='spear'?2:1.6);
     poly([p.x+Math.cos(a)*5,p.y-p.z+Math.sin(a)*5,p.x+Math.cos(a+2.4)*4,p.y-p.z+Math.sin(a+2.4)*4,p.x+Math.cos(a-2.4)*4,p.y-p.z+Math.sin(a-2.4)*4],'#ccc');}
   for(const b of boulders){if(b.done)continue;const f=b.t/b.T,bx=lerp(b.sx,b.tx,f),by=lerp(b.sy,b.ty,f),bz=4*300*f*(1-f);
     ell(bx,by,10,5,'rgba(0,0,0,.3)');ell(bx,by-bz,12,12,'#7d7466');ell(bx-3,by-bz-3,5,4,'#9c9384');}
@@ -80,16 +81,20 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   txt('WANTED  ·  ALARM',VW/2,my+18,13,'#f0c070','center');
   const f=G.alarm/100;rect(mx,my+26,mw,18,'#2a1a12');const gr=ctx.createLinearGradient(mx,0,mx+mw,0);gr.addColorStop(0,'#6c6');gr.addColorStop(.35,'#ee3');gr.addColorStop(.65,'#f80');gr.addColorStop(1,'#e22');
   ctx.fillStyle=gr;ctx.fillRect(mx,my+26,mw*f,18);ctx.strokeStyle='#000';ctx.strokeRect(mx,my+26,mw,18);
-  const names=['Knights','Archers','Scorpions','Catapults'];THRESH.forEach((t,i)=>{const tx=mx+mw*t/100;line(tx,my+22,tx,my+48,G.alarm>=t?'#fff':'#999',2);
+  const names=['Foot','Knights','Archers','Mounted','Siege','Militia'];THRESH.forEach((t,i)=>{const tx=mx+mw*t/100;line(tx,my+22,tx,my+48,G.alarm>=t?'#fff':'#999',2);
     txt(names[i],tx,my+62,10,G.alarm>=t?'#ffd080':'#999','center',G.alarm>=t);});
   txt(`Level ${G.level}: ${LEVEL_NAMES[G.level]}`,mx+mw,my+18,11,'#fff','right',false);
-  if(G.sinceDmg>6&&G.alarm>0)txt('cooling…',mx,my+18,11,'#9cf','left',false);
+  if(G.sinceDmg>6&&G.alarm>0)txt(coolMul()>1.4?'cooling fast…':'cooling…',mx,my+18,11,'#9cf','left',false);
+  {const c=concern();panel(VW/2-130,my+74,260,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}   ·   Treasury ${treasury()}g`,VW/2,my+86,10,c.col,'center',false);}
+  if(gateBroken()){const s=gateStruct(),[cw,cs]=COST.gate,st=s.state==='building'?`rebuilding ${Math.round(s.build*100)}%`:s.paid||s.builder?'engineers on the way':G.t-(s.ruinT||0)<GATE_REBUILD_WAIT?'rubble settling':(G.wood<cw||G.stone<cs)?`needs ${cw} wood + ${cs} stone`:'awaiting engineers';
+    const pl=.75+.25*Math.sin(G.t*4);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(VW/2-190,my+94,380,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(VW/2-189.5,my+94.5,379,19);
+    txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller  ·  ${st}`,VW/2,my+108,11,'#ffd8b0','center');}
   if(G.level>0&&Math.floor(G.t*2)%2)txt('⚠',mx+mw*f,my+41,13,'#fff','center');}
   else{panel(10,186+hy,250,26);rect(16,192+hy,238*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,204+hy,11);}
   // right panel: score + stockpiles
   // goal panel
   panel(10,118+hy,250,64);txt(`CASTLE LV ${G.lvl}  ·  Gold carried ${D.gold}`,20,136+hy,12,'#ffd84a');txt(`Stashed in lair: ${G.stash}  (+${G.stash*5} pts)`,20,153+hy,11,'#ffe8a0','left',false);
-  txt(D.princess?'Princess: in your claws! Fly to the LAIR':PR.state==='lair'?'Princess: in your lair':'Princess: locked in the castle tower',20,171+hy,11,D.princess?'#ff9ad0':'#f8c8e0','left',false);
+  txt(D.princess?'Princess Elizabeth: in your claws! Fly to the LAIR':PR.state==='lair'?'Princess Elizabeth: in your lair':'Princess Elizabeth: locked in the castle tower',20,171+hy,11,D.princess?'#ff9ad0':'#f8c8e0','left',false);
   const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,196+hy,11,'#ffc080','left');
   const rx=VW-210;panel(rx,10,200,112);txt(`Score ${G.over?G.score:calcScore()}`,rx+10,30,15,'#ffe08a');
   const foes=units.filter(u=>!u.dead&&!u.post&&(u.type==='knight'||u.type==='archer'||u.type==='hunter')).length+siege.filter(g=>!g.dead).length;
@@ -100,7 +105,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   txt(`Ruins ${ruins}  ·  Rebuilding ${bld}`,rx+10,98,11,'#bbb','left',false);
   txt(`Eaten ${G.stats.eaten+G.stats.animals} · Huts ${G.stats.huts+G.stats.barns} · Foes ${G.stats.knights+G.stats.siege}`,rx+10,114,10,'#bbb','left',false);
   // minimap
-  const mmw=sm?150:230;drawMap(VW-mmw-10,VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);
+  const mmw=sm||TOUCH.on?150:230;drawMap(VW-mmw-10,TOUCH.on?132:VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);
     txt(`WORLD MAP  ·  explored ${exploredPct()}%  ·  regions found ${Object.keys(G.visited).length}/${Object.keys(REGION_NAMES).length}  ·  M / LB to close`,VW/2,52,16,'#ffd24a','center');}
   if(false){const mmw=0,mmh=0,mmx=0,mmy=0,s=1;
@@ -123,36 +128,49 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   // banner
   if(G.banner){const b=G.banner,al=clamp(Math.min(b.t,4.5-b.t)*2,0,1);ctx.globalAlpha=al;const by=VH*0.26;
     ctx.fillStyle='rgba(60,0,0,.75)';ctx.fillRect(0,by-46,VW,b.extra?104:86);
-    txt(b.text,VW/2,by,sm?26:40,'#ffd24a','center');txt(b.sub,VW/2,by+28,sm?13:17,'#fff','center',false);if(b.extra)txt(b.extra,VW/2,by+50,sm?12:14,'#ffc0a0','center',false);ctx.globalAlpha=1;}
+    const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>VW-24?Math.max(10,Math.floor(f*(VW-24)/w)):f;};
+    txt(b.text,VW/2,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,VW/2,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,VW/2,by+50,sm?12:14,'#ffc0a0','center',false);ctx.globalAlpha=1;}
   // controls reminder
-  if(!sm)txt(GPAD.connected?'Stick move · A/RT fire · Y fly/land · X eat/grab · B stomp · LB map · Start pause':'WASD move · Space fire · F fly/land · E eat/grab · Q/Shift stomp · M map · P pause',14,VH-12,12,'rgba(255,255,255,.75)','left',false);
-  if(!sm&&!G.over&&!G.won)txt(D.princess?'Goal: carry the princess to your LAIR (follow the gold arrow)':D.gold>0?'Goal: stash the gold in your LAIR, or grab the princess (castle tower)':'Goal: raid the castle (north): grab gold piles and the princess (E / X near her tower)',VW/2,VH-12,13,'#ffe8a0','center');
+  if(!sm&&!TOUCH.on)txt(GPAD.connected?'Stick move · A/RT fire · Y fly/land · X eat/grab · B stomp/dive · LB map · Start pause':'WASD move · Space fire · F fly/land · E eat/grab · Q stomp/dive · M map · P pause',14,VH-12,12,'rgba(255,255,255,.75)','left',false);
+  if(!sm&&!TOUCH.on&&!G.over&&!G.won)txt(D.princess?'Goal: carry Princess Elizabeth to your LAIR (follow the gold arrow)':D.gold>0?'Goal: stash the gold in your LAIR, or grab Princess Elizabeth (castle tower)':'Goal: raid the castle (north): grab gold piles and Princess Elizabeth (E / X near her tower)',VW/2,VH-12,13,'#ffe8a0','center');
   if(G.over)drawOver();else if(G.won)drawWon();if(paused&&!G.over&&!G.won)drawPause();}
 function center(lines,top){let y=top;for(const [s,size,col,bold] of lines){txt(s,VW/2,y,size,col,'center',bold);y+=size*1.45;}}
 let titleSel=0;
 function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,5,.66)';ctx.fillRect(0,0,VW,VH);
-  const k=Math.min(1,VH/820,VW/1000);ctx.setTransform(DPR*k,0,0,DPR*k,DPR*(VW-VW*k)/2,0);const W0=VW;
-  let y=46;txt("DRAGON'S RAMPAGE",W0/2,y+10,52,'#ff9a3a','center');txt('You are a full-grown dragon. Raid the castle, steal the gold, carry off the princess!',W0/2,y+40,17,'#f3dcb8','center',false);
+  const k=TOUCH.on?Math.min(1.2,VH/470,VW/900):Math.min(1,VH/920,VW/1000);ctx.setTransform(DPR*k,0,0,DPR*k,DPR*(VW-VW*k)/2,0);const W0=VW;TOUCH.tg={k,ox:(VW-VW*k)/2,cx:W0/2,y0:112};
+  let y=46;txt("DRAGON'S RAMPAGE",W0/2,y+10,52,'#ff9a3a','center');txt('You are a full-grown dragon. Raid the castle, steal the gold, carry off Princess Elizabeth!',W0/2,y+40,17,'#f3dcb8','center',false);
   // menu
-  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`Graphics:  ${GFX_HI?'HIGH (shading, lighting, day & night)':'LOW (fastest)'}   ◀ ▶`];
+  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`Graphics:  ${GFX_HI?'HIGH (shading, lighting, day & night)':'LOW (fastest)'}   ◀ ▶`,`Music volume:  ${AUD.muted?'MUTED':volBar(AUD.music)}   ◀ ▶`,`Sound effects:  ${AUD.muted?'MUTED':volBar(AUD.sfx)}   ◀ ▶`];
   rows.forEach((r,i)=>{const s=titleSel===i;panel(W0/2-230,y+i*36,460,30);if(s){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y+i*36,460,30);}
-    txt(r,W0/2,y+i*36+21,17,s?'#ffd24a':(i===1&&EASY)||(i===2&&GFX_HI)?'#9f9':'#ddd','center');});
-  y+=120;txt('↑/↓ choose · Enter/A select · ←/→ toggle · M = Easy mode (great for young players: no hunger) · G = graphics',W0/2,y,12,'#bbb','center',false);
+    txt(r,W0/2,y+i*36+21,17,s?'#ffd24a':(i===1&&EASY)||(i===2&&GFX_HI)||(i>2&&!AUD.muted)?'#9f9':'#ddd','center');});
+  if(TOUCH.on){y+=196;txt('Tap a row to change it · tap ◀ / ▶ side of a volume row',W0/2,y,13,'#bbb','center',false);
+    const T=['LEFT thumb: drag anywhere to move   ·   RIGHT thumb: FIRE (hold) · BITE (eat / grab) · STOMP · FLY',
+      'STOMP while flying = crash DIVE STOMP   ·   MAP and II (pause) on the left',
+      'GOAL: grab the castle gold and Princess Elizabeth (north), carry them to your LAIR on Dragon Peak!'];
+    y+=28;for(const t of T){txt(t,W0/2,y,15,'#e8d6c0','center',false);y+=24;}
+    txt(Math.floor(performance.now()/500)%2?'Tap  ▶ Start game  to begin':'',W0/2,y+14,22,'#ffd24a','center');
+    if(best)txt(`Best score: ${best}`,W0/2,y+40,14,'#ccc','center',false);ctx.setTransform(DPR,0,0,DPR,0,0);return;}
+  y+=192;txt('↑/↓ choose · Enter/A select · ←/→ toggle / volume · M = Easy mode (great for young players: no hunger) · G = graphics · N = mute',W0/2,y,12,'#bbb','center',false);
   // controls table
-  const L=[['Move','WASD / Arrows','Left stick / D-pad'],['Breathe fire (hold)','Space','A / Cross  or  RT'],['Eat · grab gold/princess','E','X / Square'],
-    ['Stomp (ground)','Q / Shift','B / Circle'],['Take off / land (from high = DIVE SLAM)','F','Y / Triangle'],['World map','M','LB / L1'],['Pause / start','P / Esc · Enter','Start / Options'],['Restart (game over)','R','Back / Select / Share']];
+  const L=[['Move','WASD / Arrows','Left stick / D-pad'],['Breathe fire (hold)','Space','A / Cross  or  RT'],['Eat · grab gold/Princess Elizabeth','E','X / Square'],
+    ['Stomp · while flying = crash DIVE STOMP','Q / Shift','B / Circle'],['Take off / land (from high = DIVE SLAM)','F','Y / Triangle'],['World map','M','LB / L1'],['Mute / unmute music & sound','N','—'],['Pause / start','P / Esc · Enter','Start / Options'],['Restart (game over)','R','Back / Select / Share']];
   const w=740,x=W0/2-w/2;y+=24;panel(x,y-20,w,L.length*23+34);txt('',x,y,1);txt('Action',x+20,y,13,'#f0c070');txt('Keyboard',x+300,y,13,'#f0c070');txt('Controller',x+500,y,13,'#f0c070');y+=24;
   for(const [a,b,c] of L){txt(a,x+20,y,14,'#fff','left',false);txt(b,x+300,y,14,'#ffd080');txt(c,x+500,y,14,'#9fd0ff');y+=23;}
-  y+=20;const tips=['GOAL: raid Castle Aldric (north): grab gold piles and the princess, then carry them home to your LAIR (south-east).',
-    'Delivering the princess wins the level (she is never hurt, only very cross!). Rest at the lair to heal and catch your breath.',
+  y+=20;const tips=['GOAL: raid Castle Aldric (north): grab gold piles and Princess Elizabeth, then carry them home to your LAIR on Dragon Peak (far north, top of the snowy mountains).',
+    'Delivering Princess Elizabeth wins the level (she is never hurt, only very cross!). Rest at the lair to heal and catch your breath.',
     'A huge world to explore: farmlands, the Deepwood, rocky hills, Mirror Lake & the Silver River, snowy peaks, the coast and the open sea. Fog lifts as you go.',
     'Every region has its own animals to eat (bigger = more healing). Wolves hunt in packs and bears fight back. Fish only while they jump!',
     'HUNGER (normal mode): your belly empties in about a minute or so (faster flying or breathing fire). Eat to refill it, or you starve and lose health. Easy mode: no hunger.',
-    'Knights, archers, mounted knights (lance charges, ground only) and siege engines ride out of the castle gate. Burn the gate to slow waves.',
+    'WANTED tiers: foot soldiers, then knights, archers, mounted knights (lance charges) and siege engines from the castle gate. At the top tier whole villages take up spears: the MILITIA!',
+    'MOUNT CINDER, the volcano beside your lair: land at the crater and press E / X to drink 20 LAVA SHOTS. Each fire press lobs a glob that cracks even stone and wells!',
+    'Your GOLD HOARD grows as you stash loot. Big hoards lure HOARD RAIDS: a named champion marches on your lair. Beat or eat them to win the gold back, a bonus, and their banner as a trophy!',
+    'Smash the CASTLE GATE: while it lies in rubble, waves are smaller and come far less often, until the engineers rebuild it with wood and stone.',
     'Patrols roam the roads under a banner (shields on the map). Attacking them raises the alarm. Burn the wooden bridges to cut them off!',
-    'Villagers fight fires, rebuild with wood and stone, and later build fireproof STONE bridges: smash those with stomps or a dive slam.',
+    'DIVE STOMP: press stomp while flying to tuck your wings and plummet: a huge shockwave that smashes wooden buildings flat and cracks stone (2.4 s cooldown, 6 stamina).',
+    'Villagers fight fires from their wells, rebuild with wood and stone, replant burnt gardens and build fireproof STONE bridges: smash those with stomps or a dive slam.',
     'THE SEA (east): fly over water, or land in sea, lake or river to SWIM (slower, no stomp; bite and fire still work). Hunger drains faster over water!',
-    'Eat fish, sharks and whales; sink boats and cartoon PIRATES (cannons!) for their gold. Rest at the Lonely Lighthouse, then face the GIANT SQUID.'];
+    'Eat fish, sharks and whales; sink boats and cartoon PIRATES (cannons!) for their gold. Rest at the Lonely Lighthouse, then face the GIANT SQUID.',
+    'Wildflowers carpet every region and villagers tend fenced gardens: burn them and they scorch, then regrow. The music follows you from meadow to sea to desert (N mutes).'];
   for(const t of tips){txt(t,W0/2,y,13,'#e8d6c0','center',false);y+=19;}
   txt(GPAD.connected?'🎮 Controller ready':'Plug in an Xbox / PlayStation controller any time',W0/2,y+12,13,GPAD.connected?'#9fd0ff':'#999','center',false);
   txt(Math.floor(performance.now()/500)%2?'Press Enter, Space or A to begin':'',W0/2,y+42,22,'#ffd24a','center');
@@ -170,6 +188,7 @@ function drawPause(){ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,VW,VH);cen
 
 function drawMap(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),mmh=(WY1-WY0)*s,X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s;panel(mmx-3,mmy-3,mmw+6,mmh+6);
   ctx.imageSmoothingEnabled=true;ctx.drawImage(TERR,mmx,mmy,mmw,mmh);ctx.drawImage(ground,0,0,WW,WH,X(0),Y(0),WW*s,WH*s);
+  if(ROADS){ctx.lineCap='round';ctx.lineJoin='round';for(const r of ROADS){ctx.strokeStyle=r.kind==='bridge'?'#e0a040':r.kind==='main'?'rgba(120,90,50,.9)':'rgba(120,90,50,.6)';ctx.lineWidth=(big?2.2:1.2)*(r.kind==='main'||r.kind==='bridge'?1:.6);ctx.beginPath();r.pts.forEach((p,i)=>i?ctx.lineTo(X(p.x),Y(p.y)):ctx.moveTo(X(p.x),Y(p.y)));ctx.stroke();}}
   const q=big?4:2.4;
   for(const st of structures){ctx.fillStyle=st.state==='ruin'?'#222':st.kind==='bridge'?(st.mat==='stone'?'#ccc':'#c90'):st.kind==='barn'?'#c33':'#dcb070';ctx.fillRect(X(st.x)-q/2,Y(st.y)-q/2,q,q);}
   rect(X(CASTLE.x-CASTLE.w/2),Y(CASTLE.y-CASTLE.h/2),CASTLE.w*s,CASTLE.h*s,'#999');
@@ -181,6 +200,9 @@ function drawMap(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),mmh=(WY1-WY0)*s,X=x=>mmx
   drawSeaMap(X,Y,big,q);
   if(big)for(const k in REGION_LABEL)if(G.visited[k]){const[lx,ly]=REGION_LABEL[k];txt(REGION_NAMES[k],X(lx),Y(ly),13,'#fff','center');}
   if(big)VILLAGES.forEach(v=>{if(v.name&&seen(v.x,v.y))txt(v.name,X(v.x),Y(v.y)+14,10,'#ffe8c0','center',false);});
+  for(const M of MARKETS)if(seen(M.x,M.y)){const up=structures.some(s=>s.market===M.name&&s.state==='ok');ctx.fillStyle=up?'#ffb030':'#555';ctx.beginPath();ctx.arc(X(M.x),Y(M.y),big?5:3,0,TAU);ctx.fill();if(big)txt('⚖ '+M.name,X(M.x),Y(M.y)-8,9,up?'#ffd080':'#999','center',false);}
+  for(const u of units)if(u.tax&&!u.dead&&seen(u.x,u.y)){ctx.fillStyle='#c6f';ctx.fillRect(X(u.x)-q/2,Y(u.y)-q/2,q,q);}
+  txt(`Treasury ${treasury()}g`,X(CASTLE.x),Y(CASTLE.y)-(big?12:7),big?11:8,'#ffd84a','center');
   ell(X(LAIR.x),Y(LAIR.y),big?8:5,big?6:4,'#c80');txt(big?'LAIR (home)':'LAIR',X(LAIR.x),Y(LAIR.y)-6,9,'#ffd27a','center');
   if(seen(CABIN.x,CABIN.y))ell(X(CABIN.x),Y(CABIN.y),3,3,'#7c4');if(PR.state==='tower')ell(X(PR.x),Y(PR.y),3,3,'#f6c');
   ell(X(D.x),Y(D.y),big?6:4,big?6:4,Math.floor(G.t*4)%2?'#f33':'#ff0');
@@ -189,19 +211,23 @@ function drawMap(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),mmh=(WY1-WY0)*s,X=x=>mmx
 // ---------- main loop ----------
 function update(dt){G.t+=dt;G.fc++;if(P('m'))G.bigMap=!G.bigMap;G.shake=Math.max(0,G.shake-dt*30);if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null;}
   if(!G.over&&!G.won)updDragon(dt);else if(G.over)G.overT+=dt;
-  updFire(dt);updEconomy(dt);updAlarm(dt);updGoal(dt);updBirds(dt);updHunger(dt);updWorld(dt);updFauna(dt);updPatrols(dt);updBridges(dt);updSea(dt);
+  updFire(dt);updEconomy(dt);updK(dt);updTaxes(dt);updDesert(dt);updAlarm(dt);updMilitiaAll(dt);updFlora(dt);updGoal(dt);updBirds(dt);updHunger(dt);updWorld(dt);updFauna(dt);updPatrols(dt);updBridges(dt);updSea(dt);
   for(const u of units){if(u.dead)continue;
     if(u.type==='sea'){const far=Math.abs(u.x-D.x)>2000||Math.abs(u.y-D.y)>1600;if(far&&u.kind!=='squid'){if((G.fc+((u.id*97)|0))%6)continue;updSeaUnit(u,dt*6);continue;}updSeaUnit(u,dt);continue;}
-    if(u.type==='villager'||u.type==='animal'||u.type==='hunter'){const t=farTick(u,dt);if(!t)continue;if(u.type==='villager')updVillager(u,t);else if(u.type==='hunter')updHunter(u,t);else if(u.wild)updWild(u,t);else updAnimal(u,t);continue;}
+    if(u.type==='villager'||u.type==='animal'||u.type==='hunter'){const t=farTick(u,dt);if(!t)continue;if(u.carav&&updCaravan(u,t))continue;if(u.species==='sandworm'){updWorm(u,t);continue;}if(u.type==='villager')updVillager(u,t);else if(u.type==='hunter')updHunter(u,t);else if(u.wild)updWild(u,t);else updAnimal(u,t);continue;}
     if(u.patrol&&!u.patrol.engaged)continue;
+    if(soldierSwim(u,dt))continue;
+    if(u.raid&&raidStep(u,dt))continue;
+    if(u.escort&&escortStep(u,dt))continue;
     if(u.type==='knight')updKnight(u,dt);else if(u.type==='archer')updArcher(u,dt);else if(u.type==='crew')updCrew(u,dt);}
   for(const g of siege)updSiege(g,dt);
-  for(let i=units.length-1;i>=0;i--)if(units[i].dead)units.splice(i,1);
+  taxSacks();for(let i=units.length-1;i>=0;i--)if(units[i].dead)units.splice(i,1);
   for(let i=siege.length-1;i>=0;i--)if(siege[i].dead&&!siege[i].gone){siege[i].deadT=(siege[i].deadT||0)+dt;if(siege[i].deadT>25)siege.splice(i,1);}
   updProjs(dt);updParts(dt);if(GFX_HI)gfxTick(dt);}
 function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
-  pollPad(dt);
-  if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(2,titleSel+1);
+  pollPad(dt);touchTick();if(P('n'))toggleMute();musicTick(dt);sfxTick(dt);
+  if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(4,titleSel+1);
+    if(titleSel>=3){const k=titleSel===3?'music':'sfx',dv=(P('arrowleft')||P('a'))?-.1:(P('arrowright')||P('d'))?.1:P('enter')?(AUD[k]>=1?-1:.1):0;if(dv){setVol(k,AUD[k]+dv);if(k==='sfx')SFX.play('coin');}}
     if(P('g')||((P('arrowleft')||P('arrowright')||P('a')||P('d')||P('enter'))&&titleSel===2))setGfx(!GFX_HI);
     if(P('m')||((P('arrowleft')||P('arrowright')||P('a')||P('d'))&&titleSel===1)||(P('enter')&&titleSel===1))setEasy(!EASY);
     if((P('enter')&&titleSel===0)||P(' ')){scene='play';newGame();pressed={};}
@@ -212,10 +238,10 @@ function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
     if(!paused)update(dt);
     cam.z=clamp(Math.min(VW/1150,VH/760),.55,1.15)*(1-.12*D.alt);cam.x=lerp(cam.x,D.x+D.vx*.35,Math.min(1,dt*5));cam.y=lerp(cam.y,D.y-heightOf()*.5+D.vy*.35,Math.min(1,dt*5));}
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#000';ctx.fillRect(0,0,cv.width,cv.height);
-  drawWorld();if(scene==='title')drawTitle();else drawHUD();drawToast();
+  drawWorld();if(scene==='title')drawTitle();else withSafe(drawHUD);drawTouch();drawToast();
   pressed={};requestAnimationFrame(frame);}
 newGame();D.x=-9999;requestAnimationFrame(frame);
 // test hook
-window.DRG={setEasy,eatUnit,feed,HUNGER,updHunger,get ships(){return ships},get loot(){return loot},get cballs(){return cballs},LH,ISEAL_ROCKS,DOCK,get G(){return G},get D(){return D},get units(){return units},get siege(){return siege},get structures(){return structures},get trees(){return trees},get cells(){return cells},get carts(){return carts},get boulders(){return boulders},get projs(){return projs},
+window.DRG={setEasy,tryEat,biteTargets,kingdomMul,concern,isWild,LIVESTOCK,mkUnit,get birds(){return birds},mkBird,get PR(){return PR},eatUnit,feed,HUNGER,updHunger,get ships(){return ships},get loot(){return loot},get cballs(){return cballs},LH,ISEAL_ROCKS,DOCK,get G(){return G},get D(){return D},get units(){return units},get siege(){return siege},get structures(){return structures},get trees(){return trees},get cells(){return cells},get carts(){return carts},get boulders(){return boulders},get projs(){return projs},
   start(){scene='play';newGame();},step(n,dt){for(let i=0;i<n;i++){update(dt||1/60);pressed={};}},press(k){pressed[k]=true;},hold(k,v){keys[k]=v;},spawnWave,addAlarm,DR,setScene(s){scene=s;},get PR(){return PR},get birds(){return birds},tryEatBird,get goldPiles(){return goldPiles},LAIR,CABIN,GATE,nextLevel,tryEat,setEasy,get patrols(){return patrols},spawnPatrol,regionKey,get FOG(){return FOG},seen,get TERR(){return TERR},get DECOR(){return DECOR},spawnWild,FAUNA,mkCavalry,dismount,LAKE,RIVER,riverRoute,riverBlocked,onBridge,bridgeEnds,diveSlam,updBridgeWork,exploredPct,VILLAGES,hurtStruct,hurtUnit,doStomp,applyFire,update,get EASY(){return EASY},GPAD,musterSlow,get scene(){return scene},get titleSel(){return titleSel}};
 </script></body></html>

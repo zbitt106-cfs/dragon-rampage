@@ -16,7 +16,7 @@ function updFire(dt){
   for(let i=carts.length-1;i>=0;i--)if(carts[i].wrecked&&carts[i].t<=0)carts.splice(i,1);
   for(const g of siege)if(g.fire&&!g.dead){hurtSiege(g,18*dt);if(rnd()<dt*8)flame(g.x+R(-15,15),g.y,R(6,30));}
   // spread
-  for(const b of burning){if(rnd()>dt*1.6)continue;
+  for(const b of burning){if(rnd()>dt*1.6)continue;spreadFlora(b);
     const near=(o,r)=>Math.abs(o.x-b.x)<r&&Math.abs(o.y-b.y)<r&&d2(o.x,o.y,b.x,b.y)<r;
     for(const t of trees)if(t.state==='ok'&&!t.fire&&near(t,48)&&rnd()<.5)t.fire=1;
     for(const s of structures)if(s.state!=='ruin'&&!s.fire&&!stoneish(s)&&near(s,62)&&rnd()<.35)s.fire=1;
@@ -25,7 +25,8 @@ function updFire(dt){
 }
 
 // ---------- economy: stockpiles, carts, rebuilding, respawns ----------
-const COST={hut:[3,1],barn:[5,2],logpile:[0,2],stonepile:[2,0],cabin:[4,1],gate:[4,4],barracks:[6,4]};
+const COST={hut:[3,1],barn:[5,2],logpile:[0,2],stonepile:[2,0],cabin:[4,1],gate:[6,6],barracks:[6,4]};
+const GATE_REBUILD_WAIT=20,GATE_BUILD_T=45; // engineers wait for the dust to settle, then rebuild the gate slowly
 function pile(kind){return structures.find(s=>s.kind===kind);}
 function updEconomy(dt){
   G.spawnT-=dt;G.rebuildT-=dt;G.cartBuildT-=dt;
@@ -35,7 +36,7 @@ function updEconomy(dt){
   // rebuild: assign ruins to builders when stock allows
   if(G.rebuildT<=0){G.rebuildT=2;
     updBridgeWork();
-    for(const s of [...structures].sort((a,b)=>(b.kind==='bridge')-(a.kind==='bridge'))){if(s.state!=='ruin'||s.builder)continue;const [w,st]=s.kind==='bridge'?bridgeCost(s):COST[s.kind];
+    for(const s of [...structures].sort((a,b)=>(b.kind==='bridge')-(a.kind==='bridge'))){if(s.state!=='ruin'||s.builder)continue;if(s.kind==='gate'&&G.t-(s.ruinT||0)<GATE_REBUILD_WAIT)continue;const [w,st]=s.kind==='bridge'?bridgeCost(s):COST[s.kind];
       if(!s.paid&&(G.wood<w||G.stone<st))continue;
       let bu=null,bd=1e9;for(const u of units)if(u.type==='villager'&&!u.dead&&u.job==='peasant'&&!u.task&&!u.water&&u.state!=='flee'){const dd=dist(u,s);if(dd<bd&&dd<(s.kind==='bridge'?1600:1200)){bd=dd;bu=u;}}
       if(!bu)continue;if(!s.paid){G.wood-=w;G.stone-=st;s.paid=true;}s.builder=bu;bu.task={s};bu.state='tobuild';break;}}
@@ -52,9 +53,10 @@ function updEconomy(dt){
 }
 function moveTo(u,tx,ty,sp,dt){const dx=tx-u.x,dy=ty-u.y,dd=Math.hypot(dx,dy);if(dd<3)return true;const s=Math.min(dd,sp*dt);u.x+=dx/dd*s;u.y+=dy/dd*s;if(Math.abs(dx)>1)u.face=dx>0?1:-1;u.anim+=dt*8;return dd<6;}
 function fearR(){return D.alt>0.5?260:220;}
-function updVillager(u,dt){
+function updVillager(u,dt){if(u.tax){updTax(u,dt);return;}if(u.carav){updCaravan(u,dt);return;}
   const dd=dist(u,D);
   if(u.inside){u.t-=dt;if(u.t<=0){u.inside=false;u.state='cart';}return;}
+  if(u.militia&&updMilitia(u,dt))return;
   if(dd<fearR()&&!G.over){if(u.state!=='flee'){dropCarry(u);u.state='flee';}const a=Math.atan2(u.y-D.y,u.x-D.x)+Math.sin(G.t*3+u.id*9)*.5;
     {const ox=u.x,oy=u.y;u.x=clamp(u.x+Math.cos(a)*78*dt,WX0+80,WX1-80);u.y=clamp(u.y+Math.sin(a)*78*dt,(u.x>CWALL.x0-40&&u.x<CWALL.x1+40)?CASTLE.y+CASTLE.h/2+20:WY0+80,WY1-80);if(riverBlocked(u.x,u.y)&&!riverBlocked(ox,oy)){u.x=ox;u.y=oy;}}u.face=Math.cos(a)>0?1:-1;u.anim+=dt*12;u.t=1.2;return;}
   if(u.state==='flee'){u.t-=dt;if(u.t>0)return;u.state='idle';}
@@ -66,8 +68,8 @@ function updVillager(u,dt){
       if(s.upg>=1){s.mat='stone';s.hp=s.maxHp=420;s.upgBy=null;s.upg=0;u.task=null;u.state='idle';float(s.x,s.y-40,'Stone bridge finished! (fireproof)','#cfd8e0');}return;}
     if(u.task&&u.task.s){const s=u.task.s;if(s.state!=='ruin'&&s.state!=='building'){u.task=null;return;}
       if(u.state==='tobuild'){const bp=s.kind==='bridge'?bridgeEnd(s,u):{x:s.x+18,y:s.y+22};if(moveTo(u,bp.x,bp.y,46,dt)){u.state='build';s.state='building';}}
-      else if(u.state==='build'){s.state='building';s.build+=dt/(s.kind==='bridge'?(s.nextMat==='stone'?20:12):9);u.anim+=dt*6;if(rnd()<dt*2)puff(s.x+R(-15,15),s.y,1,'rgba(200,180,140,',30,5);
-        if(s.build>=1){if(s.kind==='bridge'){s.mat=s.nextMat||'wood';s.maxHp=s.mat==='stone'?420:120;}s.state='ok';s.hp=s.maxHp;s.build=0;s.paid=false;s.builder=null;u.task=null;u.state='idle';float(s.x,s.y-40,s.kind==='bridge'?(s.mat==='stone'?'Stone bridge rebuilt':'Wooden bridge rebuilt'):(STRUCT_NAME[s.kind]||s.kind)+' rebuilt','#b8e0ff');}}
+      else if(u.state==='build'){s.state='building';s.build+=dt/(s.kind==='bridge'?(s.nextMat==='stone'?20:12):s.kind==='gate'?GATE_BUILD_T:9);u.anim+=dt*6;if(rnd()<dt*2)puff(s.x+R(-15,15),s.y,1,'rgba(200,180,140,',30,5);
+        if(s.build>=1){if(s.kind==='bridge'){s.mat=s.nextMat||'wood';s.maxHp=s.mat==='stone'?420:120;}s.state='ok';s.hp=s.maxHp;s.build=0;s.paid=false;s.builder=null;u.task=null;u.state='idle';float(s.x,s.y-40,s.kind==='bridge'?(s.mat==='stone'?'Stone bridge rebuilt':'Wooden bridge rebuilt'):(STRUCT_NAME[s.kind]||s.kind)+' rebuilt','#b8e0ff');if(s.kind==='gate'){G.waveCD=Math.min(G.waveCD,12);G.reinforceT=Math.min(G.reinforceT,35);showToast('Castle gate rebuilt: waves back to full pace');}}}
       else u.state='tobuild';return;}
     if(u.state!=='walk'||!u.tgt){u.tgt={x:u.home.x+R(-140,140),y:u.home.y+R(-100,100)};u.state='walk';u.wait=R(0,3);}
     if(u.wait>0){u.wait-=dt;return;} if(moveTo(u,u.tgt.x,u.tgt.y,32,dt))u.state='idle';

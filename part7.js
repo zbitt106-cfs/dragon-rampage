@@ -6,7 +6,7 @@ addEventListener('keydown',()=>audio(),{once:true});addEventListener('pointerdow
 function horn(){const a=AC;if(!a)return;try{const t=a.currentTime,o=a.createOscillator(),o2=a.createOscillator(),f=a.createBiquadFilter(),g=a.createGain();
   o.type='sawtooth';o2.type='sawtooth';o.frequency.setValueAtTime(196,t);o.frequency.linearRampToValueAtTime(220,t+.25);o.frequency.setValueAtTime(220,t+1.2);o.frequency.linearRampToValueAtTime(196,t+1.6);o2.frequency.value=147;
   f.type='lowpass';f.frequency.value=900;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.16,t+.12);g.gain.setValueAtTime(.16,t+1.3);g.gain.linearRampToValueAtTime(0,t+1.7);
-  o.connect(f);o2.connect(f);f.connect(g);g.connect(a.destination);o.start(t);o2.start(t);o.stop(t+1.8);o2.stop(t+1.8);}catch(e){}}
+  o.connect(f);o2.connect(f);f.connect(g);g.connect((typeof audOut==='function'&&audOut('sfx'))||a.destination);o.start(t);o2.start(t);o.stop(t+1.8);o2.stop(t+1.8);}catch(e){}}
 
 // ---------- gamepad (standard mapping; works alongside the keyboard) ----------
 const GPAD={connected:false,id:'',mx:0,my:0,fire:false,prev:[],toast:null,toastT:0,idx:-1,navT:0};
@@ -40,7 +40,7 @@ const QUIPS=['Eek! Put me down!','Help! Somebody!','You big lizard!','Daddy will
 function tryGrab(){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
   if(PR.state==='tower'&&!D.princess&&(d2(D.x,D.y,PR.x,PR.y)<120||d2(mx,my,PR.x,PR.y)<110)){
     PR.state='carried';D.princess=true;D.quip=QUIPS[0];D.quipT=3;G.quipT=4;addAlarm(100);G.alarm=100;
-    float(PR.x,PR.y-60,'Eek! Put me down!','#ff9ad0');spawnWave(Math.max(1,G.level),true);G.banner={text:'The princess has been taken!',sub:'Fly her back to your lair (follow the gold arrow, south-east). She is quite safe — just very cross.',extra:'The whole army rides out of the gate after you!',t:4.5};return true;}
+    float(PR.x,PR.y-60,'Eek! Put me down!','#ff9ad0');spawnWave(Math.max(1,G.level),true);G.banner={text:'You captured Princess Elizabeth!',sub:'Fly her back to your lair (follow the gold arrow, south-east). She is quite safe — just very cross.',extra:'The knights ride out of the gate: "Rescue Princess Elizabeth!"',t:4.5};return true;}
   const cap=G.easy?80:60;
   if(D.gold<cap)for(const g of goldPiles){if(g.amt>0&&(d2(D.x,D.y,g.x,g.y)<95||d2(mx,my,g.x,g.y)<90)){const take=Math.min(g.amt,cap-D.gold);g.amt-=take;D.gold+=take;
     float(g.x,g.y-30,`+${take} gold (carrying ${D.gold})`,'#ffd84a');sparkle(g.x,g.y,8);addAlarm(6);return true;}}
@@ -51,7 +51,7 @@ function updGoal(dt){
   D.healFx=Math.max(0,(D.healFx||0)-dt);
   // deliveries at the lair
   if(!G.over&&!G.won&&d2(D.x,D.y,LAIR.x,LAIR.y)<130){
-    if(D.gold>0){G.stash+=D.gold;float(LAIR.x,LAIR.y-60,`Hoard +${D.gold} gold! (+${D.gold*5} bonus)`,'#ffd84a');sparkle(LAIR.x,LAIR.y,16);D.gold=0;}
+    if(D.gold>0){hoardDrop(D.gold,D.x,D.y);G.stash+=D.gold;float(LAIR.x,LAIR.y-60,`Hoard +${D.gold} gold! (+${D.gold*5} bonus)`,'#ffd84a');sparkle(LAIR.x,LAIR.y,16);D.gold=0;}
     if(D.princess){D.princess=false;D.quip=null;PR.state='lair';PR.x=LAIR.x+40;PR.y=LAIR.y;G.won=true;G.wonT=0;G.score=calcScore();
       if(G.score>best){best=G.score;try{localStorage.setItem('dr_best',best);}catch(e){}}rumble(.5,.5,300);}}
   if(G.won)G.wonT+=dt;
@@ -71,7 +71,7 @@ function nextLevel(){const bank=calcScore();newGame({lvl:G.lvl+1,bank});G.banner
 
 // ---------- the hunter: bow at range (hits air & ground), dagger up close, keeps his distance ----------
 function updHunter(u,dt){const dd=dist(u,D);u.atk-=dt;u.shootT-=dt;u.stab=Math.max(0,(u.stab||0)-dt);u.draw=Math.max(0,(u.draw||0)-dt);u.face=D.x>u.x?1:-1;
-  if(G.over||G.won||dd>520){moveTo(u,u.home.x+30+Math.sin(G.t*.3+u.id)*60,u.home.y+40+Math.cos(G.t*.4)*40,40,dt);u.mode='bow';return;}
+  if(G.over||G.won||dd>520*clamp(.45+.4*kingdomMul(D.x,D.y),.55,1)){moveTo(u,u.home.x+30+Math.sin(G.t*.3+u.id)*60,u.home.y+40+Math.cos(G.t*.4)*40,40,dt);u.mode='bow';return;}
   const ground=D.alt<0.35;
   if(ground&&dd<110){u.mode='dagger';if(dd>60)moveTo(u,D.x,D.y,70,dt);
     if(u.atk<=0&&dd<80){u.atk=.9;u.stab=.25;hurtDragon(6,'dagger');float(D.x,D.y-heightOf()-70,'Stabbed by the hunter!','#ff9a9a');}return;}
@@ -83,7 +83,6 @@ function updHunter(u,dt){const dd=dist(u,D);u.atk-=dt;u.shootT-=dt;u.stab=Math.m
     projs.push({kind:'arrow',x:u.x,y:u.y,z:12,vx:Math.cos(b)*460,vy:Math.sin(b)*460,tz:heightOf()+15,life:1.4,dmg:6,hunter:true});}}
 
 // ---------- bucket brigade ----------
-function nearestWell(x,y){let b=VILLAGES[0],bd=1e18;for(const v of VILLAGES){const d=d2(x,y,v.x,v.y);if(d<bd){bd=d;b=v;}}return b;}
 let ffT=0;
 function updFirefight(dt){ffT-=dt;if(ffT>0)return;ffT=.5;
   const fires=[...structures.filter(s=>s.fire&&s.state!=='ruin'),...trees.filter(t=>t.fire&&t.state==='ok')];
@@ -92,7 +91,7 @@ function updFirefight(dt){ffT-=dt;if(ffT>0)return;ffT=.5;
     if(best){best.water={f,st:'fetch',well:nearestWell(best.x,best.y),t:1};best.carry=null;}}}
 function updBucket(u,dt){const w=u.water,f=w.f;const out=f.state==='ruin'||!f.fire||(f.state!==undefined&&f.state!=='ok'&&!f.kind);
   if(out&&w.st!=='fetch'){u.water=null;u.carry=null;u.state='idle';return;}
-  if(w.st==='fetch'){if(moveTo(u,w.well.x+12,w.well.y+8,55,dt)){w.t-=dt;if(w.t<=0){w.st='carry';u.carry='bucket';}}}
+  if(w.st==='fetch'){if(wellFetch(u,w,dt)){w.st='carry';u.carry='bucket';}}
   else if(w.st==='carry'){if(!f.fire){u.water=null;u.carry=null;return;}if(moveTo(u,f.x+(u.x<f.x?-24:24),f.y+14,55,dt)){w.st='throw';w.t=.5;}}
   else if(w.st==='throw'){w.t-=dt;if(w.t<=0){u.carry=null;puff(f.x,f.y-10,16,'rgba(120,180,255,',120,7,2.5);
       f.water=(f.water||0)+1;const need=f.kind?2:1;
@@ -101,7 +100,7 @@ function updBucket(u,dt){const w=u.water,f=w.f;const out=f.state==='ruin'||!f.fi
 
 // ---------- victory screen ----------
 function drawWon(){ctx.fillStyle=`rgba(10,10,40,${Math.min(.72,G.wonT)})`;ctx.fillRect(0,0,VW,VH);const sm=VW<760;
-  center([['VICTORY!',sm?34:58,'#ffd84a'],['The princess is in your lair, and the kingdom is in an uproar.',sm?14:20,'#fff',false],
+  center([['VICTORY!',sm?34:58,'#ffd84a'],['Princess Elizabeth is in your lair, and the kingdom is in an uproar.',sm?14:20,'#fff',false],
     ['"Hmph! ...this nest is actually quite comfy." (She is perfectly fine and will be rescued with lots of cake.)',sm?11:14,'#ffc0e0',false],
     [`Castle level ${G.lvl} cleared · Gold stashed ${G.stash} (+${G.stash*5}) · Princess bonus +${1000*G.lvl}`,sm?13:17,'#ffe08a',false],
     [`Score so far: ${G.score}`,22,'#ffe08a'],['',8,'#fff',false],
@@ -136,6 +135,7 @@ function updBirds(dt){const dz=heightOf();
         const tx=Math.cos(b.head)*70+(cx-b.x)*.8,ty=Math.sin(b.head)*70+(cy-b.y)*.8;b.vx=lerp(b.vx,tx,dt*1.5);b.vy=lerp(b.vy,ty,dt*1.5);b.z=lerp(b.z,125,dt*.5);}
       b.x+=b.vx*dt;b.y+=b.vy*dt;if(dd>1700||b.x<WX0||b.x>WX1||b.y<WY0||b.y>WY1)b.dead=true;continue;}
     if(b.kind==='eagle'||b.kind==='hawk'){updRaptor(b,dt,dd,dz);continue;}
+    if(b.kind==='vulture'){updVulture(b,dt,dd);continue;}
     // ducks, geese & crows: sit, then take off when startled and settle again later
     if(b.state==='ground'){const scare=D.alt>.5?260:200;
       if(b.home){b.hx+=R(-1,1)*dt*20;b.x+=Math.sin(G.t*.7+b.id)*4*dt;b.y+=Math.cos(G.t*.5+b.id)*2*dt;}else if(b.t<=0){b.t=R(.5,2);b.x+=R(-6,6);b.y+=R(-3,3);}
@@ -175,9 +175,9 @@ function tryEatBird(){const air=D.alt>=0.5,gr=D.alt<0.3;if(!air&&!gr)return fals
   if(raptor&&--best.hp>0){D.eatCD=.5;puff(best.x,best.y-best.z,6,'rgba(200,170,120,',80,4);float(best.x,best.y-best.z-20,'Feathers fly! It dodged!','#ffe0a0');best.state='dodge';best.t=1;best.cd=2;const a=Math.atan2(best.y-D.y,best.x-D.x);best.dx=Math.cos(a);best.dy=Math.sin(a);return true;}
   best.dead=true;const B=BIRD[best.kind];D.eatCD=air?.6:.4;D.hp=Math.min(D.maxHp,D.hp+B.heal);D.healFx=.6;feed(B.heal);G.stats.birds=(G.stats.birds||0)+1;G.stats.birdPts=(G.stats.birdPts||0)+B.pts;
   puff(best.x,best.y-best.z,8,'rgba(230,220,200,',70,4);sparkle(D.x,D.y-heightOf(),raptor?14:7);float(D.x+R(-10,10),D.y-heightOf()-70,`+${B.heal} HP`,'#6dff7a');
-  float(best.x,best.y-best.z-18,`${raptor?(best.kind==='eagle'?'Eagle caught!':'Hawk caught!'):'Snack!'} +${B.pts} pts`,'#ffd27a');addAlarm(raptor?1:.5);return true;}
+  float(best.x,best.y-best.z-18,`${raptor?(best.kind==='eagle'?'Eagle caught!':'Hawk caught!'):'Snack!'} +${B.pts} pts`,'#ffd27a');return true;} // wild birds never raise the alarm
 function drawBird(b,fly){const B=BIRD[b.kind],x=b.x,y=fly?b.y-b.z:b.y-(b.state==='perch'?b.z:0),w=Math.sin(b.flap);
-  const big=b.kind==='eagle'?2.2:b.kind==='hawk'?1.7:b.kind==='goose'?1.4:b.kind==='gull'?1.15:b.kind==='duck'?1.15:b.kind==='crow'?1.05:.75;
+  const big=b.kind==='vulture'?2.5:b.kind==='eagle'?2.2:b.kind==='hawk'?1.7:b.kind==='goose'?1.4:b.kind==='gull'?1.15:b.kind==='duck'?1.15:b.kind==='crow'?1.05:.75;
   if(fly){ell(b.x+b.z*.25,b.y+b.z*.1,4*big,1.6*big,'rgba(0,0,0,.18)');const s=6*big,f=w*s*.7;
     ctx.strokeStyle=B.col;ctx.lineWidth=1.6*Math.sqrt(big);ctx.beginPath();ctx.moveTo(x-s,y-f);ctx.quadraticCurveTo(x-s*.4,y-f*.2-2,x,y);ctx.quadraticCurveTo(x+s*.4,y-f*.2-2,x+s,y-f);ctx.stroke();ell(x,y,1.6*big,1.2*big,B.col);
     if(b.kind==='eagle')ell(x,y-1.5*big,1*big,1*big,'#fff');if(b.state==='dive'){ctx.strokeStyle='rgba(255,80,60,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,s+4,0,TAU);ctx.stroke();}return;}

@@ -3,8 +3,7 @@ let HEAVY=false; // set while a stomp or dive slam is being applied (only heavy 
 const BRIDGE_ROADS=[[6,8],[6,11],[10,11]]; // village pairs whose roads cross the Silver River
 function riverY(x){for(let i=0;i<RIVER.length-1;i++){const[a,b]=[RIVER[i],RIVER[i+1]];if(x>=a[0]&&x<=b[0])return a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0]);}return null;}
 function rside(x,y){const ry=riverY(x);return ry===null?0:(y>ry?1:-1);}
-function addBridges(){for(const[i,j]of BRIDGE_ROADS){const a=VILLAGES[i],b=VILLAGES[j];let best=null,bd=1e9;
-    for(let k=0;k<=400;k++){const t=k/400,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,d=riverD(x,y);if(d<bd){bd=d;best={x,y};}}
+function addBridges(){for(const[i,j]of BRIDGE_ROADS){const a=VILLAGES[i],b=VILLAGES[j],best=bridgeSpot(i,j);
     const s=addStruct('bridge',best.x,best.y,-1);s.ang=Math.atan2(b.y-a.y,b.x-a.x);s.len=2*RIVW+44;s.mat='wood';s.road=[a,b];}}
 function bridgeEnds(s){const c=Math.cos(s.ang),n=Math.sin(s.ang),h=s.len/2+14;const p={x:s.x-c*h,y:s.y-n*h},q={x:s.x+c*h,y:s.y+n*h};return rside(p.x,p.y)<0?[p,q]:[q,p];} // [north, south]
 function bridgeEnd(s,u){const[e0,e1]=bridgeEnds(s);return d2(u.x,u.y,e0.x,e0.y)<d2(u.x,u.y,e1.x,e1.y)?e0:e1;}
@@ -30,10 +29,14 @@ function lakeW(i,side){return i===1?{x:LAKE.x-LAKE.rx-160,y:LAKE.y}:{x:LAKE.x-LA
 // wrap the shared mover: everyone except animals must respect the river
 const _moveTo=moveTo;
 moveTo=function(u,tx,ty,sp,dt){if(u.type==='animal'||!u.type)return _moveTo(u,tx,ty,sp,dt);
+  if(isSoldier(u)&&(inSea(tx,ty)||inLake(tx,ty))&&shoreHold(u,tx,ty,sp,dt))return false;
+  if(isSoldier(u)&&!u.inside){const rw=roadWay(u,tx,ty);if(rw){const ox=u.x,oy=u.y;tx=rw.x;ty=rw.y;sp*=1.1;const wp0=riverRoute(u,tx,ty),bl0=uBlocked(u);_moveTo(u,wp0?wp0.x:tx,wp0?wp0.y:ty,sp,dt);if(bl0(u.x,u.y)&&!bl0(ox,oy)){u.x=ox;u.y=oy;bankSlide(u,tx,ty,sp*dt,bl0);}return false;}}
   const wp=riverRoute(u,tx,ty),bl=uBlocked(u);const ox=u.x,oy=u.y,r=_moveTo(u,wp?wp.x:tx,wp?wp.y:ty,sp,dt);
   if(bl(u.x,u.y)&&!bl(ox,oy)){u.x=ox;u.y=oy;bankSlide(u,wp?wp.x:tx,wp?wp.y:ty,sp*dt,bl);}return wp?false:r;};
 // a unit that isn't deliberately using a bridge treats the deck like water (so nobody wanders onto it sideways and gets stuck)
-const wet=(x,y)=>riverD(x,y)<RIVW-6;function uBlocked(u){return (u.leg&&(u.leg.on||u.leg.s.state==='ok'))?riverBlocked:(wet(u.x,u.y)?riverBlocked:wet);}
+const wet=(x,y)=>riverD(x,y)<RIVW-6;function uBlocked0(u){return (u.leg&&(u.leg.on||u.leg.s.state==='ok'))?riverBlocked:(wet(u.x,u.y)?riverBlocked:wet);}
+// knights, mounted knights, archers, siege crews and siege engines can't swim: the sea and Mirror Lake are walls to them too
+function uBlocked(u){const b=uBlocked0(u);if(!isSoldier(u))return b;return(x,y)=>b(x,y)||inSea(x,y)||inLake(x,y);}
 // slide along the riverbank toward the goal instead of getting stuck against the water
 function bankSlide(u,tx,ty,step,bl){bl=bl||riverBlocked;const a=Math.atan2(ty-u.y,tx-u.x),pref=u.slideSide||1;
   for(const k of[.5,1,1.5,2,2.5])for(const sd of[pref,-pref]){const b=a+sd*k,x=u.x+Math.cos(b)*step,y=u.y+Math.sin(b)*step;if(!bl(x,y)){u.x=x;u.y=y;u.slideSide=sd;return;}}}
@@ -59,7 +62,7 @@ function drawBridge(s){ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.ang);const
   if(s.state==='ok'&&s.hp<s.maxHp){rect(s.x-30,s.y+26,60,4,'#400');rect(s.x-30,s.y+26,60*s.hp/s.maxHp,4,'#f80');}}
 // dive slam: dropping out of the sky with F/Y next to things smashes them (the way to crack stone bridges)
 function diveSlam(){G.shake=Math.max(G.shake,16);rumble(1,.8,320);puff(D.x,D.y,46,'rgba(170,150,110,',300,20);float(D.x,D.y-90,'DIVE SLAM!','#ffd24a');HEAVY=true;
-  for(const s of structures)if(s.state!=='ruin'&&dist(s,D)<150)hurtStruct(s,s.kind==='bridge'&&s.mat==='stone'?110:45);HEAVY=false;
+  for(const s of structures)if(s.state!=='ruin'&&dist(s,D)<150)hurtStruct(s,stoneish(s)?110:45);HEAVY=false;
   for(const u of units)if(!u.dead&&!u.inside&&dist(u,D)<120&&u.type!=='animal')hurtUnit(u,30,'stomp');
   for(const g of siege)if(!g.dead&&dist(g,D)<140)hurtSiege(g,60);}
 function updBridges(dt){if(G.diveT&&D.alt<.08){if(G.t-G.diveT<3&&D.diveFrom>.6&&!G.over)shipSlam();if(G.t-G.diveT<3&&D.diveFrom>.85&&!G.over)diveSlam();G.diveT=0;}}

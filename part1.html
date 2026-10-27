@@ -1,21 +1,39 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a0e08">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dragon Rampage">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Dragon%27s%20Rampage%22%2C%22short_name%22%3A%22Dragon%20Rampage%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22landscape%22%2C%22background_color%22%3A%22%23111111%22%2C%22theme_color%22%3A%22%231a0e08%22%7D">
 <title>Dragon's Rampage</title>
 <style>
 html,body{margin:0;height:100%;background:#111;overflow:hidden;font-family:Georgia,'Times New Roman',serif}
-canvas{display:block;width:100vw;height:100vh;image-rendering:auto}
+canvas{display:block;width:100vw;height:100vh;image-rendering:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#safe{position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 </style></head><body>
-<canvas id="c"></canvas>
+<canvas id="c"></canvas><div id="safe"></div>
 <script>
 'use strict';
 // ======================= Dragon's Rampage =======================
 // You are the dragon. Burn, stomp and feast. The more damage you do,
 // the more the kingdom fights back: knights -> archers -> scorpions -> catapults.
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
-let VW=960,VH=640,DPR=1;
-function resize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=innerWidth;VH=innerHeight;cv.width=VW*DPR;cv.height=VH*DPR;}
-addEventListener('resize',resize);resize();
+let VW=960,VH=640,DPR=1,UIS=1;
+// touch devices (phones/tablets): coarse pointer. On small screens the whole game is drawn at a
+// larger logical size (UIS<1) so the HUD and world fit; the canvas backing store matches the real
+// device pixels (capped for speed: 2x, or 1.5x in Low graphics).
+const IS_TOUCH=(()=>{try{return matchMedia('(pointer:coarse)').matches;}catch(e){return false;}})();
+const SAFE={l:0,r:0,t:0,b:0};
+function resize(){const w=innerWidth,h=innerHeight;
+  UIS=IS_TOUCH?Math.min(1,Math.max(.5,Math.min(w,h)/520)):1;
+  let hi=true;try{hi=GFX_HI;}catch(e){}
+  const dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);
+  VW=Math.round(w/UIS);VH=Math.round(h/UIS);DPR=dpr*UIS;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';
+  try{const s=getComputedStyle(document.getElementById('safe'));SAFE.t=(parseFloat(s.paddingTop)||0)/UIS;SAFE.r=(parseFloat(s.paddingRight)||0)/UIS;SAFE.b=(parseFloat(s.paddingBottom)||0)/UIS;SAFE.l=(parseFloat(s.paddingLeft)||0)/UIS;}catch(e){}}
+addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));resize();
 const WW=3200,WH=2200;
 const TAU=Math.PI*2;
 const rnd=Math.random, R=(a,b)=>a+rnd()*(b-a), RI=(a,b)=>Math.floor(R(a,b+1));
@@ -41,11 +59,11 @@ const FARMS=[ // field rect, barn, pen
  {v:5,field:{x:760,y:2620,w:240,h:160,crop:'wheat'},barn:{x:300,y:2600},pen:{x:230,y:2930,w:150,h:110,animal:'sheep'}},
  {v:6,field:{x:2550,y:3050,w:220,h:150,crop:'corn'},barn:{x:2150,y:3080},pen:{x:2560,y:2640,w:150,h:110,animal:'pig'}},
  {v:7,field:{x:1000,y:3950,w:260,h:160,crop:'wheat'},barn:{x:520,y:4000},pen:{x:400,y:4200,w:150,h:110,animal:'cow'}},
- {v:8,field:{x:2350,y:4050,w:240,h:170,crop:'corn'},barn:{x:1900,y:4000},pen:{x:1860,y:4330,w:160,h:110,animal:'sheep'}},
+ {v:8,field:{x:2350,y:4050,w:240,h:170,crop:'corn'},barn:{x:1900,y:4000},pen:{x:1860,y:4170,w:160,h:110,animal:'sheep'}},
 ];
-const PADDOCKS=[{x:1950,y:930,w:300,h:170},{x:1100,y:2480,w:420,h:240},{x:1250,y:4300,w:460,h:230}]; // horse paddocks
+const PADDOCKS=[{x:1950,y:930,w:300,h:170},{x:1100,y:2480,w:420,h:240},{x:1300,y:4090,w:440,h:200}]; // horse paddocks
 const ROCKS=[]; // decorative hills/rocks (not burnable)
-const LAIR={x:3750,y:2500};        // the dragon's nest (deliver gold + princess here)
+const LAIR={x:2300,y:-1750};        // the dragon's nest on Dragon Peak, the highest summit of the Frostpeak Mountains (deliver gold + princess here)
 const CABIN={x:-1500,y:1100};         // hunter's cabin deep in the north-west forest
 const WILD={x:-1950,y:780,w:900,h:700}; // deer & rabbit range around the cabin
 const PONDS=[{x:1200,y:600,rx:70,ry:42},{x:2080,y:1430,rx:80,ry:46},{x:1500,y:3300,rx:520,ry:300,lake:1},{x:3000,y:3470,rx:110,ry:28,lake:1}];
@@ -57,8 +75,8 @@ let EASY=localStorage.getItem('dr_easy')==='1';
 // ---------- state ----------
 let PR, goldPiles, G, D, structures, trees, cells, units, siege, projs, boulders, carts, parts, texts, ground, gctx;
 let keys={}, pressed={}, scene='title', paused=false, last=0, best=+(localStorage.getItem('dr_best')||0);
-const THRESH=[10,28,50,75];
-const LEVEL_NAMES=['Calm','Knights','+ Archers','+ Scorpions','+ Catapults'];
+const THRESH=[13,28,44,60,76,90],ALARM_GAIN=.5; // wanted tiers: foot soldiers > knights > archers > mounted knights > siege > militia
+const LEVEL_NAMES=['Calm','Foot soldiers','+ Knights','+ Archers','+ Mounted knights','+ Siege','Militia'];
 
 function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
   seed=1337;
@@ -67,7 +85,7 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
      wood:8,stone:4,cartsPool:3,cartBuildT:0,spawnT:0,rebuildT:0,
      visited:{},region:null,regCand:null,regCandT:0,fc:0,patrolT:20,packAngry:{},faunaT:5,regBanner:null,
      stats:{regions:0,bridges:0,huts:0,barns:0,trees:0,crops:0,eaten:0,animals:0,knights:0,archers:0,siege:0,carts:0,piles:0,ships:0,pirates:0,squid:0,seaPts:0},score:0,over:false,overT:0,msg:null};
-  D={x:1600,y:1450,vx:0,vy:0,ang:-Math.PI/2,alt:0,altT:0,mode:"ground",hp:EASY?360:220,maxHp:EASY?360:220,gold:0,princess:false,st:100,maxSt:100,
+  D={x:LAIR.x,y:LAIR.y+150,vx:0,vy:0,ang:-Math.PI/2,alt:0,altT:0,mode:"ground",hp:EASY?360:220,maxHp:EASY?360:220,gold:0,princess:false,st:100,maxSt:100,
      breath:false,stompCD:0,stompT:0,eatCD:0,eatT:0,hurt:0,walkT:0,flapT:0,landDust:false,hunger:100,maxHunger:100,starveT:0,hungryWarn:false};
   structures=[];trees=[];cells=[];units=[];siege=[];projs=[];boulders=[];carts=[];parts=[];texts=[];ROCKS.length=0;patrols=[];FARSCORCH.length=0;
   // villages
@@ -115,7 +133,8 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
   // castle garrison: tower archers on the walls + gate guards
   const nT=Math.min(TOWER_SPOTS.length,Math.round((EASY?2:4)+(EASY?1:2)*(lvl-1))),nG=Math.min(12,Math.round((EASY?2:3)+(EASY?1:2)*(lvl-1)));
   for(let i=0;i<nT;i++)spawnPost('tower',i);for(let i=0;i<nG;i++)spawnPost('guard',i);
-  buildGround();buildTerrain();initFog();initSea();
+  initStructsK();
+  buildGround();buildTerrain();initFog();initSea();cam.x=D.x;cam.y=D.y;
 }
 function addStruct(kind,x,y,v){const hp={hut:90,barn:170,logpile:110,stonepile:140,cabin:120,gate:260,barracks:220,bridge:120}[kind];
   const s={kind,x,y,v,hp,maxHp:hp,fire:0,state:'ok',build:0,builder:null,id:Math.random()};structures.push(s);return s;}
@@ -132,11 +151,8 @@ function buildGround(){
   // rocky hills
   g.fillStyle='#8a7d68';g.beginPath();g.ellipse(2930,1300,330,400,0,0,TAU);g.fill();
   g.fillStyle='rgba(110,100,85,.6)';for(let i=0;i<200;i++){g.beginPath();g.arc(SR(2650,3200),SR(950,1650),SR(3,14),0,TAU);g.fill();}
-  // dirt roads: castle -> villages, camp, mine
-  g.strokeStyle='#a48a5c';g.lineCap='round';g.lineWidth=26;
-  const road=(a,b)=>{g.beginPath();g.moveTo(a.x,a.y);g.quadraticCurveTo((a.x+b.x)/2+SR(-80,80),(a.y+b.y)/2+SR(-80,80),b.x,b.y);g.stroke();};
-  VILLAGES.forEach(v=>road(GATE,v));road(VILLAGES[0],CAMP);road(VILLAGES[3],CAMP);road(VILLAGES[1],MINE);road(VILLAGES[4],STONEPILE_POS);road(VILLAGES[2],VILLAGES[3]);road(VILLAGES[2],VILLAGES[4]);
-  g.lineWidth=14;g.strokeStyle='#b89c6a';VILLAGES.forEach(v=>road(GATE,v));
+  // dirt roads (A*-routed network, see partR)
+  strokeRoads(g);
   VILLAGES.forEach(v=>{g.fillStyle='#a8915f';g.beginPath();g.ellipse(v.x,v.y,120,90,0,0,TAU);g.fill();});
   // fields soil
   FARMS.forEach(f=>{const F=f.field;g.fillStyle='#7a5a32';g.fillRect(F.x-4,F.y-4,F.w+8,F.h+8);
@@ -154,8 +170,7 @@ function buildGround(){
   // ponds (ducks & geese)
   PONDS.forEach(p=>{g.fillStyle='#4a6a3a';g.beginPath();g.ellipse(p.x,p.y,p.rx+10,p.ry+8,0,0,TAU);g.fill();g.fillStyle='#3a6aa8';g.beginPath();g.ellipse(p.x,p.y,p.rx,p.ry,0,0,TAU);g.fill();
     g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.ellipse(p.x-p.rx*.3,p.y-p.ry*.3,p.rx*.4,p.ry*.25,0,0,TAU);g.fill();});
-  // wells at every village centre (for the bucket brigade)
-  VILLAGES.forEach(v=>{g.fillStyle='#7a7a80';g.beginPath();g.arc(v.x,v.y,13,0,TAU);g.fill();g.fillStyle='#2a4a8a';g.beginPath();g.arc(v.x,v.y,8,0,TAU);g.fill();});
+  // (wells are stone structures now: see placeWells)
 }
 function scorch(x,y,r){if(x<r||y<r||x>WW-r||y>WH-r){scorchFar(x,y,r);return;}gctx.fillStyle='rgba(30,22,15,.55)';gctx.beginPath();gctx.ellipse(x,y,r,r*.75,0,0,TAU);gctx.fill();
   gctx.fillStyle='rgba(20,15,10,.35)';for(let i=0;i<5;i++){gctx.beginPath();gctx.arc(x+R(-r,r)*.7,y+R(-r,r)*.5,R(3,r*.4),0,TAU);gctx.fill();}}

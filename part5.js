@@ -14,39 +14,56 @@ function drawCastle(){if(GFX_HI){drawCastleHi();return;}const W=CWALL,th=22;
   for(let x=W.x0;x<W.x1;x+=22){rect(x,W.y0-th/2-7,12,8,'#a0a0a6');if(Math.abs(x-GATE.x)>50)rect(x,W.y1-th/2-7,12,8,'#9a9aa0');}
   rect(W.x0-th/2,W.y1-th/2+th-5,W.x1-W.x0+th,5,'#6a6a70');
   // keep (great hall)
-  rect(1540,80,140,70,'#9c9ca2');poly([1530,82,1610,40,1690,82],'#3f4a7a');rect(1596,120,28,30,'#3a2a20');
+  if(kUp('keep')){rect(1540,80,140,70,'#9c9ca2');poly([1530,82,1610,40,1690,82],'#3f4a7a');rect(1596,120,28,30,'#3a2a20');}
   ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle of King Aldric · Level ${G.lvl}`,1600,W.y0-30);
   // gold hoard piles
-  for(const g of goldPiles){if(g.amt<=0){ell(g.x,g.y,14,6,'rgba(90,70,30,.5)');continue;}const n=Math.min(14,Math.ceil(g.amt/3));ell(g.x,g.y+2,22,8,'#8a6a10');
+  for(const g of goldPiles){if(g.amt<=0){ell(g.x,g.y,14,6,'rgba(90,70,30,.5)');continue;}const n=Math.min(26,Math.ceil(g.amt/3));ell(g.x,g.y+2,22,8,'#8a6a10');
     for(let i=0;i<n;i++){const ang=i*2.4,rr=(i%4)*4;ell(g.x+Math.cos(ang)*rr*1.5,g.y-Math.floor(i/4)*4+Math.sin(ang)*rr*.4,6,3.4,i%2?'#ffd84a':'#f0b820');}
     if(Math.sin(G.t*3+g.x)>.85)ell(g.x+R(-8,8),g.y-8,2,2,'#fff');
     ctx.fillStyle='#ffe58a';ctx.font='bold 10px Georgia';ctx.textAlign='center';ctx.fillText(`${g.amt} gold`,g.x,g.y+18);}
   // corner towers
-  [[W.x0,W.y0],[W.x1,W.y0],[W.x0,W.y1],[W.x1,W.y1]].forEach(([x,y])=>tower(x,y+8,26,34,'#3f4a7a'));
+  [[W.x0,W.y0],[W.x1,W.y0],[W.x0,W.y1],[W.x1,W.y1]].forEach(([x,y],i)=>{if(kUp('ctower',s=>s.ti===i))tower(x,y+8,26,34,'#3f4a7a');});
   // princess tower (tall, pink roof)
-  const T=PRINCESS_TOWER;tower(T.x,T.y+30,20,70,'#d86aa8');line(T.x,T.y-86,T.x,T.y-110,'#333',2);poly([T.x,T.y-110,T.x+18,T.y-104,T.x,T.y-98],'#f6c');
+  const T=PRINCESS_TOWER;if(!kUp('ptower'))return;tower(T.x,T.y+30,20,70,'#d86aa8');line(T.x,T.y-86,T.x,T.y-110,'#333',2);poly([T.x,T.y-110,T.x+18,T.y-104,T.x,T.y-98],'#f6c');
   rect(T.x-7,T.y-30,14,16,'#2a1a14');
   if(PR.state==='tower'){drawPrincess(T.x,T.y-16,true);if(Math.sin(G.t*1.3)>.3){ctx.fillStyle='#fff';ctx.font='bold 11px Georgia';ctx.textAlign='center';ctx.fillText('Help! A dragon!',T.x,T.y-122);}}}
 function drawPrincess(x,y,wave,kick){const k=kick?Math.sin(G.t*14)*3:0;
   line(x-1.5,y+2,x-2-k,y+8,'#f0c8a0',1.5);line(x+1.5,y+2,x+2+k,y+8,'#f0c8a0',1.5);
   poly([x-6,y+4,x,y-10,x+6,y+4],'#ff7fc8');ell(x,y-12,3,3,'#f8d8b8');rect(x-3,y-15.5,6,2,'#ffd84a');poly([x-3,y-15.5,x-2,y-18,x,y-15.5,x+2,y-18,x+3,y-15.5],'#ffd84a');
-  const wv=wave?Math.sin(G.t*8)*3:0;line(x-3,y-7,x-8,y-12+wv,'#f8d8b8',1.4);line(x+3,y-7,x+8,y-12-wv,'#f8d8b8',1.4);}
-function drawLair(){const x=LAIR.x,y=LAIR.y;
-  for(let i=0;i<16;i++){const a=i/16*TAU;ell(x+Math.cos(a)*120,y+Math.sin(a)*80,24,16,i%2?'#4a3e32':'#5c4e3e');}
-  ell(x,y,95,62,'#3a2e24');for(let i=0;i<10;i++){const a=i*.7;line(x+Math.cos(a)*70,y+Math.sin(a)*45,x+Math.cos(a)*85,y+Math.sin(a)*50,'#e8e0c8',3);}
-  const n=Math.min(40,Math.ceil(G.stash/4));for(let i=0;i<n;i++){const a=i*2.4,rr=(i%6)*7;ell(x+Math.cos(a)*rr*1.4,y-Math.floor(i/6)*4+Math.sin(a)*rr*.5,7,4,i%2?'#ffd84a':'#f0b820');}
-  if(PR.state==='lair'){drawPrincess(x+40,y-6,false);ctx.fillStyle='#fff';ctx.font='bold 11px Georgia';ctx.textAlign='center';ctx.fillText('Hmph! ...this nest is actually quite comfy.',x+40,y-40);}
-  ctx.fillStyle='#ffd27a';ctx.font='bold 14px Georgia';ctx.textAlign='center';ctx.fillText(`Dragon's Lair · ${G.stash} gold stashed`,x,y-100);
-  if(D.princess||D.gold){ctx.strokeStyle=`rgba(255,220,100,${.5+.4*Math.sin(G.t*5)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y,120,80,0,0,TAU);ctx.stroke();}}
+  const wv=wave?Math.sin(G.t*8)*3:0;line(x-3,y-7,x-8,y-12+wv,'#f8d8b8',1.4);line(x+3,y-7,x+8,y-12-wv,'#f8d8b8',1.4);
+  if(!drawPrincess.noTag){ctx.font='bold 9px Georgia';ctx.textAlign='center';ctx.fillStyle='rgba(60,0,40,.75)';ctx.fillText('Princess Elizabeth',x+1,y-21);ctx.fillStyle='#ffb0dc';ctx.fillText('Princess Elizabeth',x,y-22);}}
+function drawLair(){const x=LAIR.x,y=LAIR.y; // a rocky cave-nest on the very top of Dragon Peak, the highest summit
+  // the summit massif (drawn under everything at the top of the mountains)
+  ell(x,y+60,300,150,'rgba(0,0,0,.18)');
+  poly([x-330,y+120,x-210,y-70,x-90,y-150,x+40,y-190,x+170,y-130,x+300,y-20,x+340,y+120],'#7d7f8c');
+  poly([x+40,y-190,x+170,y-130,x+300,y-20,x+340,y+120,x+90,y+120],'#666874');
+  poly([x-210,y-70,x-90,y-150,x+40,y-190,x+170,y-130,x+120,y-95,x+40,y-120,x-60,y-90,x-140,y-40],'#f4f8ff');
+  // cave mouth at the back of the nest
+  ell(x+10,y-70,90,56,'#4a4a52');ell(x+10,y-62,70,42,'#1a1418');ell(x+10,y-50,58,22,'#2a2024');
+  for(let i=0;i<7;i++){const a=Math.PI+i/6*Math.PI;ell(x+10+Math.cos(a)*84,y-70+Math.sin(a)*52,14,10,i%2?'#8a8c96':'#9a9ca6');}
+  // nest ring of boulders, sticks and snow
+  for(let i=0;i<18;i++){const a=i/18*TAU;ell(x+Math.cos(a)*120,y+20+Math.sin(a)*70,22,15,i%3?'#7a7a84':'#8e8e98');if(i%3===0)ell(x+Math.cos(a)*124,y+14+Math.sin(a)*70,14,6,'#f4f8ff');}
+  ell(x,y+20,98,58,'#5a4c3c');ell(x,y+22,84,48,'#6e5a44');
+  for(let i=0;i<14;i++){const a=i*.9;line(x+Math.cos(a)*60,y+20+Math.sin(a)*34,x+Math.cos(a+.5)*86,y+20+Math.sin(a+.4)*46,'#4a3826',3);}
+  // bones and an old skull
+  for(let i=0;i<6;i++){const a=i*1.1+.3,bx=x+Math.cos(a)*62,by=y+24+Math.sin(a)*32;line(bx-9,by-3,bx+9,by+3,'#efe8d4',3);ell(bx-9,by-3,3,3,'#efe8d4');ell(bx+9,by+3,3,3,'#efe8d4');}
+  ell(x-70,y+42,9,7,'#efe8d4');ell(x-73,y+41,2,2,'#333');ell(x-67,y+41,2,2,'#333');
+  // the hoard (partH): grows with the stash, from a few coins to a mountain of treasure
+  drawHoard();
+  // snow flurries
+  for(let i=0;i<10;i++){const t=(G.t*.3+i*.1)%1;ell(x-200+i*44+Math.sin(G.t+i)*10,y-160+t*260,2,2,'rgba(255,255,255,'+(1-t)*.8+')');}
+  if(PR.state==='lair'){drawPrincess(x+50,y+10,false);ctx.fillStyle='#fff';ctx.font='bold 11px Georgia';ctx.textAlign='center';ctx.fillText('Hmph! ...this nest is actually quite comfy. And COLD.',x+50,y-26);}
+  ctx.fillStyle='#ffd27a';ctx.font='bold 14px Georgia';ctx.textAlign='center';ctx.fillText(`Dragon's Lair (Dragon Peak) · ${G.stash} gold stashed`,x,y-150);
+  if(D.princess||D.gold){ctx.strokeStyle=`rgba(255,220,100,${.5+.4*Math.sin(G.t*5)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+20,130,80,0,0,TAU);ctx.stroke();}}
 function drawMine(){const x=MINE.x,y=MINE.y;ell(x,y-20,110,70,'#7d6f5b');ell(x-10,y-40,80,50,'#90826c');ell(x+40,y-60,50,30,'#9d8f78');
   ctx.fillStyle='#1a1410';ctx.beginPath();ctx.moveTo(x-26,y+14);ctx.lineTo(x-26,y-12);ctx.arc(x,y-12,26,Math.PI,0);ctx.lineTo(x+26,y+14);ctx.fill();
-  rect(x-30,y-40,6,54,'#6b4a26');rect(x+24,y-40,6,54,'#6b4a26');rect(x-34,y-44,68,8,'#7a5530');
+  if(kUp('minehead')){rect(x-30,y-40,6,54,'#6b4a26');rect(x+24,y-40,6,54,'#6b4a26');rect(x-34,y-44,68,8,'#7a5530');}
   line(x-20,y+30,x+60,y+120,'#555',3);line(x-6,y+26,x+74,y+116,'#555',3);
   ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText('Stone Mine',x,y-90);}
-function drawCamp(){const x=CAMP.x,y=CAMP.y;poly([x-30,y+10,x,y-34,x+30,y+10],'#c2ab7a','#7a6440');line(x,y-34,x,y+10,'#7a6440',1);
+function drawCamp(){const x=CAMP.x,y=CAMP.y;if(kUp('camptent'))poly([x-30,y+10,x,y-34,x+30,y+10],'#c2ab7a','#7a6440');line(x,y-34,x,y+10,'#7a6440',1);
   ell(x+50,y+30,12,8,'#8a6236');ell(x+50,y+27,10,6,'#b38a55');
   ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText('Logging Camp',x+20,y-50);}
-function drawWells(){for(const v of VILLAGES){rect(v.x-12,v.y-26,3,24,'#6b4a26');rect(v.x+9,v.y-26,3,24,'#6b4a26');poly([v.x-17,v.y-24,v.x,v.y-36,v.x+17,v.y-24],'#93622d');rect(v.x-1,v.y-24,2,12,'#888');}}
+function drawWells(){} // wells are real structures now (partR)
 function drawPen(P){ctx.strokeStyle='#7a5a30';ctx.lineWidth=2;ctx.strokeRect(P.x,P.y,P.w,P.h);ctx.lineWidth=1;
   for(let x=P.x;x<=P.x+P.w;x+=18){rect(x-1.5,P.y-5,3,8,'#6a4a22');rect(x-1.5,P.y+P.h-5,3,8,'#6a4a22');}
   for(let y=P.y;y<=P.y+P.h;y+=18){rect(P.x-1.5,y-5,3,8,'#6a4a22');rect(P.x+P.w-1.5,y-5,3,8,'#6a4a22');}}
@@ -68,6 +85,7 @@ function drawTree(t){const s=t.s;
   if(t.claimed&&t.claimed.state==='chop')ctx.translate(Math.sin(G.t*30)*.8,0);
   ctx.restore();}
 function drawStruct(s){const x=s.x,y=s.y,b=s.state==='building'?s.build:1;
+  if(drawStructK(s))return;
   if(GFX_HI&&s.state==='ok'&&drawStructHi(s))return;
   if(s.kind==='gate'){if(s.state==='ruin'){rect(x-40,y-30,80,30,'#2b2018');for(let i=0;i<6;i++)line(x-34+i*13,y,x-30+i*13+(i%2?8:-6),y-14-(i%3)*5,'#1a120c',3);if(s.paid){ctx.fillStyle='#fff';ctx.font='10px Georgia';ctx.textAlign='center';ctx.fillText('awaiting builder',x,y-40);}return;}
     const open=clamp(G.gateOpenT,0,1);rect(x-44,y-58,10,60,'#7d7d83');rect(x+34,y-58,10,60,'#7d7d83');rect(x-46,y-64,92,10,'#8d8d92');
@@ -105,6 +123,7 @@ function drawPerson(u){const x=u.x,y=u.y,bob=Math.sin(u.anim)*1.2,f=u.face;
     if(u.mode==='dagger'){const st=u.stab>0?5:0;line(x+f*2,y-8,x+f*(6+st),y-9,'#ddd',1.6);rect(x+f*2-1,y-9,2,2,'#6b4a26');}
     else{ctx.strokeStyle='#5a3a16';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x+f*3,y-8,5.5,-Math.PI/2,Math.PI/2,f<0);ctx.stroke();if(u.draw>0)line(x+f*3,y-13.5,x-f*1,y-8,'#ddd',.8);}
     if(u.hp<u.maxHp){rect(x-7,y-22,14,2,'#400');rect(x-7,y-22,14*u.hp/u.maxHp,2,'#e44');}ctx.restore();return;}
+  if(u.militia)drawMilitiaKit(u,x,y,f||1,bob);
   if(u.carry==='bucket'){line(x+f*3,y-8,x+f*5,y-4,'#555',1);rect(x+f*5-2.5,y-4,5,4.5,'#7a5530');ell(x+f*5,y-4,2.5,1,'#6af');}
   else if(u.water){rect(x+f*4-2.5,y-5,5,4.5,'#7a5530');}
   if(u.type==='archer'){if(u.post)ell(x,y+1,6,2.5,'rgba(255,220,120,.35)');ctx.strokeStyle='#6b4a26';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(x+f*3,y-8,4,-Math.PI/2,Math.PI/2,f<0);ctx.stroke();rect(x-2.8,y-15,5.6,2,'#2f5a2a');}
@@ -114,7 +133,7 @@ function drawPerson(u){const x=u.x,y=u.y,bob=Math.sin(u.anim)*1.2,f=u.face;
   else if(u.job==='farmer'){rect(x-4,y-15.5,8,1.6,'#d8c070');if(u.state==='work'){const a=Math.sin(u.anim*1.5)*.6;line(x,y-8,x+f*6,y-2+a*3,'#6b4a26',1.3);}}
   else if(u.task&&u.state==='build'){const a=Math.sin(u.anim*3);line(x,y-9,x+f*5,y-11+a*3,'#555',1.4);}
   if(u.state==='flee'&&u.type!=='crew'){ctx.fillStyle='#fff';ctx.font='bold 9px Georgia';ctx.textAlign='center';ctx.fillText('!',x,y-17);}}
-const FAUNA_ART=new Set(['fish','horse','boar','fox','wolf','bear','beaver','goat','mgoat','crab','seal']);
+const FAUNA_ART=new Set(['fish','horse','boar','fox','wolf','bear','beaver','goat','mgoat','cougar','crab','seal']);
 function drawAnimal(u){drawAnimal0(u);if(GFX_HI&&!u.burn)furHi(u);}
 function drawAnimal0(u){if(FAUNA_ART.has(u.species)){drawFauna(u);return;}const x=u.x,y=u.y,s=u.species,b=Math.abs(Math.sin(u.anim))*1;
   ell(x,y+1,s==='cow'?9:7,3,'rgba(0,0,0,.2)');
@@ -126,7 +145,7 @@ function drawAnimal0(u){if(FAUNA_ART.has(u.species)){drawFauna(u);return;}const 
     line(x+u.face*9,y-13-b,x+u.face*7,y-19-b,'#5a3a1a',1.2);line(x+u.face*10,y-13-b,x+u.face*12,y-19-b,'#5a3a1a',1.2);ell(x-u.face*8,y-8-b,1.8,1.6,'#fff');}
   else{ell(x,y-5-b,7,4.5,'#f0a8b0');ell(x+u.face*6.5,y-5-b,2.5,2.2,'#e08890');}
   if(u.burn>0)ell(x,y-6,6,4,'rgba(255,120,0,.6)');}
-function drawKnight(u){if(u.mounted){drawCavalry(u);return;}const x=u.x,y=u.y,f=u.face,g=Math.sin(u.anim*1.5);
+function drawKnight(u){if(u.mounted){drawCavalry(u);return;}if(u.foot){drawFootman(u);return;}const x=u.x,y=u.y,f=u.face,g=Math.sin(u.anim*1.5);
   ell(x,y+2,10,3.5,'rgba(0,0,0,.25)');
   for(let i=-1;i<=1;i+=2){line(x+i*5,y-4,x+i*5+g*2*i,y+1,'#4a2e16',1.6);}
   ell(x,y-6,10,4.5,u.burn>0?'#a64':'#7a4a24');ell(x+f*10,y-9,4,2.8,'#7a4a24');rect(x-4,y-9,8,2,u.colr);
@@ -154,7 +173,7 @@ function drawCart(c){ell(c.x,c.y+3,11,4,'rgba(0,0,0,.25)');
   rect(c.x-9,c.y-9,18,9,c.fire?'#6a3a1a':'#7a5530');for(let i=0;i<c.stone*3;i++)ell(c.x-5+(i%3)*5,c.y-10,2.8,2.2,'#9a948a');ell(c.x-6,c.y,3,3,'#333');ell(c.x+6,c.y,3,3,'#333');}
 
 function drawDragon(){const h=heightOf(),x=D.x,y=D.y,a=D.ang,alt=D.alt;
-  const wOpen=clamp((alt-0.03)/0.45,0,1),flap=Math.sin(D.flapT);
+  const wOpen=clamp((alt-0.03)/0.45,0,1)*(D.diving?.15:1),flap=Math.sin(D.flapT);
   if(GFX_HI&&!D.swim){drawDragonHi(x,y,a,alt,h,wOpen,flap);}else{
   // shadow
   if(!D.swim){ctx.save();ctx.translate(x+h*.25,y+h*.12);ctx.scale(DS,DS);ctx.rotate(a);ctx.globalAlpha=.32-.12*alt;const ss=1-.15*alt;

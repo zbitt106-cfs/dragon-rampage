@@ -1,5 +1,5 @@
 // ======================= the big explorable world: regions, terrain, decor, fog of war =======================
-const WX0=-3400,WY0=-2600,WX1=9800,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
+const WX0=-10200,WY0=-2600,WX1=9800,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
 const coastX=y=>5500+140*Math.sin(y/530)+60*Math.sin(y/190+1);
 const coastY=x=>4450+110*Math.sin(x/470)+50*Math.sin(x/170+2);
 const frostY=x=>-260+90*Math.sin(x/420)+40*Math.sin(x/150);
@@ -12,7 +12,8 @@ function vnoise(x,y){const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx
 function fbm(x,y){return vnoise(x,y)*.5+vnoise(x*2.1+5,y*2.1+3)*.3+vnoise(x*4.3+9,y*4.3+1)*.2;}
 function riverD(x,y){let m=1e9;for(let i=0;i<RIVER.length-1;i++){const[ax,ay]=RIVER[i],[bx,by]=RIVER[i+1],dx=bx-ax,dy=by-ay;
   const t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy),0,1);const d=Math.hypot(x-ax-dx*t,y-ay-dy*t);if(d<m)m=d;}return m;}
-const inLake=(x,y)=>{const dx=(x-LAKE.x)/LAKE.rx,dy=(y-LAKE.y)/LAKE.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<1+.07*Math.sin(a*5)+.04*Math.sin(a*9);};
+const inLake=(x,y)=>inOasis(x,y)||inLake0(x,y);
+const inLake0=(x,y)=>{const dx=(x-LAKE.x)/LAKE.rx,dy=(y-LAKE.y)/LAKE.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<1+.07*Math.sin(a*5)+.04*Math.sin(a*9);};
 const LH={x:7350,y:2100,r:290}; // the Lonely Lighthouse island, just before the deep water
 const onIsle=(x,y)=>{const dx=x-LH.x,dy=(y-LH.y)*1.25,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(LH.r*(1+.1*Math.sin(a*5)+.06*Math.sin(a*3+1)))**2;};
 const seaD=(x,y)=>Math.max(x-coastX(y),y-coastY(x));
@@ -20,19 +21,31 @@ const DEEPX=y=>7900+120*Math.sin(y/600); // east of this the Kraken Deep begins
 const inSea=(x,y)=>(x>coastX(y)||y>coastY(x))&&!onIsle(x,y);
 const inDeep=(x,y)=>x>DEEPX(y)&&inSea(x,y);
 const inWater=(x,y)=>inSea(x,y)||inLake(x,y)||riverD(x,y)<RIVW;
+// ---------- shore safety: no farm, pen, field, paddock or barn may touch water (with a margin of clean sand/grass) ----------
+const SHORE_M=40;
+function boxWet(x0,y0,x1,y1,m){m=m===undefined?SHORE_M:m;for(let x=x0-m;x<=x1+m;x+=8)for(let y=y0-m;y<=y1+m;y+=8)if(inWater(x,y))return true;return false;}
+function inlandBox(b,w,h,ax,ay){ // nudge a footprint {x,y} (top-left) toward (ax,ay) until it is dry
+  for(let k=0;k<80&&boxWet(b.x,b.y,b.x+w,b.y+h);k++){const cx=b.x+w/2,cy=b.y+h/2,d=Math.hypot(ax-cx,ay-cy)||1;b.x+=(ax-cx)/d*12;b.y+=(ay-cy)/d*12;}
+  b.x=Math.round(b.x);b.y=Math.round(b.y);return b;}
+function fixShoreFootprints(){
+  for(const f of FARMS){const v=VILLAGES[f.v];inlandBox(f.field,f.field.w,f.field.h,v.x,v.y);inlandBox(f.pen,f.pen.w,f.pen.h,v.x,v.y);
+    const bb={x:f.barn.x-40,y:f.barn.y-40};inlandBox(bb,80,60,v.x,v.y);f.barn.x=bb.x+40;f.barn.y=bb.y+40;}
+  for(const P of PADDOCKS)inlandBox(P,P.w,P.h,1600,1450);}
+fixShoreFootprints();
 const onBeach=(x,y)=>!inSea(x,y)&&!onIsle(x,y)&&(x>coastX(y)-170||y>coastY(x)-150);
 const REGION_NAMES={farm:'The Kingdom Farmlands',castle:'Castle Aldric',forest:'The Deepwood',hills:'The Rocky Hills',lake:'Mirror Lake & the Silver River',
-  mountain:'The Frostpeak Mountains',coast:'The Sapphire Coast',south:'The Southern Farmlands',lair:"Dragon's Roost (home)",sea:'The Sapphire Sea',isle:'The Lonely Lighthouse',deep:'The Kraken Deep'};
-const REGION_SUB={farm:'Villages, farms and fat, tasty livestock',castle:'Gold, guards and a princess in the pink tower',forest:"Deer, boars, wolves, bears and the hunter's cabin",
+  mountain:'The Frostpeak Mountains',coast:'The Sapphire Coast',south:'The Southern Farmlands',lair:"Dragon's Roost (home)",sea:'The Sapphire Sea',isle:'The Lonely Lighthouse',deep:'The Kraken Deep',desert:'The Scorching Sands'};
+const REGION_SUB={farm:'Villages, farms and fat, tasty livestock',castle:'Gold, guards and Princess Elizabeth in the pink tower',forest:"Deer, boars, wolves, bears and the hunter's cabin",
   hills:'The mine, goats and rocky crags',lake:'Ducks, geese, jumping fish and busy beavers',mountain:'Snowy cliffs, mountain goats, eagles and hawks',
-  coast:'Seagulls, crabs and lazy seals',south:'More villages and farms to explore',lair:'Your home base: land here to rest and heal',sea:'Swim or soar: fish, sharks, whales, boats and pirates!',isle:'A quiet rest stop: catch your breath and heal',deep:'Something huge stirs below... the GIANT SQUID'};
-const REGION_LABEL={farm:[1000,1500],castle:[1600,-60],forest:[-1700,1700],hills:[4300,1300],lake:[1700,3650],mountain:[1500,-1500],coast:[5650,2400],south:[700,3500],lair:[3750,2330],sea:[6500,4900],isle:[7350,2480],deep:[8850,900]};
+  coast:'Seagulls, crabs and lazy seals',south:'More villages and farms to explore',lair:'Your home base: land here to rest and heal',sea:'Swim or soar: fish, sharks, whales, boats and pirates!',isle:'A quiet rest stop: catch your breath and heal',deep:'Something huge stirs below... the GIANT SQUID',desert:'Dunes, cacti, camels, scorpions… and something under the sand'};
+const REGION_LABEL={farm:[1000,1500],castle:[1600,-60],forest:[-1700,1700],hills:[4300,1300],lake:[1700,3650],mountain:[1500,-1500],coast:[5650,2400],south:[700,3500],lair:[LAIR.x,LAIR.y-260],sea:[6500,4900],isle:[7350,2480],deep:[8850,900],desert:[-6600,1150]};
 function regionKey(x,y){
   if(d2(x,y,LAIR.x,LAIR.y)<420)return'lair';
   {const dx=x-LH.x,dy=y-LH.y;if(dx*dx+dy*dy<470*470)return'isle';}
   if(inSea(x,y)){if(inDeep(x,y))return'deep';return seaD(x,y)<260?'coast':'sea';}
   if(x>coastX(y)-260||y>coastY(x)-220)return'coast';
-  if(y<frostY(x)||x<-2950)return'mountain';
+  if(y<frostY(x)||inRange(x,y)||x<WX0+650)return'mountain';
+  if(x<RANGE0)return'desert';
   if(x<forestX(y))return'forest';
   if(x>1220&&x<1980&&y<470)return'castle';
   {const dx=(x-LAKE.x)/(LAKE.rx+260),dy=(y-LAKE.y)/(LAKE.ry+220);if(dx*dx+dy*dy<1||riverD(x,y)<230)return'lake';}
@@ -50,7 +63,8 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
     else if(inSea(x,y)){const dd=Math.max(x-coastX(y),y-coastY(x));c=mix([84,165,200],[26,66,138],clamp(dd/600,0,1));if(dd<22)c=mix([220,240,245],c,dd/22);c=mix(c,[255,255,255],(n-.5)*.12+.03);}
     else if(inLake(x,y)||riverD(x,y)<RIVW){const ld=riverD(x,y);c=[58,108,172];if(ld<RIVW&&ld>RIVW-8)c=[90,140,190];c=mix(c,[30,70,140],n*.3);}
     else if(onBeach(x,y)){c=mix([230,212,155],[205,185,130],n);}
-    else if(wy<frostY(wx)||wx<-2950){const t=clamp((frostY(wx)-wy)/500,0,1)+(wx<-2950?clamp((-2950-wx)/300,0,1):0);c=mix([118,132,100],[238,242,250],clamp(t,0,1));if(n>.6)c=mix(c,[130,130,140],.7);}
+    else if(wy<frostY(wx)||inRange(wx,wy)||wx<WX0+650){const t=clamp((frostY(wx)-wy)/500,0,1)+(inRange(wx,wy)?clamp(Math.min(wx-RANGE0,RANGE1-wx,passEdge(wx,wy))/260,0,1):0)+(wx<WX0+650?clamp((WX0+650-wx)/300,0,1):0);c=mix([118,132,100],[238,242,250],clamp(t,0,1));if(n>.6)c=mix(c,[130,130,140],.7);}
+    else if(wx<RANGE0){c=desertCol(x,y,n);}
     else if(wx<forestX(wy)){c=mix([40,76,36],[58,96,44],n);}
     else if((wx>3250&&wy<3000)||(wx>2650&&wy>900&&wy<1700&&x>2600)){c=mix([112,132,82],[146,130,106],clamp(n*1.6-.3,0,1));}
     else{c=mix([86,134,56],[112,158,70],n);if(fbm(x/900+7,y/900)>.66)c=mix(c,[132,160,74],.5);}
@@ -60,19 +74,19 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   g.putImageData(im,0,0);
   // roads, plazas, fields & clearings outside the detailed core map (painted at low res)
   g.save();g.setTransform(1/TS,0,0,1/TS,-WX0/TS,-WY0/TS);g.beginPath();g.rect(WX0,WY0,WX1-WX0,WY1-WY0);g.rect(30,30,WW-60,WH-60);g.clip('evenodd');
-  g.lineCap='round';const road=(a,b,w,st)=>{g.strokeStyle='#a48a5c';g.lineWidth=w||26;g.beginPath();g.moveTo(a.x,a.y);if(st){g.lineTo(b.x,b.y);g.stroke();return;}g.quadraticCurveTo((a.x+b.x)/2+((a.x*7+b.y)%160-80),(a.y+b.y)/2+((a.y*3+b.x)%160-80),b.x,b.y);g.stroke();};
-  const V=VILLAGES,S={x:1600,y:2100};road(V[2],S);road(V[3],S);road(S,V[5]);road(S,V[6]);road(V[5],V[7]);road(V[6],V[8],26,1);road(V[6],V[11],26,1);road(V[10],V[11],22,1);road(V[7],V[8]);
-  road(V[1],V[9]);road(MINE,V[9]);road(V[9],V[10]);road(CAMP,CABIN,20);road(V[4],LAIR,18);road(V[0],{x:800,y:-400},18);
+  strokeRoads(g);const V=VILLAGES;
   for(let i=5;i<V.length;i++){const v=V[i];g.fillStyle='#a8915f';g.beginPath();g.ellipse(v.x,v.y,120,90,0,0,TAU);g.fill();}
   FARMS.forEach(f=>{const F=f.field;g.fillStyle='#7a5a32';g.fillRect(F.x-4,F.y-4,F.w+8,F.h+8);const P=f.pen;g.fillStyle='#7fa84a';g.fillRect(P.x,P.y,P.w,P.h);});
   PADDOCKS.forEach(P=>{g.fillStyle='#86ad52';g.fillRect(P.x,P.y,P.w,P.h);});
   g.fillStyle='rgba(30,60,26,.6)';g.beginPath();g.ellipse(CABIN.x,CABIN.y,110,80,0,0,TAU);g.fill();g.fillStyle='#8a7a62';g.beginPath();g.ellipse(CABIN.x+10,CABIN.y+20,70,45,0,0,TAU);g.fill();
-  g.fillStyle='#5a4a3a';g.beginPath();g.ellipse(LAIR.x,LAIR.y,200,140,0,0,TAU);g.fill();g.fillStyle='#6e5d48';g.beginPath();g.ellipse(LAIR.x,LAIR.y,140,95,0,0,TAU);g.fill();
+  g.fillStyle='#8c8e98';g.beginPath();g.ellipse(LAIR.x,LAIR.y+40,330,250,0,0,TAU);g.fill();g.fillStyle='#e8eef6';g.beginPath();g.ellipse(LAIR.x,LAIR.y+40,260,190,0,0,TAU);g.fill();g.fillStyle='#6e6a66';g.beginPath();g.ellipse(LAIR.x,LAIR.y,150,100,0,0,TAU);g.fill();
   g.restore();
   // decor (purely visual, never blocks movement)
   let s=4242;const r=()=>{s=Math.imul(s^s>>>15,2246822519)+0x9E3779B9|0;return((s^s>>>13)>>>0)/4294967296;},Rr=(a,b)=>a+r()*(b-a);DECOR=[];
-  for(let y=WY0+100;y<-1050;y+=200)for(let x=WX0+60;x<WX1;x+=230+Rr(-40,40)){const xx=x+Rr(-60,60),yy=y+Rr(-60,60);if(!inSea(xx,yy))DECOR.push({k:'peak',x:xx,y:yy,w:Rr(200,360),h:Rr(.7,1)});}
-  for(let y=-1000;y<WY1-300;y+=210)for(let x=WX0+40;x<-3000;x+=200)DECOR.push({k:'peak',x:x+Rr(-50,50),y:y+Rr(-50,50),w:Rr(180,300),h:Rr(.6,.9)});
+  for(let y=WY0+100;y<-1050;y+=200)for(let x=WX0+60;x<WX1;x+=230+Rr(-40,40)){const xx=x+Rr(-60,60),yy=y+Rr(-60,60);if(!inSea(xx,yy)&&!(Math.abs(xx-LAIR.x)<480&&yy>LAIR.y-320&&yy<LAIR.y+760))DECOR.push({k:'peak',x:xx,y:yy,w:Rr(200,360),h:Rr(.7,1)});}
+  for(let y=-1000;y<WY1-300;y+=210)for(let x=WX0+40;x<WX0+640;x+=200)DECOR.push({k:'peak',x:x+Rr(-50,50),y:y+Rr(-50,50),w:Rr(180,300),h:Rr(.6,.9)});
+  for(let y=-1000;y<coastY(-3300)-150;y+=190)for(let x=RANGE0+90;x<RANGE1-60;x+=190){const xx=x+Rr(-40,40),yy=y+Rr(-40,40);if(inRange(xx,yy)&&passEdge(xx,yy)>90)DECOR.push({k:'peak',x:xx,y:yy,w:Rr(170,280),h:Rr(.6,.9)});}
+  addDesertDecor(r,Rr);
   for(let i=0;i<90;i++){const x=Rr(-2800,5200),y=Rr(-1000,-320);if(y<frostY(x)-60)DECOR.push({k:'cliff',x,y,r:Rr(30,55)});}
   for(let i=0;i<220;i++){const x=Rr(-2900,5300),y=Rr(-1050,-150);if(y<frostY(x)+20)DECOR.push({k:'pine',x,y,s:Rr(.8,1.3)});}
   for(let i=0;i<70;i++){const a=Rr(0,TAU),x=LAKE.x+Math.cos(a)*LAKE.rx*Rr(1.02,1.12),y=LAKE.y+Math.sin(a)*LAKE.ry*Rr(1.02,1.12);DECOR.push({k:'reed',x,y});}
@@ -80,8 +94,8 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   for(let i=0;i<14;i++){const y=Rr(0,4200);DECOR.push({k:'searock',x:coastX(y)-Rr(10,90),y,r:Rr(18,32)});}
   for(let i=0;i<6;i++){const x=Rr(500,5000);DECOR.push({k:'searock',x,y:coastY(x)-Rr(10,80),r:Rr(18,30)});}
   DECOR.push({k:'lodge',x:LAKE.x-LAKE.rx*.9,y:LAKE.y+LAKE.ry*.45},{k:'lodge',x:3300,y:3600-RIVW});
-  DECOR.push({k:'sign',x:LAIR.x-150,y:LAIR.y+120});addIsleDecor();}
-function drawDecor(o){const x=o.x,y=o.y;if(GFX_HI&&drawDecorHi(o)!==false)return;if(o.k==='lighthouse'){drawLighthouse(o);return;}if(o.k==='dock'){drawDock(o);return;}if(o.k==='isrock'){drawSeaRock(o);return;}
+  DECOR.push({k:'sign',x:LAIR.x-170,y:LAIR.y+150});addIsleDecor();}
+function drawDecor(o){const x=o.x,y=o.y;if((o.k==='cactus'||o.k==='palm'||o.k==='mesa'||o.k==='bones')&&drawDesertDecor(o))return;if(GFX_HI&&drawDecorHi(o)!==false)return;if(o.k==='lighthouse'){drawLighthouse(o);return;}if(o.k==='dock'){drawDock(o);return;}if(o.k==='isrock'){drawSeaRock(o);return;}
   if(o.k==='peak'){const w=o.w,h=w*o.h;ell(x,y+4,w*.55,w*.14,'rgba(0,0,0,.2)');poly([x-w/2,y,x,y-h,x+w/2,y],'#7d7f8c');poly([x,y-h,x+w/2,y,x+w*.08,y],'#666874');
     poly([x-w*.17,y-h*.66,x,y-h,x+w*.17,y-h*.66,x+w*.07,y-h*.6,x,y-h*.68,x-w*.08,y-h*.6],'#f4f6fb');}
   else if(o.k==='cliff'){const r=o.r;ell(x,y+3,r*1.1,r*.35,'rgba(0,0,0,.25)');poly([x-r,y,x-r*.7,y-r*1.2,x+r*.2,y-r*1.5,x+r,y-r*.8,x+r*1.05,y],'#8a8578');poly([x+r*.2,y-r*1.5,x+r,y-r*.8,x+r*1.05,y,x+r*.3,y],'#6f6a60');
@@ -120,7 +134,7 @@ function updWorld(dt){
   // soft world edges: the far ocean and the northern peaks gently push the dragon back
   const push=(v,a,b)=>v<a?(a-v):v>b?(b-v):0;const px=push(D.x,WX0+220,WX1-220),py=push(D.y,WY0+260,WY1-220);
   if(px||py){D.x+=px*2*dt;D.y+=py*2*dt;if(!G.edgeMsgT||G.t-G.edgeMsgT>6){G.edgeMsgT=G.t;float(D.x,D.y-90,D.y<WY0+400?'The peaks are too high to cross!':D.x<WX0+400?'Endless crags block the way':'The open sea stretches forever...','#cfe8ff');}}}
-function drawRegionBanner(){const b=G.regBanner;if(!b)return;const al=clamp(Math.min(b.t,3.2-b.t)*2.5,0,1),sm=VW<760;ctx.globalAlpha=al;const y=sm?150:132;
+function drawRegionBanner(){const b=G.regBanner;if(!b)return;const al=clamp(Math.min(b.t,3.2-b.t)*2.5,0,1),sm=VW<760;ctx.globalAlpha=al;const y=(sm?150:132)+(typeof gateBroken==='function'&&gateBroken()&&!sm?26:0)+(typeof raidHudOn==='function'&&raidHudOn()&&!sm?24:0);
   const name=REGION_NAMES[b.k];ctx.font=`bold ${sm?18:26}px Georgia`;const w=Math.max(ctx.measureText(name).width+70,sm?260:380);
   ctx.fillStyle='rgba(20,24,40,.72)';ctx.fillRect(VW/2-w/2,y-30,w,b.first?74:58);ctx.strokeStyle='rgba(255,215,120,.7)';ctx.strokeRect(VW/2-w/2+.5,y-29.5,w-1,(b.first?74:58)-1);
   txt(`~ ${name} ~`,VW/2,y,sm?18:26,'#ffe6a0','center');txt(REGION_SUB[b.k],VW/2,y+20,sm?11:13,'#ddd','center',false);if(b.first)txt('New region discovered! +100',VW/2,y+38,sm?11:13,'#9fffa8','center');ctx.globalAlpha=1;}
