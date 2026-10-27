@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Dragon's Rampage</title>
+<style>
+html,body{margin:0;height:100%;background:#111;overflow:hidden;font-family:Georgia,'Times New Roman',serif}
+canvas{display:block;width:100vw;height:100vh;image-rendering:auto}
+</style></head><body>
+<canvas id="c"></canvas>
+<script>
+'use strict';
+// ======================= Dragon's Rampage =======================
+// You are the dragon. Burn, stomp and feast. The more damage you do,
+// the more the kingdom fights back: knights -> archers -> scorpions -> catapults.
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+let VW=960,VH=640,DPR=1;
+function resize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=innerWidth;VH=innerHeight;cv.width=VW*DPR;cv.height=VH*DPR;}
+addEventListener('resize',resize);resize();
+const WW=3200,WH=2200;
+const TAU=Math.PI*2;
+const rnd=Math.random, R=(a,b)=>a+rnd()*(b-a), RI=(a,b)=>Math.floor(R(a,b+1));
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y), d2=(ax,ay,bx,by)=>Math.hypot(ax-bx,ay-by);
+const angDiff=(a,b)=>{let d=(a-b)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;return d;};
+let seed=1337; const srnd=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const SR=(a,b)=>a+srnd()*(b-a);
+
+// ---------- layout ----------
+const CASTLE={x:1600,y:190,w:560,h:250}, GATE={x:1600,y:330};
+const VILLAGES=[{x:800,y:720},{x:2400,y:720},{x:1600,y:1150},{x:900,y:1720},{x:2350,y:1720},
+  {x:500,y:2750,name:'Millbrook'},{x:2350,y:2900,name:'Riverbend'},{x:800,y:4050,name:'Southwold'},{x:2150,y:4150,name:'Haybury'},{x:4000,y:700,name:'Stonebrook'},{x:5050,y:1500,name:'Saltmere'},{x:4300,y:4100,name:'Crabhaven'}];
+const CAMP={x:470,y:1220};        // logging camp at west forest edge
+const MINE={x:2860,y:1260};       // mine entrance in eastern rocky hills
+const LOGPILE_POS={x:560,y:1300}, STONEPILE_POS={x:2700,y:1380};
+const FARMS=[ // field rect, barn, pen
+ {v:0,field:{x:420,y:560,w:240,h:170,crop:'wheat'},barn:{x:520,y:800},pen:{x:380,y:830,w:150,h:110,animal:'sheep'}},
+ {v:1,field:{x:2560,y:560,w:240,h:170,crop:'corn'},barn:{x:2680,y:800},pen:{x:2780,y:700,w:150,h:120,animal:'cow'}},
+ {v:2,field:{x:1300,y:1250,w:200,h:150,crop:'wheat'},barn:{x:1250,y:1080},pen:{x:1780,y:1260,w:150,h:110,animal:'pig'}},
+ {v:3,field:{x:1060,y:1820,w:260,h:160,crop:'corn'},barn:{x:620,y:1780},pen:{x:640,y:1880,w:160,h:110,animal:'cow'}},
+ {v:4,field:{x:1980,y:1800,w:240,h:170,crop:'wheat'},barn:{x:2600,y:1760},pen:{x:2560,y:1850,w:160,h:110,animal:'sheep'}},
+ {v:5,field:{x:760,y:2620,w:240,h:160,crop:'wheat'},barn:{x:300,y:2600},pen:{x:230,y:2930,w:150,h:110,animal:'sheep'}},
+ {v:6,field:{x:2550,y:3050,w:220,h:150,crop:'corn'},barn:{x:2150,y:3080},pen:{x:2560,y:2640,w:150,h:110,animal:'pig'}},
+ {v:7,field:{x:1000,y:3950,w:260,h:160,crop:'wheat'},barn:{x:520,y:4000},pen:{x:400,y:4200,w:150,h:110,animal:'cow'}},
+ {v:8,field:{x:2350,y:4050,w:240,h:170,crop:'corn'},barn:{x:1900,y:4000},pen:{x:1860,y:4330,w:160,h:110,animal:'sheep'}},
+];
+const PADDOCKS=[{x:1950,y:930,w:300,h:170},{x:1100,y:2480,w:420,h:240},{x:1250,y:4300,w:460,h:230}]; // horse paddocks
+const ROCKS=[]; // decorative hills/rocks (not burnable)
+const LAIR={x:3750,y:2500};        // the dragon's nest (deliver gold + princess here)
+const CABIN={x:-1500,y:1100};         // hunter's cabin deep in the north-west forest
+const WILD={x:-1950,y:780,w:900,h:700}; // deer & rabbit range around the cabin
+const PONDS=[{x:1200,y:600,rx:70,ry:42},{x:2080,y:1430,rx:80,ry:46},{x:1500,y:3300,rx:520,ry:300,lake:1},{x:3000,y:3470,rx:110,ry:28,lake:1}];
+const PRINCESS_TOWER={x:1790,y:125};
+const CWALL={x0:1320,x1:1880,y0:65,y1:315}; // castle wall rectangle
+const TOWER_SPOTS=[[1320,65],[1880,65],[1320,315],[1880,315],[1460,65],[1740,315],[1320,190],[1880,190],[1460,315],[1600,65],[1740,65],[1530,315]];
+let EASY=localStorage.getItem('dr_easy')==='1';
+
+// ---------- state ----------
+let PR, goldPiles, G, D, structures, trees, cells, units, siege, projs, boulders, carts, parts, texts, ground, gctx;
+let keys={}, pressed={}, scene='title', paused=false, last=0, best=+(localStorage.getItem('dr_best')||0);
+const THRESH=[10,28,50,75];
+const LEVEL_NAMES=['Calm','Knights','+ Archers','+ Scorpions','+ Catapults'];
+
+function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
+  seed=1337;
+  G={lvl,bank:opt.bank||0,easy:EASY,dmgMul:EASY?.55:1,alarmMul:EASY?.75:1,waveMul:(EASY?.5:1)*(1+.25*(lvl-1)),gold:0,stash:0,won:false,wonT:0,spawnQ:[],spawnQT:0,gateOpenT:0,postT:0,hunterT:3,quipT:0,
+     t:0,alarm:0,level:0,lastLevel:0,sinceDmg:99,waveNum:0,waveCD:0,reinforceT:0,banner:null,shake:0,
+     wood:8,stone:4,cartsPool:3,cartBuildT:0,spawnT:0,rebuildT:0,
+     visited:{},region:null,regCand:null,regCandT:0,fc:0,patrolT:20,packAngry:{},faunaT:5,regBanner:null,
+     stats:{regions:0,bridges:0,huts:0,barns:0,trees:0,crops:0,eaten:0,animals:0,knights:0,archers:0,siege:0,carts:0,piles:0,ships:0,pirates:0,squid:0,seaPts:0},score:0,over:false,overT:0,msg:null};
+  D={x:1600,y:1450,vx:0,vy:0,ang:-Math.PI/2,alt:0,altT:0,mode:"ground",hp:EASY?360:220,maxHp:EASY?360:220,gold:0,princess:false,st:100,maxSt:100,
+     breath:false,stompCD:0,stompT:0,eatCD:0,eatT:0,hurt:0,walkT:0,flapT:0,landDust:false,hunger:100,maxHunger:100,starveT:0,hungryWarn:false};
+  structures=[];trees=[];cells=[];units=[];siege=[];projs=[];boulders=[];carts=[];parts=[];texts=[];ROCKS.length=0;patrols=[];FARSCORCH.length=0;
+  // villages
+  VILLAGES.forEach((v,vi)=>{const n=7+Math.floor(SR(0,3));for(let i=0;i<n;i++){const a=i/n*TAU+SR(-.2,.2),r=SR(70,170);
+    addStruct('hut',v.x+Math.cos(a)*r,v.y+Math.sin(a)*r*0.8,vi);} });
+  FARMS.forEach((f,fi)=>{const s=addStruct('barn',f.barn.x,f.barn.y,f.v);s.farm=fi;
+    const F=f.field;for(let y=F.y;y<F.y+F.h;y+=22)for(let x=F.x;x<F.x+F.w;x+=22)cells.push({x:x+11,y:y+11,crop:F.crop,growth:SR(.7,1),fire:0,burnt:false,farm:fi,claimed:null});});
+  addStruct('logpile',LOGPILE_POS.x,LOGPILE_POS.y,-1);
+  addStruct('cabin',CABIN.x,CABIN.y,-1);
+  const gt=addStruct('gate',1600,CWALL.y1+6,-1);gt.hp=gt.maxHp=260+80*(lvl-1);
+  const br=addStruct('barracks',1430,250,-1);br.hp=br.maxHp=220+60*(lvl-1);
+  PR={x:PRINCESS_TOWER.x,y:PRINCESS_TOWER.y,state:'tower',quip:0,t:0};
+  goldPiles=[[1480,150],[1560,215],[1650,150],[1700,240],[1620,265]].map(([x,y])=>({x,y,amt:20+10*(lvl-1)}));
+  addStruct('stonepile',STONEPILE_POS.x,STONEPILE_POS.y,-1);
+  // rocks / hills in the east
+  for(let i=0;i<46;i++){const x=SR(2680,3150),y=SR(950,1650);if(d2(x,y,MINE.x,MINE.y)<70)continue;ROCKS.push({x,y,r:SR(14,40),c:SR(0,1)});}
+  for(let i=0;i<300;i++){const x=SR(3250,5300),y=SR(-150,3000);if(regionKey(x,y)!=='hills'||VILLAGES.some(v=>d2(x,y,v.x,v.y)<260)||d2(x,y,LAIR.x,LAIR.y)<450)continue;ROCKS.push({x,y,r:SR(14,44),c:SR(0,1)});}
+  // trees: dense west forest + scattered
+  const blocked=(x,y)=>{ if(x>CASTLE.x-CASTLE.w/2-80&&x<CASTLE.x+CASTLE.w/2+80&&y<CASTLE.y+CASTLE.h/2+120)return true;
+    for(const v of VILLAGES)if(d2(x,y,v.x,v.y)<210)return true;
+    for(const f of FARMS){const F=f.field;if(x>F.x-30&&x<F.x+F.w+30&&y>F.y-30&&y<F.y+F.h+30)return true;
+      const P=f.pen;if(x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30)return true;if(d2(x,y,f.barn.x,f.barn.y)<70)return true;}
+    if(x>2650&&y>920&&y<1680)return true; if(d2(x,y,CAMP.x,CAMP.y)<90||d2(x,y,LOGPILE_POS.x,LOGPILE_POS.y)<70)return true;
+    if(d2(x,y,1600,1450)<120)return true; if(PONDS.some(p=>d2(x,y,p.x,p.y)<110))return true; if(inWater(x,y)||riverD(x,y)<RIVW+40||onBeach(x,y))return true;
+    {const lx=(x-LAKE.x)/(LAKE.rx+70),ly=(y-LAKE.y)/(LAKE.ry+70);if(lx*lx+ly*ly<1)return true;} if(PADDOCKS.some(P=>x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30))return true; if(d2(x,y,LAIR.x,LAIR.y)<170||d2(x,y,CABIN.x,CABIN.y)<75)return true; return false;};
+  let tries=0;while(trees.length<240&&tries<5000){tries++;const x=SR(40,430),y=SR(300,2150);if(!blocked(x,y))addTree(x,y);}
+  tries=0;while(trees.length<420&&tries<5000){tries++;const x=SR(40,WW-40),y=SR(420,WH-40);if(!blocked(x,y))addTree(x,y);}
+  for(let i=0;i<30;i++){const x=CAMP.x+SR(-180,60),y=CAMP.y+SR(-260,260);if(!blocked(x,y)&&x<480)addTree(x,y);}
+  // the Deepwood (far west), scattered southern copses and a few hill trees
+  tries=0;let nt=trees.length;while(trees.length<nt+900&&tries<9000){tries++;const x=SR(-2900,-250),y=SR(-150,4300);if(regionKey(x,y)==='forest'&&!blocked(x,y))addTree(x,y);}
+  tries=0;nt=trees.length;while(trees.length<nt+160&&tries<4000){tries++;const x=SR(-200,5200),y=SR(2250,4300);const k=regionKey(x,y);if((k==='south'||k==='farm')&&!blocked(x,y)&&(x<0||x>WW||y>WH))addTree(x,y);}
+  tries=0;nt=trees.length;while(trees.length<nt+50&&tries<2000){tries++;const x=SR(3250,5200),y=SR(-100,3000);if(regionKey(x,y)==='hills'&&!blocked(x,y)&&d2(x,y,LAIR.x,LAIR.y)>420)addTree(x,y);}
+  addBridges();
+  // people
+  structures.filter(s=>s.kind==='hut').forEach(s=>spawnVillager(s.x,s.y+20,'peasant',s.v));
+  for(let i=0;i<3;i++)spawnVillager(CAMP.x+R(-20,20),CAMP.y+R(-20,20),'woodcutter',0);
+  for(let i=0;i<3;i++)spawnVillager(MINE.x-60+R(-20,20),MINE.y+40,'miner',1);
+  FARMS.forEach((f,fi)=>{for(let k=0;k<2;k++){const u=spawnVillager(f.field.x+20+k*40,f.field.y+20,'farmer',f.v);u.farm=fi;}
+    const P=f.pen,n=f.pen.animal==='cow'?3:4;for(let i=0;i<n;i++)units.push(mkUnit('animal',P.x+R(15,P.w-15),P.y+R(15,P.h-15),{species:P.animal,pen:P,hp:14}));});
+  // farm chickens around the barns, wild deer & rabbits around the hunter's cabin
+  FARMS.forEach(f=>{f.yard={x:f.barn.x-70,y:f.barn.y+18,w:140,h:50};for(let i=0;i<4;i++)units.push(mkUnit('animal',f.yard.x+R(10,130),f.yard.y+R(8,42),{species:'chicken',pen:f.yard,hp:6,free:true}));});
+  initFauna();
+  spawnHunter();
+  initBirds();
+  // castle garrison: tower archers on the walls + gate guards
+  const nT=Math.min(TOWER_SPOTS.length,Math.round((EASY?2:4)+(EASY?1:2)*(lvl-1))),nG=Math.min(12,Math.round((EASY?2:3)+(EASY?1:2)*(lvl-1)));
+  for(let i=0;i<nT;i++)spawnPost('tower',i);for(let i=0;i<nG;i++)spawnPost('guard',i);
+  buildGround();buildTerrain();initFog();initSea();
+}
+function addStruct(kind,x,y,v){const hp={hut:90,barn:170,logpile:110,stonepile:140,cabin:120,gate:260,barracks:220,bridge:120}[kind];
+  const s={kind,x,y,v,hp,maxHp:hp,fire:0,state:'ok',build:0,builder:null,id:Math.random()};structures.push(s);return s;}
+function addTree(x,y){trees.push({x,y,hp:40,fire:0,state:'ok',s:SR(.8,1.25),fallT:0,fallA:0,regrow:0,claimed:null,hue:SR(0,1)});}
+function mkUnit(type,x,y,o){return Object.assign({type,x,y,vx:0,vy:0,hp:10,maxHp:10,burn:0,state:'idle',t:0,anim:0,face:1,id:Math.random(),dead:false},o||{});}
+function spawnVillager(x,y,job,v){const u=mkUnit('villager',x,y,{job,v,hp:10,maxHp:10,home:VILLAGES[Math.max(0,v)]||VILLAGES[0],shirt:['#b5523b','#3f6fb5','#6a8f3a','#a07a2a','#8a4f9e'][RI(0,4)]});units.push(u);return u;}
+
+function buildGround(){
+  ground=document.createElement('canvas');ground.width=WW;ground.height=WH;gctx=ground.getContext('2d');
+  const g=gctx;
+  for(let i=0;i<2600;i++){g.fillStyle=srnd()<.5?'rgba(80,130,50,.35)':'rgba(120,160,70,.25)';g.beginPath();g.ellipse(SR(0,WW),SR(0,WH),SR(10,60),SR(6,30),SR(0,3),0,TAU);g.fill();}
+  // forest floor
+  g.fillStyle='rgba(40,70,30,.45)';g.beginPath();g.ellipse(230,1250,330,1000,0,0,TAU);g.fill();
+  // rocky hills
+  g.fillStyle='#8a7d68';g.beginPath();g.ellipse(2930,1300,330,400,0,0,TAU);g.fill();
+  g.fillStyle='rgba(110,100,85,.6)';for(let i=0;i<200;i++){g.beginPath();g.arc(SR(2650,3200),SR(950,1650),SR(3,14),0,TAU);g.fill();}
+  // dirt roads: castle -> villages, camp, mine
+  g.strokeStyle='#a48a5c';g.lineCap='round';g.lineWidth=26;
+  const road=(a,b)=>{g.beginPath();g.moveTo(a.x,a.y);g.quadraticCurveTo((a.x+b.x)/2+SR(-80,80),(a.y+b.y)/2+SR(-80,80),b.x,b.y);g.stroke();};
+  VILLAGES.forEach(v=>road(GATE,v));road(VILLAGES[0],CAMP);road(VILLAGES[3],CAMP);road(VILLAGES[1],MINE);road(VILLAGES[4],STONEPILE_POS);road(VILLAGES[2],VILLAGES[3]);road(VILLAGES[2],VILLAGES[4]);
+  g.lineWidth=14;g.strokeStyle='#b89c6a';VILLAGES.forEach(v=>road(GATE,v));
+  VILLAGES.forEach(v=>{g.fillStyle='#a8915f';g.beginPath();g.ellipse(v.x,v.y,120,90,0,0,TAU);g.fill();});
+  // fields soil
+  FARMS.forEach(f=>{const F=f.field;g.fillStyle='#7a5a32';g.fillRect(F.x-4,F.y-4,F.w+8,F.h+8);
+    const P=f.pen;g.fillStyle='#7fa84a';g.fillRect(P.x,P.y,P.w,P.h);});
+  // camp clearing, mine yard
+  g.fillStyle='#9a8256';g.beginPath();g.ellipse(CAMP.x+30,CAMP.y+30,120,110,0,0,TAU);g.fill();
+  g.beginPath();g.ellipse(2760,1330,140,90,0,0,TAU);g.fill();
+  // castle grounds, courtyard flagstones, roads to lair & cabin
+  g.fillStyle='#6b7a5a';g.fillRect(CWALL.x0-50,0,CWALL.x1-CWALL.x0+100,CWALL.y1+40);
+  g.fillStyle='#b3a487';g.fillRect(CWALL.x0,CWALL.y0,CWALL.x1-CWALL.x0,CWALL.y1-CWALL.y0);
+  g.strokeStyle='rgba(90,80,60,.35)';g.lineWidth=1;for(let x=CWALL.x0;x<CWALL.x1;x+=28)for(let y=CWALL.y0;y<CWALL.y1;y+=20){g.strokeRect(x+((y/20)%2)*14,y,28,20);}
+  g.fillStyle='rgba(40,70,30,.4)';g.beginPath();g.ellipse(CABIN.x,CABIN.y,90,70,0,0,TAU);g.fill();
+  g.fillStyle='#8a7a62';g.beginPath();g.ellipse(CABIN.x+10,CABIN.y+20,60,40,0,0,TAU);g.fill();
+  g.fillStyle='#5a4a3a';g.beginPath();g.ellipse(LAIR.x,LAIR.y,170,120,0,0,TAU);g.fill();g.fillStyle='#6e5d48';g.beginPath();g.ellipse(LAIR.x,LAIR.y,130,90,0,0,TAU);g.fill();
+  // ponds (ducks & geese)
+  PONDS.forEach(p=>{g.fillStyle='#4a6a3a';g.beginPath();g.ellipse(p.x,p.y,p.rx+10,p.ry+8,0,0,TAU);g.fill();g.fillStyle='#3a6aa8';g.beginPath();g.ellipse(p.x,p.y,p.rx,p.ry,0,0,TAU);g.fill();
+    g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.ellipse(p.x-p.rx*.3,p.y-p.ry*.3,p.rx*.4,p.ry*.25,0,0,TAU);g.fill();});
+  // wells at every village centre (for the bucket brigade)
+  VILLAGES.forEach(v=>{g.fillStyle='#7a7a80';g.beginPath();g.arc(v.x,v.y,13,0,TAU);g.fill();g.fillStyle='#2a4a8a';g.beginPath();g.arc(v.x,v.y,8,0,TAU);g.fill();});
+}
+function scorch(x,y,r){if(x<r||y<r||x>WW-r||y>WH-r){scorchFar(x,y,r);return;}gctx.fillStyle='rgba(30,22,15,.55)';gctx.beginPath();gctx.ellipse(x,y,r,r*.75,0,0,TAU);gctx.fill();
+  gctx.fillStyle='rgba(20,15,10,.35)';for(let i=0;i<5;i++){gctx.beginPath();gctx.arc(x+R(-r,r)*.7,y+R(-r,r)*.5,R(3,r*.4),0,TAU);gctx.fill();}}
+function spawnHunter(){const u=mkUnit('hunter',CABIN.x+30,CABIN.y+30,{hp:EASY?40:60,maxHp:EASY?40:60,shootT:2,atk:0,home:CABIN});units.push(u);return u;}
+function spawnPost(kind,i){if(kind==='tower'){const [x,y]=TOWER_SPOTS[i%TOWER_SPOTS.length];units.push(mkUnit('archer',x,y-6,{post:'tower',slot:i,px:x,py:y-6,hp:22,maxHp:22,shootT:R(1,3)}));}
+  else{const x=GATE.x-70+(i%6)*28,y=GATE.y+34+Math.floor(i/6)*26;units.push(mkUnit('knight',x,y,{post:'guard',slot:i,px:x,py:y,hp:45,maxHp:45,atk:0,colr:'#c33'}));}}
