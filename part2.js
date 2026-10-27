@@ -34,7 +34,7 @@ function updDragon(dt){
   if(D.landDust&&D.alt<=0.001&&prevAlt>0){D.landDust=false;puff(D.x,D.y,34,'rgba(180,160,120,',170,16);G.shake=Math.max(G.shake,8);
     for(const u of units)if(!u.dead&&dist(u,D)<90&&u.type!=='animal'&&u.type!=='sea'){u.vx+=(u.x-D.x)*2;u.vy+=(u.y-D.y)*2;}}
   const wasSwim=D.swim;D.swim=D.mode==='ground'&&D.alt<.25&&inWater(D.x,D.y)&&!onBridge(D.x,D.y);D.overWater=D.alt>=.25&&inWater(D.x,D.y);
-  if(D.swim&&!wasSwim){puff(D.x,D.y,24,'rgba(220,240,255,',150,12);if(!G.swimTip){G.swimTip=1;float(D.x,D.y-90,'Splash! Swimming: slower, no stomp, bite & fire still work','#bfe6ff');}}
+  if(D.swim&&!wasSwim){puff(D.x,D.y,24,'rgba(220,240,255,',150,12);if(!G.swimTip){G.swimTip=1;float(D.x,D.y-90,'Splash! Swimming: slower. Stomp becomes a CLAW SCRATCH (Q); bite & fire still work','#bfe6ff');}}
   if(D.swim&&D.mode==='ground')D.st=Math.max(0,D.st-DR.groundRegen*.5*dt); // half stamina regen in the water
   const sp=lerp(DR.groundSpeed,DR.airSpeed,D.alt)*(D.eatT>0?0.4:1)*(D.stompT>0?0.3:1)*(D.swim?0.55:1);
   const acc=D.alt>0.5?4:8;D.vx=lerp(D.vx,ix*sp,Math.min(1,acc*dt));D.vy=lerp(D.vy,iy*sp,Math.min(1,acc*dt));
@@ -47,14 +47,14 @@ function updDragon(dt){
   D.flapT+=dt*(D.alt>0.1?(D.alt<0.95?14:9):0);
   D.hurt=Math.max(0,D.hurt-dt);D.stompCD-=dt;D.eatCD-=dt;D.stompT=Math.max(0,D.stompT-dt);D.eatT=Math.max(0,D.eatT-dt);
   // fire breath
-  D.breath=!(D.lava>0)&&!!(keys[' ']||GPAD.fire)&&!(D.mode==='air'&&D.st<=0.5);
+  D.breath=!(D.lava>0)&&!!(keys[' ']||GPAD.fire)&&!(D.mode==='air'&&D.st<=0.5)&&!D.fireOut; // fire meter (partFM): empty = no fire until it recovers
   if(D.lava>0)lavaFire(dt);else D.lavaHeld=!!(keys[' ']||GPAD.fire); // lava shots replace fire while they last (partV)
   if(D.breath){const ca=Math.cos(D.ang),sa=Math.sin(D.ang),ox=D.x+ca*105,oy=D.y+sa*105,h=heightOf()+18;
     for(let i=0;i<7;i++){const a=D.ang+R(-DR.fireHalf,DR.fireHalf)*.8,s=R(260,380);
       parts.push({x:ox,y:oy,z:h,vx:Math.cos(a)*s+D.vx*.5,vy:Math.sin(a)*s+D.vy*.5,vz:-h*1.6-R(0,30),life:R(.4,.6),max:.6,size:R(8,16),kind:'breath'});}
     applyFire(ox,oy,dt);}
   // stomp (ground only)
-  if((P('q')||P('shift'))&&D.swim){float(D.x,D.y-80,'No stomping while swimming!','#bfe6ff');}
+  if((P('q')||P('shift'))&&D.swim){clawScratch();} // in the water the stomp becomes a CLAW SCRATCH (partCS)
   else if((P('q')||P('shift'))){ if(D.diving){}else if(D.alt>0.2||D.mode==='air')startCrash();
     else if(D.stompCD<=0){D.stompCD=DR.stompCD;D.stompT=0.35;doStomp();} }
   // eat
@@ -76,8 +76,8 @@ function doStomp(){G.shake=Math.max(G.shake,14);rumble(.9,.6,260);puff(D.x,D.y,4
   const r=DR.stompR;let hit=false;HEAVY=true;
   for(const t of trees)if(t.state==='ok'&&dist(t,D)<r*.8){t.state='stump';t.fire=0;t.regrow=90;G.stats.trees++;addAlarm(1.2);hit=true;puff(t.x,t.y,8,'rgba(60,110,40,',90,8);}
   for(const s of structures)if(s.state!=='ruin'&&dist(s,D)<r+18){if(isWood(s))splinters(s.x,s.y,4);hurtStruct(s,DR.stompDmg*1.6*(isWood(s)?1.25:1));hit=true;
-    if(s.kind==='stonepile'){const l=Math.min(G.stone,4);G.stone-=l;if(l)float(s.x,s.y-40,`-${l} stone`,'#ddd');}
-    if(s.kind==='logpile'){const l=Math.min(G.wood,3);G.wood-=l;if(l)float(s.x,s.y-40,`-${l} wood`,'#e8c090');}}
+    if(s.kind==='stonepile'){const l=Math.min(G.yardStone||0,4);G.yardStone-=l;if(l)float(s.x,s.y-40,`-${l} stone`,'#ddd');}
+    if(s.kind==='logpile'){const l=Math.min(G.yardWood||0,3);G.yardWood-=l;if(l)float(s.x,s.y-40,`-${l} wood`,'#e8c090');}}
   HEAVY=false;
   for(const c of cells)if(!c.burnt&&dist(c,D)<r*.8){c.burnt=true;c.flat=true;c.growth=0;G.stats.crops++;addAlarm(.15);}
   for(const c of carts)if(!c.wrecked&&dist(c,D)<r)wreckCart(c);
@@ -94,7 +94,7 @@ function biteTargets(){const gr=D.alt<0.3,r=(gr?DR.eatRGround:DR.eatRAir)*1.3,mx
   out.sort((a,b)=>a.d-b.d);return out.map(o=>o.u);}
 function tryEat(){if(tryGrab())return;
   let T=biteTargets();
-  if(!T.length){if(tryEatBird())return;if(biteShip())return;if(biteWell())return;}
+  if(!T.length){if(biteRoof())return;if(tryEatBird())return;if(biteShip())return;if(biteWell())return;}
   if(!T.length){if(D.alt>=0.3)float(D.x,D.y-90,'Swoop closer to snatch!','#ddd');D.eatCD=.25;return;}
   // tough ones fight back: a healthy bear wriggles free, a healthy whale or an awake squid can't be swallowed (only if it's the closest target)
   const tough=u=>(u.species==='bear'&&u.hp>u.maxHp*.5)||(u.champ&&u.hp>u.maxHp*.5)||(u.species==='sandworm'&&!u.stuck&&u.hp>u.maxHp*.35)||(u.type==='sea'&&((u.kind==='whale'&&u.hp>u.maxHp*.5)||(u.kind==='squid'&&u.state!=='dazed')));
@@ -148,8 +148,8 @@ function hurtStruct(s,d){if(s.state==='ruin')return;if(stoneish(s)&&!HEAVY)retur
     scorch(s.x,s.y+4,s.kind==='barn'?55:40);puff(s.x,s.y,20,'rgba(70,60,50,',120,14);G.shake=Math.max(G.shake,5);
     if(s.kind==='hut'){G.stats.huts++;addAlarm(7);float(s.x,s.y-40,'Hut destroyed!','#ffb050');}
     else if(s.kind==='barn'){G.stats.barns++;addAlarm(10);float(s.x,s.y-50,'Barn destroyed!','#ffb050');}
-    else if(s.kind==='logpile'){G.stats.piles++;G.wood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned! Rebuilding slowed','#ffb050');}
-    else if(s.kind==='stonepile'){G.stats.piles++;G.stone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked! Rebuilding slowed','#ffb050');}
+    else if(s.kind==='logpile'){G.stats.piles++;G.yardWood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned! Rebuilding slowed','#ffb050');}
+    else if(s.kind==='stonepile'){G.stats.piles++;G.yardStone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked! Rebuilding slowed','#ffb050');}
     else if(s.kind==='cabin'){G.stats.huts++;addAlarm(6);float(s.x,s.y-40,"Hunter's cabin burned!",'#ffb050');}
     else if(s.kind==='gate'){s.ruinT=G.t;G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'The castle gate is smashed! Waves delayed','#ffb050');showToast&&showToast('Castle gate destroyed: waves delayed and smaller until it is rebuilt');}
     else if(s.kind==='bridge'){G.stats.bridges++;addAlarm(6);s.upgBy=null;float(s.x,s.y-50,s.mat==='stone'?'The STONE bridge crumbles into the river!':'The bridge burns and collapses!','#ffb050');}

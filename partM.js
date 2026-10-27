@@ -29,13 +29,14 @@ function hitBtn(x,y){let best=null,bd=1e9;for(const b of TOUCH.btns){const d=Mat
 function tpos(t){return{x:t.clientX/UIS,y:t.clientY/UIS};}
 // title menu hit test (geometry mirrors drawTitle)
 function titleTap(x,y){const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
-  for(let i=0;i<5;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
-      if(i===0)pressed['enter']=true;else if(i===1||i===2)pressed['enter']=true;
+  for(let i=0;i<6;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
+      if(i===5){pmOpen('load','title');return true;}if(i===0)pressed['enter']=true;else if(i===1||i===2)pressed['enter']=true;
       else{const k=i===3?'music':'sfx';if(AUD.muted)toggleMute();else setVol(k,lx>g.cx+60?Math.min(1,AUD[k]+.1):lx<g.cx-60?Math.max(0,AUD[k]-.1):(AUD[k]>=1?0:AUD[k]+.1));if(k==='sfx')SFX.play('coin');}
       return true;}}
-  if(ly>g.y0+5*36+20){pressed['enter']=true;titleSel=0;}return true;}
+  if(ly>g.y0+6*36+20){pressed['enter']=true;titleSel=0;}return true;}
 function onTouchStart(e){e.preventDefault();TOUCH.on=true;audio();if(!TOUCH.btns.length)touchLayout();
   for(const t of e.changedTouches){const p=tpos(t);TOUCH.taps++;
+    if(PM.on){pmTap(p.x,p.y,t.identifier);continue;}
     if(scene==='title'){titleTap(p.x,p.y);continue;}
     if(TOUCH.rot)continue;
     const b=hitBtn(p.x,p.y);
@@ -49,8 +50,8 @@ function joyUpd(){const j=TOUCH.joy;if(!j){TOUCH.mx=TOUCH.my=0;return;}let dx=j.
   if(l>R){ // drag the base along so the stick never "sticks" at the rim
     j.ox+=dx*(1-R/l);j.oy+=dy*(1-R/l);dx=j.x-j.ox;dy=j.y-j.oy;}
   const m=Math.min(1,l/R);if(m<.12){TOUCH.mx=TOUCH.my=0;return;}const k=(m-.12)/.88/(Math.hypot(dx,dy)||1);TOUCH.mx=dx*k;TOUCH.my=dy*k;}
-function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
-function onTouchEnd(e){e.preventDefault();for(const t of e.changedTouches){const j=TOUCH.joy;if(j&&j.id===t.identifier){TOUCH.joy=null;joyUpd();}
+function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){if(PM.on&&PM.drag){pmDragMove(t.identifier,tpos(t).y);continue;}const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
+function onTouchEnd(e){e.preventDefault();for(const t of e.changedTouches){if(PM.drag&&PM.drag.id===t.identifier)PM.drag=null;const j=TOUCH.joy;if(j&&j.id===t.identifier){TOUCH.joy=null;joyUpd();}
     const b=TOUCH.held[t.identifier];if(b){delete TOUCH.held[t.identifier];if(b.hold&&!Object.values(TOUCH.held).some(o=>o.key===b.key))keys[b.key]=false;b.down=false;}}}
 cv.addEventListener('touchstart',onTouchStart,{passive:false});cv.addEventListener('touchmove',onTouchMove,{passive:false});
 cv.addEventListener('touchend',onTouchEnd,{passive:false});cv.addEventListener('touchcancel',onTouchEnd,{passive:false});
@@ -78,7 +79,7 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
   if(!(G.over||G.won)){
     for(const o of b){const dn=o.down||(o.hold&&keys[o.key]);ctx.globalAlpha=dn?.85:.5;ctx.fillStyle=o.col;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,TAU);ctx.fill();
       ctx.globalAlpha=dn?1:.75;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.globalAlpha=1;
-      txt(o.label,o.x,o.y+o.r*.16,o.r>30?Math.round(o.r*.36):14,'#fff','center');}
+      if(o.icon){txt(o.icon,o.x,o.y-o.r*.12,Math.round(o.r*.42),'#fff','center',false);txt(o.label,o.x,o.y+o.r*.5,Math.round(o.r*.3),'#fff','center');}else txt(o.label,o.x,o.y+o.r*.16,o.r>30?Math.round(o.r*.36):14,'#fff','center');}
     if(D.mode==='air'){const o=b[2];ctx.strokeStyle='rgba(255,210,74,.9)';ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.beginPath();ctx.arc(o.x,o.y,o.r+6,0,TAU);ctx.stroke();ctx.setLineDash([]);}}
   // joystick
   const j=TOUCH.joy,R=TOUCH.JR,ox=j?j.ox:SAFE.l+118,oy=j?j.oy:VH-SAFE.b-112;
@@ -86,4 +87,4 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
   const kx=ox+TOUCH.mx*R,ky=oy+TOUCH.my*R;ctx.globalAlpha=j?.9:.45;ctx.fillStyle='#ddd';ctx.beginPath();ctx.arc(kx,ky,R*.42,0,TAU);ctx.fill();ctx.globalAlpha=1;
   if(!j&&G.t<12)txt('drag to move',ox,oy+R+20,14,'rgba(255,255,255,.8)','center',false);
   if((G.over&&G.overT>1)||(G.won&&G.wonT>1))txt('Tap to continue',VW/2,VH-SAFE.b-30,22,'#ffd24a','center');
-  else if(paused)txt('Tap to resume',VW/2,VH-SAFE.b-30,22,'#ffd24a','center');}
+  else if(paused&&!PM.on)txt('Tap to resume',VW/2,VH-SAFE.b-30,22,'#ffd24a','center');}

@@ -2,7 +2,7 @@
 // ================= partK: kingdom concern, multi-bite helpers, building gold, markets, soldiers vs water =================
 // ---------- kingdom concern: damage near Castle Aldric alarms the kingdom far more than mischief at the edges of the world ----------
 function kingdomMul(x,y){const dx=x-CASTLE.x,dy=y-CASTLE.y;const d=Math.hypot(dx,dy);
-  if(x>CWALL.x0-120&&x<CWALL.x1+120&&y<CWALL.y1+160)return 2;            // castle grounds
+  if(x>CWALL.x0-120&&x<CWALL.x1+120&&y>CWALL.y0-120&&y<CWALL.y1+160)return 2;            // castle grounds
   return clamp(.2+1.8*Math.exp(-Math.pow(d/2200,1.6)),.2,2);}
 function concern(){const k=kingdomMul(D.x,D.y);return k>=1.2?{name:'HIGH',k,col:'#ff9a7a'}:k>=.6?{name:'Med',k,col:'#ffe08a'}:{name:'Low',k,col:'#9fe0a0'};}
 function coolMul(){return clamp(1/kingdomMul(D.x,D.y),.5,3);}          // ~0.5x next to the castle up to 3x at the far edges
@@ -94,6 +94,7 @@ const KDEF={
   bakery:{name:'Bakery',hp:85,cost:[3,1],gold:[4,7],pts:90,alarm:8,sz:30},
   smithy:{name:'Blacksmith',hp:120,cost:[3,2],gold:[5,8],pts:110,alarm:9,sz:32},
   jeweler:{name:'Jeweler',hp:100,cost:[3,2],gold:[14,22],pts:160,alarm:14,sz:30},
+  storehouse:{name:'Castle storehouse',hp:260,cost:[3,3],gold:[2,4],pts:160,alarm:9,sz:44},
   adobe:{name:'Adobe house',hp:110,cost:[1,2],gold:[1,3],pts:50,alarm:5,sz:28}};
 const GOLD_OLD={hut:[1,3],barn:[3,5],cabin:[2,3],barracks:[6,9],gate:[4,6],bridge:[1,2],logpile:[0,0],stonepile:[0,0]};
 for(const k in KDEF){COST[k]=KDEF[k].cost;STRUCT_NAME[k]=KDEF[k].name;}
@@ -105,17 +106,17 @@ function kAdd(kind,x,y,v,o){const s=addStruct(kind,x,y,v);s.hp=s.maxHp=KDEF[kind
 function placeDry(x,y,ax,ay){const b={x:x-30,y:y-30};inlandBox(b,60,60,ax,ay);return{x:b.x+30,y:b.y+30};}
 function initStructsK(){coins=[];const W=CWALL;
   // castle in sections: walls, 4 corner towers, the keep and the princess's tower (the gate and barracks already exist)
-  for(const x of[1400,1500,1600,1700,1800])kAdd('cwall',x,W.y0,-1,{side:'n'});
-  for(const x of[1400,1490,1710,1800])kAdd('cwall',x,W.y1,-1,{side:'s'});
-  for(const y of[135,200,260]){kAdd('cwall',W.x0,y,-1,{side:'w'});kAdd('cwall',W.x1,y,-1,{side:'e'});}
+  for(const x of[1400,1500,1600,1700,1800].map(x=>x+CDX))kAdd('cwall',x,W.y0,-1,{side:'n'});
+  for(const x of[1400,1490,1710,1800].map(x=>x+CDX))kAdd('cwall',x,W.y1,-1,{side:'s'});
+  for(const y of[135,200,260].map(y=>y+CDY)){kAdd('cwall',W.x0,y,-1,{side:'w'});kAdd('cwall',W.x1,y,-1,{side:'e'});}
   [[W.x0,W.y0],[W.x1,W.y0],[W.x0,W.y1],[W.x1,W.y1]].forEach(([x,y],i)=>kAdd('ctower',x,y+8,-1,{ti:i}));
-  kAdd('keep',1610,150,-1);kAdd('ptower',PRINCESS_TOWER.x,PRINCESS_TOWER.y+30,-1);
+  kAdd('keep',KEEP_POS.x,KEEP_POS.y,-1);kAdd('kroof',KEEP_POS.x,KEEP_POS.y-2,-1);kAdd('ptower',PRINCESS_TOWER.x,PRINCESS_TOWER.y+30,-1); // the pink tower is only decoration now
   // the lighthouse and its dock (repaired by the keeper)
   kAdd('lighthouse',LH.x,LH.y,-1);kAdd('dock',DOCK.x,DOCK.y,-1);
   // mine & logging camp buildings
   kAdd('minehead',MINE.x,MINE.y+14,-1);kAdd('minehut',MINE.x-120,MINE.y+60,-1);kAdd('camptent',CAMP.x,CAMP.y+10,-1);kAdd('sawmill',CAMP.x-100,CAMP.y+60,-1);
   // markets: a big one outside the castle gate and smaller ones in the larger villages
-  MARKETS=[{name:'Castle Market',x:1600,y:520,v:2,shops:['jeweler','smithy','bakery','stall','stall','stall']},
+  MARKETS=[{name:'Castle Market',x:GATE.x+290,y:GATE.y+120,v:8,shops:['jeweler','smithy','bakery','stall','stall','stall']},
     {name:'Millbrook Market',x:VILLAGES[5].x+10,y:VILLAGES[5].y+210,v:5,shops:['bakery','smithy','stall','stall']},
     {name:'Riverbend Market',x:VILLAGES[6].x-40,y:VILLAGES[6].y-215,v:6,shops:['smithy','jeweler','stall','stall']},
     {name:'Stonebrook Market',x:VILLAGES[9].x,y:VILLAGES[9].y+210,v:9,shops:['smithy','bakery','stall']},
@@ -129,7 +130,7 @@ function initStructsK(){coins=[];const W=CWALL;
     // merchants and shoppers mill about
     for(let i=0;i<5;i++){spawnVillager(c.x+R(-80,80),c.y+R(-50,80),'peasant',M.v);const u=units[units.length-1];u.home={x:c.x,y:c.y+20};u.shopper=true;u.shirt=['#c0392b','#2e86c1','#d4ac0d','#7d3c98','#239b56'][i];}}
   // castle masons who repair the walls
-  for(let i=0;i<3;i++){spawnVillager(1600+R(-120,120),230,'peasant',2);const u=units[units.length-1];u.home={x:1600,y:230};u.mason=true;}
+  for(let i=0;i<3;i++){spawnVillager(CASTLE.x+R(-120,120),CASTLE.y+40,'peasant',8);const u=units[units.length-1];u.home={x:CASTLE.x,y:CASTLE.y+40};u.mason=true;}
   for(const s of structures){s.hasGold=true;if(s.kind==='hut'&&s.v===DTOWN.vi)s.adobe=true;}
   placeWells();initFlora();}
 function goldOf(s){const g=KDEF[s.kind]?KDEF[s.kind].gold:GOLD_OLD[s.kind]||[1,2];return RI(g[0],g[1]);}
@@ -142,7 +143,8 @@ function onRuin(s){const K=KDEF[s.kind],st=isStone(s)||(s.kind==='bridge'&&s.mat
   if(K){G.stats.kPts=(G.stats.kPts||0)+K.pts;G.stats.wrecked=(G.stats.wrecked||0)+1;if(MARKET_KINDS.has(s.kind))G.stats.shops=(G.stats.shops||0)+1;if(CASTLE_KINDS.has(s.kind))G.stats.castle=(G.stats.castle||0)+1;
     addAlarm(K.alarm,s.x,s.y);float(s.x,s.y-48,`${K.name} ${st?'collapses into rubble':'is wrecked'}! +${K.pts}`,'#ffb050');
     if(s.kind==='lighthouse')float(LH.x,LH.y-90,'The beacon is out! (the island is still a fine place to rest)','#ffd27a');}}
-function stoneFire(s,dt){if(s.kind==='well')return;s.weak=3;if(s.hp>s.maxHp*.35)s.hp-=DR.fireDps*.06*dt;}
+function stoneFire(s,dt){if(s.kind==='well')return;s.weak=3;if(s.kind==='kroof'){if(s.hp>s.maxHp*.5)s.hp-=DR.fireDps*.012*dt;return;} // the keep roof barely notices fire
+  if(s.hp>s.maxHp*.35)s.hp-=DR.fireDps*.06*dt;}
 // coins, gold refills, self-repair of the castle/lighthouse/dock, stone weakening decay
 function updK(dt){
   for(let i=coins.length-1;i>=0;i--){const c=coins[i];c.t+=dt;if(c.z>0||c.vz>0){c.vz-=420*dt;c.z=Math.max(0,c.z+c.vz*dt);if(c.z===0&&c.vz<0)c.vz=c.vz<-60?-c.vz*.35:0;}
@@ -168,7 +170,8 @@ function drawDamage(s){if(s.state!=='ok'||s.hp>=s.maxHp*.66)return;const K=KDEF[
 function rubble(x,y,w,st,seed){for(let i=0;i<Math.max(6,w/4);i++){const a=hsh01({id:seed+i}),b=hsh01({id:seed*2+i});const rx=x+(a-.5)*w*1.6,ry=y-b*w*.3,r=3+((a*b*97)%1)*w*.18;ell(rx,ry,r,r*.7,st?(i%3?'#8a8a90':'#6a6a70'):(i%3?'#3a2a1a':'#24180e'));}}
 function scaffold(x,y,w,h,b){const H=h*b;rect(x-w/2,y-H,w,H,'rgba(150,140,120,.85)');ctx.strokeStyle='#7a5a30';ctx.lineWidth=2;for(let i=-1;i<=1;i++)line(x+i*w/2,y,x+i*w/2,y-h,'#7a5a30',2);for(let j=1;j<4;j++)line(x-w/2-4,y-j*h/4,x+w/2+4,y-j*h/4,'#7a5a30',1.5);}
 // draw a structure kind added by this module (returns true when handled)
-function drawStructK(s){if(s.kind==='well'){drawWell(s);return true;}if(s.adobe&&s.state==='ok'&&s.kind==='hut'){s.kind='adobe';let r;try{r=drawStructK(s);}finally{s.kind='hut';}return r;}const K=KDEF[s.kind];if(!K)return false;const x=s.x,y=s.y,F=s.fire,st=K.stone;
+function drawStructK(s){if(s.kind==='kroof')return true; // drawn as part of the keep
+  if(s.kind==='well'){drawWell(s);return true;}if(s.adobe&&s.state==='ok'&&s.kind==='hut'){s.kind='adobe';let r;try{r=drawStructK(s);}finally{s.kind='hut';}return r;}const K=KDEF[s.kind];if(!K)return false;const x=s.x,y=s.y,F=s.fire,st=K.stone;
   if(s.state==='ruin'){if(s.kind==='cwall'){const hz=s.side==='n'||s.side==='s';rect(x-(hz?52:14),y-(hz?14:34),hz?104:28,hz?22:68,'#6f7458');}
     rubble(x,y+4,K.sz*(CASTLE_KINDS.has(s.kind)?1.2:1),st,(s.id*1e4)|0);if(G.t-(s.ruinT||0)<4&&Math.random()<.3)puff(x+R(-20,20),y,1,'rgba(190,178,160,',30,8);
     if(s.kind==='ptower'&&PR.state==='tower'){drawPrincess(x,y-10,true);if(Math.sin(G.t*1.3)>.3)txt('My tower! You brute!',x,y-40,11,'#fff','center');}return true;}
@@ -182,7 +185,7 @@ function drawStructK(s){if(s.kind==='well'){drawWell(s);return true;}if(s.adobe&
     if(s.kind==='fishmonger')for(let i=0;i<4;i++){ell(x-15+i*10,y-18,4.5,2,'#a8c8d8');poly([x-11+i*10,y-18,x-8+i*10,y-21,x-8+i*10,y-15],'#88a8b8');}
     else for(let i=0;i<5;i++)ell(x-18+i*9,y-18,3.2,3,['#e74c3c','#f39c12','#f1c40f','#27ae60','#c0392b'][(i+hue)%5]);}
   else{const O={smithy:{w:54,wall:'#9a948a',roof:'#5a4a44',sign:'⚒'},bakery:{w:50,wall:'#e8d0a0',roof:'#b0603a',sign:'🥖'},jeweler:{w:48,wall:'#c8b8d8',roof:'#5a3a7a',sign:'💎'},
-      minehut:{w:56,wall:'#8a6a44',roof:'#5a4a3a'},sawmill:{w:62,wall:'#a07848',roof:'#6a5232'},adobe:{w:50,wall:'#d8a868',roof:'#c08850'}}[s.kind]||{w:46,wall:'#aaa',roof:'#666'};
+      minehut:{w:56,wall:'#8a6a44',roof:'#5a4a3a'},sawmill:{w:62,wall:'#a07848',roof:'#6a5232'},adobe:{w:50,wall:'#d8a868',roof:'#c08850'},storehouse:{w:76,wall:'#a8865a',roof:'#7a3a2a',sign:'📦'}}[s.kind]||{w:46,wall:'#aaa',roof:'#666'};
     const w=O.w,H=s.kind==='adobe'?28:26;softShadowSafe(x+8,y+2,w*.6,10);rect(x-w/2,y-H,w,H+2,F?'#5a3a1a':O.wall);
     if(s.kind==='adobe'){rect(x-w/2-2,y-H-6,w+4,7,F?'#3a2a1a':O.roof);for(const dx of[-16,0,16])rect(x+dx-2,y-H-3,4,3,'#7a5030');rect(x-6,y-16,12,18,'#5a3a20');rect(x+12,y-20,7,7,'#3a2a1a');}
     else{poly([x-w/2-6,y-H,x,y-H-24,x+w/2+6,y-H],F?'#2a1a10':O.roof);rect(x-7,y-16,14,18,'#4a3020');}

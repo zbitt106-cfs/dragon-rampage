@@ -36,7 +36,7 @@ Object.assign(HEAL,{camel:34,lizard:4,dfox:8,snake:5,dscorp:4,sandworm:60});
 ['camel','lizard','dfox','snake','dscorp','sandworm'].forEach(s=>FAUNA_ART.add(s));
 function drawDesertFauna(u){const x=u.x,y=u.y,s=u.species,f=u.face||1,b=Math.abs(Math.sin(u.anim||0))*1.5;
   if(s==='sandworm'){drawWorm(u);return;}
-  if(s==='camel'){ell(x,y+2,24,6,'rgba(0,0,0,.2)');const c=u.carav?'#c8965a':'#c89a62',dk='#a07444';for(const lx of[-12,-6,8,14])line(x+lx,y-14,x+lx+Math.sin((u.anim||0)+lx)*3,y,dk,3);
+  if(s==='camel'){ell(x,y+2,24,6,'rgba(0,0,0,.2)');const c=u.carav?'#c8965a':'#c89a62',dk='#a07444';for(const lx of[-12,-6,8,14])line(x+lx,y-14-b,x+lx+Math.sin((u.anim||0)+lx)*3,y,dk,3);
     ell(x,y-20-b,20,10,c);ell(x-4,y-30-b,8,7,c);ell(x+6,y-28-b,7,6,c); // two humps
     line(x+f*16,y-22-b,x+f*24,y-36-b,c,6);ell(x+f*27,y-38-b,7,4.5,c);ell(x+f*30,y-38-b,1.5,1.5,'#222');ell(x+f*23,y-42-b,2,3,dk);
     if(u.carav){rect(x-12,y-34-b,10,8,'#7a3a6a');rect(x+1,y-33-b,10,7,'#3a6a8a');line(x-14,y-27-b,x+14,y-27-b,'#5a3a1a',2);}return;}
@@ -46,7 +46,7 @@ function drawDesertFauna(u){const x=u.x,y=u.y,s=u.species,f=u.face||1,b=Math.abs
     ctx.strokeStyle='rgba(90,60,20,.6)';ctx.lineWidth=1.5;ctx.stroke();ell(x+f*2,y-3,4,3,'#a0763a');ell(x+f*3,y-4,.9,.9,'#222');if(u.state==='hunt')line(x+f*5,y-3,x+f*9,y-2,'#e33',1);return;}
   if(s==='dscorp'){ell(x,y+1,8,2.5,'rgba(0,0,0,.18)');ell(x,y-3,6,3.5,'#3a2a20');for(const k of[-1,1])for(let i=0;i<3;i++)line(x-3+i*3,y-3,x-4+i*3,y-3+k*6,'#3a2a20',1.2);
     ell(x+f*7,y-4,2.5,1.8,'#3a2a20');ell(x+f*9,y-6,2,1.6,'#3a2a20');ctx.strokeStyle='#3a2a20';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-f*5,y-3);ctx.quadraticCurveTo(x-f*11,y-12,x-f*4,y-14);ctx.stroke();ell(x-f*3,y-14,1.5,1.5,'#e8c040');return;}
-  if(s==='dfox'){ell(x,y+1,12,3,'rgba(0,0,0,.18)');const c='#e0b070';for(const lx of[-6,5])line(x+lx,y-6,x+lx,y,c,2);ell(x,y-9-b,10,5,c);ell(x-f*12,y-10-b,7,3,c);ell(x-f*17,y-10-b,2.5,2,'#fff');
+  if(s==='dfox'){ell(x,y+1,12,3,'rgba(0,0,0,.18)');const c='#e0b070';for(const lx of[-6,5])line(x+lx,y-6-b,x+lx,y,c,2);ell(x,y-9-b,10,5,c);ell(x-f*12,y-10-b,7,3,c);ell(x-f*17,y-10-b,2.5,2,'#fff');
     ell(x+f*10,y-12-b,5,4.5,c);poly([x+f*8,y-15-b,x+f*7,y-27-b,x+f*12,y-16-b],c);poly([x+f*11,y-15-b,x+f*13,y-27-b,x+f*15,y-15-b],c);ell(x+f*14,y-12-b,1,1,'#222');return;}}
 // ---------- the giant sand worm mini-boss ----------
 function spawnWorm(){for(let t=0;t<40;t++){const x=R(WX0+1400,RANGE0-700),y=R(300,3800);if(ZONES.desert.ok(x,y)&&d2(x,y,DTOWN.x,DTOWN.y)>800&&d2(x,y,D.x,D.y)>900){

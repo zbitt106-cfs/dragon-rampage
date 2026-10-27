@@ -30,8 +30,8 @@ function routeRoad(Gd,a,b,w,kind){const raw=astar(Gd,a,b);if(!raw)return null;le
 function buildRoads(){if(ROADS)return ROADS;const t0=performance.now(),Gd=roadGrid(),V=VILLAGES,R0=[];
   const add=(a,b,w,kind)=>{const r=routeRoad(Gd,a,b,w||26,kind||'main');if(r)R0.push(r);else console.warn('road failed',a,b);return r;};
   const N={GATE:{x:GATE.x,y:GATE.y+20},CAMP:{x:CAMP.x+30,y:CAMP.y+40},MINE:{x:MINE.x-40,y:MINE.y+70},CABIN:{x:CABIN.x+10,y:CABIN.y+30},STONE:{x:STONEPILE_POS.x,y:STONEPILE_POS.y+30}};
-  // the main tree: everything converges on the castle gate
-  [[N.GATE,V[2]],[N.GATE,V[0]],[N.GATE,V[1]],[V[2],V[3]],[V[2],V[4]],[V[3],V[5]],[V[5],V[7]],[V[4],V[6]],[V[1],V[9]],[V[9],V[10]],[V[0],N.CAMP],[V[1],N.MINE],[V[7],V[8]]].forEach(([a,b])=>add(a,b));
+  // the main tree: everything converges on the castle gate in the south (west road via Southwold, east road via Haybury and the Riverbend bridge)
+  [[N.GATE,V[7]],[N.GATE,V[8]],[V[8],V[11]],[V[2],V[0]],[V[2],V[1]],[V[2],V[3]],[V[2],V[4]],[V[3],V[5]],[V[5],V[7]],[V[4],V[6]],[V[1],V[9]],[V[9],V[10]],[V[0],N.CAMP],[V[1],N.MINE]].forEach(([a,b])=>add(a,b));
   add(V[4],N.STONE,20);add(N.CAMP,N.CABIN,16,'path');
   // river crossings go over the bridges
   for(const[i,j]of BRIDGE_ROADS){const B=bridgeSpot(i,j);add(V[i],B.a);add(B.b,V[j]);R0.push({pts:[B.a,B.b],w:26,kind:'bridge',bx:B.x,by:B.y});}

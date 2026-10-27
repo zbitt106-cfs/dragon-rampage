@@ -14,8 +14,8 @@ function drawCastle(){if(GFX_HI){drawCastleHi();return;}const W=CWALL,th=22;
   for(let x=W.x0;x<W.x1;x+=22){rect(x,W.y0-th/2-7,12,8,'#a0a0a6');if(Math.abs(x-GATE.x)>50)rect(x,W.y1-th/2-7,12,8,'#9a9aa0');}
   rect(W.x0-th/2,W.y1-th/2+th-5,W.x1-W.x0+th,5,'#6a6a70');
   // keep (great hall)
-  if(kUp('keep')){rect(1540,80,140,70,'#9c9ca2');poly([1530,82,1610,40,1690,82],'#3f4a7a');rect(1596,120,28,30,'#3a2a20');}
-  ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle of King Aldric · Level ${G.lvl}`,1600,W.y0-30);
+  if(kUp('keep')){const kx=KEEP_POS.x,ky=KEEP_POS.y;rect(kx-70,ky-70,140,70,'#9c9ca2');rect(kx-14,ky-30,28,30,'#3a2a20');drawKeepRoofLo(kx,ky);}else if(PR.state==='tower')drawInsidePrincess(KEEP_POS.x,KEEP_POS.y-14);
+  ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle of King Aldric · Level ${G.lvl}`,CASTLE.x,W.y0-30);
   // gold hoard piles
   for(const g of goldPiles){if(g.amt<=0){ell(g.x,g.y,14,6,'rgba(90,70,30,.5)');continue;}const n=Math.min(26,Math.ceil(g.amt/3));ell(g.x,g.y+2,22,8,'#8a6a10');
     for(let i=0;i<n;i++){const ang=i*2.4,rr=(i%4)*4;ell(g.x+Math.cos(ang)*rr*1.5,g.y-Math.floor(i/4)*4+Math.sin(ang)*rr*.4,6,3.4,i%2?'#ffd84a':'#f0b820');}
@@ -26,7 +26,7 @@ function drawCastle(){if(GFX_HI){drawCastleHi();return;}const W=CWALL,th=22;
   // princess tower (tall, pink roof)
   const T=PRINCESS_TOWER;if(!kUp('ptower'))return;tower(T.x,T.y+30,20,70,'#d86aa8');line(T.x,T.y-86,T.x,T.y-110,'#333',2);poly([T.x,T.y-110,T.x+18,T.y-104,T.x,T.y-98],'#f6c');
   rect(T.x-7,T.y-30,14,16,'#2a1a14');
-  if(PR.state==='tower'){drawPrincess(T.x,T.y-16,true);if(Math.sin(G.t*1.3)>.3){ctx.fillStyle='#fff';ctx.font='bold 11px Georgia';ctx.textAlign='center';ctx.fillText('Help! A dragon!',T.x,T.y-122);}}}
+}
 function drawPrincess(x,y,wave,kick){const k=kick?Math.sin(G.t*14)*3:0;
   line(x-1.5,y+2,x-2-k,y+8,'#f0c8a0',1.5);line(x+1.5,y+2,x+2+k,y+8,'#f0c8a0',1.5);
   poly([x-6,y+4,x,y-10,x+6,y+4],'#ff7fc8');ell(x,y-12,3,3,'#f8d8b8');rect(x-3,y-15.5,6,2,'#ffd84a');poly([x-3,y-15.5,x-2,y-18,x,y-15.5,x+2,y-18,x+3,y-15.5],'#ffd84a');
@@ -103,13 +103,13 @@ function drawStruct(s){const x=s.x,y=s.y,b=s.state==='building'?s.build:1;
   } else if(s.kind==='cabin'){const H=28*b;rect(x-30,y-H+4,60,H,s.fire?'#5a3a1a':'#7a5230');for(let j=0;j<H;j+=6)line(x-30,y-H+4+j,x+30,y-H+4+j,'rgba(40,25,10,.5)',1);
     if(b>=1){poly([x-36,y-22,x,y-46,x+36,y-22],s.fire?'#3a2a1a':'#4a6a32');rect(x-6,y-14,12,18,'#3a2410');rect(x+14,y-36,6,14,'#666');
       line(x-28,y-6,x-40,y-20,'#6b4a26',2);ell(x-42,y-22,6,4,'#a07a50');ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText("Hunter's Cabin",x,y-56);}
-  } else if(s.kind==='logpile'){const n=Math.min(18,G.wood);rect(x-34,y-4,68,6,'#5a3a1c');
+  } else if(s.kind==='logpile'){const n=Math.min(18,G.yardWood||0);rect(x-34,y-4,68,6,'#5a3a1c');
     for(let i=0;i<n;i++){const row=Math.floor(i/6),col=i%6,lx=x-27+col*11+row*5,ly=y-6-row*9;ell(lx,ly,5.5,5,'#8a5a2a');ell(lx,ly,3.5,3.3,'#d2a868');}
     if(n===0){ctx.fillStyle='#fdd';ctx.font='10px Georgia';ctx.textAlign='center';ctx.fillText('(empty)',x,y-12);}
-    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`Log Pile: ${G.wood}`,x,y-46);
-  } else if(s.kind==='stonepile'){const n=Math.min(20,G.stone);ell(x,y,40,12,'#6a6258');
+    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`Camp log yard: ${G.yardWood||0}`,x,y-46);
+  } else if(s.kind==='stonepile'){const n=Math.min(20,G.yardStone||0);ell(x,y,40,12,'#6a6258');
     for(let i=0;i<n;i++){const a=i*2.4,r=(i%5)*6,sx=x+Math.cos(a)*r*1.6,sy=y-4-Math.floor(i/5)*7+Math.sin(a)*r*.5;ell(sx,sy,7,5,i%2?'#a39d94':'#8d877e');}
-    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`Stone Pile: ${G.stone}`,x,y-40);}
+    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`Mine stone yard: ${G.yardStone||0}`,x,y-40);}
   if(s.state==='building'){ctx.strokeStyle='#d8b880';ctx.lineWidth=2;ctx.strokeRect(x-28,y-40,56,44);line(x-28,y-40,x+28,y+4,'#d8b880',2);
     rect(x-25,y-50,50*b,4,'#7fd07f');ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(x-25,y-50,50,4);}
   if(s.fire&&s.hp<s.maxHp){rect(x-20,y+8,40,3,'#400');rect(x-20,y+8,40*s.hp/s.maxHp,3,'#f80');}}
@@ -130,21 +130,22 @@ function drawPerson(u){const x=u.x,y=u.y,bob=Math.sin(u.anim)*1.2,f=u.face;
   else if(u.job==='woodcutter'){if(u.state==='chop'){const a=Math.sin(u.anim*2)*1.1-0.4;line(x,y-9,x-Math.cos(a)*7,y-9-Math.sin(a)*7,'#6b4a26',1.4);rect(x-Math.cos(a)*7-1.5,y-9-Math.sin(a)*7-1.5,3,3,'#bbb');}
     if(u.carry==='log')line(x-6,y-12,x+6,y-11,'#8a5a2a',3);rect(x-2.5,y-15.5,5,1.6,'#a33');}
   else if(u.job==='miner'){rect(x-2.6,y-15.6,5.2,2,'#d8c040');if(u.state==='pick'){const a=Math.sin(u.anim*2)*1.2;line(x,y-9,x+Math.cos(a)*7,y-9-Math.sin(a)*7,'#6b4a26',1.4);line(x+Math.cos(a)*7-2,y-9-Math.sin(a)*7-2,x+Math.cos(a)*7+2,y-9-Math.sin(a)*7+2,'#ccc',1.5);}}
+  else if(u.job==='carter'){ell(x,y-15,6.5,1.8,'#5a3a1c');rect(x-3,y-18,6,3,'#6a4424');line(x+f*3,y-9,x+f*6,y-11,'#2a1a10',1.2);}
   else if(u.job==='farmer'){rect(x-4,y-15.5,8,1.6,'#d8c070');if(u.state==='work'){const a=Math.sin(u.anim*1.5)*.6;line(x,y-8,x+f*6,y-2+a*3,'#6b4a26',1.3);}}
   else if(u.task&&u.state==='build'){const a=Math.sin(u.anim*3);line(x,y-9,x+f*5,y-11+a*3,'#555',1.4);}
   if(u.state==='flee'&&u.type!=='crew'){ctx.fillStyle='#fff';ctx.font='bold 9px Georgia';ctx.textAlign='center';ctx.fillText('!',x,y-17);}}
 const FAUNA_ART=new Set(['fish','horse','boar','fox','wolf','bear','beaver','goat','mgoat','cougar','crab','seal']);
 function drawAnimal(u){drawAnimal0(u);if(GFX_HI&&!u.burn)furHi(u);}
-function drawAnimal0(u){if(FAUNA_ART.has(u.species)){drawFauna(u);return;}const x=u.x,y=u.y,s=u.species,b=Math.abs(Math.sin(u.anim))*1;
-  ell(x,y+1,s==='cow'?9:7,3,'rgba(0,0,0,.2)');
+function drawAnimal0(u){if(FAUNA_ART.has(u.species)){drawFauna(u);return;}const x=u.x,y=u.y,s=u.species,b=0,lift=animalLift(u);
+  {const sk=Math.max(.5,1-lift/20);ell(x,y+1,(s==='cow'?9:7)*sk,3*sk,'rgba(0,0,0,.2)');}ctx.save();ctx.translate(0,-lift);
   if(s==='sheep'){ell(x,y-5-b,7,5,'#f2f2ec');ell(x+u.face*6,y-6-b,2.5,2.5,'#333');}
   else if(s==='cow'){ell(x,y-6-b,9,5,'#f5f5f0');ell(x-2,y-7-b,3,2,'#222');ell(x+3,y-5-b,2,1.5,'#222');ell(x+u.face*9,y-7-b,3,2.6,'#e8d8c8');}
   else if(s==='chicken'){ell(x,y-3-b*2,3.5,3,'#fafaf2');ell(x+u.face*3,y-6-b*2,1.8,1.8,'#fafaf2');rect(x+u.face*3-.8,y-8.5-b*2,1.6,1.4,'#e22');rect(x+u.face*4.6,y-6.3-b*2,1.4,.9,'#f0b020');}
-  else if(s==='rabbit'){const hop=Math.abs(Math.sin(u.anim*1.3))*3;ell(x,y-3-hop,4,3,'#b8a088');ell(x+u.face*3.5,y-5-hop,2.2,2,'#b8a088');line(x+u.face*3,y-6-hop,x+u.face*2.5,y-10-hop,'#b8a088',1.3);line(x+u.face*4,y-6-hop,x+u.face*4.5,y-10-hop,'#b8a088',1.3);ell(x-u.face*4,y-3-hop,1.4,1.4,'#fff');}
+  else if(s==='rabbit'){const hop=0;ell(x,y-3-hop,4,3,'#b8a088');ell(x+u.face*3.5,y-5-hop,2.2,2,'#b8a088');line(x+u.face*3,y-6-hop,x+u.face*2.5,y-10-hop,'#b8a088',1.3);line(x+u.face*4,y-6-hop,x+u.face*4.5,y-10-hop,'#b8a088',1.3);ell(x-u.face*4,y-3-hop,1.4,1.4,'#fff');}
   else if(s==='deer'){for(const lx of[-5,-2,3,6])line(x+lx,y-4,x+lx+Math.sin(u.anim+lx)*1.2,y+1,'#6a4428',1.3);ell(x,y-7-b,9,4.2,'#a86a38');ell(x+u.face*9,y-11-b,3,2.6,'#a86a38');
     line(x+u.face*9,y-13-b,x+u.face*7,y-19-b,'#5a3a1a',1.2);line(x+u.face*10,y-13-b,x+u.face*12,y-19-b,'#5a3a1a',1.2);ell(x-u.face*8,y-8-b,1.8,1.6,'#fff');}
   else{ell(x,y-5-b,7,4.5,'#f0a8b0');ell(x+u.face*6.5,y-5-b,2.5,2.2,'#e08890');}
-  if(u.burn>0)ell(x,y-6,6,4,'rgba(255,120,0,.6)');}
+  if(u.burn>0)ell(x,y-6,6,4,'rgba(255,120,0,.6)');ctx.restore();}
 function drawKnight(u){if(u.mounted){drawCavalry(u);return;}if(u.foot){drawFootman(u);return;}const x=u.x,y=u.y,f=u.face,g=Math.sin(u.anim*1.5);
   ell(x,y+2,10,3.5,'rgba(0,0,0,.25)');
   for(let i=-1;i<=1;i+=2){line(x+i*5,y-4,x+i*5+g*2*i,y+1,'#4a2e16',1.6);}

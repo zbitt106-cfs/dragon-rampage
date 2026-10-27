@@ -213,12 +213,13 @@ function drawCastleHi(){const W=CWALL,th=22,n=nightAmt();
   rect(W.x0+th/2,W.y0,4,W.y1-W.y0,'rgba(0,0,0,.18)');rect(W.x1-th/2-4,W.y0,4,W.y1-W.y0,'rgba(255,255,255,.08)');
   for(let x=W.x0;x<W.x1;x+=22){rect(x,W.y0-th/2-7,12,8,'#b0b0b6');rect(x,W.y0-th/2+1,12,2,'#7a7a82');if(Math.abs(x-GATE.x)>50){rect(x,W.y1-th/2-7,12,8,'#acacb2');rect(x,W.y1-th/2+1,12,2,'#7a7a82');}}
   // keep: a 2.5D great hall with a gabled slate roof
-  if(kUp('keep'))house(1610,150,{w:140,dp:60,H:46,R:34,ov:6,wall:'#a2a2a8',roof:'#3f4a7a',front:(w,H,R,nn)=>{ctx.fillStyle=GX.brickPat;ctx.fillRect(-w/2,-H,w,H);
+  if(kUp('keep'))keepHi(KEEP_POS.x,KEEP_POS.y,{w:140,dp:60,H:46,R:34,ov:6,wall:'#a2a2a8',roof:'#7e8290',front:(w,H,R,nn)=>{ctx.fillStyle=GX.brickPat;ctx.fillRect(-w/2,-H,w,H);
     const dg=ctx.createLinearGradient(-14,0,14,0);dg.addColorStop(0,'#5a3a24');dg.addColorStop(1,'#2a1a10');ctx.fillStyle=dg;ctx.beginPath();ctx.moveTo(-14,0);ctx.lineTo(-14,-22);ctx.arc(0,-22,14,Math.PI,0);ctx.lineTo(14,0);ctx.fill();
     for(const u of[-50,-30,30,50]){rect(u-4,-34,8,14,nn>.25?'#ffd070':'#2a2a3a');}rect(-8,-H-R*.6,16,12,'#c22');poly([-8,-H-R*.6+12,0,-H-R*.6+18,8,-H-R*.6+12],'#c22');}});
-  if(n>.25&&kUp('keep')){for(const u of[-50,-30,30,50])addLight(1610+u,120,70,.6,1);}
+  if(!kUp('keep')&&PR.state==='tower')drawInsidePrincess(KEEP_POS.x,KEEP_POS.y-14);
+  if(n>.25&&kUp('keep')){for(const u of[-50,-30,30,50])addLight(KEEP_POS.x+u,KEEP_POS.y-30,70,.6,1);}
   addLight(GATE.x-50,GATE.y-40,110,.8,1);addLight(GATE.x+50,GATE.y-40,110,.8,1);
-  ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle of King Aldric · Level ${G.lvl}`,1600,W.y0-44);
+  ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle of King Aldric · Level ${G.lvl}`,CASTLE.x,W.y0-44);
   for(const g of goldPiles){if(g.amt<=0){ell(g.x,g.y,14,6,'rgba(90,70,30,.5)');continue;}const k=Math.min(26,Math.ceil(g.amt/3));softShadow(g.x+4,g.y+3,26,9,.5);
     for(let i=0;i<k;i++){const ang=i*2.4,rr=(i%4)*4,cx=g.x+Math.cos(ang)*rr*1.5,cy=g.y-Math.floor(i/4)*4+Math.sin(ang)*rr*.4,cg=ctx.createRadialGradient(cx-2,cy-1.5,.5,cx,cy,6.5);cg.addColorStop(0,'#fff6b0');cg.addColorStop(.5,i%2?'#ffd84a':'#f0b820');cg.addColorStop(1,'#a87a10');
       ctx.fillStyle=cg;ctx.beginPath();ctx.ellipse(cx,cy,6,3.4,0,0,TAU);ctx.fill();}
@@ -228,7 +229,7 @@ function drawCastleHi(){const W=CWALL,th=22,n=nightAmt();
   [[W.x0,W.y0],[W.x1,W.y0],[W.x0,W.y1],[W.x1,W.y1]].forEach(([x,y],i)=>{if(kUp('ctower',s=>s.ti===i))tower3(x,y+8,26,40,'#3f4a7a');});
   const T=PRINCESS_TOWER;if(!kUp('ptower'))return;const[tx,ty]=tower3(T.x,T.y+30,20,76,'#d86aa8');
   rect(tx-7,ty+40,14,16,n>.25?'#ffd070':'#2a1a14');if(n>.25)addLight(tx,ty+46,80,.6,1);
-  if(PR.state==='tower'){drawPrincess(tx,ty+60,true);if(Math.sin(G.t*1.3)>.3){ctx.fillStyle='#fff';ctx.font='bold 11px Georgia';ctx.textAlign='center';ctx.fillText('Help! A dragon!',tx,ty-74);}}}
+}
 
 // ---------- rocks, peaks, cliffs, pines ----------
 function drawRockHi(r){const x=r.x,y=r.y,R2=r.r;softShadow(x+R2*.35,y+R2*.2,R2*1.25,R2*.6,.5*shadowK());
@@ -260,7 +261,7 @@ function personHi(u,x,y,bob,f,sh){const hy=y-12.5+bob*.3,hc=HAIR[(hsh01(u)*6)|0]
   const sw=Math.sin(u.anim)*1.4;line(x-f*2.6,y-9+bob*.3,x-f*3.2-sw*.4,y-5.5,sh,1.3);ell(x-f*3.2-sw*.4,y-5.3,.8,.8,'#f0c8a0');}
 const FUR={sheep:[0,-5,7,5,'wool'],cow:[0,-6,9,5],chicken:[0,-3,3.5,3],rabbit:[0,-3,4,3,'#d8c8b0'],deer:[0,-7,9,4.2,'#c88a58'],pig:[0,-5,7,4.5],horse:[0,-10,12,5.5,'#b8804a'],boar:[0,-7,10,5.5,'#7a6050'],
   fox:[0,-6,8,3.8,'#f8a868'],wolf:[0,-8,10,4.5,'#b4b8c0'],bear:[0,-12,14,8,'#8a6040'],beaver:[0,-4,7,4.5,'#9a6a40'],goat:[0,-8,8,4.5,'#e0d4bc'],mgoat:[0,-8,8,4.5,'#ffffff'],seal:[0,-4,12,5]};
-function furHi(u){const F=FUR[u.species];if(!F||(u.species==='fish'))return;const b=Math.abs(Math.sin(u.anim))*(FAUNA_ART.has(u.species)?1.2:1),x=u.x+F[0],y=u.y+F[1]-b-(u.rear?8:0),rx=F[2],ry=F[3];
+function furHi(u){const F=FUR[u.species];if(!F||(u.species==='fish'))return;const b=animalLift(u),x=u.x+F[0],y=u.y+F[1]-b-(u.rear?8:0),rx=F[2],ry=F[3];
   ell(x+rx*.1,y+ry*.4,rx*.85,ry*.45,'rgba(0,0,0,.16)');ell(x-rx*.25,y-ry*.4,rx*.5,ry*.28,'rgba(255,255,255,.25)');
   if(F[4]==='wool'){ctx.strokeStyle='rgba(170,170,160,.7)';ctx.lineWidth=.8;for(let k=0;k<7;k++){const a=k/7*TAU;ctx.beginPath();ctx.arc(x+Math.cos(a)*rx*.62,y+Math.sin(a)*ry*.55,1.8,0,TAU);ctx.stroke();}}
   else if(F[4]){ctx.strokeStyle=F[4];ctx.lineWidth=.8;for(let k=-3;k<=3;k++){const px=x+k*rx*.25,py=y-ry*Math.sqrt(Math.max(0,1-(k*.25)**2))*.9;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px-1.2,py-1.8);ctx.stroke();}}}

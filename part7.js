@@ -27,7 +27,7 @@ function pollPad(dt){GPAD.toastT=Math.max(0,GPAD.toastT-dt);let pads=[];try{pads
   const dx=(B(15)?1:0)-(B(14)?1:0),dy=(B(13)?1:0)-(B(12)?1:0);if(dx||dy){const l=Math.hypot(dx,dy);ax=dx/l;ay=dy/l;}
   GPAD.mx=menu?0:ax;GPAD.my=menu?0:ay;
   // buttons -> the same virtual key presses the keyboard uses
-  if(menu){if(edge(0))pressed['enter']=true;if(edge(9))pressed[paused&&!G.over&&!G.won&&scene!=='title'?'p':'enter']=true;if(edge(8))pressed['r']=true;if(edge(1)&&paused)pressed['p']=true;
+  if(menu){if(edge(0))pressed['enter']=true;if(edge(9))pressed[paused&&!G.over&&!G.won&&scene!=='title'?'p':'enter']=true;if(edge(8))pressed['r']=true;if(edge(1)&&(paused||PM.on))pressed['p']=true;
     // d-pad / stick edges navigate menus
     GPAD.navT-=dt;const nx=dx||(Math.abs(ax)>.5?Math.sign(ax):0),ny=dy||(Math.abs(ay)>.5?Math.sign(ay):0);
     if((nx||ny)&&GPAD.navT<=0){GPAD.navT=.28;if(ny<0)pressed['arrowup']=true;else if(ny>0)pressed['arrowdown']=true;else if(nx<0)pressed['arrowleft']=true;else pressed['arrowright']=true;}
@@ -38,9 +38,11 @@ function pollPad(dt){GPAD.toastT=Math.max(0,GPAD.toastT-dt);let pads=[];try{pads
 // ---------- castle goal: steal gold, kidnap the princess (cartoon style), fly home ----------
 const QUIPS=['Eek! Put me down!','Help! Somebody!','You big lizard!','Daddy will be SO mad!','Watch the dress!','Are we there yet?','I get airsick, you know!'];
 function tryGrab(){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
-  if(PR.state==='tower'&&!D.princess&&(d2(D.x,D.y,PR.x,PR.y)<120||d2(mx,my,PR.x,PR.y)<110)){
+  const nearPR=PR.state==='tower'&&!D.princess&&(d2(D.x,D.y,PR.x,PR.y)<120||d2(mx,my,PR.x,PR.y)<110);
+  if(nearPR&&!roofOpen()){if(biteRoof())return true;roofHint(true);}
+  if(nearPR&&roofOpen()){
     PR.state='carried';D.princess=true;D.quip=QUIPS[0];D.quipT=3;G.quipT=4;addAlarm(100);G.alarm=100;
-    float(PR.x,PR.y-60,'Eek! Put me down!','#ff9ad0');spawnWave(Math.max(1,G.level),true);G.banner={text:'You captured Princess Elizabeth!',sub:'Fly her back to your lair (follow the gold arrow, south-east). She is quite safe — just very cross.',extra:'The knights ride out of the gate: "Rescue Princess Elizabeth!"',t:4.5};return true;}
+    float(PR.x,PR.y-60,'Eek! Put me down!','#ff9ad0');spawnWave(Math.max(1,G.level),true);G.banner={text:'You captured Princess Elizabeth!',sub:'Fly her back to your lair (follow the gold arrow, north to Dragon Peak). She is quite safe — just very cross.',extra:'The knights ride out of the gate: "Rescue Princess Elizabeth!"',t:4.5};return true;}
   const cap=G.easy?80:60;
   if(D.gold<cap)for(const g of goldPiles){if(g.amt>0&&(d2(D.x,D.y,g.x,g.y)<95||d2(mx,my,g.x,g.y)<90)){const take=Math.min(g.amt,cap-D.gold);g.amt-=take;D.gold+=take;
     float(g.x,g.y-30,`+${take} gold (carrying ${D.gold})`,'#ffd84a');sparkle(g.x,g.y,8);addAlarm(6);return true;}}
@@ -61,7 +63,7 @@ function updGoal(dt){
     for(let i=0;i<nT;i++)if(!units.some(u=>!u.dead&&u.post==='tower'&&u.slot===i))spawnPost('tower',i);
     for(let i=0;i<nG;i++)if(!units.some(u=>!u.dead&&u.post==='guard'&&u.slot===i))spawnPost('guard',i);}}
   // hunter respawns from his cabin
-  if(!units.some(u=>!u.dead&&u.type==='hunter')){const cab=structures.find(s=>s.kind==='cabin');if(cab&&cab.state==='ok'){G.hunterT-=dt;if(G.hunterT<=0){G.hunterT=20;spawnHunter();float(CABIN.x,CABIN.y-60,'The hunter is back!','#cde');}}}
+  if(!units.some(u=>!u.dead&&(u.type==='hunter'||(u.wk&&u.wk.id==='cabin'&&!u.wk.back)))){const cab=structures.find(s=>s.kind==='cabin');if(cab&&cab.state==='ok'){G.hunterT-=dt;if(G.hunterT<=0){G.hunterT=20;spawnHunter();float(CABIN.x,CABIN.y-60,'The hunter is back!','#cde');}}}
   else G.hunterT=20;
   // wild & farmyard animals wander back in
   // (wild animals respawn per region in updFauna)

@@ -35,10 +35,10 @@ fixShoreFootprints();
 const onBeach=(x,y)=>!inSea(x,y)&&!onIsle(x,y)&&(x>coastX(y)-170||y>coastY(x)-150);
 const REGION_NAMES={farm:'The Kingdom Farmlands',castle:'Castle Aldric',forest:'The Deepwood',hills:'The Rocky Hills',lake:'Mirror Lake & the Silver River',
   mountain:'The Frostpeak Mountains',coast:'The Sapphire Coast',south:'The Southern Farmlands',lair:"Dragon's Roost (home)",sea:'The Sapphire Sea',isle:'The Lonely Lighthouse',deep:'The Kraken Deep',desert:'The Scorching Sands'};
-const REGION_SUB={farm:'Villages, farms and fat, tasty livestock',castle:'Gold, guards and Princess Elizabeth in the pink tower',forest:"Deer, boars, wolves, bears and the hunter's cabin",
+const REGION_SUB={farm:'Villages, farms and fat, tasty livestock',castle:'Gold, guards and Princess Elizabeth locked inside the keep: break its stone roof!',forest:"Deer, boars, wolves, bears and the hunter's cabin",
   hills:'The mine, goats and rocky crags',lake:'Ducks, geese, jumping fish and busy beavers',mountain:'Snowy cliffs, mountain goats, eagles and hawks',
   coast:'Seagulls, crabs and lazy seals',south:'More villages and farms to explore',lair:'Your home base: land here to rest and heal',sea:'Swim or soar: fish, sharks, whales, boats and pirates!',isle:'A quiet rest stop: catch your breath and heal',deep:'Something huge stirs below... the GIANT SQUID',desert:'Dunes, cacti, camels, scorpions… and something under the sand'};
-const REGION_LABEL={farm:[1000,1500],castle:[1600,-60],forest:[-1700,1700],hills:[4300,1300],lake:[1700,3650],mountain:[1500,-1500],coast:[5650,2400],south:[700,3500],lair:[LAIR.x,LAIR.y-260],sea:[6500,4900],isle:[7350,2480],deep:[8850,900],desert:[-6600,1150]};
+const REGION_LABEL={farm:[1000,1500],castle:[CASTLE.x,CWALL.y0-80],forest:[-1700,1700],hills:[4300,1300],lake:[1250,2960],mountain:[1500,-1500],coast:[5650,2400],south:[700,3500],lair:[LAIR.x,LAIR.y-260],sea:[6500,4900],isle:[7350,2480],deep:[8850,900],desert:[-6600,1150]};
 function regionKey(x,y){
   if(d2(x,y,LAIR.x,LAIR.y)<420)return'lair';
   {const dx=x-LH.x,dy=y-LH.y;if(dx*dx+dy*dy<470*470)return'isle';}
@@ -46,8 +46,8 @@ function regionKey(x,y){
   if(x>coastX(y)-260||y>coastY(x)-220)return'coast';
   if(y<frostY(x)||inRange(x,y)||x<WX0+650)return'mountain';
   if(x<RANGE0)return'desert';
+  if(x>CWALL.x0-100&&x<CWALL.x1+100&&y>CWALL.y0-70&&y<CWALL.y1+190)return'castle';
   if(x<forestX(y))return'forest';
-  if(x>1220&&x<1980&&y<470)return'castle';
   {const dx=(x-LAKE.x)/(LAKE.rx+260),dy=(y-LAKE.y)/(LAKE.ry+220);if(dx*dx+dy*dy<1||riverD(x,y)<230)return'lake';}
   if((x>3250&&y<3000)||(x>2650&&y>900&&y<1700))return'hills';
   if(y>2250)return'south';
@@ -74,6 +74,9 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   g.putImageData(im,0,0);
   // roads, plazas, fields & clearings outside the detailed core map (painted at low res)
   g.save();g.setTransform(1/TS,0,0,1/TS,-WX0/TS,-WY0/TS);g.beginPath();g.rect(WX0,WY0,WX1-WX0,WY1-WY0);g.rect(30,30,WW-60,WH-60);g.clip('evenodd');
+  // Castle Aldric's grounds (south-central, outside the detailed core ground canvas)
+  g.fillStyle='#6b7a5a';g.fillRect(CWALL.x0-50,CWALL.y0-50,CWALL.x1-CWALL.x0+100,CWALL.y1-CWALL.y0+90);
+  g.fillStyle='#b3a487';g.fillRect(CWALL.x0,CWALL.y0,CWALL.x1-CWALL.x0,CWALL.y1-CWALL.y0);
   strokeRoads(g);const V=VILLAGES;
   for(let i=5;i<V.length;i++){const v=V[i];g.fillStyle='#a8915f';g.beginPath();g.ellipse(v.x,v.y,120,90,0,0,TAU);g.fill();}
   FARMS.forEach(f=>{const F=f.field;g.fillStyle='#7a5a32';g.fillRect(F.x-4,F.y-4,F.w+8,F.h+8);const P=f.pen;g.fillStyle='#7fa84a';g.fillRect(P.x,P.y,P.w,P.h);});

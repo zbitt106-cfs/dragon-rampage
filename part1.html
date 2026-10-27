@@ -44,9 +44,12 @@ let seed=1337; const srnd=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(se
 const SR=(a,b)=>a+srnd()*(b-a);
 
 // ---------- layout ----------
-const CASTLE={x:1600,y:190,w:560,h:250}, GATE={x:1600,y:330};
+// Castle Aldric sits SOUTH-CENTRAL, between Mirror Lake/the Silver River and the southern beach, far from the dragon's peak.
+// Every castle literal is the old northern layout shifted by (CDX,CDY).
+const CDX=550,CDY=3610;
+const CASTLE={x:1600+CDX,y:190+CDY,w:560,h:250}, GATE={x:1600+CDX,y:330+CDY};
 const VILLAGES=[{x:800,y:720},{x:2400,y:720},{x:1600,y:1150},{x:900,y:1720},{x:2350,y:1720},
-  {x:500,y:2750,name:'Millbrook'},{x:2350,y:2900,name:'Riverbend'},{x:800,y:4050,name:'Southwold'},{x:2150,y:4150,name:'Haybury'},{x:4000,y:700,name:'Stonebrook'},{x:5050,y:1500,name:'Saltmere'},{x:4300,y:4100,name:'Crabhaven'}];
+  {x:500,y:2750,name:'Millbrook'},{x:2350,y:2900,name:'Riverbend'},{x:800,y:4050,name:'Southwold'},{x:3050,y:4020,name:'Haybury'},{x:4000,y:700,name:'Stonebrook'},{x:5050,y:1500,name:'Saltmere'},{x:4300,y:4100,name:'Crabhaven'}];
 const CAMP={x:470,y:1220};        // logging camp at west forest edge
 const MINE={x:2860,y:1260};       // mine entrance in eastern rocky hills
 const LOGPILE_POS={x:560,y:1300}, STONEPILE_POS={x:2700,y:1380};
@@ -59,7 +62,7 @@ const FARMS=[ // field rect, barn, pen
  {v:5,field:{x:760,y:2620,w:240,h:160,crop:'wheat'},barn:{x:300,y:2600},pen:{x:230,y:2930,w:150,h:110,animal:'sheep'}},
  {v:6,field:{x:2550,y:3050,w:220,h:150,crop:'corn'},barn:{x:2150,y:3080},pen:{x:2560,y:2640,w:150,h:110,animal:'pig'}},
  {v:7,field:{x:1000,y:3950,w:260,h:160,crop:'wheat'},barn:{x:520,y:4000},pen:{x:400,y:4200,w:150,h:110,animal:'cow'}},
- {v:8,field:{x:2350,y:4050,w:240,h:170,crop:'corn'},barn:{x:1900,y:4000},pen:{x:1860,y:4170,w:160,h:110,animal:'sheep'}},
+ {v:8,field:{x:3250,y:3930,w:240,h:170,crop:'corn'},barn:{x:2800,y:3880},pen:{x:2790,y:4030,w:160,h:110,animal:'sheep'}},
 ];
 const PADDOCKS=[{x:1950,y:930,w:300,h:170},{x:1100,y:2480,w:420,h:240},{x:1300,y:4090,w:440,h:200}]; // horse paddocks
 const ROCKS=[]; // decorative hills/rocks (not burnable)
@@ -67,9 +70,10 @@ const LAIR={x:2300,y:-1750};        // the dragon's nest on Dragon Peak, the hig
 const CABIN={x:-1500,y:1100};         // hunter's cabin deep in the north-west forest
 const WILD={x:-1950,y:780,w:900,h:700}; // deer & rabbit range around the cabin
 const PONDS=[{x:1200,y:600,rx:70,ry:42},{x:2080,y:1430,rx:80,ry:46},{x:1500,y:3300,rx:520,ry:300,lake:1},{x:3000,y:3470,rx:110,ry:28,lake:1}];
-const PRINCESS_TOWER={x:1790,y:125};
-const CWALL={x0:1320,x1:1880,y0:65,y1:315}; // castle wall rectangle
-const TOWER_SPOTS=[[1320,65],[1880,65],[1320,315],[1880,315],[1460,65],[1740,315],[1320,190],[1880,190],[1460,315],[1600,65],[1740,65],[1530,315]];
+const PRINCESS_TOWER={x:1790+CDX,y:125+CDY}; // decorative pink tower (the princess is held inside the keep)
+const KEEP_POS={x:1610+CDX,y:150+CDY};        // the great keep: Princess Elizabeth is locked inside, under its stone roof
+const CWALL={x0:1320+CDX,x1:1880+CDX,y0:65+CDY,y1:315+CDY}; // castle wall rectangle
+const TOWER_SPOTS=[[1320,65],[1880,65],[1320,315],[1880,315],[1460,65],[1740,315],[1320,190],[1880,190],[1460,315],[1600,65],[1740,65],[1530,315]].map(([x,y])=>[x+CDX,y+CDY]);
 let EASY=localStorage.getItem('dr_easy')==='1';
 
 // ---------- state ----------
@@ -95,16 +99,17 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
     const F=f.field;for(let y=F.y;y<F.y+F.h;y+=22)for(let x=F.x;x<F.x+F.w;x+=22)cells.push({x:x+11,y:y+11,crop:F.crop,growth:SR(.7,1),fire:0,burnt:false,farm:fi,claimed:null});});
   addStruct('logpile',LOGPILE_POS.x,LOGPILE_POS.y,-1);
   addStruct('cabin',CABIN.x,CABIN.y,-1);
-  const gt=addStruct('gate',1600,CWALL.y1+6,-1);gt.hp=gt.maxHp=260+80*(lvl-1);
-  const br=addStruct('barracks',1430,250,-1);br.hp=br.maxHp=220+60*(lvl-1);
-  PR={x:PRINCESS_TOWER.x,y:PRINCESS_TOWER.y,state:'tower',quip:0,t:0};
-  goldPiles=[[1480,150],[1560,215],[1650,150],[1700,240],[1620,265]].map(([x,y])=>({x,y,amt:20+10*(lvl-1)}));
+  const gt=addStruct('gate',GATE.x,CWALL.y1+6,-1);gt.hp=gt.maxHp=260+80*(lvl-1);
+  const br=addStruct('barracks',1430+CDX,250+CDY,-1);br.hp=br.maxHp=220+60*(lvl-1);
+  PR={x:KEEP_POS.x,y:KEEP_POS.y-30,state:'tower',quip:0,t:0}; // state 'tower' = held in the castle (inside the keep)
+  goldPiles=[[1480,150],[1560,215],[1650,150],[1700,240],[1620,265]].map(([x,y])=>({x:x+CDX,y:y+CDY,amt:20+10*(lvl-1)}));
   addStruct('stonepile',STONEPILE_POS.x,STONEPILE_POS.y,-1);
   // rocks / hills in the east
   for(let i=0;i<46;i++){const x=SR(2680,3150),y=SR(950,1650);if(d2(x,y,MINE.x,MINE.y)<70)continue;ROCKS.push({x,y,r:SR(14,40),c:SR(0,1)});}
   for(let i=0;i<300;i++){const x=SR(3250,5300),y=SR(-150,3000);if(regionKey(x,y)!=='hills'||VILLAGES.some(v=>d2(x,y,v.x,v.y)<260)||d2(x,y,LAIR.x,LAIR.y)<450)continue;ROCKS.push({x,y,r:SR(14,44),c:SR(0,1)});}
   // trees: dense west forest + scattered
-  const blocked=(x,y)=>{ if(x>CASTLE.x-CASTLE.w/2-80&&x<CASTLE.x+CASTLE.w/2+80&&y<CASTLE.y+CASTLE.h/2+120)return true;
+  const blocked=(x,y)=>{ if(x>CASTLE.x-CASTLE.w/2-80&&x<CASTLE.x+CASTLE.w/2+80&&y>CASTLE.y-CASTLE.h/2-120&&y<CASTLE.y+CASTLE.h/2+120)return true;
+    if(x>GATE.x-260&&x<GATE.x+380&&y>GATE.y&&y<GATE.y+240)return true; // gate plaza, guards and the Castle Market
     for(const v of VILLAGES)if(d2(x,y,v.x,v.y)<210)return true;
     for(const f of FARMS){const F=f.field;if(x>F.x-30&&x<F.x+F.w+30&&y>F.y-30&&y<F.y+F.h+30)return true;
       const P=f.pen;if(x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30)return true;if(d2(x,y,f.barn.x,f.barn.y)<70)return true;}
@@ -112,7 +117,8 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
     if(d2(x,y,1600,1450)<120)return true; if(PONDS.some(p=>d2(x,y,p.x,p.y)<110))return true; if(inWater(x,y)||riverD(x,y)<RIVW+40||onBeach(x,y))return true;
     {const lx=(x-LAKE.x)/(LAKE.rx+70),ly=(y-LAKE.y)/(LAKE.ry+70);if(lx*lx+ly*ly<1)return true;} if(PADDOCKS.some(P=>x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30))return true; if(d2(x,y,LAIR.x,LAIR.y)<170||d2(x,y,CABIN.x,CABIN.y)<75)return true; return false;};
   let tries=0;while(trees.length<240&&tries<5000){tries++;const x=SR(40,430),y=SR(300,2150);if(!blocked(x,y))addTree(x,y);}
-  tries=0;while(trees.length<420&&tries<5000){tries++;const x=SR(40,WW-40),y=SR(420,WH-40);if(!blocked(x,y))addTree(x,y);}
+  tries=0;while(trees.length<262&&tries<900){tries++;const x=SR(1250,1960),y=SR(120,440);if(!blocked(x,y)&&!(y<frostY(x)+60))addTree(x,y);} // a little wood where the old castle used to stand
+  tries=0;while(trees.length<442&&tries<5000){tries++;const x=SR(40,WW-40),y=SR(420,WH-40);if(!blocked(x,y))addTree(x,y);}
   for(let i=0;i<30;i++){const x=CAMP.x+SR(-180,60),y=CAMP.y+SR(-260,260);if(!blocked(x,y)&&x<480)addTree(x,y);}
   // the Deepwood (far west), scattered southern copses and a few hill trees
   tries=0;let nt=trees.length;while(trees.length<nt+900&&tries<9000){tries++;const x=SR(-2900,-250),y=SR(-150,4300);if(regionKey(x,y)==='forest'&&!blocked(x,y))addTree(x,y);}
@@ -161,9 +167,7 @@ function buildGround(){
   g.fillStyle='#9a8256';g.beginPath();g.ellipse(CAMP.x+30,CAMP.y+30,120,110,0,0,TAU);g.fill();
   g.beginPath();g.ellipse(2760,1330,140,90,0,0,TAU);g.fill();
   // castle grounds, courtyard flagstones, roads to lair & cabin
-  g.fillStyle='#6b7a5a';g.fillRect(CWALL.x0-50,0,CWALL.x1-CWALL.x0+100,CWALL.y1+40);
-  g.fillStyle='#b3a487';g.fillRect(CWALL.x0,CWALL.y0,CWALL.x1-CWALL.x0,CWALL.y1-CWALL.y0);
-  g.strokeStyle='rgba(90,80,60,.35)';g.lineWidth=1;for(let x=CWALL.x0;x<CWALL.x1;x+=28)for(let y=CWALL.y0;y<CWALL.y1;y+=20){g.strokeRect(x+((y/20)%2)*14,y,28,20);}
+  // (the castle grounds are painted into the world terrain now that Castle Aldric stands in the south; see buildTerrain)
   g.fillStyle='rgba(40,70,30,.4)';g.beginPath();g.ellipse(CABIN.x,CABIN.y,90,70,0,0,TAU);g.fill();
   g.fillStyle='#8a7a62';g.beginPath();g.ellipse(CABIN.x+10,CABIN.y+20,60,40,0,0,TAU);g.fill();
   g.fillStyle='#5a4a3a';g.beginPath();g.ellipse(LAIR.x,LAIR.y,170,120,0,0,TAU);g.fill();g.fillStyle='#6e5d48';g.beginPath();g.ellipse(LAIR.x,LAIR.y,130,90,0,0,TAU);g.fill();

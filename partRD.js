@@ -17,10 +17,11 @@ function spawnRaid(){const r=RAID.cur;r.phase='march';const x=GATE.x,y=GATE.y+12
   units.push(...r.members);G.gateOpenT=Math.max(G.gateOpenT||0,3);
   r.path=raidRoute();
   float(x,y-60,`${r.short}: "For the King!"`,'#ffe08a');if(typeof SFX!=='undefined')SFX.play('raidHorn');}
-// out of the gate, east along the King's road, then up the mountain trail past the castle to Dragon Peak
-function raidRoute(){const rd=ROADS.find(q=>Math.abs(q.pts[0].x-GATE.x)<40&&q.pts[q.pts.length-1].x>2200&&q.pts[q.pts.length-1].y<900),P=[];
-  if(rd)for(const p of rd.pts){P.push({x:p.x,y:p.y});if(p.x>=2040)break;}else P.push({x:2040,y:500});
-  P.push({x:2070,y:120},{x:2130,y:-380},{x:2210,y:-880},{x:2270,y:-1330},{x:HX()+20,y:HY()+150},{x:HX(),y:HY()+14});return P;}
+// out of the southern gate, north along the King's roads (over the Riverbend bridge) to the old castle hill, then up the mountain trail to Dragon Peak
+const RAID_TRAIL={x:2070,y:430}; // trailhead at the foot of the Frostpeaks, where the old castle used to stand
+function raidRoute(){const P=[{x:GATE.x,y:GATE.y+24}],rp=typeof roadPath==='function'?roadPath(GATE.x,GATE.y+20,RAID_TRAIL.x,RAID_TRAIL.y):null;
+  if(rp)for(const p of rp.P){const l=P[P.length-1];if(dist(l,p)>40)P.push({x:p.x,y:p.y});}else P.push({x:2400,y:3960},{x:2265,y:3340},{x:2350,y:2900},{x:2350,y:1720},{x:2150,y:900});
+  P.push({x:RAID_TRAIL.x,y:RAID_TRAIL.y},{x:2070,y:120},{x:2130,y:-380},{x:2210,y:-880},{x:2270,y:-1330},{x:HX()+20,y:HY()+150},{x:HX(),y:HY()+14});return P;}
 function raidFight(u,dt){const dd=dist(u,D),ground=D.alt<DR.hitAltSword;if(!ground||dd>150)return false;
   u.atk-=dt;if(dd>70)moveTo(u,D.x,D.y,95,dt);else{u.anim+=dt*4;if(u.atk<=0){u.atk=.95;u.swing=.3;hurtDragon(9+3*u.raid.n,'sword');}}u.swing=Math.max(0,(u.swing||0)-dt);return true;}
 // called from the unit loop: true = this unit was handled here

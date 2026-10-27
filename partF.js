@@ -30,7 +30,7 @@ function spawnWild(sp,far,at){const F=FAUNA[sp],zk=sp==='mgoat'&&rnd()<.7?'summi
   for(let i=0;i<n;i++)units.push(mkUnit('animal',p.x+R(-30,30)*(n>1),p.y+R(-20,20)*(n>1),{species:sp,wild:true,zone:zk,home,strict:!!p.P,hp:F.hp,maxHp:F.hp,free:true,pack:pk,t:R(0,3),jt:0}));}
 function initFauna(){for(const[sp,n]of FAUNA_PLAN)for(let i=0;i<n;i++)spawnWild(sp,false);}
 function updFauna(dt){G.faunaT=(G.faunaT||0)-dt;if(G.faunaT>0)return;G.faunaT=5;
-  for(const[sp,n]of FAUNA_PLAN){const have=sp==='wolf'?new Set(units.filter(u=>!u.dead&&u.species==='wolf'&&u.pack).map(u=>u.pack)).size:units.filter(u=>!u.dead&&u.wild&&u.species===sp&&!u.bolted).length;
+  for(const[sp,n]of FAUNA_PLAN){const have=sp==='wolf'?new Set(units.filter(u=>!u.dead&&u.species==='wolf'&&u.pack).map(u=>u.pack)).size:units.filter(u=>!u.dead&&u.wild&&u.species===sp&&!u.bolted&&u.herd===undefined).length; // northern herds (partGH) keep their own count
     if(have<n)spawnWild(sp,true);}}
 function updWild(u,dt){const F=FAUNA[u.species],Z=ZONES[u.zone],dd=dist(u,D),ox=u.x,oy=u.y;u.cd=(u.cd||0)-dt;u.t-=dt;
   if(u.species==='fish'){updFish(u,dt,dd);return;}
@@ -55,10 +55,11 @@ function updFish(u,dt,dd){const Z=ZONES.water,ox=u.x,oy=u.y;
   else{u.x+=Math.sin(G.t*.5+u.id*9)*12*dt;u.y+=Math.cos(G.t*.4+u.id*7)*6*dt;if(u.t<=0){u.t=R(1.5,4.5);u.jt=.9;u.vx=R(-45,45);u.vy=R(-12,12);u.face=u.vx>0?1:-1;if(dd<450&&rnd()<.3)float(u.x,u.y-34,'Splash!','#bfe6ff');}}
   if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;u.vx*=-1;}}
 const fishZ=u=>u.jt>0?Math.sin(Math.PI*(.9-u.jt)/.9)*30:0;
-function drawFauna(u){if(u.species==='cougar'){drawCougar(u);return;}if(DES_SP.has(u.species)){drawDesertFauna(u);return;}const x=u.x,y=u.y,s=u.species,f=u.face||1,b=(s==='mgoat'||s==='goat')&&u.leap>0?Math.sin(Math.min(1,(.55-u.leap)/.55)*Math.PI)*12:Math.abs(Math.sin(u.anim))*1.2,legs=(lx,c,len,w)=>line(x+lx,y-len,x+lx+Math.sin(u.anim+lx)*1.5,y+1,c,w||1.6);
+function drawFauna(u){if(u.species==='cougar'){drawCougar(u);return;}if(DES_SP.has(u.species)){drawDesertFauna(u);return;}const x=u.x,y=u.y,s=u.species,f=u.face||1,b=0,lift=animalLift(u),tk=hopTuck(u),legs=(lx,c,len,w)=>tk?line(x+lx,y-len,x+lx-f*(lx>0?-1:1)*tk*2.2,y+1-tk*len*.5,c,w||1.6):line(x+lx,y-len,x+lx+Math.sin(u.anim+lx)*1.5,y+1+stretchLeg(u),c,w||1.6);
   if(s==='fish'){if(u.jt>0){const z=fishZ(u);ell(x,y+1,6,2,'rgba(30,60,120,.3)');ctx.save();ctx.translate(x,y-z);ctx.rotate(f*(u.jt-.45)*1.6);ell(0,0,8,3.5,'#e8904a');poly([-f*7,0,-f*13,-4,-f*13,4],'#e07a3a');ell(f*4,-1,1.2,1.2,'#222');ctx.restore();}
     else{ctx.strokeStyle='rgba(220,240,255,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(x,y,5+Math.sin(G.t*3+u.id*20)*2,2,0,0,TAU);ctx.stroke();}return;}
-  ell(x,y+1,s==='bear'||s==='horse'?13:s==='crab'?6:9,3.5,'rgba(0,0,0,.2)');
+  {const sk=Math.max(.45,1-lift/30);ell(x,y+1,(s==='bear'||s==='horse'?13:s==='crab'?6:9)*sk,3.5*sk,'rgba(0,0,0,.2)');}
+  ctx.save();ctx.translate(0,-lift); // ONE translate lifts every part of the animal together (hop / bob / flop)
   if(s==='horse'){for(const lx of[-7,-3,4,8])legs(lx,'#5a3a20',6,2);ell(x,y-10-b,12,5.5,'#9a6236');ell(x+f*11,y-17-b,3.6,5.5,'#9a6236');ell(x+f*14,y-20-b,4.5,3,'#9a6236');
     line(x+f*8,y-20-b,x+f*5,y-12-b,'#3a2410',3);line(x-f*12,y-11-b,x-f*16,y-4-b,'#3a2410',2.5);ell(x+f*15,y-21-b,1,1,'#111');}
   else if(s==='boar'){for(const lx of[-5,-2,3,6])legs(lx,'#3a2a20',4,1.6);ell(x,y-7-b,10,5.5,'#5a4436');ell(x+f*9,y-7-b,4.5,4,'#5a4436');ell(x+f*13,y-6-b,2,1.8,'#c8a090');
@@ -73,8 +74,15 @@ function drawFauna(u){if(u.species==='cougar'){drawCougar(u);return;}if(DES_SP.h
   else if(s==='mgoat'||s==='goat'){const c=s==='mgoat'?'#f2f0ea':'#c8b89a';for(const lx of[-4,-1,3,5])legs(lx,'#333',5,1.4);ell(x,y-8-b,8,4.5,c);ell(x+f*8,y-11-b,3.2,3,c);
     ctx.strokeStyle=s==='mgoat'?'#555':'#6a5a40';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(x+f*7,y-14-b,3,Math.PI,Math.PI*1.9);ctx.stroke();ell(x+f*9,y-8-b,1,2,'#ddd');}
   else if(s==='crab'){const sx=Math.sin(u.anim*2)*1.5;ell(x+sx,y-3,5.5,3.5,'#e0402a');for(let i=-1;i<=1;i+=2){line(x+sx+i*4,y-3,x+sx+i*8,y-1,'#c03020',1.2);ell(x+sx+i*7,y-6,2,1.5,'#e0402a');}ell(x+sx-1.5,y-6,.9,.9,'#111');ell(x+sx+1.5,y-6,.9,.9,'#111');}
-  else if(s==='seal'){const r=Math.sin(G.t*2+u.id*5)*1;ell(x,y-4-r,12,5,'#7d8590');ell(x+f*10,y-7-r,4.5,4,'#7d8590');ell(x+f*12,y-8-r,1.1,1.1,'#111');ell(x+f*14,y-7-r,1.4,1,'#333');poly([x-f*11,y-4,x-f*16,y-7,x-f*16,y-1],'#6a727c');}
-  if(u.burn>0)ell(x,y-8,8,5,'rgba(255,120,0,.6)');}
+  else if(s==='seal'){const r=0;ell(x,y-4-r,12,5,'#7d8590');ell(x+f*10,y-7-r,4.5,4,'#7d8590');ell(x+f*12,y-8-r,1.1,1.1,'#111');ell(x+f*14,y-7-r,1.4,1,'#333');poly([x-f*11,y-4,x-f*16,y-7,x-f*16,y-1],'#6a727c');}
+  if(u.burn>0)ell(x,y-8,8,5,'rgba(255,120,0,.6)');ctx.restore();}
+// one shared lift for every hopping / bobbing animal, used by both the Low drawing and the High-graphics fur overlay
+function goatHopP(u){return (u.species==='mgoat'||u.species==='goat')&&u.leap>0?Math.min(1,Math.max(0,(.55-u.leap)/.55)):-1;}
+function animalLift(u){const s=u.species,p=goatHopP(u);if(p>=0)return Math.sin(p*Math.PI)*12;
+  if(s==='rabbit')return Math.abs(Math.sin(u.anim*1.3))*3;if(s==='chicken')return Math.abs(Math.sin(u.anim))*2;if(s==='seal')return (Math.sin(G.t*2+u.id*5)+1)*.9;
+  if(DES_SP.has(s))return s==='camel'||s==='dfox'?Math.abs(Math.sin(u.anim||0))*1.5:0;return Math.abs(Math.sin(u.anim||0))*(FAUNA_ART.has(s)?1.2:1);}
+function hopTuck(u){const p=goatHopP(u);return p>=0?Math.max(0,Math.sin(p*Math.PI)-.25)/.75:0;} // legs tuck up mid-air
+function stretchLeg(u){const p=goatHopP(u);return p>=0?Math.min(1.5,animalLift(u)*.25):0;} // legs reach for the ground at take-off and landing
 // cartoon mounted knight: horse + rider with a lance (lowered when charging)
 function drawCavalry(u){const x=u.x,y=u.y,f=u.face,g=Math.sin(u.anim*1.6);
   ell(x,y+2,16,5,'rgba(0,0,0,.25)');for(const lx of[-8,-4,5,9])line(x+lx,y-7,x+lx+g*3*(lx>0?1:-1),y+1,'#3a2410',2.2);

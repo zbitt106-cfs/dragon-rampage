@@ -5,7 +5,7 @@ A single-file browser game where you play a dragon. Open `index.html`; it needs 
 ## Building from source
 The source is split into parts, which are concatenated in this order:
 ```
-cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js part6.js > index.html
+cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partFM.js partMH.js partGH.js partKM.js part6.js > index.html
 ```
 (`bash build.sh` does the same.)
 
@@ -26,6 +26,17 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partRD.js: hoard raids (named champions with escorts march on the lair to steal gold)
 - partTR.js: trophy banners of beaten champions, planted around the hoard
 - partM.js: touch controls and mobile support
+- partP.js: Princess Elizabeth inside the great keep, under its stone roof
+- partY.js: the Dragon's Tally (bestiary) and the pause menu (P / Esc)
+- partWK.js: worker respawn for rebuilt work buildings
+- partSV.js: save / load (3 slots plus an autosave)
+- partSC.js: supply carts and the Castle Storehouse
+- partCS.js: claw scratch while swimming
+- partHC.js: the hoard and trophies carry over between castle levels
+- partFM.js: the FIRE meter
+- partMH.js: eating the kraken or a sand worm raises max health
+- partGH.js: northern mountain-goat herds and the mountain lions that hunt them
+- partKM.js: the kingdom-wide militia (every villager arms up and guards their own post)
 - part6.js: main loop, HUD, minimap and world map, title screen
 
 ## Controls
@@ -61,9 +72,30 @@ The title screen also has **Music volume** and **Sound effects** rows (←/→ i
 ## Wanted tiers and the MILITIA
 The WANTED meter rises as you cause damage and cools down faster the farther you are from where the trouble was. Wild animals never raise it. The kingdom's response grows in tiers:
 **foot soldiers → knights → archers → mounted knights → siege engines → MILITIA.**
-Early waves and patrols are only foot soldiers and knights. At the top tier, whole villages take up spears and pitchforks. Difficulty grows slowly, and Easy mode is gentler still.
+Early waves and patrols are only foot soldiers and knights. Difficulty grows slowly, and Easy mode is gentler still.
+
+### The whole kingdom takes up arms!
+When the MILITIA tier is reached, bells ring in every town and a banner reads **"The whole kingdom takes up arms!"** A red HUD strip with a swinging bell shows how many are armed. **Every** villager on the map arms up, each with a red armband and their own tool:
+
+| Who | Weapon | Guards |
+|---|---|---|
+| Villagers | spears (poke, or throw from range) | their own village |
+| Lumberjacks | axes (swing or throw) | the logging camp |
+| Miners | pickaxes (swing or toss a rock) | the mine |
+| Farmers | pitchforks or scythes | their farm |
+| Masons | hammers | the castle gate |
+| The hunter | his bow and dagger | his cabin |
+| Bucket villagers | throw water and buckets | the fire line (they keep fighting fires) |
+| Tax collectors | clubs | their route |
+| Caravan / cart drivers | staffs and whips | their cart (carts keep rolling) |
+| The lighthouse keeper | an oar (and pebbles) | the lighthouse |
+
+They **defend their own post only**: they engage the dragon when it comes within about one screen of the post, never chase it more than a short leash away, and walk back when it leaves. Nobody marches across the map. When the WANTED level drops below the militia tier, everyone puts their tools down and goes back to work. The armed state is kept in saves. It's all cartoon fun: a dragon can still gulp a militiaman whole.
 
 ## Kingdom life
+- **Castle Aldric** sits in the south-central kingdom, well away from your lair on Dragon's Roost. Roads, waves, patrols, raids, tax collectors and the map markers all start from there.
+- **Supply carts and the Castle Storehouse:** lumberjacks and miners pile wood and stone in their yards. Horse carts, each led by a driver, haul it along the roads to the storehouse beside the castle. Only delivered cargo pays for rebuilding, so wrecking a cart costs the kingdom its load.
+- **Worker respawn:** when the logging camp, mine or hunter's cabin is rebuilt, new workers walk in from the nearest village.
 - **Roads** link every village, the castle and the camps. They never cross water except over bridges. Patrols and caravans travel along them.
 - **Wells** stand in villages. They are tough (about 3× a hut's health) and fire barely hurts them. Villagers fetch water from them to fight fires.
 - **Everything is destructible:** huts, barns, markets, wells, the castle and bridges. Villagers repair and rebuild over time. Buildings and markets drop gold, and the castle collects taxes.
@@ -100,7 +132,7 @@ When you drop gold off, coins arc from the dragon into the pile with a clink, an
 
 ## Princess Elizabeth
 
-The princess has a name: **Princess Elizabeth**. A pink name tag floats above her in her tower, in your claws and in your lair. Messages use her name, such as *"You captured Princess Elizabeth!"*, and the HUD shows where she is. While you carry her, the nearest knights and archers shout rescue calls ("Rescue Princess Elizabeth!", "Unhand Princess Elizabeth, foul beast!"). She is only ever captured, never eaten or hurt, just very cross.
+She is held inside the great keep under a tough **stone roof**. Fire barely scorches it; bites, stomps, the crash stomp and lava shots crack it in stages until it crumbles, and masons patch it while she is inside. The princess has a name: **Princess Elizabeth**. A pink name tag floats above her in her tower, in your claws and in your lair. Messages use her name, such as *"You captured Princess Elizabeth!"*, and the HUD shows where she is. While you carry her, the nearest knights and archers shout rescue calls ("Rescue Princess Elizabeth!", "Unhand Princess Elizabeth, foul beast!"). She is only ever captured, never eaten or hurt, just very cross.
 
 ## Hoard raids
 
@@ -148,6 +180,17 @@ All sound is generated in code with Web Audio; there are no audio files. The mus
 - **Mountains/cliffs:** mountain goats, eagles, hawks
 - **Coast:** seagulls, crabs, seals
 - **Hills/mine:** goats
+- **Snowy slopes north of the desert:** three herds of mountain goats that hop over rocks, and the mountain lions that hunt them
+
+## The dragon's body
+- **FIRE meter:** fire breath has its own red bar. It drains while you breathe fire and refills when you stop. If it runs dry, you have to catch your breath before it works again.
+- **Max health grows:** eating the giant squid (kraken) or a sand worm permanently raises max health by 10% and fully heals you, for the rest of that life.
+- **Claw scratch:** while swimming, the stomp button (Q / Shift, pad B, or touch, which reads SCRATCH) becomes a quick claw swipe that hits boats, sea creatures and the squid.
+- **The hoard carries over:** your lair's gold pile and trophy banners stay when you move up a castle level. They reset only on a new game or when the dragon dies.
+
+## Dragon's Tally, pause, save and load
+- Press **P** or **Esc** to pause. The pause menu has the **Dragon's Tally**, a bestiary that counts everything you've gobbled or beaten this game and all-time, plus **Save** and **Load**.
+- There are three save slots and an **autosave** every 2 minutes, all stored in the browser.
 
 ## Mounted knights
 - Fast lance cavalry rides out of the castle gate. They charge in a straight line (the lance only hits a grounded dragon) and then wheel around for another pass.

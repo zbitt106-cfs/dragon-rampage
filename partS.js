@@ -178,7 +178,7 @@ function drawSeaUnit(u){const x=u.x,y=u.y,k=u.kind,f=u.face||1;
     rect(x-5,y-18-b,10,11,u.job==='keeper'?'#2a3a6a':'#c8a040');ell(x,y-22-b,4.5,4.5,'#f0c8a0');
     if(u.job==='keeper'){rect(x-5,y-28-b,10,4,'#1a2a4a');ell(x+f*3,y-22-b,1,1,'#000');ell(x,y-19-b,3,1.5,'#ddd');}else{poly([x-7,y-25-b,x+7,y-25-b,x,y-31-b],'#e8d070');}return;}
   if(k==='iseal'){const sw=u.state!=='rock';ctx.save();ctx.translate(x,y-(sw?0:12));ctx.scale(1.5,1.5);ctx.translate(-x,-y);if(sw){ctx.strokeStyle='rgba(230,245,255,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(x,y+2,18,6,0,0,TAU);ctx.stroke();}
-    const fl=u.flop>0?Math.sin(u.flop*20)*4:0;ell(x,y+(sw?0:1),sw?14:16,sw?5:7,sw?'#5a5a66':'#6a6a78');ell(x+f*13,y-5-fl,7,6,'#7a7a88');ell(x+f*17,y-4-fl,2.4,1.6,'#222');ell(x+f*15,y-7-fl,1.2,1.2,'#111');
+    const fl=0,lf=u.flop>0?Math.abs(Math.sin(u.flop*20))*4:0;ctx.translate(0,-lf); // the whole seal flops as one pieceell(x,y+(sw?0:1),sw?14:16,sw?5:7,sw?'#5a5a66':'#6a6a78');ell(x+f*13,y-5-fl,7,6,'#7a7a88');ell(x+f*17,y-4-fl,2.4,1.6,'#222');ell(x+f*15,y-7-fl,1.2,1.2,'#111');
     if(!sw){poly([x-f*15,y,x-f*24,y-5,x-f*22,y+4],'#5a5a66');line(x+f*16,y-3-fl,x+f*22,y-5-fl,'#ddd',.8);ell(x-2,y-3,8,2.5,'rgba(255,255,255,.25)');}ctx.restore();return;}}
 function drawSquid(u){const x=u.x,y=u.y,sub=u.sub,t=G.t,dz=u.state==='dazed',hi=GFX_HI,atk=u.state==='grab'||u.state==='slam';
   // heading: arms toward the dragon when it is engaging, otherwise trailing behind the swim direction

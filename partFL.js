@@ -45,7 +45,7 @@ function placeGardens(){GARDENS=[];
     for(const h of huts){if(got>=want)break;for(const [ox,oy] of[[52,14],[-52,14],[0,50],[46,46],[-46,46]]){const w=V.desert?36:R(40,50),hh=R(26,32),x=h.x+ox,y=h.y+oy;
       if(ok(x,y,w,hh)){GARDENS.push({x,y,w,h:hh,kind:V.desert?'veg':(got%2?'flower':'veg'),v:vi,st:0,g:1,t:0,seed:RI(0,999)});got++;break;}}}});
   // the castle's kitchen and herb gardens, just outside the curtain wall
-  let cg=0;for(const [x,y,ins] of[[1720,250,1],[1250,300],[1950,300],[1500,150,1],[1250,200],[1950,200],[1380,420],[1820,420]]){if(cg>=4)break;if(ok(x,y,ins?40:48,ins?26:30,ins)){GARDENS.push({x,y,w:ins?40:48,h:ins?26:30,kind:cg%2?'flower':'veg',v:-1,castle:true,st:0,g:1,t:0,seed:RI(0,999)});cg++;}}}
+  let cg=0;for(const [x,y,ins] of[[1720,250,1],[1250,300],[1950,300],[1500,150,1],[1250,200],[1950,200],[1380,420],[1820,420]].map(([x,y,i])=>[x+CDX,y+CDY,i])){if(cg>=4)break;if(ok(x,y,ins?40:48,ins?26:30,ins)){GARDENS.push({x,y,w:ins?40:48,h:ins?26:30,kind:cg%2?'flower':'veg',v:-1,castle:true,st:0,g:1,t:0,seed:RI(0,999)});cg++;}}}
 function initFlora(){const B=buildFloraBase();FLORA=B.map(o=>({x:o.x,y:o.y,pal:o.pal,v:o.v,st:0,g:1,t:0}));FL_ACTIVE=new Set();placeGardens();}
 // ----- fire -----
 function burnPatch(f){if(f.st===1)return;f.st=1;f.t=R(.8,1.6);FL_ACTIVE.add(f);}
