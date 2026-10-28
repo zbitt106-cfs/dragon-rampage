@@ -37,7 +37,7 @@ function lavaSplash(x,y){const wet=inWater(x,y)&&!onBridge(x,y),r=80;G.shake=Mat
   for(const t of trees)if(t.state==='ok'&&Math.hypot(t.x-x,t.y-y)<r){t.fire=1;t.hp-=30;}
   HEAVY=true;
   for(const s of structures){if(s.state==='ruin'||Math.hypot(s.x-x,s.y-y)>r+22)continue;
-    if(stoneish(s)){s.weak=3;hurtStruct(s,s.kind==='well'?45:55);if(rnd()<.6)puff(s.x,s.y-10,5,'rgba(150,140,130,',80,8);}
+    if(stoneish(s)){s.weak=3;hurtStruct(s,s.kind==='well'||s.kind==='fountain'?45:55);if(rnd()<.6)puff(s.x,s.y-10,5,'rgba(150,140,130,',80,8);}
     else{if(!s.fire){s.fire=1;addAlarm(.8,s.x,s.y);}hurtStruct(s,60);}}
   HEAVY=false;
   for(const c of cells)if(!c.burnt&&c.growth>.15&&Math.hypot(c.x-x,c.y-y)<r)c.fire=1;

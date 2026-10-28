@@ -45,7 +45,7 @@ function tryGrab(){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
     float(PR.x,PR.y-60,'Eek! Put me down!','#ff9ad0');spawnWave(Math.max(1,G.level),true);G.banner={text:'You captured Princess Elizabeth!',sub:'Fly her back to your lair (follow the gold arrow, north to Dragon Peak). She is quite safe — just very cross.',extra:'The knights ride out of the gate: "Rescue Princess Elizabeth!"',t:4.5};return true;}
   const cap=G.easy?80:60;
   if(D.gold<cap)for(const g of goldPiles){if(g.amt>0&&(d2(D.x,D.y,g.x,g.y)<95||d2(mx,my,g.x,g.y)<90)){const take=Math.min(g.amt,cap-D.gold);g.amt-=take;D.gold+=take;
-    float(g.x,g.y-30,`+${take} gold (carrying ${D.gold})`,'#ffd84a');sparkle(g.x,g.y,8);addAlarm(6);return true;}}
+    float(g.x,g.y-30,`+${take} gold → lair`,'#ffd84a');sparkle(g.x,g.y,8);addAlarm(6);return true;}}
   return false;}
 function updGoal(dt){
   // princess quips while carried
@@ -90,7 +90,7 @@ function updFirefight(dt){ffT-=dt;if(ffT>0)return;ffT=.5;
   const fires=[...structures.filter(s=>s.fire&&s.state!=='ruin'),...trees.filter(t=>t.fire&&t.state==='ok')];
   for(const f of fires){if(dist(f,D)<320)continue;const n=units.filter(u=>!u.dead&&u.water&&u.water.f===f).length;if(n>=3)continue;
     let best=null,bd=700;for(const u of units){if(u.dead||u.type!=='villager'||u.job!=='peasant'||u.task||u.water||u.state==='flee'||u.inside)continue;const d=d2(u.x,u.y,f.x,f.y);if(d<bd){bd=d;best=u;}}
-    if(best){best.water={f,st:'fetch',well:nearestWell(best.x,best.y),t:1};best.carry=null;}}}
+    if(best){best.water={f,st:'fetch',well:waterFor(f,best),t:1};best.carry=null;}}}
 function updBucket(u,dt){const w=u.water,f=w.f;const out=f.state==='ruin'||!f.fire||(f.state!==undefined&&f.state!=='ok'&&!f.kind);
   if(out&&w.st!=='fetch'){u.water=null;u.carry=null;u.state='idle';return;}
   if(w.st==='fetch'){if(wellFetch(u,w,dt)){w.st='carry';u.carry='bucket';}}
@@ -98,7 +98,7 @@ function updBucket(u,dt){const w=u.water,f=w.f;const out=f.state==='ruin'||!f.fi
   else if(w.st==='throw'){w.t-=dt;if(w.t<=0){u.carry=null;puff(f.x,f.y-10,16,'rgba(120,180,255,',120,7,2.5);
       f.water=(f.water||0)+1;const need=f.kind?2:1;
       if(f.water>=need){f.fire=0;f.water=0;float(f.x,f.y-50,'Fire out!','#8fd0ff');G.stats.fires=(G.stats.fires||0)+1;}
-      w.st='fetch';w.t=1;w.well=nearestWell(u.x,u.y);if(!f.fire){u.water=null;u.state='idle';}}}}
+      w.st='fetch';w.t=1;w.well=waterFor(f,u);w.natMsg=0;if(!f.fire){u.water=null;u.state='idle';}}}}
 
 // ---------- victory screen ----------
 function drawWon(){ctx.fillStyle=`rgba(10,10,40,${Math.min(.72,G.wonT)})`;ctx.fillRect(0,0,VW,VH);const sm=VW<760;

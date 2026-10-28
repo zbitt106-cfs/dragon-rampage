@@ -54,7 +54,7 @@ function drawLair(){const x=LAIR.x,y=LAIR.y; // a rocky cave-nest on the very to
   for(let i=0;i<10;i++){const t=(G.t*.3+i*.1)%1;ell(x-200+i*44+Math.sin(G.t+i)*10,y-160+t*260,2,2,'rgba(255,255,255,'+(1-t)*.8+')');}
   if(PR.state==='lair'){drawPrincess(x+50,y+10,false);ctx.fillStyle='#fff';ctx.font='bold 11px Georgia';ctx.textAlign='center';ctx.fillText('Hmph! ...this nest is actually quite comfy. And COLD.',x+50,y-26);}
   ctx.fillStyle='#ffd27a';ctx.font='bold 14px Georgia';ctx.textAlign='center';ctx.fillText(`Dragon's Lair (Dragon Peak) · ${G.stash} gold stashed`,x,y-150);
-  if(D.princess||D.gold){ctx.strokeStyle=`rgba(255,220,100,${.5+.4*Math.sin(G.t*5)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+20,130,80,0,0,TAU);ctx.stroke();}}
+  if(D.princess){ctx.strokeStyle=`rgba(255,220,100,${.5+.4*Math.sin(G.t*5)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+20,130,80,0,0,TAU);ctx.stroke();}}
 function drawMine(){const x=MINE.x,y=MINE.y;ell(x,y-20,110,70,'#7d6f5b');ell(x-10,y-40,80,50,'#90826c');ell(x+40,y-60,50,30,'#9d8f78');
   ctx.fillStyle='#1a1410';ctx.beginPath();ctx.moveTo(x-26,y+14);ctx.lineTo(x-26,y-12);ctx.arc(x,y-12,26,Math.PI,0);ctx.lineTo(x+26,y+14);ctx.fill();
   if(kUp('minehead')){rect(x-30,y-40,6,54,'#6b4a26');rect(x+24,y-40,6,54,'#6b4a26');rect(x-34,y-44,68,8,'#7a5530');}

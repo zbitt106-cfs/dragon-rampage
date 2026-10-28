@@ -1,6 +1,6 @@
 // ================= partPR: PRINCE BOSS ARMIES - every 5th castle level a named prince sails in with a royal war fleet =================
 // Warning (herald + horn + war drums, ~10 s) -> warships sail in from the southern sea edge -> they beach at the landing spot (⚓ on the map)
-// -> the army disembarks and marches up King William's roads toward the lair, the prince on his white warhorse -> boss fight.
+// -> the army disembarks and the prince (on his white warhorse) and his whole army hunt the dragon down together, wherever it is -> boss fight.
 // Sinking a warship before it lands dumps its soldiers in the sea: they can't swim in armour, so they cling to barrels and get fished out (no gore).
 const PRINCE_NAMES=['Prince Edmund the Valiant','Prince Aldric of the Golden Isles','Prince Leopold Stormcrown','Prince Florian the Fair','Prince Casimir Ironsail','Prince Valentin of Westmarch','Prince Rupert the Resolute','Prince Tristan Sunshield','Prince Magnus the Mighty','Prince Ferdinand Wavebreaker','Prince Oswin of Highcliff','Prince Lucian Silverlance'];
 const PRINCE_COLS=[['#1f3f9a','#ffd23a','crown'],['#8a1420','#ffd23a','lion'],['#1d6a3a','#f4f4f4','tree'],['#5a2a8a','#ffe08a','star'],['#0f5f78','#f4f4f4','moon'],['#a8461a','#ffe08a','sun'],['#2a2a34','#ffd23a','bolt'],['#b81e6e','#f4f4f4','rose']];
@@ -44,7 +44,7 @@ function launchFleet(){const c=PRN.cur,L=c.land;c.phase='sail';c.path=princeRout
   float(L.L.x,L.L.y-60,'⚓ The royal fleet makes for this shore!','#ffe08a');showToast(`⛵ ${c.ships} warships under ${c.short}'s colours are sailing in!`);}
 function princeDisembark(s,k){const c=s.war,p=s.drop,x=p.x+R(-16,16),y=p.y+R(-10,10),K=c.k;let u=null;
   if(k==='prince'){u=mkUnit('knight',x,y,{mounted:true,hp:c.hp,maxHp:c.hp,atk:0,colr:c.col,isPrince:true,cs:'wheel'});c.boss=u;
-    float(x,y-80,`${c.short}: "Forward, for glory! Slay the beast!"`,'#ffe08a');G.banner={text:`${c.name} has landed!`,sub:`His army marches up King William's road toward your lair. Wear him down below 30% to gobble him!`,t:4.5};if(typeof SFX!=='undefined')SFX.play('princeHorn');}
+    float(x,y-80,`${c.short}: "Forward, for glory! Slay the beast!"`,'#ffe08a');G.banner={text:`${c.name} has landed!`,sub:`He and his whole army are hunting you down, wherever you go! Wear him down below 30% to gobble him!`,t:4.5};if(typeof SFX!=='undefined')SFX.play('princeHorn');}
   else if(k==='foot')u=mkUnit('knight',x,y,{hp:30+4*K,maxHp:30+4*K,atk:0,foot:true,colr:c.col});
   else if(k==='knight')u=mkUnit('knight',x,y,{hp:55+6*K,maxHp:55+6*K,atk:0,colr:c.col});
   else if(k==='cavalry')u=mkCavalry(x,y,{colr:c.col,hp:95+8*K,maxHp:95+8*K,cs:'wheel'});
@@ -227,3 +227,30 @@ const _drawMapPR=drawMap;drawMap=function(mmx,mmy,mmw,big){_drawMapPR(mmx,mmy,mm
 // ---- sounds: a royal horn call and booming war drums ----
 SFX_DEF.princeHorn=(a,B,o,t)=>{[[0,.28,0],[.3,.28,4],[.6,.28,7],[.9,.9,12]].forEach(([dt,len,st])=>{const f=233*Math.pow(2,st/12);osc(a,o,t+dt,'sawtooth',f,f*1.002,len,.15,.03);osc(a,o,t+dt,'triangle',f*2,f*2.003,len,.06,.03);});return 1.9;};
 SFX_DEF.warDrum=(a,B,o,t)=>{osc(a,o,t,'sine',110,42,.38,.7,.004);nz(a,B,o,t,.16,'lowpass',420,90,1,.45);osc(a,o,t+.2,'sine',96,40,.3,.45,.004);return .5;};
+// ---- after landing, the prince and his whole army HUNT the dragon wherever it is (one group, in formation) ----
+// Every ~1.2 s the hunt target is the dragon's position (or the nearest dry ground to it, never water). Long legs follow King William's
+// roads (roadPath); short legs go straight if the line is dry. His army is separate from the soldier waves: they don't count toward
+// wave reinforcements and beating them doesn't raise the WANTED meter, so regular waves still only come from the wanted level.
+const PR_HUNT={every:1.2,move:160,road:650};
+function prLineDry(a,b){const n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/50));for(let i=1;i<=n;i++){const x=a.x+(b.x-a.x)*i/n,y=a.y+(b.y-a.y)*i/n;if(soldierWet(x,y))return false;}return true;}
+function prHuntTarget(){let T={x:D.x,y:D.y};if(soldierWet(T.x,T.y)){const q=typeof dryNear==='function'?dryNear(T.x,T.y):null;if(q)T={x:q.x,y:q.y};else return null;}
+  T.x=clamp(T.x,WX0+60,WX1-60);T.y=clamp(T.y,WY0+60,WY1-60);return T;}
+function prHuntPath(from,T){let P=[];const far=Math.hypot(T.x-from.x,T.y-from.y)>PR_HUNT.road;
+  if(far||!prLineDry(from,T)){const rp=typeof roadPath==='function'?roadPath(from.x,from.y,T.x,T.y):null;
+    if(rp&&rp.P&&rp.P.length){for(const p of rp.P){const l=P[P.length-1]||from;if(Math.hypot(p.x-l.x,p.y-l.y)>40)P.push({x:p.x,y:p.y});}
+      // skip road points behind us
+      while(P.length>1&&Math.hypot(P[1].x-from.x,P[1].y-from.y)<Math.hypot(P[0].x-from.x,P[0].y-from.y)&&prLineDry(from,P[1]))P.shift();}}
+  P.push({x:T.x,y:T.y});return P;}
+function prHunt(c,dt){const b=c.boss;if(!b||b.dead||c.done)return;c.huntT=(c.huntT||0)-dt;if(c.huntT>0&&c.path&&c.path.length)return;c.huntT=PR_HUNT.every;
+  const T=prHuntTarget();if(!T)return;if(c.hunt&&c.path&&c.path.length&&Math.hypot(T.x-c.hunt.x,T.y-c.hunt.y)<PR_HUNT.move)return;
+  c.hunt=T;c.path=prHuntPath(b,T);c.hunts=(c.hunts||0)+1;}
+{const _u=updPrince;updPrince=function(dt){const r=_u.apply(this,arguments);const c=PRN.cur;if(c&&!c.done&&c.boss&&!c.boss.dead&&scene==='play'&&G&&!G.over)prHunt(c,dt);return r;};}
+// never step into water: if the next leg is wet, re-path along the roads
+{const _b=princeBoss;princeBoss=function(u,dt){const c=u.prince,p=c&&c.path&&c.path[0];
+  if(p){const a=Math.atan2(p.y-u.y,p.x-u.x),nx=u.x+Math.cos(a)*30,ny=u.y+Math.sin(a)*30;if(soldierWet(nx,ny)&&!c.wetFix){c.wetFix=1;c.path=prHuntPath(u,c.path[c.path.length-1]);c.huntT=PR_HUNT.every;}else if(!soldierWet(nx,ny))c.wetFix=0;}
+  const ox=u.x,oy=u.y,r=_b.apply(this,arguments);if(soldierWet(u.x,u.y)&&!soldierWet(ox,oy)){u.x=ox;u.y=oy;}return r;};}
+// the prince's army is not part of the wanted-level waves: its casualties don't raise the wanted meter
+let PR_NOALARM=0;
+{const _a=addAlarm;addAlarm=function(v){if(PR_NOALARM&&v>0){G.prAlarmSkipped=(G.prAlarmSkipped||0)+v;return;}return _a.apply(this,arguments);};}
+{const _h=hurtUnit;hurtUnit=function(u){if(u&&u.prince){PR_NOALARM++;try{return _h.apply(this,arguments);}finally{PR_NOALARM--;}}return _h.apply(this,arguments);};}
+{const _e=eatUnit;eatUnit=function(u){if(u&&u.prince){PR_NOALARM++;try{return _e.apply(this,arguments);}finally{PR_NOALARM--;}}return _e.apply(this,arguments);};}

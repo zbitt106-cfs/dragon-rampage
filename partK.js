@@ -143,7 +143,7 @@ function onRuin(s){const K=KDEF[s.kind],st=isStone(s)||(s.kind==='bridge'&&s.mat
   if(K){G.stats.kPts=(G.stats.kPts||0)+K.pts;G.stats.wrecked=(G.stats.wrecked||0)+1;if(MARKET_KINDS.has(s.kind))G.stats.shops=(G.stats.shops||0)+1;if(CASTLE_KINDS.has(s.kind))G.stats.castle=(G.stats.castle||0)+1;
     addAlarm(K.alarm,s.x,s.y);float(s.x,s.y-48,`${K.name} ${st?'collapses into rubble':'is wrecked'}! +${K.pts}`,'#ffb050');
     if(s.kind==='lighthouse')float(LH.x,LH.y-90,'The beacon is out! (the island is still a fine place to rest)','#ffd27a');}}
-function stoneFire(s,dt){if(s.kind==='well')return;s.weak=3;if(s.kind==='kroof'){if(s.hp>s.maxHp*.5)s.hp-=DR.fireDps*.012*dt;return;} // the keep roof barely notices fire
+function stoneFire(s,dt){if(s.kind==='well'||s.kind==='fountain')return;s.weak=3;if(s.kind==='kroof'){if(s.hp>s.maxHp*.5)s.hp-=DR.fireDps*.012*dt;return;} // the keep roof barely notices fire
   if(s.hp>s.maxHp*.35)s.hp-=DR.fireDps*.06*dt;}
 // coins, gold refills, self-repair of the castle/lighthouse/dock, stone weakening decay
 function updK(dt){
@@ -171,7 +171,7 @@ function rubble(x,y,w,st,seed){for(let i=0;i<Math.max(6,w/4);i++){const a=hsh01(
 function scaffold(x,y,w,h,b){const H=h*b;rect(x-w/2,y-H,w,H,'rgba(150,140,120,.85)');ctx.strokeStyle='#7a5a30';ctx.lineWidth=2;for(let i=-1;i<=1;i++)line(x+i*w/2,y,x+i*w/2,y-h,'#7a5a30',2);for(let j=1;j<4;j++)line(x-w/2-4,y-j*h/4,x+w/2+4,y-j*h/4,'#7a5a30',1.5);}
 // draw a structure kind added by this module (returns true when handled)
 function drawStructK(s){if(s.kind==='kroof')return true; // drawn as part of the keep
-  if(s.kind==='well'){drawWell(s);return true;}if(s.adobe&&s.state==='ok'&&s.kind==='hut'){s.kind='adobe';let r;try{r=drawStructK(s);}finally{s.kind='hut';}return r;}const K=KDEF[s.kind];if(!K)return false;const x=s.x,y=s.y,F=s.fire,st=K.stone;
+  if(s.kind==='well'){drawWell(s);return true;}if(s.kind==='fountain'){drawFountain(s);return true;}if(s.adobe&&s.state==='ok'&&s.kind==='hut'){s.kind='adobe';let r;try{r=drawStructK(s);}finally{s.kind='hut';}return r;}const K=KDEF[s.kind];if(!K)return false;const x=s.x,y=s.y,F=s.fire,st=K.stone;
   if(s.state==='ruin'){if(s.kind==='cwall'){const hz=s.side==='n'||s.side==='s';rect(x-(hz?52:14),y-(hz?14:34),hz?104:28,hz?22:68,'#6f7458');}
     rubble(x,y+4,K.sz*(CASTLE_KINDS.has(s.kind)?1.2:1),st,(s.id*1e4)|0);if(G.t-(s.ruinT||0)<4&&Math.random()<.3)puff(x+R(-20,20),y,1,'rgba(190,178,160,',30,8);
     if(s.kind==='ptower'&&PR.state==='tower'){drawPrincess(x,y-10,true);if(Math.sin(G.t*1.3)>.3)txt('My tower! You brute!',x,y-40,11,'#fff','center');}return true;}

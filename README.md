@@ -5,7 +5,7 @@ A single-file browser game where you play a dragon. Open `index.html`; it needs 
 ## Building from source
 The source is split into parts, which are concatenated in this order:
 ```
-cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partRN.js partFM.js partMH.js partGH.js partKM.js partPR.js partHN.js partSJ.js partKW.js partWD.js partMR.js partBL.js partOC.js partTF.js partPB.js partHU.js partNW.js partAL.js partWF.js partCR.js partLA.js partUI.js part6.js > index.html
+cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partRN.js partFM.js partMH.js partGH.js partKM.js partPR.js partHN.js partSJ.js partKW.js partWD.js partMR.js partBL.js partOC.js partTF.js partPB.js partHU.js partNW.js partAL.js partWF.js partCR.js partRT.js partMU.js partLA.js partUI.js partGA.js partKB.js partJT.js partEC.js partRK.js partRC.js partBT.js part6.js > index.html
 ```
 (`bash build.sh` does the same.)
 
@@ -18,7 +18,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partB.js: bridges and river pathing
 - partS.js: the sea (swimming, sea life, boats, pirates, the giant squid, the Lonely Lighthouse)
 - partG.js: High graphics (shading, lighting, day and night)
-- partK.js / partD.js / partR.js / partT.js: destruction and repair, crash dive stomp, desert life, roads, wells, wanted tiers and militia
+- partK.js / partD.js / partR.js / partT.js: destruction and repair, crash dive stomp, desert life, roads, wells and town fountains, any-water bucket brigades, wanted tiers and militia
 - partFL.js: wildflowers and village/castle gardens
 - partA.js: procedural music and sound effects (Web Audio, no audio files)
 - partV.js: the volcano (Mount Cinder) beside Dragon Peak and lava shots
@@ -38,7 +38,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partGH.js: northern mountain-goat herds and the mountain lions that hunt them
 - partKM.js: the kingdom-wide militia (every villager arms up and guards their own post)
 - partRN.js: the princess ransom King William pays after each level win
-- partPR.js: prince boss armies that arrive by sea in royal war fleets (every 5th castle level)
+- partPR.js: prince boss armies that arrive by sea in royal war fleets (every 5th castle level); after landing the prince and his army hunt the dragon wherever it goes
 - partHN.js: +5% prey, predators that hunt prey, and freshwater crocodiles
 - partSJ.js: the world expansion west of the desert: the Golden Savanna and the Emerald Jungle
 - partKW.js: King William, who stands in the castle courtyard and shouts orders
@@ -53,8 +53,17 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partAL.js: alpha / turf leaders (male lion, white alpha wolf, silverback) shrug off the first bite; worn to ~78% HP (1-2 hits of bite, claw, stomp, fire or lava) they get dizzy stars and become edible
 - partWF.js: Dragon Peaks wild dragons are immune to your fire (lava, bites, claws and stomps still hurt); their weak fire is only for hunting goats, birds and mountain lions (never hurts you; small scorches only; mountain lions swipe back); a guarded 3-egg nest: eat an egg for +5 permanent max fire (kept across levels on the same life, reset on death/new game, saved), or smash it (stomp, claw, lava, full-belly bite) for no bonus; the guards attack when you come near. Eggs reset every castle level
 - partCR.js: cruise speed: steady flight with no combat input ramps from 1x to 1.8x over ~5 s (keyboard, touch, gamepad); combat, landing, diving, a sharp turn or stopping resets it; normal stamina drain; wind streaks
-- partLA.js: the small gold lair guide arrow, pinned to the screen edge in the lair's direction (glows while carrying)
-- partUI.js: the compact wood/stone stockpile icons (HUD and pause menu); the score shows only in the pause menu
+- partRT.js: kingdom watchtowers: wooden archer towers the kingdom builds beside its roads and villages, only from cart-delivered wood and stone
+- partMU.js: region music (a procedural theme per region, 2 s crossfades, boss override, iPhone first-tap audio unlock) and slower hunger at the lair
+- partLA.js: the small gold lair guide arrow, pinned to the screen edge in the lair's direction (glows while you carry the princess)
+- partKB.js: King William buys wood and stone by trade ship when the storehouse runs short
+- partJT.js: the Ancient Jungle Temple (stone, fire-proof, +100 gold when wrecked) and Mount Ember, a second volcano in the far south-west jungle
+- partEC.js: town economy (hidden building gold, taxes collected from it) and the tax collector's patrol escort
+- partRK.js: hoard-raid tiers by hoard size, the stolen share per tier, and loaded raiders walking home slower with gold sacks
+- partRC.js: the rich desert caravan and Sandhaven's desert soldiers and archers
+- partBT.js: every bite hurts: targets too tough to swallow yet still take bite damage, with a jaw-snap impact cue and a red -N
+- partGA.js: instant gold deposits: every coin you pick up flies straight into the lair hoard, with a coin '+N' pop by the HUD dragon icon
+- partUI.js: the compact wood/stone stockpile icons plus the gold icons (castle + coin = the kingdom's gold, dragon + coin = your lair hoard) on the HUD and in the pause menu; the score shows only in the pause menu
 - part6.js: main loop, HUD, minimap and world map, title screen
 
 ## Install as an app (PWA)
@@ -91,7 +100,7 @@ The title screen also has **Music volume** and **Sound effects** rows (←/→ i
 - The map is a large explorable kingdom with 16 regions: Kingdom Farmlands, Castle Aldric (King William's castle), The Deepwood (with the hunters' cabin), Mirror Lake & the Silver River, Frostpeak Mountains, the hills and Stone Mine, the Southern Farmlands, the Sapphire Coast, Dragon's Roost (your lair, on the peak), the Scorching Sands desert (west), the Golden Savanna and the Emerald Jungle (far west, past the desert), the Dragon Peaks (far north-west) and, out east, three sea regions: The Sapphire Sea, The Lonely Lighthouse and The Kraken Deep.
 - Entering a region shows its banner, and finding a new region is worth +100.
 - Unexplored land is hidden under fog. The minimap shows explored terrain, structures, units, patrols (shield icons, red when engaged), siege engines, gold, Princess Elizabeth and your lair. M / LB opens a full world map with region and village names and the explored %.
-- Goal: raid the castle, stash gold in your lair, and fly Princess Elizabeth home (follow the gold arrow). The kingdom fights back with waves, the wanted meter, the hunter and bucket brigades, and it rebuilds.
+- Goal: raid the castle for gold (it goes straight to your lair hoard) and fly Princess Elizabeth home (follow the gold arrow). The kingdom fights back with waves, the wanted meter, the hunter and bucket brigades, and it rebuilds.
 
 ## Wanted tiers and the MILITIA
 The WANTED meter rises as you cause damage and cools down faster the farther you are from where the trouble was. Wild animals never raise it. The kingdom's response grows in tiers:
@@ -122,7 +131,9 @@ They **defend their own post only**: they engage the dragon when it comes within
 - **Worker respawn:** when the logging camp, mine or hunters' cabin is rebuilt, new workers walk in from the nearest village.
 - **Three hunters per cabin:** the hunters' cabin houses three hunters with bows and daggers. Each one respawns on his own timer (about 20 s, staggered) while the cabin stands. If the cabin is wrecked, none return until it is rebuilt; then villagers walk in one by one and take up the bow until there are three again. To keep it fair they fan out to different sides, only one arrow flies every 0.6 s across the trio, and only one hunter stabs with his dagger at a time. During the militia all three guard their own corner of the cabin. Save and load keep which hunters are alive and their health.
 - **Roads** link every village, the castle and the camps. They never cross water except over bridges. Patrols and caravans travel along them.
-- **Wells** stand in villages. They are tough (about 3× a hut's health) and fire barely hurts them. Villagers fetch water from them to fight fires.
+- **Wells** stand in villages. They are tough (about 3× a hut's health) and fire barely hurts them. Small villages always keep at least one well.
+- **Town fountains:** the nicer, bigger towns (8+ huts or a market) have a decorative stone **fountain** in the town square, with tiered bowls and splashing water, plus at most one well. Fountains are fireproof and tougher than wells (540 hp, 2× a well). Wreck one and it topples into rubble (counted in the tally as *Town fountain*); villagers rebuild it with stone.
+- **Bucket brigades use ANY water:** villagers fetch firefighting water from wells, fountains, rivers, ponds, the lake or the sea shore, whichever is nearest the fire. They walk to the dry bank, fill up (*"A bucket from the river!"*) and run back to throw it.
 - **Everything is destructible:** huts, barns, markets, wells, the castle and bridges. Villagers repair and rebuild over time. Buildings and markets drop gold, and the castle collects taxes.
 - **Wildflowers** carpet each region in its own colours: meadow, forest, hill, alpine (low slopes only), desert and oasis blooms, and coastal pinks. Villages and the castle grounds have fenced **vegetable and flower gardens**. Fire scorches flowers and gardens to black. Flowers regrow, and villagers replant gardens (the alarm rises a little when a garden burns).
 - **Plants burn everywhere:** dragon fire and lava shots set alight savanna grass and acacias, jungle trees (with their vines) and giant ferns, desert cacti and scrub, beach and oasis palms, mountain pines, island grass and the heather of the Dragon Peaks, as well as forest trees, wildflowers and gardens. Burning plants spread fire to nearby plants, flowers, trees and (big ones) buildings, burn down to charred stumps, and later regrow as saplings, just like forest trees. Reeds and other water plants never burn. Burnt plants are saved and loaded.
@@ -144,8 +155,12 @@ The gate is its own destructible part of the castle; fire or stomps bring it dow
 The engineers wait about 20 s for the dust to settle, then spend 6 wood and 6 stone from the kingdom's stockpiles and rebuild the gate slowly (about 45 s). When it is repaired, the normal wave pace returns.
 
 ## The gold hoard
+The HUD shows gold as icons next to the wood and stone: a **castle + coin** with the amount is the gold still in Castle Aldric, and a **dragon + coin** with the amount is your lair hoard. On narrow screens (iPhone landscape) they sit on a second compact row. The pause menu shows the same icons.
 
-Every coin you bring home lands on a visible treasure pile inside the lair, and the pile grows smoothly as your total rises:
+
+**No carrying:** every bit of gold you collect (castle gold piles, coins from buildings, tax sacks, caravans, pirate loot, seashells and so on) goes **straight into the lair hoard** the moment you grab it. A little coin and **+N** pops up next to the dragon icon on the HUD. Raids, raid cooldowns, the ransom and save/load all work from that hoard total.
+
+The gold lands on a visible treasure pile inside the lair, and the pile grows smoothly as your total rises:
 
 | Gold stashed | Stage |
 |---|---|
@@ -154,7 +169,7 @@ Every coin you bring home lands on a visible treasure pile inside the lair, and 
 | 80–199 | Big mound (plus a treasure chest) |
 | 200+ | Mountain of treasure: crowns, goblets and gems |
 
-When you drop gold off, coins arc from the dragon into the pile with a clink, and the pile bumps up. On High graphics the hoard glows and twinkles. A label under the pile shows its stage and total. The world map (M) shows a gold mound beside the lair, sized to the hoard, with its total.
+When gold comes in, coins rain into the pile with a clink, and the pile bumps up. On High graphics the hoard glows and twinkles. A label under the pile shows its stage and total. The world map (M) shows a gold mound beside the lair, sized to the hoard, with its total.
 
 ## Princess Elizabeth
 
@@ -167,16 +182,50 @@ A big hoard attracts trouble. When the pile reaches **100 gold** (then 200, 350,
 1. **Warning:** a banner reads, for example, *"Sir Gareth the Bold vows before King William to claim the dragon's hoard!"* A horn sounds, and you get **8 seconds** to get ready.
 2. **March:** the champion rides out of the castle gate with an escort of foot soldiers. The escort carries heraldic flags and spears with pennants in the champion's colours. The party goes east along King William's road, then up the mountain trail to Dragon Peak, which takes about 45 seconds.
 3. **The champion** is a mini-boss. They are bigger, with a plume, a coloured tabard and a crested kite shield, and have a name tag and health bar overhead. Fire does only 60% damage to them. They can't be swallowed until they're below half health; they raise their shield.
-4. **Theft:** if the champion reaches the hoard, they grab 25–45% of it, depending on the raid number, and carry the sack back to the castle. If they get through the gate, that gold is gone.
-5. **Victory:** defeat or eat the champion (a cartoon gulp) and any stolen gold flies back into the hoard. You also get a bonus of 40 + 20×raid gold and 300 + 150×raid points.
+4. **Theft:** if the champion reaches the hoard, they grab a share of it that grows with the raid tier (see below; never the whole pile) and carry the sacks back to the castle. Loaded raiders walk home **slower**: the more gold they carry, the slower they go (about 92% speed with 100 gold, 78% with 300, down to 55% with 600 or more), and you can see the gold sacks bouncing on them (1 to 4 sacks by load). If they get through the gate, that gold is gone.
+5. **Victory:** defeat or eat the champion (a cartoon gulp), even on the way back, and the sacks drop: all the stolen gold goes automatically back into the lair pile with a '+N' pop. You also get a bonus of 40 + 20×raid gold and 300 + 150×raid points.
+
+**Raid tiers (by hoard size):** the thresholds above still decide *when* a knight comes, and the 5-minute cooldown is unchanged. How *tough* the raid is depends on the size of your hoard at the moment the raid is announced: **Tier 1** under 250 gold, **Tier 2** from 250, **Tier 3** from 500, **Tier 4** from 1,000, then one more tier per extra 1,000 (2,000 = Tier 5, 3,000 = Tier 6...). The banner says so: *"Sir Gareth the Bold (Tier 3) rides for your hoard!"*
+
+| Tier | Hoard | Champion HP | Spearmen | Archers | Damage | Gold taken |
+|---|---|---|---|---|---|---|
+| 1 | 100–249 | 150 | 2 | 0 | ×1.0 | 20% |
+| 2 | 250–499 | 210 | 3 | 0 | ×1.1 | 25% |
+| 3 | 500–999 | 270 | 4 | 1 | ×1.2 | 30% |
+| 4 | 1,000–1,999 | 330 | 5 | 2 | ×1.3 | 35% |
+| 5 | 2,000–2,999 | 390 | 5 | 3 | ×1.4 | 40% |
+| 6 | 3,000–3,999 | 450 | 5 | 3 | ×1.5 | 45% |
+| 7+ | 4,000+ | 480+ | 5 | 3 | ×1.6 (max) | 50% (max) |
+
+Champion HP grows gently with the tier (and a little with the raid number), escorts get a bit tougher, and the party never exceeds 8 units, so iPhones stay smooth. Easy mode gives one fewer spearman and softer HP. A raid always leaves you at least 1 gold.
 
 **Trophy banners:** each champion you defeat or eat leaves their heraldic banner planted around your gold pile, in their colours and with their crest (lion, star, tree, crown, sun, moon, rose or bolt). The banners fill a ring around the hoard (back first, then a wider second ring) and wave in the wind. Walk the dragon close to a banner to see that knight's name. Trophies stay for the whole session, even after a new game, and the world map shows a 🚩 count beside the lair.
 
-Every raid uses a new name from a pool of 16 knights and dames, such as Sir Roland Ironheart and Dame Elara the Brave. Later raids bring a tougher champion (HP 150 → 220 → 290 → …) and a bigger escort (2 → 3 → 4 …, up to 8).
+Every raid uses a new name from a pool of 16 knights and dames, such as Sir Roland Ironheart and Dame Elara the Brave. Toughness comes from the raid tier (above); champion HP also rises a little with each raid (+15 per raid, up to +60) and with the castle level, and from level 2 the escort has one extra spearman. The whole party is capped at 8.
 
 While a raid is on, a HUD bar shows its status (countdown, distance to your hoard, or distance to the gate when they're running off with your gold). The world map and minimap show the party with a flashing banner marker.
 
 Controls are the usual ones: fire, stomp, and bite/eat (E, pad X, or the BITE button on touch).
+
+## The Ancient Jungle Temple
+Deep in the Emerald Jungle (far west) stands a stepped stone temple, overgrown with vines, with a gold-glinting shrine on top. It is **fire-proof** and too solid for most attacks: use **bites**, the **Q stomp** or **lava shots**. When it crumbles: KA-BOOM, stone blocks fly, and **+100 gold** goes straight to your lair. It is never rebuilt, but a new one stands every level. It has its own Tally line, and a world-map marker once you have seen it.
+
+## Mount Ember (the second volcano)
+A second volcano, **Mount Ember**, smokes in the far south-west of the jungle. You can drink lava there just like at Mount Cinder (lava shots). It erupts now and then, raining embers that can set nearby jungle plants and trees alight and leaving lava puddles. Both volcanoes show on the world map. Trees, decorations and animals never spawn on its cone.
+
+## Town economy and the tax collector
+Houses (huts and adobes) slowly earn gold, and merchant shops (stalls, fishmongers, bakeries, smithies and jewellers) earn it 2.5× faster. This gold is **hidden**: nothing on screen shows it. It is **not** the kingdom's gold until the tax collector physically carries it to the castle.
+- The tax collector empties each building into his sack, but always leaves **1 gold in a house and 3 in a shop**.
+- **Intercept him** and his sack goes straight to your lair pile; it never reaches the castle.
+- **Wreck a house or shop** and whatever gold it held drops automatically into your lair pile.
+- **Escort:** with a heavy sack (25+ gold) he asks any **patrol he passes within about 200 px** to walk him home: 2 guards at 25 gold, 3 at 40, 4 (the cap) at 60. He never calls patrols from afar, and they never detour; if none is near, he walks alone. The escort walks with him, fights you, and returns to its patrol route after delivery. His sack visibly fills up. Buildings' gold, the tax collector and his escort are all saved.
+
+## The rich desert caravan and Sandhaven's troops
+One of Sandhaven's two camel caravans is a **rich caravan**: three colourful camels (striped blankets, tassels and bells), one carrying a **treasure chest**, and two richly dressed traders. It walks the roads from Sandhaven to the castle gate and back again, resting at each end.
+- **Guards:** 2 **desert soldiers** (turban, sand robe, scimitar and round shield) and 2 **desert archers** (blue turban and a curved bow, which shoot from about 420 px).
+- **Raid it:** take down the lead trader or the treasure camel and **+20 gold** goes to your lair. It comes back from Sandhaven about 75 s later, and fresh every level.
+- Surviving guards stay on as **Sandhaven's town guard**. When the kingdom musters (militia), desert soldiers and archers guard Sandhaven too.
+- Desert soldiers, desert archers and raided rich caravans have their own **Sandhaven** section in the Tally. The caravan and the town guard are saved.
 
 ## The desert (Scorching Sands, west)
 Sandhaven and its bazaar, an oasis, camel caravans on the road, desert animals, vultures and a **sand worm**. Reach it through the mountain pass. Hunger drains 1.35× faster in the heat. The desert is about 17% narrower than before, so the crossing to the savanna is shorter.
@@ -210,16 +259,46 @@ Crocodiles live only in **fresh water**: the Silver River, Mirror Lake, the pond
 When you deliver Princess Elizabeth to your lair (a level win), **King William pays a ransom** at the start of the next level: **100 gold + 50 per castle level beyond the first + 10% of the gold still in the castle treasury**. A banner reads *"King William pays a ransom for Princess Elizabeth: +X gold!"* and coins fly into your hoard, on top of the gold you carried over. The ransom counts toward raid thresholds, but a raid can't start in the first 45 seconds of a level.
 
 ## Prince boss armies (every 5th castle level)
-At castle level 5, 10, 15 and so on, a named **prince** comes for the dragon. A herald announces *"Hear ye! Prince … vows before King William to slay the dragon!"*, then after a horn call and war drums his **royal war fleet** sails in from the southern sea edge: 2 warships at level 5 and one more for each later prince. While at sea, the ships can be burned, hit with lava shots or raked with a claw scratch. Sinking a ship dumps its soldiers into the sea; they can't swim in armour, so they cling to barrels and are fished out (no drowning). The ships that make it beach at the landing spot (⚓ on the map), and the army marches up King William's roads toward you and your lair, with the prince on his white warhorse. The empty ships stay on the beach and can be burned. The prince has a boss health bar (900 HP, +400 per later prince) and can only be eaten below 30% health. Beating him gives 250 gold (+150 per later prince), 1,500 points per prince level and his royal banner as a trophy. There are no hoard raids during a prince attack.
+At castle level 5, 10, 15 and so on, a named **prince** comes for the dragon. A herald announces *"Hear ye! Prince … vows before King William to slay the dragon!"*, then after a horn call and war drums his **royal war fleet** sails in from the southern sea edge: 2 warships at level 5 and one more for each later prince. While at sea, the ships can be burned, hit with lava shots or raked with a claw scratch. Sinking a ship dumps its soldiers into the sea; they can't swim in armour, so they cling to barrels and are fished out (no drowning). The ships that make it beach at the landing spot (⚓ on the map), and from then on **the prince and his whole army hunt the dragon down together as one group**, wherever you are on the map. The prince rides his white warhorse at the head and his soldiers march in formation (rows of four) behind him. About every 1.2 seconds he re-targets your current position. Long distances follow King William's roads, short ones go straight across dry land, and they never wade into water: if you hover over the sea or a lake, they head for the nearest dry ground. His army is **separate from the regular soldier waves**. It doesn't count toward wave reinforcements, and defeating his soldiers doesn't raise the WANTED meter, so regular waves still come only from the WANTED level. The empty ships stay on the beach and can be burned. The prince has a boss health bar (900 HP, +400 per later prince) and can only be eaten below 30% health. Beating him gives 250 gold (+150 per later prince), 1,500 points per prince level and his royal banner as a trophy. There are no hoard raids during a prince attack.
+
+## King William's trade ships
+When something is wrecked and the stockpile can't cover the rebuild, **King William buys exactly the shortfall** of wood and/or stone from castle gold at a fair rate (4 gold per wood, 6 per stone). He never buys for watchtowers or to stockpile, and never twice at once.
+- A banner announces *"A trade ship approaches with King William's lumber/stone!"*, a horn sounds, and a gold map marker follows the ship.
+- The ship sails in from the south edge of the map to the **King's Quay** (a royal dock on the shore below the castle), unloads, and sails home.
+- At the quay the goods go onto a **cart escorted by foot soldiers** (3 guards, or 2 each for two carts) that drives to the castle storehouse.
+- **Sink the ship or smash the cart** and the goods are lost (tallied as *Royal trade ship* / *Royal trade cart*). After a cooldown the king re-buys only if the rebuild still needs it and the treasury can afford it.
+- Ships, carts and guards in transit are saved and restored.
 
 ## King William
 Castle Aldric belongs to **King William**. He stands in the castle courtyard with a gold name tag, and when the dragon comes close he shouts orders, starting with *King William: "Guards! Protect Princess Elizabeth!"*. While you carry the princess away, he calls for her rescue. He can't be eaten or hurt. His name is used in the raid and prince announcements (*"… vows before King William to claim the dragon's hoard!"*), the ransom banner, the prince's march, the tax collectors (*"King William's taxes! Begone!"*), the militia (*"By order of King William!"*) and the castle label.
 
+## Every bite hurts
+Your bite **always deals damage**. If the target can be eaten, it is swallowed as before. If it can't be swallowed yet (a bear, elephant or bull at high health, a pack leader or silverback, a wild dragon, a whale, a raid champion, a prince, the sandworm and so on), it still takes bite damage: a jaw-snap ring flashes on it and a red **-N** shows the damage. The bite never takes a tough target below 1 HP, so you wear it down and then swallow it. King William and Princess Elizabeth can't be bitten.
+
+## Kingdom watchtowers
+The kingdom builds wooden **watchtowers** with an archer on top, first beside the roads near the castle and then farther out (spaced about 650 px apart), plus guard posts at the edges of villages. Towers are only built in the kingdom's own lands (farmlands, castle, south, lake, hills and coast), never in the wilds, the lair, the desert, savanna, jungle or mountains. The maximum is 2 + the castle level.
+
+Towers are built **only from wood and stone that carts actually deliver to the storehouse during the current level** (3 wood + 2 stone each, about 14 s to build); the starting stock and free resources don't count. Kill the carts and workers and the building slows down. A destroyed tower leaves rubble that still counts toward the maximum and is rebuilt the same way. Towers are saved with the game.
+
 ## The lair arrow
-A gold arrow circles the dragon and points home to the lair, with the distance. It hides while the lair is on screen, glows while you carry the princess or loot, and stays clear of the HUD panels and touch buttons.
+A gold arrow circles the dragon and points home to the lair, with the distance. It hides while the lair is on screen, glows while you carry the princess (not for gold, which goes home on its own), and stays clear of the HUD panels and touch buttons.
 
 ## Music and sound
-All sound is generated in code with Web Audio; there are no audio files. The music follows where you are: a pastoral theme in the farmlands, a sea shanty on the water, a desert theme in the Scorching Sands, battle drums when soldiers close in, an eerie theme near the giant squid, fanfare at the castle and on the title screen, and a night theme. Themes crossfade. Sound effects (fire, chomps, stomps, crashes, splashes, coins, roars, arrows and more) are panned to where they happen and fade with distance. **N** mutes everything.
+All sound is generated in code with Web Audio; there are no audio files. **Every region has its own theme**, and themes crossfade over about 2 s as you cross a border:
+
+| Region | Theme |
+|---|---|
+| Kingdom Farmlands, hills, lake, south | cheerful medieval (a night version after dark) |
+| Castle Aldric (and near the gate) | regal fanfare |
+| The Deepwood | mysterious |
+| Scorching Sands | Arabian-style scale |
+| Golden Savanna | drums |
+| Emerald Jungle | marimba and percussion |
+| Frostpeak Mountains and the Dragon Peaks | epic low horns |
+| The sea, coast and islands | airy pads |
+| Your lair / the volcano | dark rumble |
+
+**Boss music** (a prince's army, the sandworm once it surfaces) overrides the region theme; the giant squid keeps its eerie theme. Battle drums play only when you have been hit recently with several foes close by, so tower and castle archers don't drown out the region music. The music is quiet, honours mute, and on iPhone it starts on your first tap. Sound effects (fire, chomps, stomps, crashes, splashes, coins, roars, arrows and more) are panned to where they happen and fade with distance. **N** mutes everything.
 
 ## Hunger (normal mode only)
 - A drumstick meter in the HUD (under Stamina) slowly empties: about 80 s from full to empty on the ground, and about 60 s at the fastest (flying and breathing fire).
@@ -227,13 +306,14 @@ All sound is generated in code with Web Audio; there are no audio files. The mus
 - Below 25 the meter flashes orange ("Getting hungry…"). At zero you are **Starving!**: the meter pulses red, a warning appears on screen, and you lose 2.5 HP/s until you eat again. Starving to death ends the game.
 - Easy mode has no hunger at all (the meter is hidden).
 - Hunger drains 1.4× faster while you swim or fly over water (sea, lake or river).
+- **At the lair** (anywhere inside the lair area) hunger drains at only **40%** of the normal rate.
 
 ## The sea
 - East of the coast is a big open sea. Fly over it, or land on any water (sea, Mirror Lake, the Silver River) to **swim**: you move at about half speed, regain stamina more slowly, cannot stomp, and sit half-submerged with ripples. Biting (E) and fire still work.
 - **Sea life:** fish schools (a small snack per bite; fire just makes them dive), sharks (circle and nip you for 3; +20 HP), whales (slow; their tail slaps for 4; too big to swallow until worn down below half health; +75 HP).
 - **The GIANT SQUID** lurks in **The Kraken Deep** (far east). It slams a tentacle where you are heading (dodge the red ring, 9 damage) or grabs you (3 HP/s; burn it to break free). Wear it down until it is **DAZED**, then eat it for +150 HP and +1500 points. It returns only after about 4 minutes.
 - **Boats:** fishing boats, merchant ships (they flee and carry a little gold) and rowboats on the lake. Burn them, bite their hulls, or dive slam onto them. Sunk crews swim in the water and can be eaten.
-- **Pirates:** cartoony skull-and-crossbones ships that circle you and fire crossbows (2) and arcing cannonballs (7; watch the red target ring), whether you are flying or swimming. They douse fires after a while, so keep burning! A sunk pirate ship leaves pirate swimmers and a floating gold chest (swoop low to collect it, then stash it at your lair).
+- **Pirates:** cartoony skull-and-crossbones ships that circle you and shoot arrows from the archers on deck (2 each, plus a three-arrow volley every few seconds; no cannons), whether you are flying or swimming. They douse fires after a while, so keep burning! A sunk pirate ship leaves pirate swimmers and a floating gold chest (swoop low to collect it, then stash it at your lair).
 - **The Lonely Lighthouse:** a rest-stop island just before the Kraken Deep, with a sweeping light beam and a map marker. Landing on it restores stamina fast and slowly heals you. The keeper and fishermen at the dock are edible and come back over time, and seals lounge on the rocks: they flop into the sea when you come near, are worth +24 HP, and respawn. Pirates rarely sail nearby.
 - **Ocean and beach creatures:** moray eels lunge from reefs, narwhal pods roam the northern sea, stingrays lie in the shallows (step on one and its tail barb zaps you; it then glides away, and it zaps predators too), anglerfish lure small fish in the deep with a glowing lamp, sea turtles nest on the beach (hatchlings scurry to the sea), pond turtles plop into the lake, penguin colonies waddle on the shore, and a giant octopus (wear it down until it is dazed, then eat it for +20 max HP). Starfish and seashells dot the beaches; swoop low to pick up shells. All of them are cartoony, never raise the wanted level, and have Tally entries.
 

@@ -125,9 +125,11 @@ function updShip(s,dt){s.t+=dt;s.bob+=dt;
     if(!far&&rnd()<dt*14)flame(s.x+R(-s.r*.5,s.r*.5),s.y+R(-8,8),R(10,30));}
   const dd=d2(s.x,s.y,D.x,D.y);let tx,ty,sp=s.sp;
   if(s.kind==='pirate'&&dd<700&&!G.over&&!G.won){const a=Math.atan2(s.y-D.y,s.x-D.x)+.9;tx=D.x+Math.cos(a)*330;ty=D.y+Math.sin(a)*330;sp*=1.15;
-    if(!s.yell||G.t-s.yell>8){s.yell=G.t;float(s.x,s.y-70,['Arr! A dragon! Fire the cannons!','Avast! Crossbows ready!',"Shiver me scales!"][RI(0,2)],'#ffe');}
+    if(!s.yell||G.t-s.yell>8){s.yell=G.t;float(s.x,s.y-70,['Arr! A dragon! Nock yer arrows!','Avast! Crossbows ready!',"Shiver me scales!"][RI(0,2)],'#ffe');}
     s.cd-=dt;s.cd2-=dt;if(s.cd<=0&&dd<520){s.cd=R(1.4,2);for(let i=0;i<2;i++){const ox=s.x+R(-20,20),oy=s.y+R(-10,10),b=Math.atan2(D.y-oy,D.x-ox)+R(-.07,.07);projs.push({kind:'arrow',x:ox,y:oy,z:18,vx:Math.cos(b)*440,vy:Math.sin(b)*440,tz:heightOf()+15,life:1.5,dmg:2,pirate:true});}}
-    if(s.cd2<=0&&dd<650){s.cd2=R(3.5,5);const T=1.1,px=D.x+D.vx*T*.8,py=D.y+D.vy*T*.8;cballs.push({sx:s.x,sy:s.y,tx:px,ty:py,t:0,T,h1:heightOf()});puff(s.x+Math.cos(s.ang+Math.PI/2)*s.r*.5,s.y,10,'rgba(230,230,230,',80,8);float(s.x,s.y-50,'BOOM!','#fff');}}
+    if(s.cd2<=0&&dd<620){s.cd2=R(3.5,5);const T=.7,px=D.x+D.vx*T*.5,py=D.y+D.vy*T*.5,b0=Math.atan2(py-s.y,px-s.x);G.pirVolleys=(G.pirVolleys||0)+1; // a full volley from the deck archers (no cannons)
+      for(let i=-1;i<=1;i++){const ox=s.x+R(-24,24),oy=s.y+R(-10,10),b=b0+i*.06+R(-.03,.03);projs.push({kind:'arrow',x:ox,y:oy,z:18,vx:Math.cos(b)*470,vy:Math.sin(b)*470,tz:heightOf()+15,life:1.5,dmg:2,pirate:true});}
+      float(s.x,s.y-50,'Loose!','#fff');}}
   else if((s.kind==='merchant'||s.kind==='fishing')&&dd<420&&D.alt<.9){const a=Math.atan2(s.y-D.y,s.x-D.x);tx=s.x+Math.cos(a)*200;ty=s.y+Math.sin(a)*200;sp*=1.25;
     if(!s.yell||G.t-s.yell>9){s.yell=G.t;float(s.x,s.y-60,s.kind==='merchant'?'Full sail! Save the cargo!':'Row for your lives!','#ffe');}}
   else{if(!s.wp||d2(s.x,s.y,s.wp.x,s.wp.y)<60)s.wp=newWp(s);tx=s.wp.x;ty=s.wp.y;}
@@ -142,17 +144,13 @@ function hurtShip(s,d,src){if(s.state==='sink')return;s.hp-=d;if(src!=='fire'&&s
     const g=SHIPK[s.kind].gold;if(g)loot.push({x:s.x+R(-15,15),y:s.y+R(-10,10),amt:pir?RI(g-1,g+1):g,t:0});}}
 function fireShips(ox,oy,dt){for(const s of ships)if(s.state!=='sink'&&inFire(s.x,s.y,ox,oy)){if(!s.fire){s.fire=1;s.fireT=0;float(s.x,s.y-60,s.kind==='pirate'?'Fire on deck! Arr!':'The boat is ablaze!','#ffb050');}hurtShip(s,DR.fireDps*.5*dt,'fire');}}
 function biteShip(){for(const s of ships)if(s.state!=='sink'&&d2(s.x,s.y,D.x+Math.cos(D.ang)*60,D.y+Math.sin(D.ang)*60)<s.r+70&&D.alt<.6){hurtShip(s,18,'bite');D.eatCD=.6;D.eatT=.3;float(s.x,s.y-50,'CRUNCH! Hull bitten!','#ffe28a');puff(s.x,s.y,8,'rgba(140,100,60,',80,6);return true;}return false;}
-function updCballs(dt){for(const c of cballs){c.t+=dt;if(c.t>=c.T&&!c.done){c.done=true;const hit=d2(D.x,D.y,c.tx,c.ty)<70&&!G.over;
-    if(hit){hurtDragon(7,'cannon');float(D.x,D.y-100,'Cannonball! -7','#ff9a9a');}puff(c.tx,c.ty,hit?14:10,inWater(c.tx,c.ty)?'rgba(220,240,255,':'rgba(140,125,100,',110,8);}}
-  cballs=cballs.filter(c=>!c.done);}
+function updCballs(dt){cballs.length=0;} // pirates have no cannons (archers only); kept as a no-op for old saves
 // ---------- drawing ----------
 function drawSeaLow(x0,y0,x1,y1){const v=o=>o.x>x0-200&&o.x<x1+200&&o.y>y0-200&&o.y<y1+200;
   ctx.lineWidth=2;for(const r of ripples)if(v(r)){const f=r.t/1.6;ctx.strokeStyle=`rgba(230,245,255,${.5*(1-f)})`;ctx.beginPath();ctx.ellipse(r.x,r.y,14+f*50,6+f*20,0,0,TAU);ctx.stroke();}
   for(const l of loot)if(v(l)){const b=Math.sin(G.t*2+l.x)*2;ell(l.x,l.y+4,16,5,'rgba(0,0,0,.2)');rect(l.x-12,l.y-10+b,24,14,'#8a5a24');rect(l.x-12,l.y-12+b,24,4,'#6a3a14');rect(l.x-2,l.y-8+b,4,5,'#ffd84a');
     if(Math.floor(G.t*3+l.x)%3===0)ell(l.x+R(-8,8),l.y-14+b,2,2,'#fff6b0');}}
 function drawSeaTop(x0,y0,x1,y1){
-  for(const c of cballs){const f=c.t/c.T,x=lerp(c.sx,c.tx,f),y=lerp(c.sy,c.ty,f),z=lerp(10,c.h1,f)+4*110*f*(1-f);ell(x,y,5,2,'rgba(0,0,0,.3)');ell(x,y-z,6,6,'#222');ell(x-2,y-z-2,2,2,'#777');
-    ctx.strokeStyle='rgba(255,60,40,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(c.tx,c.ty,55*(1-f)+15,22*(1-f)+6,0,0,TAU);ctx.stroke();}
   // lighthouse beam (sweeps forever)
   if(lhUp()&&x1>LH.x-1400&&x0<LH.x+1400&&y1>LH.y-1100&&y0<LH.y+1000){const bx=LH.x,by=LH.y-160,a=G.t*.5,f=lhFlick(),L=700*f,night=typeof nightAmt==='function'?nightAmt():0;
     ctx.save();ctx.globalCompositeOperation='lighter';const gr=ctx.createRadialGradient(bx,by,10,bx,by,L);gr.addColorStop(0,`rgba(255,170,70,${(.3+.3*night)*f})`);gr.addColorStop(1,'rgba(255,140,40,0)');ctx.fillStyle=gr;
@@ -239,7 +237,7 @@ function drawShip(s){const x=s.x,y=s.y,k=s.kind,sk=s.state==='sink'?s.t/4:0,b=Ma
   ctx.save();ctx.translate(x,y+yo+b);ctx.rotate(Math.cos(s.ang)>=0?sk*.5:-sk*.5);const f=Math.cos(s.ang)>=0?1:-1;ctx.scale(f,1);
   const hull=k==='pirate'?'#4a2a1a':k==='merchant'?'#8a5a2a':'#7a4a24';
   poly([-r,-8,r,-8,r*.75,8,-r*.8,8],hull);poly([-r,-8,r,-8,r*.95,-4,-r*.95,-4],k==='pirate'?'#6a3a22':'#a06a34');line(-r*.8,2,r*.75,2,'rgba(0,0,0,.3)',2);
-  if(k==='pirate')for(let i=-1;i<=1;i++)ell(i*r*.45,0,3,3,'#111');
+  if(k==='pirate')for(let i=-1;i<=1;i++){const ax=i*r*.45;rect(ax-2.5,-15,5,8,'#7a1e1e');ell(ax,-17,2.6,2.6,'#e8c39a');rect(ax-3,-20,6,1.6,'#c22');ctx.strokeStyle='#5a3a1c';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(ax+3,-12,4,-1.3,1.3);ctx.stroke();} // archers on deck
   if(k==='merchant'){rect(-r*.5,-16,14,8,'#b08850');rect(-r*.2,-15,12,7,'#c09860');}
   if(k==='rowboat'){line(-6,-2,-16,10+Math.sin(G.t*4)*3,'#6a4a2a',2);line(6,-2,16,10-Math.sin(G.t*4)*3,'#6a4a2a',2);ell(0,-10,4,4,'#f0c8a0');ell(0,-13,4,2,'#c33');}
   else{const mh=k==='fishing'?48:k==='merchant'?78:84;line(0,-6,0,-mh,'#4a2a10',3);

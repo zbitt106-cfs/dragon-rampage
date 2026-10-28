@@ -89,7 +89,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
     txt(names[i],tx,my+62,10,G.alarm>=t?'#ffd080':'#999','center',G.alarm>=t);});
   txt(`Level ${G.level}: ${LEVEL_NAMES[G.level]}`,mx+mw,my+18,11,'#fff','right',false);
   if(G.sinceDmg>6&&G.alarm>0)txt(coolMul()>1.4?'cooling fast…':'cooling…',mx,my+18,11,'#9cf','left',false);
-  {const c=concern();panel(VW/2-130,my+74,260,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}   ·   Treasury ${treasury()}g`,VW/2,my+86,10,c.col,'center',false);}
+  {const c=concern();panel(VW/2-100,my+74,200,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}`,VW/2,my+86,10,c.col,'center',false);}
   if(gateBroken()){const s=gateStruct(),[cw,cs]=COST.gate,st=s.state==='building'?`rebuilding ${Math.round(s.build*100)}%`:s.paid||s.builder?'engineers on the way':G.t-(s.ruinT||0)<GATE_REBUILD_WAIT?'rubble settling':(G.wood<cw||G.stone<cs)?`needs ${cw} wood + ${cs} stone`:'awaiting engineers';
     const pl=.75+.25*Math.sin(G.t*4);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(VW/2-190,my+94,380,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(VW/2-189.5,my+94.5,379,19);
     txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller`,VW/2,my+108,11,'#ffd8b0','center');}
@@ -97,7 +97,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   else{panel(10,186+hy,250,26);rect(16,192+hy,238*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,204+hy,11);}
   // right panel: score + stockpiles
   // goal panel
-  panel(10,118+hy,250,64);txt(`CASTLE LV ${G.lvl}  ·  Gold carried ${D.gold}`,20,136+hy,12,'#ffd84a');txt(`Stashed in lair: ${G.stash}  (+${G.stash*5} pts)`,20,153+hy,11,'#ffe8a0','left',false);
+  panel(10,118+hy,250,64);txt(`CASTLE LV ${G.lvl}`,20,136+hy,12,'#ffd84a');txt(`Lair hoard worth +${G.stash*5} pts`,20,153+hy,11,'#ffe8a0','left',false);
   txt(D.princess?'Princess Elizabeth: in your claws! Fly to the LAIR':PR.state==='lair'?'Princess Elizabeth: in your lair':(roofOpen()?'Princess Elizabeth: the keep roof is broken: grab her!':'Princess Elizabeth: inside the keep (break its stone roof)'),20,171+hy,11,D.princess?'#ff9ad0':'#f8c8e0','left',false);
   const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,196+hy,11,'#ffc080','left');
   drawStockPill(); // score, hunter counts, ruins/rebuilding live in the pause menu / nowhere now: HUD shows only the stockpile icons
@@ -128,7 +128,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
     txt(b.text,VW/2,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,VW/2,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,VW/2,by+50,sm?12:14,'#ffc0a0','center',false);ctx.globalAlpha=1;}
   // controls reminder
   if(!sm&&!TOUCH.on)txt(GPAD.connected?'Stick move · A/RT fire · Y fly/land · X eat/grab · B stomp/dive/scratch · LB map · Start pause':'WASD move · Space fire · F fly/land · E eat/grab · Q stomp/dive/scratch · M map · P pause',14,VH-12,12,'rgba(255,255,255,.75)','left',false);
-  if(!sm&&!TOUCH.on&&!G.over&&!G.won)txt(D.princess?'Goal: carry Princess Elizabeth to your LAIR (follow the gold arrow)':D.gold>0?'Goal: stash the gold in your LAIR, or free Princess Elizabeth from the keep (south castle)':'Goal: raid the castle (south): grab gold piles, break the keep\'s stone roof and grab Princess Elizabeth (E / X)',VW/2,VH-12,13,'#ffe8a0','center');
+  if(!sm&&!TOUCH.on&&!G.over&&!G.won)txt(D.princess?'Goal: carry Princess Elizabeth to your LAIR (follow the gold arrow)':'Goal: raid the castle (south) for gold & the princess (E/X)',VW/2,VH-12,13,'#ffe8a0','center');
   if(G.over)drawOver();else if(G.won)drawWon();if(paused&&!G.over&&!G.won)drawPause();}
 function center(lines,top){let y=top;for(const [s,size,col,bold] of lines){txt(s,VW/2,y,size,col,'center',bold);y+=size*1.45;}}
 let titleSel=0;
@@ -165,9 +165,9 @@ function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,
     'FIRE BAR: the red bar under stamina drains while you breathe fire and refills when you stop. Empty = no fire until it recovers a bit. It glows orange while you hold lava shots.',
     'MONSTER FEAST: wear down the giant squid or a sand worm, then eat it: +10% MAX HEALTH each time, fully healed. Your hoard, trophies and bonus carry over between castle levels (reset on death or a new game).',
     'DIVE STOMP: press stomp while flying to tuck your wings and plummet: a huge shockwave that smashes wooden buildings flat and cracks stone (2.4 s cooldown, 6 stamina).',
-    'Villagers fight fires from their wells, rebuild with wood and stone, replant burnt gardens and build fireproof STONE bridges: smash those with stomps or a dive slam.',
+    'Villagers fight fires with buckets from ANY water (wells, town fountains, rivers, ponds, the sea), rebuild with wood and stone, replant burnt gardens and build fireproof STONE bridges: smash those with stomps or a dive slam.',
     'THE SEA (east): fly over water, or land in sea, lake or river to SWIM (slower; stomp becomes a CLAW SCRATCH that rakes boats, sharks, seals, pirates and squid tentacles; bite and fire still work). Hunger drains faster over water!',
-    'Eat fish, sharks and whales; sink boats and cartoon PIRATES (cannons!) for their gold. Rest at the Lonely Lighthouse, then face the GIANT SQUID.',
+    'Eat fish, sharks and whales; sink boats and cartoon PIRATES (archers!) for their gold. Rest at the Lonely Lighthouse, then face the GIANT SQUID.',
     'Wildflowers carpet every region and villagers tend fenced gardens: burn them and they scorch, then regrow. The music follows you from meadow to sea to desert (N mutes).'];
   for(const t of tips){txt(t,W0/2,y,13,'#e8d6c0','center',false);y+=19;}
   txt(GPAD.connected?'🎮 Controller ready':'Plug in an Xbox / PlayStation controller any time',W0/2,y+12,13,GPAD.connected?'#9fd0ff':'#999','center',false);
@@ -202,7 +202,7 @@ function drawMap(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),mmh=(WY1-WY0)*s,X=x=>mmx
   for(const u of units)if(u.tax&&!u.dead&&seen(u.x,u.y)){ctx.fillStyle='#c6f';ctx.fillRect(X(u.x)-q/2,Y(u.y)-q/2,q,q);}
   if(typeof storeS==='function'){const s=storeS();if(s){ctx.fillStyle=s.state==='ok'?'#d8a860':'#6a5a4a';ctx.fillRect(X(s.x)-(big?4:2),Y(s.y)-(big?4:2),big?8:4,big?8:4);if(big)txt(s.state==='ok'?'Storehouse':'Storehouse (wrecked)',X(s.x)-8,Y(s.y)+16,9,'#e8d0a0','center');}
     for(const c of carts)if(c.supply&&!c.wrecked){ctx.fillStyle=c.kind==='wood'?'#c08040':'#c8c8c8';ctx.fillRect(X(c.x)-(big?3:1.5),Y(c.y)-(big?3:1.5),big?6:3,big?6:3);}}
-  txt(big?`♜ Castle Aldric · treasury ${treasury()}g`:`Treasury ${treasury()}g`,X(CASTLE.x),Y(CASTLE.y)-(big?20:7),big?11:8,'#ffd84a','center');
+  {const fs=big?11:8,sc=fs/12,a=typeof uiAmt==='function'?uiAmt(treasury()):String(treasury()),cy=Y(CASTLE.y)-(big?20:7);if(big)txt('♜ Castle Aldric',X(CASTLE.x),cy-14,fs,'#ffd84a','center');ctx.font=`bold ${fs}px Georgia`;const w=22*sc+ctx.measureText(a).width,x=X(CASTLE.x)-w/2;if(typeof uiCastle==='function'){uiCastle(x+8*sc,cy-fs*.35,sc);uiCoin(x+15*sc,cy-fs*.35+3*sc,sc);}txt(a,x+22*sc,cy,fs,'#ffd84a','left');}
   ell(X(LAIR.x),Y(LAIR.y),big?8:5,big?6:4,'#c80');txt(big?'LAIR (home)':'LAIR',X(LAIR.x),Y(LAIR.y)-6,9,'#ffd27a','center');
   if(seen(CABIN.x,CABIN.y))ell(X(CABIN.x),Y(CABIN.y),3,3,'#7c4');if(PR.state==='tower'){const pb=big?5:3.5;ell(X(PR.x),Y(PR.y),pb+1.5,pb+1.5,'#fff');ell(X(PR.x),Y(PR.y),pb,pb,'#f6c');txt(big?(roofOpen()?'♛ Princess (roof broken!)':'♛ Princess (in the keep)'):'♛',X(PR.x)-(big?24:0),Y(PR.y)+(big?4:-5),big?10:9,'#ffb0dc',big?'right':'center',false);}
   ell(X(D.x),Y(D.y),big?6:4,big?6:4,Math.floor(G.t*4)%2?'#f33':'#ff0');

@@ -788,7 +788,7 @@ function updAlarm(dt){
   let L=0;for(const t of THRESH)if(G.alarm>=t)L++;
   G.waveCD-=dt;G.reinforceT-=dt;
   if(L>G.lastLevel&&G.waveCD<=0)spawnWave(L);
-  else if(L>=1&&G.reinforceT<=0&&G.waveCD<=0){const foes=units.filter(u=>!u.dead&&!u.post&&(u.type==='knight'||u.type==='archer')).length;if(foes<4+L*3)spawnWave(L,true);}
+  else if(L>=1&&G.reinforceT<=0&&G.waveCD<=0){const foes=units.filter(u=>!u.dead&&!u.post&&!u.prince&&(u.type==='knight'||u.type==='archer')).length;if(foes<4+L*3)spawnWave(L,true);}
   if(L<G.lastLevel)G.lastLevel=L;
   G.level=L;
   // enemies give up and ride home if the meter cools to Calm
@@ -951,7 +951,7 @@ function drawLair(){const x=LAIR.x,y=LAIR.y; // a rocky cave-nest on the very to
   for(let i=0;i<10;i++){const t=(G.t*.3+i*.1)%1;ell(x-200+i*44+Math.sin(G.t+i)*10,y-160+t*260,2,2,'rgba(255,255,255,'+(1-t)*.8+')');}
   if(PR.state==='lair'){drawPrincess(x+50,y+10,false);ctx.fillStyle='#fff';ctx.font='bold 11px Georgia';ctx.textAlign='center';ctx.fillText('Hmph! ...this nest is actually quite comfy. And COLD.',x+50,y-26);}
   ctx.fillStyle='#ffd27a';ctx.font='bold 14px Georgia';ctx.textAlign='center';ctx.fillText(`Dragon's Lair (Dragon Peak) · ${G.stash} gold stashed`,x,y-150);
-  if(D.princess||D.gold){ctx.strokeStyle=`rgba(255,220,100,${.5+.4*Math.sin(G.t*5)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+20,130,80,0,0,TAU);ctx.stroke();}}
+  if(D.princess){ctx.strokeStyle=`rgba(255,220,100,${.5+.4*Math.sin(G.t*5)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+20,130,80,0,0,TAU);ctx.stroke();}}
 function drawMine(){const x=MINE.x,y=MINE.y;ell(x,y-20,110,70,'#7d6f5b');ell(x-10,y-40,80,50,'#90826c');ell(x+40,y-60,50,30,'#9d8f78');
   ctx.fillStyle='#1a1410';ctx.beginPath();ctx.moveTo(x-26,y+14);ctx.lineTo(x-26,y-12);ctx.arc(x,y-12,26,Math.PI,0);ctx.lineTo(x+26,y+14);ctx.fill();
   if(kUp('minehead')){rect(x-30,y-40,6,54,'#6b4a26');rect(x+24,y-40,6,54,'#6b4a26');rect(x-34,y-44,68,8,'#7a5530');}
@@ -1163,7 +1163,7 @@ function tryGrab(){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
     float(PR.x,PR.y-60,'Eek! Put me down!','#ff9ad0');spawnWave(Math.max(1,G.level),true);G.banner={text:'You captured Princess Elizabeth!',sub:'Fly her back to your lair (follow the gold arrow, north to Dragon Peak). She is quite safe — just very cross.',extra:'The knights ride out of the gate: "Rescue Princess Elizabeth!"',t:4.5};return true;}
   const cap=G.easy?80:60;
   if(D.gold<cap)for(const g of goldPiles){if(g.amt>0&&(d2(D.x,D.y,g.x,g.y)<95||d2(mx,my,g.x,g.y)<90)){const take=Math.min(g.amt,cap-D.gold);g.amt-=take;D.gold+=take;
-    float(g.x,g.y-30,`+${take} gold (carrying ${D.gold})`,'#ffd84a');sparkle(g.x,g.y,8);addAlarm(6);return true;}}
+    float(g.x,g.y-30,`+${take} gold → lair`,'#ffd84a');sparkle(g.x,g.y,8);addAlarm(6);return true;}}
   return false;}
 function updGoal(dt){
   // princess quips while carried
@@ -1208,7 +1208,7 @@ function updFirefight(dt){ffT-=dt;if(ffT>0)return;ffT=.5;
   const fires=[...structures.filter(s=>s.fire&&s.state!=='ruin'),...trees.filter(t=>t.fire&&t.state==='ok')];
   for(const f of fires){if(dist(f,D)<320)continue;const n=units.filter(u=>!u.dead&&u.water&&u.water.f===f).length;if(n>=3)continue;
     let best=null,bd=700;for(const u of units){if(u.dead||u.type!=='villager'||u.job!=='peasant'||u.task||u.water||u.state==='flee'||u.inside)continue;const d=d2(u.x,u.y,f.x,f.y);if(d<bd){bd=d;best=u;}}
-    if(best){best.water={f,st:'fetch',well:nearestWell(best.x,best.y),t:1};best.carry=null;}}}
+    if(best){best.water={f,st:'fetch',well:waterFor(f,best),t:1};best.carry=null;}}}
 function updBucket(u,dt){const w=u.water,f=w.f;const out=f.state==='ruin'||!f.fire||(f.state!==undefined&&f.state!=='ok'&&!f.kind);
   if(out&&w.st!=='fetch'){u.water=null;u.carry=null;u.state='idle';return;}
   if(w.st==='fetch'){if(wellFetch(u,w,dt)){w.st='carry';u.carry='bucket';}}
@@ -1216,7 +1216,7 @@ function updBucket(u,dt){const w=u.water,f=w.f;const out=f.state==='ruin'||!f.fi
   else if(w.st==='throw'){w.t-=dt;if(w.t<=0){u.carry=null;puff(f.x,f.y-10,16,'rgba(120,180,255,',120,7,2.5);
       f.water=(f.water||0)+1;const need=f.kind?2:1;
       if(f.water>=need){f.fire=0;f.water=0;float(f.x,f.y-50,'Fire out!','#8fd0ff');G.stats.fires=(G.stats.fires||0)+1;}
-      w.st='fetch';w.t=1;w.well=nearestWell(u.x,u.y);if(!f.fire){u.water=null;u.state='idle';}}}}
+      w.st='fetch';w.t=1;w.well=waterFor(f,u);w.natMsg=0;if(!f.fire){u.water=null;u.state='idle';}}}}
 
 // ---------- victory screen ----------
 function drawWon(){ctx.fillStyle=`rgba(10,10,40,${Math.min(.72,G.wonT)})`;ctx.fillRect(0,0,VW,VH);const sm=VW<760;
@@ -1500,9 +1500,11 @@ function updShip(s,dt){s.t+=dt;s.bob+=dt;
     if(!far&&rnd()<dt*14)flame(s.x+R(-s.r*.5,s.r*.5),s.y+R(-8,8),R(10,30));}
   const dd=d2(s.x,s.y,D.x,D.y);let tx,ty,sp=s.sp;
   if(s.kind==='pirate'&&dd<700&&!G.over&&!G.won){const a=Math.atan2(s.y-D.y,s.x-D.x)+.9;tx=D.x+Math.cos(a)*330;ty=D.y+Math.sin(a)*330;sp*=1.15;
-    if(!s.yell||G.t-s.yell>8){s.yell=G.t;float(s.x,s.y-70,['Arr! A dragon! Fire the cannons!','Avast! Crossbows ready!',"Shiver me scales!"][RI(0,2)],'#ffe');}
+    if(!s.yell||G.t-s.yell>8){s.yell=G.t;float(s.x,s.y-70,['Arr! A dragon! Nock yer arrows!','Avast! Crossbows ready!',"Shiver me scales!"][RI(0,2)],'#ffe');}
     s.cd-=dt;s.cd2-=dt;if(s.cd<=0&&dd<520){s.cd=R(1.4,2);for(let i=0;i<2;i++){const ox=s.x+R(-20,20),oy=s.y+R(-10,10),b=Math.atan2(D.y-oy,D.x-ox)+R(-.07,.07);projs.push({kind:'arrow',x:ox,y:oy,z:18,vx:Math.cos(b)*440,vy:Math.sin(b)*440,tz:heightOf()+15,life:1.5,dmg:2,pirate:true});}}
-    if(s.cd2<=0&&dd<650){s.cd2=R(3.5,5);const T=1.1,px=D.x+D.vx*T*.8,py=D.y+D.vy*T*.8;cballs.push({sx:s.x,sy:s.y,tx:px,ty:py,t:0,T,h1:heightOf()});puff(s.x+Math.cos(s.ang+Math.PI/2)*s.r*.5,s.y,10,'rgba(230,230,230,',80,8);float(s.x,s.y-50,'BOOM!','#fff');}}
+    if(s.cd2<=0&&dd<620){s.cd2=R(3.5,5);const T=.7,px=D.x+D.vx*T*.5,py=D.y+D.vy*T*.5,b0=Math.atan2(py-s.y,px-s.x);G.pirVolleys=(G.pirVolleys||0)+1; // a full volley from the deck archers (no cannons)
+      for(let i=-1;i<=1;i++){const ox=s.x+R(-24,24),oy=s.y+R(-10,10),b=b0+i*.06+R(-.03,.03);projs.push({kind:'arrow',x:ox,y:oy,z:18,vx:Math.cos(b)*470,vy:Math.sin(b)*470,tz:heightOf()+15,life:1.5,dmg:2,pirate:true});}
+      float(s.x,s.y-50,'Loose!','#fff');}}
   else if((s.kind==='merchant'||s.kind==='fishing')&&dd<420&&D.alt<.9){const a=Math.atan2(s.y-D.y,s.x-D.x);tx=s.x+Math.cos(a)*200;ty=s.y+Math.sin(a)*200;sp*=1.25;
     if(!s.yell||G.t-s.yell>9){s.yell=G.t;float(s.x,s.y-60,s.kind==='merchant'?'Full sail! Save the cargo!':'Row for your lives!','#ffe');}}
   else{if(!s.wp||d2(s.x,s.y,s.wp.x,s.wp.y)<60)s.wp=newWp(s);tx=s.wp.x;ty=s.wp.y;}
@@ -1517,17 +1519,13 @@ function hurtShip(s,d,src){if(s.state==='sink')return;s.hp-=d;if(src!=='fire'&&s
     const g=SHIPK[s.kind].gold;if(g)loot.push({x:s.x+R(-15,15),y:s.y+R(-10,10),amt:pir?RI(g-1,g+1):g,t:0});}}
 function fireShips(ox,oy,dt){for(const s of ships)if(s.state!=='sink'&&inFire(s.x,s.y,ox,oy)){if(!s.fire){s.fire=1;s.fireT=0;float(s.x,s.y-60,s.kind==='pirate'?'Fire on deck! Arr!':'The boat is ablaze!','#ffb050');}hurtShip(s,DR.fireDps*.5*dt,'fire');}}
 function biteShip(){for(const s of ships)if(s.state!=='sink'&&d2(s.x,s.y,D.x+Math.cos(D.ang)*60,D.y+Math.sin(D.ang)*60)<s.r+70&&D.alt<.6){hurtShip(s,18,'bite');D.eatCD=.6;D.eatT=.3;float(s.x,s.y-50,'CRUNCH! Hull bitten!','#ffe28a');puff(s.x,s.y,8,'rgba(140,100,60,',80,6);return true;}return false;}
-function updCballs(dt){for(const c of cballs){c.t+=dt;if(c.t>=c.T&&!c.done){c.done=true;const hit=d2(D.x,D.y,c.tx,c.ty)<70&&!G.over;
-    if(hit){hurtDragon(7,'cannon');float(D.x,D.y-100,'Cannonball! -7','#ff9a9a');}puff(c.tx,c.ty,hit?14:10,inWater(c.tx,c.ty)?'rgba(220,240,255,':'rgba(140,125,100,',110,8);}}
-  cballs=cballs.filter(c=>!c.done);}
+function updCballs(dt){cballs.length=0;} // pirates have no cannons (archers only); kept as a no-op for old saves
 // ---------- drawing ----------
 function drawSeaLow(x0,y0,x1,y1){const v=o=>o.x>x0-200&&o.x<x1+200&&o.y>y0-200&&o.y<y1+200;
   ctx.lineWidth=2;for(const r of ripples)if(v(r)){const f=r.t/1.6;ctx.strokeStyle=`rgba(230,245,255,${.5*(1-f)})`;ctx.beginPath();ctx.ellipse(r.x,r.y,14+f*50,6+f*20,0,0,TAU);ctx.stroke();}
   for(const l of loot)if(v(l)){const b=Math.sin(G.t*2+l.x)*2;ell(l.x,l.y+4,16,5,'rgba(0,0,0,.2)');rect(l.x-12,l.y-10+b,24,14,'#8a5a24');rect(l.x-12,l.y-12+b,24,4,'#6a3a14');rect(l.x-2,l.y-8+b,4,5,'#ffd84a');
     if(Math.floor(G.t*3+l.x)%3===0)ell(l.x+R(-8,8),l.y-14+b,2,2,'#fff6b0');}}
 function drawSeaTop(x0,y0,x1,y1){
-  for(const c of cballs){const f=c.t/c.T,x=lerp(c.sx,c.tx,f),y=lerp(c.sy,c.ty,f),z=lerp(10,c.h1,f)+4*110*f*(1-f);ell(x,y,5,2,'rgba(0,0,0,.3)');ell(x,y-z,6,6,'#222');ell(x-2,y-z-2,2,2,'#777');
-    ctx.strokeStyle='rgba(255,60,40,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(c.tx,c.ty,55*(1-f)+15,22*(1-f)+6,0,0,TAU);ctx.stroke();}
   // lighthouse beam (sweeps forever)
   if(lhUp()&&x1>LH.x-1400&&x0<LH.x+1400&&y1>LH.y-1100&&y0<LH.y+1000){const bx=LH.x,by=LH.y-160,a=G.t*.5,f=lhFlick(),L=700*f,night=typeof nightAmt==='function'?nightAmt():0;
     ctx.save();ctx.globalCompositeOperation='lighter';const gr=ctx.createRadialGradient(bx,by,10,bx,by,L);gr.addColorStop(0,`rgba(255,170,70,${(.3+.3*night)*f})`);gr.addColorStop(1,'rgba(255,140,40,0)');ctx.fillStyle=gr;
@@ -1614,7 +1612,7 @@ function drawShip(s){const x=s.x,y=s.y,k=s.kind,sk=s.state==='sink'?s.t/4:0,b=Ma
   ctx.save();ctx.translate(x,y+yo+b);ctx.rotate(Math.cos(s.ang)>=0?sk*.5:-sk*.5);const f=Math.cos(s.ang)>=0?1:-1;ctx.scale(f,1);
   const hull=k==='pirate'?'#4a2a1a':k==='merchant'?'#8a5a2a':'#7a4a24';
   poly([-r,-8,r,-8,r*.75,8,-r*.8,8],hull);poly([-r,-8,r,-8,r*.95,-4,-r*.95,-4],k==='pirate'?'#6a3a22':'#a06a34');line(-r*.8,2,r*.75,2,'rgba(0,0,0,.3)',2);
-  if(k==='pirate')for(let i=-1;i<=1;i++)ell(i*r*.45,0,3,3,'#111');
+  if(k==='pirate')for(let i=-1;i<=1;i++){const ax=i*r*.45;rect(ax-2.5,-15,5,8,'#7a1e1e');ell(ax,-17,2.6,2.6,'#e8c39a');rect(ax-3,-20,6,1.6,'#c22');ctx.strokeStyle='#5a3a1c';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(ax+3,-12,4,-1.3,1.3);ctx.stroke();} // archers on deck
   if(k==='merchant'){rect(-r*.5,-16,14,8,'#b08850');rect(-r*.2,-15,12,7,'#c09860');}
   if(k==='rowboat'){line(-6,-2,-16,10+Math.sin(G.t*4)*3,'#6a4a2a',2);line(6,-2,16,10-Math.sin(G.t*4)*3,'#6a4a2a',2);ell(0,-10,4,4,'#f0c8a0');ell(0,-13,4,2,'#c33');}
   else{const mh=k==='fishing'?48:k==='merchant'?78:84;line(0,-6,0,-mh,'#4a2a10',3);
@@ -2188,7 +2186,7 @@ function onRuin(s){const K=KDEF[s.kind],st=isStone(s)||(s.kind==='bridge'&&s.mat
   if(K){G.stats.kPts=(G.stats.kPts||0)+K.pts;G.stats.wrecked=(G.stats.wrecked||0)+1;if(MARKET_KINDS.has(s.kind))G.stats.shops=(G.stats.shops||0)+1;if(CASTLE_KINDS.has(s.kind))G.stats.castle=(G.stats.castle||0)+1;
     addAlarm(K.alarm,s.x,s.y);float(s.x,s.y-48,`${K.name} ${st?'collapses into rubble':'is wrecked'}! +${K.pts}`,'#ffb050');
     if(s.kind==='lighthouse')float(LH.x,LH.y-90,'The beacon is out! (the island is still a fine place to rest)','#ffd27a');}}
-function stoneFire(s,dt){if(s.kind==='well')return;s.weak=3;if(s.kind==='kroof'){if(s.hp>s.maxHp*.5)s.hp-=DR.fireDps*.012*dt;return;} // the keep roof barely notices fire
+function stoneFire(s,dt){if(s.kind==='well'||s.kind==='fountain')return;s.weak=3;if(s.kind==='kroof'){if(s.hp>s.maxHp*.5)s.hp-=DR.fireDps*.012*dt;return;} // the keep roof barely notices fire
   if(s.hp>s.maxHp*.35)s.hp-=DR.fireDps*.06*dt;}
 // coins, gold refills, self-repair of the castle/lighthouse/dock, stone weakening decay
 function updK(dt){
@@ -2216,7 +2214,7 @@ function rubble(x,y,w,st,seed){for(let i=0;i<Math.max(6,w/4);i++){const a=hsh01(
 function scaffold(x,y,w,h,b){const H=h*b;rect(x-w/2,y-H,w,H,'rgba(150,140,120,.85)');ctx.strokeStyle='#7a5a30';ctx.lineWidth=2;for(let i=-1;i<=1;i++)line(x+i*w/2,y,x+i*w/2,y-h,'#7a5a30',2);for(let j=1;j<4;j++)line(x-w/2-4,y-j*h/4,x+w/2+4,y-j*h/4,'#7a5a30',1.5);}
 // draw a structure kind added by this module (returns true when handled)
 function drawStructK(s){if(s.kind==='kroof')return true; // drawn as part of the keep
-  if(s.kind==='well'){drawWell(s);return true;}if(s.adobe&&s.state==='ok'&&s.kind==='hut'){s.kind='adobe';let r;try{r=drawStructK(s);}finally{s.kind='hut';}return r;}const K=KDEF[s.kind];if(!K)return false;const x=s.x,y=s.y,F=s.fire,st=K.stone;
+  if(s.kind==='well'){drawWell(s);return true;}if(s.kind==='fountain'){drawFountain(s);return true;}if(s.adobe&&s.state==='ok'&&s.kind==='hut'){s.kind='adobe';let r;try{r=drawStructK(s);}finally{s.kind='hut';}return r;}const K=KDEF[s.kind];if(!K)return false;const x=s.x,y=s.y,F=s.fire,st=K.stone;
   if(s.state==='ruin'){if(s.kind==='cwall'){const hz=s.side==='n'||s.side==='s';rect(x-(hz?52:14),y-(hz?14:34),hz?104:28,hz?22:68,'#6f7458');}
     rubble(x,y+4,K.sz*(CASTLE_KINDS.has(s.kind)?1.2:1),st,(s.id*1e4)|0);if(G.t-(s.ruinT||0)<4&&Math.random()<.3)puff(x+R(-20,20),y,1,'rgba(190,178,160,',30,8);
     if(s.kind==='ptower'&&PR.state==='tower'){drawPrincess(x,y-10,true);if(Math.sin(G.t*1.3)>.3)txt('My tower! You brute!',x,y-40,11,'#fff','center');}return true;}
@@ -2458,26 +2456,60 @@ const onRoad=(x,y)=>{const{V}=roadGraph();for(let i=0;i<V.length;i+=1)if(d2(x,y,
 KDEF.well={name:'Village well',hp:270,stone:1,cost:[0,2],gold:[0,1],pts:45,alarm:3,sz:22}; // 3x a hut's 90 hp
 COST.well=KDEF.well.cost;STRUCT_NAME.well=KDEF.well.name;
 function roadNear(x,y,r){for(const R of buildRoads()){if(R.kind==='bridge')continue;const hw=R.w/2+r;for(let i=0;i<R.pts.length-1;i++){const a=R.pts[i],b=R.pts[i+1],dx=b.x-a.x,dy=b.y-a.y,L2=dx*dx+dy*dy||1,t=clamp(((x-a.x)*dx+(y-a.y)*dy)/L2,0,1);if(d2(x,y,a.x+dx*t,a.y+dy*t)<hw)return true;}}return false;}
-function wellSpotOK(x,y){if(roadWet(x,y,26)||inRange(x,y)||castleBox(x,y)||roadNear(x,y,14))return false;for(const s of structures)if(s.state!=='ruin'&&d2(x,y,s.x,s.y)<(s.kind==='well'?120:48))return false;
+function wellSpotOK(x,y){if(roadWet(x,y,26)||inRange(x,y)||castleBox(x,y)||roadNear(x,y,14))return false;for(const s of structures)if(s.state!=='ruin'&&d2(x,y,s.x,s.y)<(isWaterSrc(s)?120:48))return false;
   for(const f of FARMS){const F=f.field;if(x>F.x-20&&x<F.x+F.w+20&&y>F.y-20&&y<F.y+F.h+20)return false;}return true;}
-function placeWells(){VILLAGES.forEach((v,vi)=>{const huts=structures.filter(s=>s.v===vi&&(s.kind==='hut')).length,big=huts>=8||MARKETS.some(M=>M.v===vi);const want=big?2:1;let got=0;
-  for(let ring=0;ring<8&&got<want;ring++)for(let k=0;k<16&&got<want;k++){const a=k/16*TAU+ring*.37+(got?Math.PI:0),r=40+ring*22+(got?60:0),x=v.x+Math.cos(a)*r,y=v.y+Math.sin(a)*r*.8;
+// bigger, nicer towns (8+ huts or a market) get a stone FOUNTAIN in the town square (+ at most 1 well); small villages keep their well
+KDEF.fountain={name:'Town fountain',hp:540,stone:1,cost:[0,4],gold:[1,3],pts:90,alarm:4,sz:30}; // 2x a well, 6x a hut
+COST.fountain=KDEF.fountain.cost;STRUCT_NAME.fountain=KDEF.fountain.name;
+const isWaterSrc=s=>s.kind==='well'||s.kind==='fountain';
+function bigTown(vi){const huts=structures.filter(s=>s.v===vi&&s.kind==='hut').length;return huts>=8||MARKETS.some(M=>M.v===vi);}
+function placeWells(){VILLAGES.forEach((v,vi)=>{const big=bigTown(vi);let got=0,fnt=0;
+  if(big)for(let ring=0;ring<10&&!fnt;ring++)for(let k=0;k<(ring?16:1)&&!fnt;k++){const a=k/16*TAU+ring*.37,r=ring*20,x=v.x+Math.cos(a)*r,y=v.y+Math.sin(a)*r*.8;
+    if(wellSpotOK(x,y)&&!structures.some(t=>t.state!=='ruin'&&d2(x,y,t.x,t.y)<70)){const s=kAdd('fountain',x,y,vi);s.hasGold=true;fnt=1;}}
+  const want=1;
+  for(let ring=0;ring<8&&got<want;ring++)for(let k=0;k<16&&got<want;k++){const a=k/16*TAU+ring*.37+(fnt?Math.PI:0),r=40+ring*22+(fnt?60:0),x=v.x+Math.cos(a)*r,y=v.y+Math.sin(a)*r*.8;
     if(wellSpotOK(x,y)){const s=kAdd('well',x,y,vi);s.hasGold=true;got++;}}
-  v.wells=got;});}
-function nearestWell(x,y){let b=null,bd=1e18;for(const s of structures){if(s.kind!=='well'||s.state!=='ok')continue;const d=d2(x,y,s.x,s.y);if(d<bd){bd=d;b=s;}}return b&&bd<900?b:null;}
-// fetching water: from the nearest standing well; with none in reach, scoop slowly from a trough/puddle on the spot (much slower fire-fighting)
-function wellFetch(u,w,dt){if(w.well&&w.well.state!=='ok')w.well=nearestWell(u.x,u.y);
+  v.wells=got;v.fountains=fnt;});}
+function nearestWell(x,y){let b=null,bd=1e18;for(const s of structures){if(!isWaterSrc(s)||s.state!=='ok')continue;const d=d2(x,y,s.x,s.y);if(d<bd){bd=d;b=s;}}return b&&bd<900?b:null;}
+// ANY water fights fires: wells, fountains, rivers, ponds, the lake and the sea shore - whichever is nearest the fire
+const anyWater=(x,y)=>inWater(x,y)||(typeof isFresh==='function'&&isFresh(x,y))||(typeof inOasis==='function'&&inOasis(x,y));
+function waterKind(x,y){if(inSea(x,y))return 'sea';if(inLake(x,y))return 'lake';if(riverD(x,y)<RIVW||jriverD(x,y)<JRW)return 'river';return 'pond';}
+function natWater(fx,fy,maxR){maxR=maxR||900;for(let r=24;r<=maxR;r+=24){const n=Math.max(12,Math.round(r/14));for(let k=0;k<n;k++){const a=k/n*TAU,x=fx+Math.cos(a)*r,y=fy+Math.sin(a)*r;
+    if(!anyWater(x,y))continue;let bx=x,by=y;for(let t=0;t<12&&anyWater(bx,by);t++){bx-=Math.cos(a)*10;by-=Math.sin(a)*10;}if(anyWater(bx,by))continue;
+    return{x:bx,y:by,state:'ok',nat:waterKind(x,y),r};}}return null;}
+function waterFor(f,u){const now=G.t;if(!f.wsrc||now-f.wsrcT>4){f.wsrcT=now;let best=null,bd=900;
+    for(const s of structures){if(!isWaterSrc(s)||s.state!=='ok')continue;const d=dist(s,f);if(d<bd){bd=d;best=s;}}
+    const n=natWater(f.x,f.y,Math.min(bd,900));if(n&&n.r<bd){best=n;}f.wsrc=best;}
+  if(f.wsrc&&u&&dist(u,f.wsrc)>1400)return nearestWell(u.x,u.y);return f.wsrc;}
+// fetching water: from the source picked for the fire; with none in reach, scoop slowly from a trough/puddle on the spot (much slower fire-fighting)
+function wellFetch(u,w,dt){if(w.well&&w.well.state!=='ok')w.well=w.f?waterFor(Object.assign(w.f,{wsrc:null}),u):nearestWell(u.x,u.y);
   if(!w.well){if(!w.slowMsg){w.slowMsg=1;if(dist(u,D)<900)float(u.x,u.y-30,'No well! Scooping a puddle…','#a8d0ff');}w.t-=dt*.1;return w.t<=0;}
-  if(moveTo(u,w.well.x+14,w.well.y+10,55,dt)){w.t-=dt;return w.t<=0;}return false;}
+  const nat=w.well.nat,tx=w.well.x+(nat?0:14),ty=w.well.y+(nat?0:10);
+  if(moveTo(u,tx,ty,55,dt)||(nat&&dist(u,w.well)<16)){if(nat&&!w.natMsg){w.natMsg=1;G.natFetch=(G.natFetch||0)+1;G.natLast=nat;if(dist(u,D)<900)float(u.x,u.y-30,nat==='sea'?'A bucket from the sea!':nat==='river'?'A bucket from the river!':'A bucket from the '+nat+'!','#a8d0ff');}
+    w.t-=dt;return w.t<=0;}return false;}
 function biteWell(){if(D.alt>=.3)return false;const mx=D.x+Math.cos(D.ang)*70,my=D.y+Math.sin(D.ang)*70;
-  for(const s of structures){if(s.kind!=='well'||s.state!=='ok'||d2(mx,my,s.x,s.y)>60)continue;HEAVY=true;try{hurtStruct(s,50);}finally{HEAVY=false;}
-    D.eatCD=.6;D.eatT=.3;puff(s.x,s.y-10,8,'rgba(170,165,150,',90,6);float(s.x,s.y-40,s.state==='ruin'?'CRUNCH! The well caves in':'Crunch! You gnaw the well stones','#d8d0c0');if(typeof SFX!=='undefined'&&SFX.play)SFX.play('crashStone',s.x,s.y,.5);return true;}return false;}
+  for(const s of structures){if(!isWaterSrc(s)||s.state!=='ok'||d2(mx,my,s.x,s.y)>(s.kind==='fountain'?72:60))continue;HEAVY=true;try{hurtStruct(s,50);}finally{HEAVY=false;}
+    D.eatCD=.6;D.eatT=.3;puff(s.x,s.y-10,8,'rgba(170,165,150,',90,6);float(s.x,s.y-40,s.kind==='fountain'?(s.state==='ruin'?'CRASH! The fountain topples':'Crunch! The fountain is solid stone'):s.state==='ruin'?'CRUNCH! The well caves in':'Crunch! You gnaw the well stones','#d8d0c0');if(typeof SFX!=='undefined'&&SFX.play)SFX.play('crashStone',s.x,s.y,.5);return true;}return false;}
 function drawWell(s){const x=s.x,y=s.y;if(s.state!=='ok'){for(let i=0;i<6;i++){const a=i,b=hsh01(s)*7+i;ell(x+Math.cos(b)*12,y+Math.sin(b)*5,6,4,i%2?'#8a8a90':'#6e6e74');}return;}
   ell(x+4,y+4,20,7,'rgba(0,0,0,.22)');ell(x,y,17,8,'#6e6e76');rect(x-17,y-12,34,12,'#8a8a92');ell(x,y-12,17,8,'#9c9ca4');ell(x,y-12,11,5,'#1e3a6a');ell(x-3,y-13,4,1.5,'rgba(255,255,255,.35)');
   for(let i=0;i<5;i++){const xx=x-15+i*7.5;line(xx,y-12,xx,y,'rgba(60,60,66,.5)',1);}line(x-17,y-6,x+17,y-6,'rgba(60,60,66,.45)',1);
   rect(x-15,y-36,3,26,'#6b4a26');rect(x+12,y-36,3,26,'#6b4a26');poly([x-20,y-34,x,y-46,x+20,y-34],'#93622d');poly([x,y-46,x+20,y-34,x+12,y-34],'#7a4f22');
   line(x-12,y-28,x+12,y-28,'#5a3a1a',2);line(x,y-28,x,y-16,'#999',1);rect(x-3,y-18,6,5,'#7a5a30');
   if(s.hp<s.maxHp*.6){line(x-8,y-11,x-3,y-3,'#333',1.2);line(x+6,y-10,x+9,y-2,'#333',1.2);}}
+
+function drawFountain(s){const x=s.x,y=s.y;if(s.state!=='ok'){for(let i=0;i<9;i++){const b=hsh01(s)*7+i*1.3;ell(x+Math.cos(b)*20,y+Math.sin(b)*8,7,4.5,i%2?'#a8a8b0':'#8a8a92');}
+    ell(x,y,14,5,'rgba(90,140,200,.35)');return;}
+  const t=G.t+(s.id||0)*3;ell(x+5,y+6,32,11,'rgba(0,0,0,.22)');
+  // octagonal basin
+  ell(x,y,30,12,'#8e8e98');rect(x-30,y-10,60,10,'#a4a4ae');ell(x,y-10,30,12,'#b8b8c2');ell(x,y-10,25,9.5,'#2f6fb0');
+  for(let i=0;i<7;i++){const xx=x-26+i*8.6;line(xx,y-10,xx,y,'rgba(70,70,80,.45)',1);}
+  for(let i=0;i<3;i++){const ph=(t*.9+i/3)%1;ctx.strokeStyle=`rgba(220,240,255,${.5*(1-ph)})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(x,y-10,6+ph*16,2.4+ph*6,0,0,TAU);ctx.stroke();}
+  // pillar + upper bowl
+  rect(x-4,y-34,8,24,'#a0a0aa');ell(x,y-34,13,5,'#b8b8c2');ell(x,y-35,9,3.2,'#3f80c0');rect(x-2,y-46,4,11,'#a0a0aa');ell(x,y-46,4,2,'#c8c8d0');
+  // spray
+  for(let i=0;i<6;i++){const a=i/6*TAU+t,f=(t*1.6+i/6)%1,px=x+Math.cos(a)*f*16,py=y-48+(-18*f+30*f*f);ell(px,py,1.6,2.2,'rgba(200,230,255,.85)');}
+  for(let i=0;i<4;i++){const a=i/4*TAU+t*.7;line(x+Math.cos(a)*11,y-33,x+Math.cos(a)*17,y-14,'rgba(190,225,255,.55)',1.2);}
+  if(s.hp<s.maxHp*.6){line(x-14,y-8,x-8,y,'#333',1.3);line(x+10,y-9,x+14,y-1,'#333',1.3);line(x-2,y-30,x+2,y-22,'#333',1);}}
 // ======================= wildflowers & cottage gardens (burn -> scorched -> regrow / replant) =======================
 const FLORA_PAL={
   meadow:{c:['#e8322a','#ffd23a','#ffffff','#b46aff','#ff8a2a','#5aa0ff','#ff6aa0'],leaf:'#4e8a32',n:[12,22],w:[18,34],sz:1.5},
@@ -2774,7 +2806,7 @@ function lavaSplash(x,y){const wet=inWater(x,y)&&!onBridge(x,y),r=80;G.shake=Mat
   for(const t of trees)if(t.state==='ok'&&Math.hypot(t.x-x,t.y-y)<r){t.fire=1;t.hp-=30;}
   HEAVY=true;
   for(const s of structures){if(s.state==='ruin'||Math.hypot(s.x-x,s.y-y)>r+22)continue;
-    if(stoneish(s)){s.weak=3;hurtStruct(s,s.kind==='well'?45:55);if(rnd()<.6)puff(s.x,s.y-10,5,'rgba(150,140,130,',80,8);}
+    if(stoneish(s)){s.weak=3;hurtStruct(s,s.kind==='well'||s.kind==='fountain'?45:55);if(rnd()<.6)puff(s.x,s.y-10,5,'rgba(150,140,130,',80,8);}
     else{if(!s.fire){s.fire=1;addAlarm(.8,s.x,s.y);}hurtStruct(s,60);}}
   HEAVY=false;
   for(const c of cells)if(!c.burnt&&c.growth>.15&&Math.hypot(c.x-x,c.y-y)<r)c.fire=1;
@@ -3331,8 +3363,8 @@ function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;
   const aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,PM.scr==='tally'?680:600),x0=S.l+(aw-W)/2,cx=x0+W/2;
   if(PM.scr==='main'){const rh=touch?46:38,H=86+PM_MAIN.length*(rh+8)+96,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
     txt('PAUSED',cx,y0+44,36,'#ffd24a','center');
-    if(scene==='play'&&G){const fs=touch?13:14;txt(`Score ${G.over?G.score:calcScore()}`,x0+18,y0+30,fs+2,'#ffe08a','left');txt(`Wave ${G.waveNum}`,x0+18,y0+50,fs-2,'#ddd','left',false);
-      const sw=uiStockW(fs);uiStock(x0+W-18-sw,y0+26,fs);if(typeof pauseExtraLine==='function'){const l=pauseExtraLine();if(l)txt(l,x0+W-18,y0+50,fs-2,'#ddd','right',false);}}
+    if(scene==='play'&&G){const fs=touch?13:14;txt(`Score ${G.over?G.score:calcScore()}`,x0+18,y0+30,fs+2,'#ffe08a','left');{const l=typeof pauseExtraLine==='function'?pauseExtraLine():'';txt(`Wave ${G.waveNum}`+(l?`  ·  ${l}`:''),x0+18,y0+50,fs-2,'#ddd','left',false);}
+      const sw=uiStockW(fs);uiStock(x0+W-18-sw,y0+24,fs);const gw=typeof uiGoldW==='function'?uiGoldW(fs):0;if(gw)uiGold(x0+W-18-gw,y0+46,fs);}
     PM_MAIN.forEach(([l,a],i)=>pmBtn(x0+30,y0+70+i*(rh+8),W-60,rh,l,()=>{PM.sel=i;pmAct(a);},PM.sel===i));
     if(typeof raidCdLine==='function'){const l=raidCdLine();if(l)txt(l,cx,y0+H-64,touch?12:12,'#ffd8a0','center',false);}
     if(typeof drawGlutBar==='function')drawGlutBar(x0+30,y0+H-52,W-60,18);
@@ -3945,7 +3977,7 @@ function kmDrawTool(u,x,y,f,bob){const st=u.poke>0?4:0,r=u.arm,hy=y-9+bob*.3;
 SFX_DEF.bell=(a,B,o,t)=>{osc(a,o,t,'sine',880,0,1.4,.35,.004);osc(a,o,t,'sine',1320,0,.9,.15,.004);osc(a,o,t,'triangle',440,0,1.6,.18,.004);return 1.5;};
 // ================= partPR: PRINCE BOSS ARMIES - every 5th castle level a named prince sails in with a royal war fleet =================
 // Warning (herald + horn + war drums, ~10 s) -> warships sail in from the southern sea edge -> they beach at the landing spot (⚓ on the map)
-// -> the army disembarks and marches up King William's roads toward the lair, the prince on his white warhorse -> boss fight.
+// -> the army disembarks and the prince (on his white warhorse) and his whole army hunt the dragon down together, wherever it is -> boss fight.
 // Sinking a warship before it lands dumps its soldiers in the sea: they can't swim in armour, so they cling to barrels and get fished out (no gore).
 const PRINCE_NAMES=['Prince Edmund the Valiant','Prince Aldric of the Golden Isles','Prince Leopold Stormcrown','Prince Florian the Fair','Prince Casimir Ironsail','Prince Valentin of Westmarch','Prince Rupert the Resolute','Prince Tristan Sunshield','Prince Magnus the Mighty','Prince Ferdinand Wavebreaker','Prince Oswin of Highcliff','Prince Lucian Silverlance'];
 const PRINCE_COLS=[['#1f3f9a','#ffd23a','crown'],['#8a1420','#ffd23a','lion'],['#1d6a3a','#f4f4f4','tree'],['#5a2a8a','#ffe08a','star'],['#0f5f78','#f4f4f4','moon'],['#a8461a','#ffe08a','sun'],['#2a2a34','#ffd23a','bolt'],['#b81e6e','#f4f4f4','rose']];
@@ -3989,7 +4021,7 @@ function launchFleet(){const c=PRN.cur,L=c.land;c.phase='sail';c.path=princeRout
   float(L.L.x,L.L.y-60,'⚓ The royal fleet makes for this shore!','#ffe08a');showToast(`⛵ ${c.ships} warships under ${c.short}'s colours are sailing in!`);}
 function princeDisembark(s,k){const c=s.war,p=s.drop,x=p.x+R(-16,16),y=p.y+R(-10,10),K=c.k;let u=null;
   if(k==='prince'){u=mkUnit('knight',x,y,{mounted:true,hp:c.hp,maxHp:c.hp,atk:0,colr:c.col,isPrince:true,cs:'wheel'});c.boss=u;
-    float(x,y-80,`${c.short}: "Forward, for glory! Slay the beast!"`,'#ffe08a');G.banner={text:`${c.name} has landed!`,sub:`His army marches up King William's road toward your lair. Wear him down below 30% to gobble him!`,t:4.5};if(typeof SFX!=='undefined')SFX.play('princeHorn');}
+    float(x,y-80,`${c.short}: "Forward, for glory! Slay the beast!"`,'#ffe08a');G.banner={text:`${c.name} has landed!`,sub:`He and his whole army are hunting you down, wherever you go! Wear him down below 30% to gobble him!`,t:4.5};if(typeof SFX!=='undefined')SFX.play('princeHorn');}
   else if(k==='foot')u=mkUnit('knight',x,y,{hp:30+4*K,maxHp:30+4*K,atk:0,foot:true,colr:c.col});
   else if(k==='knight')u=mkUnit('knight',x,y,{hp:55+6*K,maxHp:55+6*K,atk:0,colr:c.col});
   else if(k==='cavalry')u=mkCavalry(x,y,{colr:c.col,hp:95+8*K,maxHp:95+8*K,cs:'wheel'});
@@ -4172,6 +4204,33 @@ const _drawMapPR=drawMap;drawMap=function(mmx,mmy,mmw,big){_drawMapPR(mmx,mmy,mm
 // ---- sounds: a royal horn call and booming war drums ----
 SFX_DEF.princeHorn=(a,B,o,t)=>{[[0,.28,0],[.3,.28,4],[.6,.28,7],[.9,.9,12]].forEach(([dt,len,st])=>{const f=233*Math.pow(2,st/12);osc(a,o,t+dt,'sawtooth',f,f*1.002,len,.15,.03);osc(a,o,t+dt,'triangle',f*2,f*2.003,len,.06,.03);});return 1.9;};
 SFX_DEF.warDrum=(a,B,o,t)=>{osc(a,o,t,'sine',110,42,.38,.7,.004);nz(a,B,o,t,.16,'lowpass',420,90,1,.45);osc(a,o,t+.2,'sine',96,40,.3,.45,.004);return .5;};
+// ---- after landing, the prince and his whole army HUNT the dragon wherever it is (one group, in formation) ----
+// Every ~1.2 s the hunt target is the dragon's position (or the nearest dry ground to it, never water). Long legs follow King William's
+// roads (roadPath); short legs go straight if the line is dry. His army is separate from the soldier waves: they don't count toward
+// wave reinforcements and beating them doesn't raise the WANTED meter, so regular waves still only come from the wanted level.
+const PR_HUNT={every:1.2,move:160,road:650};
+function prLineDry(a,b){const n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/50));for(let i=1;i<=n;i++){const x=a.x+(b.x-a.x)*i/n,y=a.y+(b.y-a.y)*i/n;if(soldierWet(x,y))return false;}return true;}
+function prHuntTarget(){let T={x:D.x,y:D.y};if(soldierWet(T.x,T.y)){const q=typeof dryNear==='function'?dryNear(T.x,T.y):null;if(q)T={x:q.x,y:q.y};else return null;}
+  T.x=clamp(T.x,WX0+60,WX1-60);T.y=clamp(T.y,WY0+60,WY1-60);return T;}
+function prHuntPath(from,T){let P=[];const far=Math.hypot(T.x-from.x,T.y-from.y)>PR_HUNT.road;
+  if(far||!prLineDry(from,T)){const rp=typeof roadPath==='function'?roadPath(from.x,from.y,T.x,T.y):null;
+    if(rp&&rp.P&&rp.P.length){for(const p of rp.P){const l=P[P.length-1]||from;if(Math.hypot(p.x-l.x,p.y-l.y)>40)P.push({x:p.x,y:p.y});}
+      // skip road points behind us
+      while(P.length>1&&Math.hypot(P[1].x-from.x,P[1].y-from.y)<Math.hypot(P[0].x-from.x,P[0].y-from.y)&&prLineDry(from,P[1]))P.shift();}}
+  P.push({x:T.x,y:T.y});return P;}
+function prHunt(c,dt){const b=c.boss;if(!b||b.dead||c.done)return;c.huntT=(c.huntT||0)-dt;if(c.huntT>0&&c.path&&c.path.length)return;c.huntT=PR_HUNT.every;
+  const T=prHuntTarget();if(!T)return;if(c.hunt&&c.path&&c.path.length&&Math.hypot(T.x-c.hunt.x,T.y-c.hunt.y)<PR_HUNT.move)return;
+  c.hunt=T;c.path=prHuntPath(b,T);c.hunts=(c.hunts||0)+1;}
+{const _u=updPrince;updPrince=function(dt){const r=_u.apply(this,arguments);const c=PRN.cur;if(c&&!c.done&&c.boss&&!c.boss.dead&&scene==='play'&&G&&!G.over)prHunt(c,dt);return r;};}
+// never step into water: if the next leg is wet, re-path along the roads
+{const _b=princeBoss;princeBoss=function(u,dt){const c=u.prince,p=c&&c.path&&c.path[0];
+  if(p){const a=Math.atan2(p.y-u.y,p.x-u.x),nx=u.x+Math.cos(a)*30,ny=u.y+Math.sin(a)*30;if(soldierWet(nx,ny)&&!c.wetFix){c.wetFix=1;c.path=prHuntPath(u,c.path[c.path.length-1]);c.huntT=PR_HUNT.every;}else if(!soldierWet(nx,ny))c.wetFix=0;}
+  const ox=u.x,oy=u.y,r=_b.apply(this,arguments);if(soldierWet(u.x,u.y)&&!soldierWet(ox,oy)){u.x=ox;u.y=oy;}return r;};}
+// the prince's army is not part of the wanted-level waves: its casualties don't raise the wanted meter
+let PR_NOALARM=0;
+{const _a=addAlarm;addAlarm=function(v){if(PR_NOALARM&&v>0){G.prAlarmSkipped=(G.prAlarmSkipped||0)+v;return;}return _a.apply(this,arguments);};}
+{const _h=hurtUnit;hurtUnit=function(u){if(u&&u.prince){PR_NOALARM++;try{return _h.apply(this,arguments);}finally{PR_NOALARM--;}}return _h.apply(this,arguments);};}
+{const _e=eatUnit;eatUnit=function(u){if(u&&u.prince){PR_NOALARM++;try{return _e.apply(this,arguments);}finally{PR_NOALARM--;}}return _e.apply(this,arguments);};}
 // ======================= partHN: prey populations (+5%), every predator hunts, freshwater crocodiles =======================
 // Family-friendly: predators stalk, chase and "gulp" prey, which vanishes in a puff with stars or feathers. No gore.
 // ---------- (1) prey populations +5%: spawn counts and respawn caps (birds, chickens, pens and herds are patched in part1/part7/partGH via preyN) ----------
@@ -5812,6 +5871,160 @@ function updCruise(dt,ix,iy){if(D.cruise===undefined){D.cruise=1;D.crT=0;D.crA=n
   return _dd.apply(this,arguments);};}
 // save: cruise is momentary and is not saved (a loaded game starts at normal speed)
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);D.cruise=1;D.crT=0;D.crA=null;return r;};}
+// ======================= KINGDOM WATCHTOWERS: wooden archer towers the kingdom builds from cart-delivered stock =======================
+// Spots: beside the kingdom roads (first near the castle, then progressively farther out, spaced apart) plus guard posts on village edges.
+// Max towers = 2 + castle level. Kingdom regions only (never the wilds/forest, lair, desert, savanna, jungle, mountains or Dragon Peaks).
+// Built ONLY from wood/stone delivered by carts to the storehouse during this level (no starting stock, no free/timed resources):
+// each tower spends its cost. Kill the carts/workers and building slows. Destroyed towers leave rubble, still count toward the max,
+// and are rebuilt (same delivered-only rule). Saved with the game.
+KDEF.wtower={name:'Watchtower',hp:160,cost:[3,2],gold:[1,3],pts:120,alarm:6,sz:30};COST.wtower=KDEF.wtower.cost;STRUCT_NAME.wtower='Watchtower';
+const RT={cost:[3,2],buildT:14,check:3,space:650,archerWait:25,regions:new Set(['farm','castle','south','lake','hills','coast'])};
+let RT_SPOTS=null;
+const rtMax=()=>Math.min((RT_SPOTS||rtSpots()).length,2+(G.lvl||1));
+function rtOkAt(x,y){const k=regionKey(x,y);if(!RT.regions.has(k))return false;if(inWater(x,y)||inSea(x,y)||(typeof inDP==='function'&&inDP(x,y,1.3)))return false;
+  if(typeof roadWet==='function'&&roadWet(x,y,30))return false;if(castleBox(x,y))return false;if(d2(x,y,LAIR.x,LAIR.y)<1400)return false;
+  if(typeof DESERT!=='undefined'&&x<RANGE0+200)return false;return true;}
+const rtRoadD=(x,y)=>{let b=1e9;for(const r of buildRoads())for(let i=0;i<r.pts.length-1;i++){const a=r.pts[i],c=r.pts[i+1],vx=c.x-a.x,vy=c.y-a.y,L=vx*vx+vy*vy||1,t=clamp(((x-a.x)*vx+(y-a.y)*vy)/L,0,1);b=Math.min(b,Math.hypot(x-a.x-vx*t,y-a.y-vy*t));}return b;};
+function rtClear(x,y){return !structures.some(s=>s.kind!=='wtower'&&d2(x,y,s.x,s.y)<85);}
+function rtSpots(){if(RT_SPOTS)return RT_SPOTS;const C={x:GATE.x,y:GATE.y+40},cand=[];
+  // road spots: every ~60 px along kingdom roads, set 58 px to the side of the road
+  for(const r of buildRoads()){if(r.kind==='bridge')continue;const P=r.pts;let acc=0;
+    for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1],L=Math.hypot(b.x-a.x,b.y-a.y);if(L<1)continue;const nx=-(b.y-a.y)/L,ny=(b.x-a.x)/L;
+      for(let t=0;t<L;t+=60){const x=a.x+(b.x-a.x)*t/L,y=a.y+(b.y-a.y)*t/L;for(const sd of[1,-1]){const px=x+nx*58*sd,py=y+ny*58*sd;
+        if(rtOkAt(px,py)&&rtRoadD(px,py)>40&&rtClear(px,py)&&d2(px,py,C.x,C.y)>260)cand.push({x:Math.round(px),y:Math.round(py),t:'road'});}}}}
+  // village guard spots: on the edge of each kingdom village, on the side facing out from the castle
+  const vil=[];VILLAGES.forEach((v,i)=>{if(typeof DTOWN!=='undefined'&&i===DTOWN.vi)return;if(!rtOkAt(v.x,v.y))return;const a0=Math.atan2(v.y-C.y,v.x-C.x);
+    for(const da of[0,.5,-.5,1,-1,1.6,-1.6]){const x=v.x+Math.cos(a0+da)*230,y=v.y+Math.sin(a0+da)*190;if(rtOkAt(x,y)&&rtClear(x,y)&&rtRoadD(x,y)>36){vil.push({x:Math.round(x),y:Math.round(y),t:'village',v:i});break;}}});
+  // order: nearest the castle first, greedily spaced apart; village guard spots slot in by their distance too
+  const all=[...cand,...vil].map(p=>Object.assign(p,{d:Math.hypot(p.x-C.x,p.y-C.y)})).sort((a,b)=>a.d-b.d||(a.t==='village'?-1:1));
+  const out=[];for(const p of all){const sp=p.t==='village'?380:RT.space;if(out.some(q=>d2(p.x,p.y,q.x,q.y)<sp))continue;out.push(p);}
+  out.forEach((p,i)=>p.i=i);RT_SPOTS=out;return out;}
+const rtTowers=()=>structures.filter(s=>s.kind==='wtower');
+function rtBudget(){return{w:G.rtW||0,s:G.rtS||0};}
+// delivered stock is the only thing that funds towers
+{const _d=scDeliver;scDeliver=function(c){const n=c&&c.load|0;if(n>0){if(c.kind==='wood')G.rtW=(G.rtW||0)+n;else G.rtS=(G.rtS||0)+n;G.rtDelivered=(G.rtDelivered||0)+n;}return _d.apply(this,arguments);};}
+function rtCanPay(){const[w,s]=RT.cost;return(G.rtW||0)>=w&&(G.rtS||0)>=s&&G.wood>=w&&G.stone>=s;}
+function rtPay(){const[w,s]=RT.cost;G.rtW-=w;G.rtS-=s;G.wood-=w;G.stone-=s;G.rtSpent=(G.rtSpent||0)+w+s;}
+function rtAdd(p,state){const s=kAdd('wtower',p.x,p.y,-1,{wt:p.i,rt:1});s.state=state||'ok';s.build=state==='building'?0:1;s.hasGold=true;
+  for(const t of trees)if(t.state==='ok'&&d2(t.x,t.y,p.x,p.y)<55){t.state='gone';t.hp=0;}return s;}
+function rtStartBuild(s,why){rtPay();s.state='building';s.build=0;s.hp=s.maxHp;s.fire=0;G.rtBuilds=(G.rtBuilds||0)+1;
+  if(dist(s,D)<1400)float(s.x,s.y-90,why==='re'?'Masons rebuild the watchtower':'Masons start a watchtower','#e8d0a0');}
+function rtTick(dt){if(!G||G.over)return;G.rtCk=(G.rtCk||0)-dt;
+  for(const s of rtTowers()){
+    if(s.state==='building'){s.build=Math.min(1,s.build+dt/RT.buildT);if(s.build>=1){s.state='ok';s.hp=s.maxHp;G.rtBuilt=(G.rtBuilt||0)+1;if(dist(s,D)<1400)float(s.x,s.y-90,'Watchtower manned!','#ffe0a0');}}
+    if(s.state==='ok'){const a=units.find(u=>!u.dead&&u.wtS===s);if(!a){s.archT=(s.archT||0)+dt;if(s.archT>=(s.archFirst?RT.archerWait:0)){s.archT=0;s.archFirst=1;rtArcher(s);}}}}
+  if(G.rtCk>0)return;G.rtCk=RT.check;
+  // rebuild a ruined tower first, else start a new one (one job at a time)
+  const T=rtTowers();if(T.some(s=>s.state==='building'))return;if(!rtCanPay())return;
+  const ru=T.find(s=>s.state==='wruin');if(ru){rtStartBuild(ru,'re');return;}
+  if(T.length>=rtMax())return;const used=new Set(T.map(s=>s.wt));const p=rtSpots().find(q=>!used.has(q.i));if(!p)return;const s=rtAdd(p,'building');rtStartBuild(s);}
+function rtArcher(s){const u=mkUnit('archer',s.x,s.y+4,{post:'tower',slot:'wt'+s.wt,px:s.x,py:s.y+4,hp:22,maxHp:22,shootT:R(1,3),wtS:s,lift:108});units.push(u);return u;}
+// structure damage: a collapsed watchtower becomes rubble that only the tower builders handle; its archer climbs down
+{const _h=hurtStruct;hurtStruct=function(s,d){if(s&&s.kind==='wtower'){if(s.state==='wruin')return;if(s.state==='building'){s.build=Math.max(0,s.build-d/s.maxHp);s.hp=Math.max(1,s.hp-d);if(s.build<=0){s.state='wruin';s.ruinT=G.t;}return;}}
+  const r=_h.apply(this,arguments);if(s&&s.kind==='wtower'&&s.state==='ruin'){s.state='wruin';s.fire=0;G.rtLost=(G.rtLost||0)+1;for(const u of units)if(u.wtS===s&&!u.dead){u.post=null;u.wtS=null;u.lift=0;}}return r;};}
+// keep struct fire/self-repair code away from rubble
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&G&&!paused&&!G.over)rtTick(dt);return r;};}
+// drawing: a wooden watchtower on a stone footing (scaffolding while building, rubble when destroyed)
+function drawWTower(s){const x=s.x,y=s.y;
+  if(s.state==='wruin'){rubble(x,y+4,30,0,(s.wt*977)|0);return;}
+  const b=s.state==='building'?s.build:1,H=88*Math.max(.15,b);
+  ell(x+8,y+6,28,10,'rgba(0,0,0,.25)');
+  rect(x-20,y-12,40,16,'#8b8478');rect(x-20,y-12,40,3,'#a59d90');
+  ctx.strokeStyle='#6b4a2a';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x-15,y-10);ctx.lineTo(x-11,y-10-H);ctx.moveTo(x+15,y-10);ctx.lineTo(x+11,y-10-H);ctx.stroke();
+  ctx.lineWidth=2;ctx.strokeStyle='#7d5a36';for(let k=1;k<4;k++){const yy=y-10-H*k/4;if(k/4>b+.01)break;ctx.beginPath();ctx.moveTo(x-14,yy+H/8);ctx.lineTo(x+13,yy-H/8);ctx.moveTo(x+14,yy+H/8);ctx.lineTo(x-13,yy-H/8);ctx.stroke();}
+  if(b>=1){rect(x-20,y-104,40,10,'#8a643c');rect(x-20,y-104,40,3,'#a87c4c');for(let k=0;k<5;k++)rect(x-20+k*9,y-112,5,8,'#7d5a36');
+    poly([x-22,y-112,x,y-134,x+22,y-112],'#a8402c');poly([x,y-134,x+22,y-112,x+8,y-112],'#8a3020');
+    rect(x-1,y-150,2,18,'#5a4030');poly([x+1,y-150,x+16,y-145,x+1,y-140],'#d4b030');}
+  else{ctx.strokeStyle='rgba(200,170,110,.9)';ctx.lineWidth=1.5;ctx.strokeRect(x-22,y-12-H,44,H);rect(x-25,y+12,50,4,'#333');rect(x-25,y+12,50*b,4,'#7fd07f');}
+  if(s.fire>0)for(let i=0;i<3;i++)ell(x+R(-12,12),y-20-R(0,H),4,7,'rgba(255,150,40,.8)');
+  if(s.state==='ok'&&s.hp<s.maxHp){rect(x-22,y+12,44,4,'#400');rect(x-22,y+12,44*s.hp/s.maxHp,4,'#d33');}}
+{const _k=drawStructK;drawStructK=function(s){if(s.kind==='wtower'){drawWTower(s);return true;}return _k.apply(this,arguments);};}
+// archers on a tower are drawn up on its platform
+{const _da=drawPerson;drawPerson=function(u){if(u.lift&&u.wtS&&u.wtS.state==='ok'){ctx.save();ctx.translate(0,-u.lift);G.rtDrawnA=(G.rtDrawnA||0)+1;const r=_da.apply(this,arguments);ctx.restore();return r;}return _da.apply(this,arguments);};}
+// pause menu line
+function pauseExtraLine(){if(!G)return'';const n=rtTowers().filter(s=>s.state!=='wruin').length;return `Towers ${n}/${rtMax()}`;}
+// save / load
+{const _ss=svSnapshot;svSnapshot=function(){G.rtSave=rtTowers().map(s=>[s.wt,s.state,Math.round(s.hp),+(s.build||0).toFixed(3)].join(',')).join(';');return _ss.apply(this,arguments);};}
+{const _sa=svApply;svApply=function(){for(let i=structures.length-1;i>=0;i--)if(structures[i].kind==='wtower')structures.splice(i,1);for(const u of units)if(u.wtS)u.dead=true;
+  const r=_sa.apply(this,arguments);for(let i=structures.length-1;i>=0;i--)if(structures[i].kind==='wtower')structures.splice(i,1);
+  if(typeof G.rtSave==='string'&&G.rtSave){const S=rtSpots();for(const q of G.rtSave.split(';')){const[w0,st,h0,b0]=q.split(','),wt=+w0,hp=+h0,b=+b0;const p=S[wt];if(!p)continue;const s=rtAdd(p,st);s.hp=hp;s.build=b;}}return r;};}
+// ======================= region music: one procedural theme per region, ~2 s crossfades, boss override; lair hunger =======================
+// Kingdom/farms cheerful (pastoral), castle regal (fanfare), forest mysterious, desert Arabian (existing 'desert' scale),
+// savanna drums, jungle marimba + percussion, Dragon Peaks / mountains epic low horns, ocean airy, lair dark rumble.
+const MU={fade:2,themes:{farm:'pastoral',south:'pastoral',lake:'pastoral',hills:'pastoral',castle:'fanfare',forest:'forest',desert:'desert',
+  savanna:'savanna',jungle:'jungle',mountain:'peaks',drpeaks:'peaks',sea:'ocean',deep:'ocean',coast:'ocean',isle:'ocean',lair:'lair'},hitT:-99};
+Object.assign(MOODS,{
+  forest:{bpm:70,root:57,scale:[0,2,3,5,7,9,10],prog:[0,6,5,6,0,3,4,0],lead:'flute',bass:'harp',arp:true,drum:0,beats:4,dens:.35,vol:.85},
+  savanna:{bpm:108,root:55,scale:[0,2,4,7,9,12,14],prog:[0,0,3,3,4,4,0,0],lead:'recorder',bass:'drone',arp:false,drum:5,beats:4,dens:.3,vol:.8},
+  jungle:{bpm:116,root:60,scale:[0,2,4,7,9,12,14],prog:[0,5,3,4,0,5,4,0],lead:'marimba',bass:'marimba',arp:true,drum:6,beats:4,dens:.55,vol:.8},
+  peaks:{bpm:64,root:43,scale:[0,2,3,5,7,8,10],prog:[0,5,6,0,3,6,4,0],lead:'horn',bass:'drone',arp:false,drum:3,beats:4,dens:.3,low:true,vol:.9},
+  ocean:{bpm:60,root:62,scale:[0,2,4,7,9,11,14],prog:[0,4,5,3,0,4,3,4],lead:'pad',bass:'harp',arp:true,drum:0,beats:4,dens:.22,vol:.75},
+  lair:{bpm:54,root:38,scale:[0,1,3,5,6,8,10],prog:[0,0,1,0,6,0,1,0],lead:'deep',bass:'drone',arp:false,drum:7,beats:4,dens:.12,vol:.85},
+  boss:{bpm:150,root:50,scale:[0,1,3,5,7,8,10],prog:[0,1,0,6,0,1,5,4],lead:'horn',bass:'drone',arp:false,drum:2,beats:4,dens:.8,vol:.9}});
+// extra instruments / drums (fall through to the originals for everything else)
+{const _in=inst;inst=function(B,dest,kind,t,m,dur,v){
+  if(kind==='marimba'){AUD.notes=(AUD.notes||0)+1;const a=B.a,f=NOTE(m),g=a.createGain(),o=a.createOscillator(),o2=a.createOscillator(),h=a.createGain();g.connect(dest);
+    o.type='sine';o2.type='sine';o.frequency.value=f;o2.frequency.value=f*4;h.gain.value=.25;o.connect(g);o2.connect(h);h.connect(g);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.32*v,t+.004);g.gain.exponentialRampToValueAtTime(1e-4,t+.45);o.start(t);o2.start(t);o.stop(t+.5);o2.stop(t+.5);return;}
+  if(kind==='pad'){AUD.notes=(AUD.notes||0)+1;const a=B.a,f=NOTE(m),g=a.createGain(),o=a.createOscillator(),o2=a.createOscillator(),fl=a.createBiquadFilter();g.connect(dest);
+    o.type='triangle';o2.type='triangle';o.frequency.value=f;o2.frequency.value=f;o2.detune.value=9;fl.type='lowpass';fl.frequency.value=1600;o.connect(fl);o2.connect(fl);fl.connect(g);
+    const s=a.createGain();s.gain.value=.7;g.connect(s);s.connect(B.echo);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12*v,t+Math.min(.6,dur*.4));g.gain.setTargetAtTime(0,t+dur*.7,.4);o.start(t);o2.start(t);o.stop(t+dur+1.6);o2.stop(t+dur+1.6);return;}
+  return _in.apply(this,arguments);};}
+{const _dr=drum;drum=function(B,dest,kind,t,v){const a=B.a;
+  if(kind==='djembe'){const g=a.createGain();g.connect(dest);const o=a.createOscillator();o.type='sine';o.frequency.setValueAtTime(230,t);o.frequency.exponentialRampToValueAtTime(110,t+.12);o.connect(g);
+    g.gain.setValueAtTime(.42*v,t);g.gain.exponentialRampToValueAtTime(1e-4,t+.22);o.start(t);o.stop(t+.25);return _dr(B,dest,'tabor',t,v*.45);}
+  if(kind==='shaker'){const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=B.noise;f.type='bandpass';f.frequency.value=5200;f.Q.value=1.2;s.connect(f);f.connect(g);g.connect(dest);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09*v,t+.02);g.gain.exponentialRampToValueAtTime(1e-4,t+.09);s.start(t,Math.random());s.stop(t+.12);return;}
+  if(kind==='rumble'){const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=B.noise;f.type='lowpass';f.frequency.value=140;s.connect(f);f.connect(g);g.connect(dest);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.55*v,t+.5);g.gain.linearRampToValueAtTime(0,t+1.45);s.start(t,Math.random()*.1);s.stop(t+1.5);return;}
+  return _dr.apply(this,arguments);};}
+// region moods use their own light scheduler (bass, sparse arpeggio, melody walk, a drum pattern); original moods unchanged
+{const _sm=schedMood;schedMood=function(name,c,ahead){const M=MOODS[name];if(!M||M.dens==null)return _sm.apply(this,arguments);
+  const B=ABUS,spb=60/M.bpm/2,dst=c.g;
+  while(c.next<ahead){const t=c.next,st=c.step,bar=Math.floor(st/(M.beats*2)),pos=st%(M.beats*2),deg=M.prog[bar%M.prog.length],sc=M.scale,N=k=>M.root+sc[((k%7)+7)%7]+12*Math.floor(k/7);
+    if(pos===0)inst(B,dst,M.bass,t,N(deg)-12,spb*M.beats*2*(M.bass==='drone'?1:.5),.85);
+    if(M.arp&&pos%2===1)inst(B,dst,M.bass==='harp'?'harp':M.bass,t,N(deg+[0,2,4,7][(pos>>1)%4])+(M.bass==='marimba'?12:0),spb*2,.4);
+    if(M.low&&pos===0&&bar%2===0)inst(B,dst,'horn',t,N(deg)+(bar%4?7:0),spb*7,.8);// epic low horn calls
+    if((pos%2===0||name==='jungle'||name==='boss')&&Math.random()<M.dens){c.mel+=[-2,-1,-1,0,1,1,2][Math.floor(Math.random()*7)];if(pos===0)c.mel=deg+[0,2,4][Math.floor(Math.random()*3)]+7;
+      c.mel=clamp(c.mel,deg+3,deg+12);const len=M.lead==='pad'||M.lead==='deep'?spb*6:M.lead==='marimba'?spb:spb*(Math.random()<.3?2:1.5);
+      inst(B,dst,M.lead,t,N(c.mel)-(M.low||name==='lair'?12:0),len,.7);}
+    if(M.drum===5){if(pos===0||pos===3||pos===6)drum(B,dst,'djembe',t,pos===0?.9:.6);if(pos===4)drum(B,dst,'kick',t,.7);if(pos%2===1&&Math.random()<.5)drum(B,dst,'djembe',t,.3);}
+    if(M.drum===6){drum(B,dst,'shaker',t,pos%2?.5:.8);if(pos===0||pos===5)drum(B,dst,'djembe',t,.55);if(pos===3||pos===7)drum(B,dst,'tabor',t,.35);}
+    if(M.drum===7){if(pos===0&&bar%2===0)drum(B,dst,'rumble',t,.9);if(pos===4&&bar%4===2)drum(B,dst,'timp',t,.5);}
+    if(M.drum===2){if(pos%4===0)drum(B,dst,'kick',t,.9);if(pos%2===1)drum(B,dst,'tabor',t,.5);if(pos===6||pos===7)drum(B,dst,'tabor',t,.8);drum(B,dst,'hat',t,.6);}
+    if(M.drum===3){if(pos===0||pos===4)drum(B,dst,'timp',t,.7);if(pos===6)drum(B,dst,'tabor',t,.5);}
+    c.next+=spb;c.step++;}};}
+// boss / battle / region choice
+function muBoss(){if(scene!=='play'||G.over)return false;
+  const pc=typeof PRN!=='undefined'&&PRN.cur;if(pc&&pc.boss&&!pc.boss.dead&&!pc.done&&d2(pc.boss.x,pc.boss.y,D.x,D.y)<1100)return true;
+  for(const u of units){if(u.dead)continue;if(u.species==='sandworm'&&u.ws!=='under'&&d2(u.x,u.y,D.x,D.y)<900)return true;if(u.isBoss&&d2(u.x,u.y,D.x,D.y)<1100)return true;}
+  return false;}
+function muTheme(x,y){return MU.themes[regionKey(x,y)]||'pastoral';}
+pickMood=function(){if(scene==='title')return'fanfare';if(G.over)return'night';
+  if(muBoss())return'boss';
+  for(const u of units)if(u.kind==='squid'&&!u.dead&&u.sub<.6&&d2(u.x,u.y,D.x,D.y)<800)return'squid';
+  if(G.t-MU.hitT<8){let foes=0;for(const u of units)if(!u.dead&&(u.type==='knight'||u.type==='archer'||u.militia)&&Math.abs(u.x-D.x)<650&&Math.abs(u.y-D.y)<500)foes++;
+    if(foes>=3||siege.some(g=>!g.dead&&d2(g.x,g.y,D.x,D.y)<700))return'battle';}
+  let m=muTheme(D.x,D.y);if(m==='pastoral'&&d2(D.x,D.y,GATE.x,GATE.y)<700)m='fanfare';
+  if(m==='pastoral'&&GFX_HI&&typeof nightAmt==='function'&&nightAmt()>.55)return'night';
+  return m;};
+{const _hd=hurtDragon;hurtDragon=function(){MU.hitT=G.t;return _hd.apply(this,arguments);};}
+// same as before but a ~2 s crossfade, per-theme volume, and only live/fading channels are scheduled (cheap)
+musicTick=function(dt){const B=abus();if(!B)return;AUD.evalT-=dt;
+  if(AUD.evalT<=0){AUD.evalT=.5;const w=pickMood();if(w===AUD.want)AUD.wantN++;else{AUD.want=w;AUD.wantN=1;}
+    if(w!==AUD.mood&&(AUD.wantN>=2||!AUD.mood||w==='squid'||w==='boss'||scene==='title')){const now=B.a.currentTime,F=MU.fade;
+      if(AUD.mood){const o=B.moods[AUD.mood];o.on=false;o.g.gain.cancelScheduledValues(now);o.g.gain.setValueAtTime(o.g.gain.value,now);o.g.gain.linearRampToValueAtTime(0,now+F);o.off=now+F+.1;}
+      AUD.mood=w;AUD.switches=(AUD.switches||0)+1;const c=moodChan(w),vol=(MOODS[w]&&MOODS[w].vol)||.9;c.on=true;c.off=0;c.next=Math.max(c.next,now+.05);c.g.gain.cancelScheduledValues(now);c.g.gain.setValueAtTime(c.g.gain.value,now);c.g.gain.linearRampToValueAtTime(vol,now+F);}}
+  if(AUD.muted||AUD.music<=0)return;const now=B.a.currentTime,ahead=now+.35;let live=0;
+  for(const n in B.moods){const c=B.moods[n];if(c.on||(c.off&&now<c.off)){live++;if(c.next<now-.5)c.next=now+.05;schedMood(n,c,ahead);}}AUD.live=live;};
+// iPhone/iPad: resume + play a silent buffer inside the first touch so WebAudio unlocks
+function muUnlock(){const a=audio();if(!a)return;try{const b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0);}catch(e){}
+  if(a.state==='running'){MU.unlocked=true;for(const e of['touchstart','touchend','click','keydown'])removeEventListener(e,muUnlock,true);}}
+for(const e of['touchstart','touchend','click','keydown'])addEventListener(e,muUnlock,true);
+// ---------- hunger drains at ~40% while resting in the lair ----------
+const LAIR_HUNGER=.4;
+{const _dh=desertHunger;desertHunger=function(){if(!G.easy&&regionKey(D.x,D.y)==='lair')return LAIR_HUNGER;return _dh();};}
 // ================= partLA: LAIR GUIDE ARROW =================
 // A small gold arrow pinned to the screen edge that points home to the LAIR, with the distance. It hides
 // while the lair is on screen. It glows and pulses bright gold while you carry Princess Elizabeth or loot.
@@ -5838,14 +6051,14 @@ function laSpot(){const sm=VW<760,S=typeof SAFE!=='undefined'?SAFE:{l:0,r:0,t:0,
   if(laBlocked(lx,ly,10)){lx=clamp(x-Math.cos(a)*30,lft+24,rgt-24);ly=clamp(y+(y>VH/2?-16:16),top+8,bot-2);}
   return{x,y,a,lx,ly};}
 function drawLairArrow(){LA.last=null;if(laHide()||laLairOnScreen())return;
-  ctx.setTransform(DPR,0,0,DPR,0,0);const p=laSpot(),dist=Math.round(Math.hypot(LAIR.x-D.x,LAIR.y-D.y)/10),glow=!!(D.princess||D.gold>0),pl=.5+.5*Math.sin(G.t*6);
+  ctx.setTransform(DPR,0,0,DPR,0,0);const p=laSpot(),dist=Math.round(Math.hypot(LAIR.x-D.x,LAIR.y-D.y)/10),glow=!!D.princess,pl=.5+.5*Math.sin(G.t*6);
   LA.last={x:p.x,y:p.y,ang:p.a,dist,glow,lx:p.lx,ly:p.ly};
   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);const k=glow?.68+.06*pl:.5;ctx.scale(k,k);
   if(glow){ctx.shadowColor='rgba(255,200,40,1)';ctx.shadowBlur=10+8*pl;}
   ctx.globalAlpha=glow?1:.8;poly([24,0,-10,-14,-3,0,-10,14],glow?'#ffd21e':'#d8b060');
   ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle=glow?'#fff6c0':'rgba(60,40,10,.8)';ctx.stroke();ctx.restore();ctx.globalAlpha=1;
   const lab=`LAIR ${dist} m`;txt(lab,p.lx,p.ly,glow?11:10,glow?'#fff0a0':'#ffe2a0','center');
-  if(glow)txt(D.princess?'♛ take her home!':`💰 ${D.gold} gold`,p.lx,p.ly+(p.ly>VH/2?-12:12),9,D.princess?'#ffc0e0':'#ffd84a','center',false);}
+  if(glow)txt('♛ take her home!',p.lx,p.ly+(p.ly>VH/2?-12:12),9,'#ffc0e0','center',false);}
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);drawLairArrow();};}
 // ================= partUI: compact stockpile icons (wood log + stone rock) =================
 // The kingdom's DELIVERED stockpile (G.wood / G.stone) as two tiny icons with amounts. Used on the HUD (top right)
@@ -5863,10 +6076,497 @@ function uiStock(x,y,fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`
   let cx=x+9*s;uiLog(cx,y,s);cx+=13*s;txt(String(G.wood|0),cx,y+fs*.38,fs,'#f0d6a8','left');cx+=w1+12*s;
   uiRock(cx,y,s);cx+=12*s;txt(String(G.stone|0),cx,y+fs*.38,fs,'#e4e8ee','left');cx+=w2;return cx-x;}
 function uiStockW(fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;return 9*s+13*s+ctx.measureText(String(G.wood|0)).width+12*s+12*s+ctx.measureText(String(G.stone|0)).width;}
+// gold as icons: kingdom treasury = little castle + coin, the dragon's lair hoard = little dragon head + coin
+function uiCoin(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='#ffd23a';ctx.strokeStyle='#7a5200';ctx.lineWidth=1.1;ctx.beginPath();ctx.arc(0,0,3.6,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#fff3a8';ctx.beginPath();ctx.arc(-1,-1,1.2,0,Math.PI*2);ctx.fill();ctx.restore();}
+function uiCastle(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='#b9bec8';ctx.strokeStyle='#2e3138';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(-7,5);ctx.lineTo(-7,-5);ctx.lineTo(-5,-5);ctx.lineTo(-5,-3);ctx.lineTo(-2,-3);ctx.lineTo(-2,-5);ctx.lineTo(2,-5);ctx.lineTo(2,-3);ctx.lineTo(5,-3);ctx.lineTo(5,-5);ctx.lineTo(7,-5);ctx.lineTo(7,5);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#3a2a1a';ctx.beginPath();ctx.moveTo(-2,5);ctx.lineTo(-2,1);ctx.arc(0,1,2,Math.PI,0);ctx.lineTo(2,5);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#2e3138';ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(0,-5);ctx.lineTo(0,-9);ctx.stroke();ctx.fillStyle='#d23a3a';ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(4,-8);ctx.lineTo(0,-7);ctx.closePath();ctx.fill();ctx.restore();}
+function uiDragon(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='#d8402a';ctx.strokeStyle='#4a0e06';ctx.lineWidth=1.1;
+  ctx.beginPath();ctx.moveTo(-7,3);ctx.lineTo(-5,-3);ctx.lineTo(-6,-7);ctx.lineTo(-2,-4);ctx.lineTo(2,-4);ctx.lineTo(5,-1);ctx.lineTo(8,0);ctx.lineTo(8,3);ctx.lineTo(3,4);ctx.lineTo(1,6);ctx.lineTo(-4,6);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#ffe066';ctx.beginPath();ctx.arc(0,-1,1.3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#4a0e06';ctx.fillRect(5.5,.6,1.2,1);ctx.restore();}
+function uiAmt(n){n=Math.max(0,n|0);return n>=100000?Math.round(n/1000)+'k':n>=10000?(n/1000).toFixed(1)+'k':String(n);}
+function uiTreasury(){return typeof treasury==='function'?treasury():0;}
+// "[castle+coin] 150  [dragon+coin] 40"
+function uiGold(x,y,fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;const a=uiAmt(uiTreasury()),b=uiAmt(G.stash||0),w1=ctx.measureText(a).width,w2=ctx.measureText(b).width;
+  let cx=x+8*s;uiCastle(cx,y,s);uiCoin(cx+7*s,y+3*s,s);cx+=14*s;txt(a,cx,y+fs*.38,fs,'#ffd84a','left');cx+=w1+11*s;
+  uiDragon(cx,y,s);uiCoin(cx+8*s,y+3*s,s);cx+=15*s;txt(b,cx,y+fs*.38,fs,'#ffe8a0','left');cx+=w2;UI.goldTxt=[a,b];return cx-x;}
+function uiGoldW(fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;return 8*s+14*s+ctx.measureText(uiAmt(uiTreasury())).width+11*s+15*s+ctx.measureText(uiAmt(G.stash||0)).width;}
 // HUD: compact pill, top right (replaces the old score / hunters / ruins / rebuilding panel)
-function drawStockPill(){const S=typeof SAFE!=='undefined'?SAFE:{r:0,t:0},fs=TOUCH&&TOUCH.on?12:13,w=Math.ceil(uiStockW(fs))+18,h=24,x=VW-S.r-10-w,y=10+(TOUCH&&TOUCH.on?S.t:0);
-  panel(x,y,w,h);UI.pill={x,y,w,h};uiStock(x+8,y+h/2,fs);}
+// One row "[log] [rock] | [castle$] [dragon$]" when it fits right of the WANTED panel, else two right-aligned rows (iPhone landscape).
+function drawStockPill(){const S=typeof SAFE!=='undefined'?SAFE:{r:0,t:0},touch=TOUCH&&TOUCH.on,fs=touch?12:13,ws=uiStockW(fs),wg=uiGoldW(fs),gap=12,y=10+(touch?S.t:0),right=VW-S.r-10;
+  const mw=Math.min(380,VW-560>0?380:VW-300),wantR=VW/2+mw/2+16,one=Math.ceil(ws+gap+wg)+18;
+  if(right-one>=wantR){const x=right-one,h=24;panel(x,y,one,h);UI.pill={x,y,w:one,h,rows:1};uiStock(x+8,y+h/2,fs);
+    ctx.strokeStyle='rgba(255,220,140,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+8+ws+gap/2,y+5);ctx.lineTo(x+8+ws+gap/2,y+h-5);ctx.stroke();uiGold(x+8+ws+gap,y+h/2,fs);}
+  else{const w=Math.ceil(Math.max(ws,wg))+18,h=42,x=right-w;panel(x,y,w,h);UI.pill={x,y,w,h,rows:2};uiStock(x+w-10-ws,y+12,fs);uiGold(x+w-10-wg,y+31,fs);}}
 const UI={pill:null};
+// ================= partGA: gold goes straight to the lair hoard =================
+// Every pick-up path (castle piles, coins / tax sacks / caravans, pirate loot, shells...) still adds to D.gold; this sweep moves it
+// into G.stash the same frame, so nothing is ever carried. The pile, raid thresholds/cooldown (read G.stash), ransom and saves see it at once.
+const GA={pop:[],total:0};
+function gaDeposit(){if(!G||!(D.gold>0))return 0;const n=Math.round(D.gold);D.gold=0;
+  G.stash=(G.stash||0)+n;GA.total+=n;G.stats.autoGold=(G.stats.autoGold||0)+n;
+  if(typeof hoardDrop==='function'&&typeof HX==='function')hoardDrop(n,HX()+R(-30,30),HY()-140);// coins rain onto the pile at the lair
+  const last=GA.pop[GA.pop.length-1];if(last&&last.t<.35)last.n+=n;else GA.pop.push({n,t:0});if(GA.pop.length>4)GA.pop.shift();
+  if(typeof SFX!=='undefined')SFX.play('coin',D.x,D.y,.5);return n;}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);gaDeposit();for(const p of GA.pop)p.t+=dt;GA.pop=GA.pop.filter(p=>p.t<1.4);return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);GA.pop=[];D.gold=0;return r;};}
+// "+N" with a little coin rising from the dragon icon on the HUD pill
+{const _uiG=uiGold;uiGold=function(x,y,fs){const w=_uiG.apply(this,arguments),s=(fs||12)/12;ctx.font=`bold ${fs||12}px Georgia`;
+  const dx=x+w-ctx.measureText(uiAmt(G.stash||0)).width-15*s+4*s;UI.dragonXY={x:dx,y};return w;};}
+{const _dp=drawStockPill;drawStockPill=function(){_dp.apply(this,arguments);const p=UI.dragonXY;if(!p||!GA.pop.length)return;
+  for(const q of GA.pop){const k=q.t/1.4,yy=p.y+46-k*22,a=Math.max(0,1-k*k);ctx.globalAlpha=a;uiCoin(p.x-6,yy,1.15);txt(`+${q.n}`,p.x+1,yy+4,12,'#ffe066','left');}ctx.globalAlpha=1;UI.popDrawn=(UI.popDrawn||0)+1;};}
+// saves never hold "carried" gold: sweep it into the hoard first; old saves with carried gold are swept on load
+{const _ss=svSnapshot;svSnapshot=function(){if(typeof D!=='undefined'&&D&&D.gold>0)gaDeposit();return _ss.apply(this,arguments);};}
+{const _sl=svLoad;svLoad=function(){const r=_sl.apply(this,arguments);if(typeof D!=='undefined'&&D&&D.gold>0)gaDeposit();return r;};}
+// ======================= partKB: KING WILLIAM BUYS MATERIALS (grudgingly) =======================
+// Only when the stockpile is too LOW to rebuild a destroyed building, the kingdom spends castle gold on exactly the missing wood/stone.
+// Never for watchtowers (they are only ever built from cart-delivered stock: bought goods don't count toward the tower budget), never to stockpile.
+// The goods come by TRADE SHIP from the southern sea edge to the King's Quay (announced: banner, horn, map marker), then by a
+// GUARDED CART along the roads to the storehouse. Sink the ship or smash the cart and the goods (and the gold) are lost. Saved with the game.
+const KB={rate:{wood:4,stone:6},check:3,cool:25,quayX:2400,guards:3,unload:2.5,ship:{hp:130,sp:58,crew:3,r:50},last:null};
+function kbNeed(){ // the first ruin the masons would rebuild that is blocked ONLY by stock (same order and waits as the rebuild loop)
+  for(const s of [...structures].sort((a,b)=>(b.kind==='bridge')-(a.kind==='bridge'))){
+    if(s.state!=='ruin'||s.builder||s.paid||s.kind==='wtower')continue;
+    if(s.kind==='gate'&&G.t-(s.ruinT||0)<GATE_REBUILD_WAIT)continue;if(s.kind==='kroof'&&(PR.state!=='tower'||G.t-(s.ruinT||0)<KROOF.wait))continue;
+    const c=s.kind==='bridge'?bridgeCost(s):COST[s.kind];if(!c)continue;const [w,st]=c;
+    if(G.wood>=w&&G.stone>=st)return null;   // the next rebuild is affordable: buy nothing
+    return{s,w:Math.max(0,w-G.wood),st:Math.max(0,st-G.stone)};}
+  return null;}
+function kbTraders(){return carts.filter(c=>c.trader&&!c.wrecked);}
+function kbShips(){return ships.filter(s=>s.kind==='trade'&&s.state!=='sink');}
+function kbBusy(){return kbShips().some(s=>s.state!=='home')||kbTraders().length>0;}
+function kbSpendGold(n){let left=n;for(const g of [...goldPiles].sort((a,b)=>(b.amt||0)-(a.amt||0))){if(left<=0)break;const t=Math.min(left,Math.max(0,g.amt||0));g.amt-=t;left-=t;}return n-left;}
+// the King's Quay: a royal pier on the south shore, the nearest harbour to the castle storehouse
+function kbQuay(){if(KB.q)return KB.q;const x=KB.quayX,yS=(typeof shoreAt==='function'&&shoreAt(x))||4330;
+  return KB.q={x,y:yS+18,land:{x,y:yS-60},anchor:{x:x+10,y:yS+80}};}
+SHIPK.trade={hp:KB.ship.hp,sp:KB.ship.sp,crew:KB.ship.crew,r:KB.ship.r,gold:0};
+if(typeof SHIP_NM!=='undefined')SHIP_NM.trade='Royal trade ships';
+SC_SRC.trader={kind:'wood',yard:null,park:()=>kbQuay().land,job:'trader',name:"the King's Quay"};
+function kbWhat(w,st){return [w?`${w} wood`:'',st?`${st} stone`:''].filter(Boolean).join(' and ');}
+function kbGoods(w,st){return w&&st?'lumber and stone':w?'lumber':'stone';}
+function kbSpawnShip(w,st,o){o=o||{};const q=kbQuay();let sx=o.x!=null?o.x:q.x+R(-160,160),sy=o.y!=null?o.y:WY1-170;
+  if(o.x==null)for(let t=0;t<40&&!inSea(sx,sy);t++)sy-=40;
+  const s={kind:'trade',trade:true,w:w|0,st:st|0,x:sx,y:sy,ang:o.ang!=null?o.ang:-Math.PI/2,sp:KB.ship.sp,hp:o.hp!=null?o.hp:KB.ship.hp,maxHp:KB.ship.hp,r:KB.ship.r,crew:KB.ship.crew,
+    fire:0,fireT:0,state:o.state||'sail',wp:null,cd:0,cd2:0,t:0,id:rnd(),bob:R(0,TAU),unT:o.unT!=null?o.unT:KB.unload,anchor:{x:q.anchor.x,y:q.anchor.y}};ships.push(s);return s;}
+function kbSpawn(kind,n,o){o=o||{};const c=scSpawn('trader',{load:n,st:o.st||'go',s:o.s||0,noDrv:o.noDrv,noHorse:o.noHorse});c.kind=kind;c.trader=true;c.load=n;if(c.drv)c.drv.shirt='#2a6a5a';
+  if(!o.noGuards)kbGuards(c,o.guards!=null?o.guards:KB.guards);return c;}
+// a few foot soldiers march beside each cart (partK escortStep); they fight if the dragon comes close
+function kbGuards(c,n){if(!Object.getOwnPropertyDescriptor(c,'dead'))Object.defineProperty(c,'dead',{get(){return this.wrecked||this.gone;},configurable:true});
+  const G_=[];for(let i=0;i<n;i++){const a=R(0,TAU),k=mkUnit('knight',c.x+Math.cos(a)*26,c.y+Math.sin(a)*16,{hp:24,maxHp:24,atk:0,foot:true,colr:'#2f8a6a',escort:c,eo:[-1,1,0,-1,1][i%5]*(i>2?1.8:1),born:G.t,kbGuard:1});units.push(k);G_.push(k);}
+  return G_;}
+function kbGuardsOf(c){return units.filter(u=>!u.dead&&u.kbGuard&&u.escort===c);}
+function kbBuy(){if(!storeUp()||kbBusy()||G.t<(G.kbCoolT||0))return false;const need=kbNeed();if(!need)return false;
+  const cost=need.w*KB.rate.wood+need.st*KB.rate.stone,have=castleTreasury();if(cost<=0||have<cost)return false;
+  const paid=kbSpendGold(cost);G.kbSpent=(G.kbSpent||0)+paid;G.kbBuys=(G.kbBuys||0)+1;
+  const what=kbWhat(need.w,need.st);KB.last={kind:need.s.kind,w:need.w,st:need.st,cost:paid};
+  kbSpawnShip(need.w,need.st);G.kbShipsSent=(G.kbShipsSent||0)+1;
+  float(STORE_DOOR.x,STORE_DOOR.y-70,`King William grudgingly pays ${paid} gold for ${what}`,'#ffe08a');
+  G.banner={text:`A trade ship approaches with King William's ${kbGoods(need.w,need.st)}!`,sub:`${what} sailing for the King's Quay, then by guarded cart to the castle storehouse  ·  sink it or smash the cart!`,t:4.5};
+  if(typeof showToast==='function')showToast(`⛵ Royal trade ship sighted: ${what}`);
+  if(typeof SFX!=='undefined')SFX.play('princeHorn');G.kbHorn=(G.kbHorn||0)+1;return true;}
+function kbLose(why){G.kbLost=(G.kbLost||0)+1;G.kbCoolT=G.t+KB.cool;G.kbLostWhy=why;}
+// the trade ship: sails straight in, unloads onto carts at the quay, then sails away off the south edge
+function updTradeShip(s,dt){s.t+=dt;s.bob+=dt;if(s.state==='sink'){if(s.fire)s.fire=Math.max(0,s.fire-dt);return;}
+  if(s.fire){s.fireT+=dt;hurtShip(s,6*dt,'fire');if(s.state==='sink')return;if(s.fireT>7){s.fire=0;s.fireT=0;float(s.x,s.y-70,'The sailors douse the flames!','#cfe8ff');}
+    if(Math.abs(s.x-D.x)<1900&&rnd()<dt*14)flame(s.x+R(-s.r*.5,s.r*.5),s.y+R(-8,8),R(10,30));}
+  if(s.state==='sail'||s.state==='home'){const tx=s.state==='home'?s.x:s.anchor.x,ty=s.state==='home'?WY1+200:s.anchor.y,a=Math.atan2(ty-s.y,tx-s.x);
+    s.ang+=angDiff(a,s.ang)*Math.min(1,1.6*dt);const nx=s.x+Math.cos(s.ang)*s.sp*dt,ny=s.y+Math.sin(s.ang)*s.sp*dt;
+    if(s.state==='home'){s.x=nx;s.y=ny;if(s.y>WY1-90){s.state='sink';s.t=99;s.gone=true;}}
+    else{if(inSea(nx,ny)&&d2(nx,ny,LH.x,LH.y)>LH.r+s.r){s.x=nx;s.y=ny;}else s.anchor={x:s.x,y:s.y};
+      if(d2(s.x,s.y,s.anchor.x,s.anchor.y)<30){s.state='unload';s.unT=KB.unload;float(s.x,s.y-80,"The trade ship ties up at the King's Quay",'#ffe08a');}}
+    if((G.fc&7)===0)ripples.push({x:s.x-Math.cos(s.ang)*s.r,y:s.y-Math.sin(s.ang)*s.r,t:.3});return;}
+  if(s.state==='unload'){s.unT-=dt;if(s.unT<=0){kbUnload(s);s.state='home';}}}
+function kbUnload(s){const q=kbQuay(),two=s.w>0&&s.st>0,g=two?2:KB.guards;if(s.w>0)kbSpawn('wood',s.w,{guards:g});if(s.st>0)kbSpawn('stone',s.st,{guards:g,s:two?-90:0});G.kbLanded=(G.kbLanded||0)+1;
+  float(q.land.x,q.land.y-50,`Dockhands load ${kbWhat(s.w,s.st)} onto a guarded cart`,'#ffe08a');s.w=0;s.st=0;}
+{const _u=updShip;updShip=function(s,dt){if(s&&s.kind==='trade'){updTradeShip(s,dt);return;}return _u.apply(this,arguments);};}
+{const _h=hurtShip;hurtShip=function(s,d,src){const tr=s&&s.kind==='trade'&&s.state!=='sink',had=tr&&(s.w>0||s.st>0);const r=_h.apply(this,arguments);
+  if(tr&&s.state==='sink'){if(had){kbLose('ship');float(s.x,s.y-95,`King William's ${kbGoods(s.w,s.st)} sinks to the bottom!`,'#ffd84a');}s.w=0;s.st=0;}return r;};}
+{const _d=drawShip;drawShip=function(s){if(!s||s.kind!=='trade')return _d.apply(this,arguments);s.kind='merchant';try{_d.apply(this,arguments);}finally{s.kind='trade';}
+  if(s.state==='sink'&&s.t>2)return;const b=Math.sin(s.bob*1.6)*1.5,x=s.x,y=s.y+b;
+  // royal pennant + cargo crates
+  line(x,y-62,x,y-84,'#5a3a1c',2);ctx.fillStyle='#ffd24a';ctx.beginPath();ctx.moveTo(x,y-84);ctx.lineTo(x+22,y-79);ctx.lineTo(x,y-74);ctx.fill();
+  if(s.w>0||s.st>0){for(let i=0;i<3;i++)rect(x-16+i*11,y-12,9,8,s.st>0&&i===2?'#bbb':'#a8743a');}}}
+// deliveries: straight into the stockpile, NOT into the watchtower budget (G.rtW/G.rtS), then the cart heads back to the quay
+{const _d=scDeliver;scDeliver=function(c){if(!c||!c.trader)return _d.apply(this,arguments);const n=c.load|0;if(n<=0)return;
+  if(c.kind==='wood')G.wood+=n;else G.stone+=n;c.load=0;G.kbGot=(G.kbGot||0)+n;G.kbHoldT=15;float(STORE_DOOR.x,STORE_DOOR.y-46,`The king's cart unloads ${n} ${c.kind}`,c.kind==='wood'?'#e8c090':'#e0e0e0');};}
+function kbDismiss(c){for(const k of kbGuardsOf(c)){k.escort=null;k.retreat=true;}}
+{const _s=scStep;scStep=function(c,dt){if(c.trader&&!c.wrecked&&c.st==='load'){kbDismiss(c);c.wrecked=true;c.t=0;c.gone=true;for(const u of [c.drv,c.horse])if(u&&!u.dead){u.dead=true;u.gone=true;}return;}return _s.apply(this,arguments);};}
+{const _w=wreckCart;wreckCart=function(c){const tr=c&&c.trader&&!c.wrecked,had=tr&&(c.load|0)>0;
+  if(tr&&typeof tallyAdd==='function'){const t0=tallyAdd,f0=float;tallyAdd=function(k,n){return t0.call(this,k==='supplycart'?'tradecart':k,n);};float=function(x,y,t,c){return f0.call(this,x,y,String(t).replace('Supply cart',"The king's trade cart"),c);};try{var r=_w.apply(this,arguments);}finally{tallyAdd=t0;float=f0;}}else r=_w.apply(this,arguments);
+  if(tr){if(had){kbLose('cart');float(c.x,c.y-50,"King William's goods are lost!",'#ffd84a');}for(const k of kbGuardsOf(c))k.escort=null;}return r;};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&G&&!G.over&&!paused){G.kbT=(G.kbT||0)-dt;if(G.kbT<=0){G.kbT=KB.check;kbBuy();}}return r;};}
+{const _n=newGame;newGame=function(){const r=_n.apply(this,arguments);G.kbT=KB.check;G.kbCoolT=0;return r;};}
+// the quay itself is a (destructible) dock structure
+{const _i=initStructsK;initStructsK=function(){const r=_i.apply(this,arguments);const q=kbQuay();kAdd('dock',q.x,q.y,-1,{royal:1});return r;};}
+// the tally: trade ships (via the generic ship tally) and trade carts
+if(typeof TALLY_SECT!=='undefined'){const B=TALLY_SECT.find(s=>s.id==='boats');if(B){if(!B.keys.some(k=>k[0]==='ship:trade'))B.keys.splice(B.keys.findIndex(k=>k[0]==='siege:catapult'),0,['ship:trade','Royal trade ships']);
+  B.keys.splice(B.keys.findIndex(k=>k[0]==='carthorse'),0,['tradecart','Royal trade carts']);}TALLY_LABEL['ship:trade']='Royal trade ships';TALLY_LABEL.tradecart='Royal trade carts';}
+// the map: the trade ship (gold, pulsing) and the king's carts (green)
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s,q=big?1:.6,p=.6+.4*Math.sin(G.t*5);
+  for(const sh of kbShips()){if(sh.state==='home'&&!(sh.w||sh.st))continue;ctx.strokeStyle=`rgba(255,210,74,${p})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(sh.x),Y(sh.y),(big?11:7),0,TAU);ctx.stroke();
+    ctx.fillStyle='#ffd24a';ctx.beginPath();ctx.moveTo(X(sh.x)-6*q,Y(sh.y)+2*q);ctx.lineTo(X(sh.x)+6*q,Y(sh.y)+2*q);ctx.lineTo(X(sh.x)+3*q,Y(sh.y)+5*q);ctx.lineTo(X(sh.x)-3*q,Y(sh.y)+5*q);ctx.fill();
+    ctx.fillRect(X(sh.x)-.6,Y(sh.y)-6*q,1.4,8*q);G.kbMapDrawn=(G.kbMapDrawn||0)+1;}
+  for(const c of kbTraders()){ctx.fillStyle='#2fdc9a';ctx.fillRect(X(c.x)-3*q-1,Y(c.y)-3*q-1,6*q+2,6*q+2);G.kbMapDrawn=(G.kbMapDrawn||0)+1;}}catch(e){}return r;};}
+// save / load: trade ships + carts in transit stored as flat strings
+{const _ss=scSave;scSave=function(){return _ss.apply(this,arguments).filter(a=>a.src!=='trader');};}
+if(typeof svSnapshot==='function'){const _sn=svSnapshot;svSnapshot=function(){const o=_sn.apply(this,arguments);
+    o.KBS=kbShips().filter(s=>s.state!=='home'||s.w||s.st).map(s=>[Math.round(s.x),Math.round(s.y),Math.round(s.hp),s.state,s.w,s.st,(+s.ang).toFixed(2),(+s.unT||0).toFixed(1)].join(',')).join(';');
+    o.KB=kbTraders().map(c=>[c.kind,c.load|0,c.st,Math.round(c.s),scAlive(c.drv)?1:0,scAlive(c.horse)&&!c.horse.loose?1:0,kbGuardsOf(c).length].join(',')).join(';');return o;};
+  const _ap=svApply;svApply=function(d){const r=_ap.apply(this,arguments);try{
+      for(const c of kbTraders()){c.wrecked=true;c.t=0;for(const u of [c.drv,c.horse])if(u){u.dead=true;u.gone=true;}}
+      for(let i=carts.length-1;i>=0;i--)if(carts[i].trader)carts.splice(i,1);
+      for(const u of units)if(u.kbGuard){u.dead=true;u.gone=true;}
+      ships=ships.filter(s=>s.kind!=='trade');
+      if(!structures.some(s=>s.kind==='dock'&&s.royal)){const q=kbQuay();const s=structures.find(s=>s.kind==='dock'&&Math.abs(s.x-q.x)<4&&Math.abs(s.y-q.y)<4);if(s)s.royal=1;else kAdd('dock',q.x,q.y,-1,{royal:1});}
+      if(d.KBS)for(const e of String(d.KBS).split(';')){const [x,y,hp,st,w,s_,a,u]=e.split(',');if(!(+hp>0))continue;
+        kbSpawnShip(+w,+s_,{x:+x,y:+y,hp:+hp,state:['sail','unload','home'].includes(st)?st:'sail',ang:+a,unT:+u});}
+      const ts=String(d.KB||'');if(ts&&ts.indexOf('|')<0)for(const e of ts.split(';')){const [k,n,st,s,dr,ho,gn]=e.split(',');if(!(+n>0)&&st!=='back')continue;const S=['go','wait','back'].includes(st)?st:'go';
+        const c=kbSpawn(k==='stone'?'stone':'wood',+n||0,{st:S==='wait'?'go':S,noDrv:dr==='0',noHorse:ho==='0',guards:gn!=null?+gn:KB.guards});if(S==='back')c.R=scRoute(STORE_DOOR,SC_SRC.trader.park());
+        c.st=S;c.s=S==='wait'?c.R.len:Math.max(0,Math.min(c.R.len,+s||0));scPlace(c,0,true);for(const g of kbGuardsOf(c)){const a=R(0,TAU);g.x=c.x+Math.cos(a)*26;g.y=c.y+Math.sin(a)*16;}}}catch(e){console.error(e);}return r;};}
+// the trader cart: green awning so you can tell it from the kingdom's own supply carts
+{const _dc=drawSupplyCart;drawSupplyCart=function(c){_dc.apply(this,arguments);if(c.trader&&!c.wrecked){const x=c.x,y=c.y,w=Math.abs(Math.cos(c.ang||0))*12+5;
+  rect(x-w-5,y-22,2*w+10,3,'#2f8a6a');for(let i=0;i<4;i++)rect(x-w-5+i*(2*w+10)/4,y-22,(2*w+10)/8,3,'#e8e0c0');line(x-w-4,y-19,x-w-4,y-10,'#5a3a1c',1.5);line(x+w+4,y-19,x+w+4,y-10,'#5a3a1c',1.5);}};}
+// bought wood is for the rebuild: no new mine carts from it while the masons pick it up
+{const _e=updEconomy;updEconomy=function(dt){if(G.kbHoldT>0){G.kbHoldT-=dt;G.cartBuildT=Math.max(G.cartBuildT||0,.5);}return _e.apply(this,arguments);};}
+// ================= partJT: the ANCIENT JUNGLE TEMPLE (destructible, 100 gold) + MOUNT EMBER (a second lava volcano, far SW jungle) =================
+// Temple: overgrown stepped stone temple with vines. Stone: fire alone never hurts it; stomps (Q, the land claw/stomp), bites and lava do.
+// Wrecked -> cartoon rubble burst + 100 gold straight to the lair hoard ("+100"). Never rebuilt; back every level (initStructsK). Tally + save/load.
+const JT={x:-13700,y:600,hp:700,gold:100,bite:40};
+KDEF.jtemple={name:'Ancient jungle temple',hp:JT.hp,stone:1,cost:[0,0],gold:[0,0],pts:150,alarm:0,sz:80};COST.jtemple=[0,0];STRUCT_NAME.jtemple=KDEF.jtemple.name;
+const JT_LOCK={lock:1,task:null,dead:false,state:'lock'}; // a "builder" that never comes: masons and self-repair skip the ruin
+function jtS(){return structures.find(s=>s.kind==='jtemple');}
+{const B=TALLY_SECT.find(s=>s.id==='build');if(B&&!B.keys.some(k=>k[0]==='b:jtemple'))B.keys.push(['b:jtemple','Ancient jungle temples']);TALLY_LABEL['b:jtemple']='Ancient jungle temples';}
+function jtClear(x,y,r){const far=o=>Math.hypot(o.x-x,(o.y-y)*1.25)>r;DECOR=DECOR.filter(o=>far(o));if(trees)trees=trees.filter(far);if(typeof ROCKS!=='undefined')for(let i=ROCKS.length-1;i>=0;i--)if(!far(ROCKS[i]))ROCKS.splice(i,1);}
+{const _i=initStructsK;initStructsK=function(){const r=_i.apply(this,arguments);if(!jtS()){const s=kAdd('jtemple',JT.x,JT.y,-1);s.hasGold=false;}return r;};}
+{const _s=stoneFire;stoneFire=function(s,dt){if(s&&s.kind==='jtemple')return;return _s.apply(this,arguments);};}
+{const _o=onRuin;onRuin=function(s){if(!s||s.kind!=='jtemple')return _o.apply(this,arguments);s.hasGold=false;const r=_o.apply(this,arguments);s.builder=JT_LOCK;
+  if(!s._loading){D.gold=(D.gold||0)+JT.gold;G.jtGold=(G.jtGold||0)+JT.gold;G.jtWrecked=(G.jtWrecked||0)+1;
+    float(s.x,s.y-120,`KA-BOOM! The ancient temple crumbles: +${JT.gold} gold!`,'#ffd84a');G.shake=Math.max(G.shake,14);
+    for(let i=0;i<5;i++)puff(s.x+R(-70,70),s.y+R(-30,10),16,'rgba(170,165,140,',200,16);puff(s.x,s.y-30,20,'rgba(255,220,90,',160,10);
+    JT_BITS.length=0;for(let i=0;i<26;i++){const a=R(0,TAU),v=R(80,260);JT_BITS.push({x:s.x+R(-40,40),y:s.y-R(10,60),z:R(10,40),vx:Math.cos(a)*v,vy:Math.sin(a)*v*.5,vz:R(160,380),t:R(1.2,2),c:i%3?'#8e8a76':'#5f7a3a',s:R(4,9)});}}
+  return r;};}
+const JT_BITS=[];
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);for(const b of JT_BITS){b.t-=dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.vz-=700*dt;b.z=Math.max(0,b.z+b.vz*dt);if(b.z<=0){b.vx*=.5;b.vy*=.5;b.vz=0;}}
+  for(let i=JT_BITS.length-1;i>=0;i--)if(JT_BITS[i].t<=0)JT_BITS.splice(i,1);const s=jtS();if(s&&s.state==='ruin'&&!s.builder)s.builder=JT_LOCK;return r;};}
+// bites: gnaw the temple stones (heavy, like a stomp)
+{const _b=biteWell;biteWell=function(){if(D.alt<.3){const s=jtS(),mx=D.x+Math.cos(D.ang)*70,my=D.y+Math.sin(D.ang)*70;
+    if(s&&s.state==='ok'&&d2(mx,my,s.x,s.y-20)<115){const hv=HEAVY;HEAVY=true;hurtStruct(s,JT.bite);HEAVY=hv;D.eatCD=.45;D.eatT=.3;G.jtBites=(G.jtBites||0)+1;
+      if(s.state==='ok')float(s.x,s.y-100,'Crunch! Ancient stone chips away','#e0d8b0');puff(mx,my,8,'rgba(170,165,140,',90,8);if(typeof SFX!=='undefined')SFX.play('crashStone',s.x,s.y,.5);return true;}}
+  return _b.apply(this,arguments);};}
+// the swim claw-scratch also rakes the temple if it is in reach (on land Q is the stomp)
+{const _c=clawScratch;clawScratch=function(){const r=_c.apply(this,arguments);const s=jtS();if(s&&s.state==='ok'&&dist(s,D)<160){const hv=HEAVY;HEAVY=true;hurtStruct(s,30);HEAVY=hv;}return r;};}
+function drawTemple(s){const x=s.x,y=s.y,t=G.t;
+  if(s.state==='ruin'){ell(x,y+6,96,30,'rgba(0,0,0,.18)');for(let i=0;i<14;i++){const a=i*2.1,r=20+(i*37%60);rect(x+Math.cos(a)*r-9,y+Math.sin(a)*r*.4-8,18,12,i%2?'#8e8a76':'#a4a08a');}
+    rect(x-30,y-16,14,22,'#9a9680');line(x-30,y-16,x-10,y-30,'#4f7a2a',3);ell(x+20,y-6,16,8,'#4a7a2a');ell(x-48,y+2,14,7,'#5a8a34');
+    for(const b of JT_BITS){ell(b.x,b.y+2,b.s*.8,b.s*.3,'rgba(0,0,0,.2)');rect(b.x-b.s/2,b.y-b.z-b.s/2,b.s,b.s,b.c);}return;}
+  const dmg=1-s.hp/s.maxHp;ell(x+10,y+8,110,30,'rgba(0,0,0,.25)');
+  // 4 stepped tiers
+  const T=[[96,22,'#8a8672'],[76,22,'#96927c'],[56,22,'#a29e88'],[36,20,'#aeaa94']];let yy=y;
+  for(const [w,h,c] of T){rect(x-w,yy-h,w*2,h,c);rect(x-w,yy-h,w*2,4,'#bcb8a2');for(let k=-w+12;k<w;k+=24)line(x+k,yy-h+4,x+k,yy,'rgba(60,56,46,.35)',1);yy-=h;}
+  // stairway + shrine
+  poly([x-14,y,x+14,y,x+10,yy,x-10,yy],'#bdb9a2');for(let k=y-6;k>yy;k-=6)line(x-13,k,x+13,k,'rgba(80,76,62,.5)',1);
+  rect(x-26,yy-36,52,36,'#a8a48e');poly([x-32,yy-36,x+32,yy-36,x+20,yy-50,x-20,yy-50],'#8e8a76');rect(x-9,yy-28,18,28,'#2a2418');
+  const gl=.5+.5*Math.sin(t*2.2);ell(x-4,yy-18,1.8,1.8,`rgba(255,220,90,${.5+.5*gl})`);ell(x+4,yy-18,1.8,1.8,`rgba(255,220,90,${.5+.5*gl})`); // a little gold glints inside
+  // carved face blocks
+  for(const sx of[-60,60]){rect(x+sx-10,y-38,20,14,'#8a8672');ell(x+sx-4,y-32,2,2,'#4a463a');ell(x+sx+4,y-32,2,2,'#4a463a');}
+  // moss + hanging vines
+  for(let i=0;i<9;i++){const vx=x-88+i*22,vy=y-40-(i%3)*18,sw=Math.sin(t*1.3+i)*2;ctx.strokeStyle='#3f7a2a';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(vx,vy);ctx.quadraticCurveTo(vx+sw+4,vy+16,vx+sw,vy+30+(i%2)*8);ctx.stroke();ell(vx+sw,vy+30+(i%2)*8,3,2.2,'#58a038');}
+  for(let i=0;i<7;i++)ell(x-80+i*27,y-44+(i%2?-22:0)-(i%3)*10,12,5,'rgba(80,140,50,.85)');ell(x+40,yy-38,14,6,'rgba(80,140,50,.9)');
+  if(dmg>.25){line(x-50,y-30,x-36,y-10,'#3a3628',1.6);line(x+30,y-58,x+44,y-40,'#3a3628',1.6);}if(dmg>.6){line(x-20,yy-30,x-4,yy-6,'#3a3628',1.6);line(x+56,y-20,x+70,y-2,'#3a3628',1.6);}
+  if(s.hp<s.maxHp){rect(x-40,yy-62,80,5,'#400');rect(x-40,yy-62,80*s.hp/s.maxHp,5,'#e8c040');}
+  if(dist(D,s)<700)txt('Ancient Temple',x,y+30,12,'#e8e0b0','center');}
+{const _d=drawStructK;drawStructK=function(s){if(s.kind==='jtemple'){drawTemple(s);return true;}return _d.apply(this,arguments);};}
+{const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);const s=jtS();if(s&&s.state==='ruin')s.builder=JT_LOCK;return r;};}
+
+// ================= MOUNT EMBER: a second lava volcano in the far south-west corner of the jungle =================
+const VOLC2={x:-16650,y:3950,r:96,drinkR:165,name:'Mount Ember'};let VOLC2_T={erupt:9,smoke:0,warn:0};
+const VOLCS=()=>[VOLC,VOLC2];
+function withV2(fn){const ox=VOLC.x,oy=VOLC.y,ot=VOLC_T;VOLC.x=VOLC2.x;VOLC.y=VOLC2.y;VOLC_T=VOLC2_T;VOLC.v2=1;try{return fn();}finally{VOLC.x=ox;VOLC.y=oy;VOLC2_T=VOLC_T;VOLC_T=ot;VOLC.v2=0;}}
+function nearV2(){return D&&D.mode==='ground'&&D.alt<.3&&!D.swim&&Math.hypot(D.x-VOLC2.x,D.y-VOLC2.y)<VOLC2.drinkR;}
+{const _n=nearLava;nearLava=function(){return _n.apply(this,arguments)||(!VOLC.v2&&nearV2());};}
+{const _l=lavaDrink;lavaDrink=function(){if(!VOLC.v2&&nearV2()&&!(Math.hypot(D.x-VOLC.x,D.y-VOLC.y)<VOLC.drinkR)){const r=withV2(()=>_l.apply(this,arguments));if(r)G.v2Drinks=(G.v2Drinks||0)+1;return r;}return _l.apply(this,arguments);};}
+{const _t=txt;txt=function(s){if(VOLC.v2&&s==='Mount Cinder')arguments[0]=VOLC2.name;return _t.apply(this,arguments);};}
+{const _dv=drawVolcano;drawVolcano=function(){_dv.apply(this,arguments);if(Math.abs(cam.x-VOLC2.x)>1900||Math.abs(cam.y-VOLC2.y)>1400)return;withV2(()=>_dv.apply(this,arguments));};}
+// site: no trees, plants, rocks or animals on the cone; animals never spawn there
+function v2Clear(){jtClear(VOLC2.x,VOLC2.y,340);jtClear(VOLC2.x,VOLC2.y+120,300);jtClear(JT.x,JT.y-30,190);
+  for(const u of units)if(u.type==='animal'&&!u.dead&&(Math.hypot(u.x-VOLC2.x,u.y-VOLC2.y)<450||Math.hypot(u.x-JT.x,u.y-JT.y)<200)){u.x+=u.x<VOLC2.x+600?700:0;u.y-=400;}
+  if(typeof pbIndex==='function')pbIndex();}
+const JV_NOSPAWN=(x,y)=>Math.hypot(x-VOLC2.x,y-VOLC2.y)<480||Math.hypot(x-JT.x,y-JT.y)<220;
+for(const k in ZONES){const z=ZONES[k];if(z&&typeof z.ok==='function'){const _ok=z.ok;z.ok=function(x,y){return !JV_NOSPAWN(x,y)&&_ok.apply(this,arguments);};}}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);v2Clear();VOLC2_T={erupt:9,smoke:0,warn:0};return r;};}
+// smoke, rumbling eruptions, and lava embers that set the nearby jungle alight
+function updVolc2(dt){const V=VOLC2,T=VOLC2_T,near=Math.abs(cam.x-V.x)<1600&&Math.abs(cam.y-V.y)<1200;
+  T.smoke-=dt;if(near&&T.smoke<=0){T.smoke=.18;parts.push({x:V.x+R(-30,30),y:V.y+R(-10,6),z:R(10,30),vx:R(-10,25),vy:R(-14,-4),vz:R(30,55),life:R(2.2,3.4),max:3.4,size:R(10,18),kind:'smoke',col:'rgba(70,64,64,'});}
+  T.erupt-=dt;if(T.erupt<=0){T.erupt=R(10,18);T.warn=1.4;G.v2Erupt=(G.v2Erupt||0)+1;
+    if(near){SFX.play('erupt',V.x,V.y,1);const dd=Math.hypot(D.x-V.x,D.y-V.y);G.shake=Math.max(G.shake,dd<700?6:2);if(dd<900&&typeof rumble==='function')rumble(.4,.3,220);
+      for(let i=0;i<46;i++){const a=R(0,TAU),s=R(30,190);LEMBERS.push({x:V.x+R(-20,20),y:V.y+R(-8,8),z:20,vx:Math.cos(a)*s,vy:Math.sin(a)*s*.6,vz:R(260,520),t:R(1.2,2.4)});}
+      for(let i=0;i<12;i++)parts.push({x:V.x+R(-40,40),y:V.y,z:R(20,60),vx:R(-30,30),vy:R(-20,0),vz:R(60,110),life:R(2,3),max:3,size:R(16,26),kind:'smoke',col:'rgba(60,52,52,'});}
+    // lava bombs land just past the cone and burn the plants around it
+    let lit=0;const tryLit=o=>{if(lit<3&&typeof pbIgnite==='function'&&pbIgnite(o))lit++;};
+    if(typeof pbNear==='function')pbNear(V.x,V.y+60,620,(o,d)=>{if(d>330&&d<620&&rnd()<.25)tryLit(o);});
+    for(const t of trees){if(lit>=3)break;const d=Math.hypot(t.x-V.x,t.y-V.y);if(t.state==='ok'&&!t.fire&&d>330&&d<620&&rnd()<.25){t.fire=1;lit++;}}
+    if(lit){G.v2Lit=(G.v2Lit||0)+lit;for(let i=0;i<3;i++)LPUDDLES.push({x:V.x+R(-260,260),y:V.y+R(170,260),r:R(14,22),t:5,max:5,tick:0});}}
+  T.warn=Math.max(0,T.warn-dt);}
+{const _up=updParts;updParts=function(dt){_up.apply(this,arguments);if(scene==='play'&&!paused&&G&&D)updVolc2(dt);};}
+// world map: both volcanoes, Mount Ember labelled once you have seen it, plus the temple
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s,p=.6+.4*Math.sin(G.t*3);
+  const vol=(V,lab)=>{const x=X(V.x),y=Y(V.y),k=big?1:.6;poly([x-8*k,y+5*k,x-2.5*k,y-5*k,x+2.5*k,y-5*k,x+8*k,y+5*k],'#5a4a44');ell(x,y-5*k,3*k,1.4*k,`rgba(255,${120+80*p|0},40,1)`);if(big)txt(lab,x,y+16,9,'#ffb070','center',false);G.v2MapDrawn=(G.v2MapDrawn||0)+1;};
+  vol(VOLC,'Mount Cinder');vol(VOLC2,'🌋 Mount Ember');
+  const t=jtS();if(t&&(typeof seen!=='function'||seen(t.x,t.y))){ctx.fillStyle=t.state==='ok'?'#d8d0a0':'#555';const x=X(t.x),y=Y(t.y);poly([x-5,y+3,x+5,y+3,x+2,y-4,x-2,y-4],t.state==='ok'?'#c8c09a':'#555');if(big)txt(t.state==='ok'?'Ancient Temple':'Temple (rubble)',x,y+13,9,'#e8e0b0','center',false);}}catch(e){}return r;};}
+// ================= partEC: the TOWN ECONOMY (houses and merchant shops slowly earn gold; the tax man collects it) =================
+// Hidden by design: building gold is never shown (no HUD, no menu line, no coin stacks, no text on buildings).
+// It only becomes the KINGDOM's gold when a tax collector carries his sack into the castle (the castle gold piles).
+// The collector always leaves >=1 coin in every house and >=3 in every merchant shop. Intercept him and his sack goes to the lair pile.
+// Wreck a house or shop and whatever it had stored goes straight to the lair pile (partGA's "+N" pop). Saved per building (s.sg).
+const EC={houseRate:1/25,shopMul:2.5,houseMin:1,shopMin:3,houseCap:15,shopCap:40,houseStart:[1,3],shopStart:[3,7]};
+const EC_HOUSE=new Set(['hut','adobe']),EC_SHOP=new Set(['stall','fishmonger','bakery','smithy','jeweler']);
+const ecHouse=s=>EC_HOUSE.has(s.kind)||(s.kind==='hut'&&s.adobe),ecShop=s=>EC_SHOP.has(s.kind),ecKind=s=>ecShop(s)?'shop':ecHouse(s)?'house':null;
+const ecMin=s=>ecShop(s)?EC.shopMin:EC.houseMin,ecCap=s=>ecShop(s)?EC.shopCap:EC.houseCap,ecRate=s=>ecShop(s)?EC.houseRate*EC.shopMul:EC.houseRate;
+function ecInit(s){if(typeof s.sg!=='number'||!isFinite(s.sg)){const r=ecShop(s)?EC.shopStart:EC.houseStart;s.sg=RI(r[0],r[1]);}return s;}
+function ecGold(s){return ecKind(s)?Math.floor(ecInit(s).sg):0;}
+function ecUpd(dt){for(const s of structures){if(!ecKind(s))continue;ecInit(s);if(s.state==='ok'&&s.sg<ecCap(s))s.sg=Math.min(ecCap(s),s.sg+ecRate(s)*dt);}}
+{const _k=updK;updK=function(dt){const r=_k.apply(this,arguments);ecUpd(dt);return r;};}
+// who pays at a tax stop: a village stop taxes its houses (and any shop that belongs to no market), a market stop taxes its shops
+function ecPayers(tg){return structures.filter(s=>s.state==='ok'&&ecKind(s)&&(tg.mk?s.market===tg.mk:(s.v===tg.vi&&(ecHouse(s)||(ecShop(s)&&!s.market)))));}
+function ecTaxable(s){return Math.max(0,Math.floor(ecInit(s).sg)-ecMin(s));}
+function ecCollect(tg,want){let got=0;for(const s of ecPayers(tg)){if(got>=want)break;const n=Math.min(ecTaxable(s),want-got);if(n>0){s.sg-=n;got+=n;}}return got;}
+taxTargets=function(){const T=[];VILLAGES.forEach((v,vi)=>{const t={x:v.x+30,y:v.y+40,vi,name:v.name||'a village'};const P=ecPayers(t);if(P.length){t.amt=P.reduce((a,s)=>a+ecTaxable(s),0);T.push(t);}});
+  for(const M of MARKETS){const t={x:M.x,y:M.y+40,mk:M.name,name:M.name};const P=ecPayers(t);if(P.length){t.amt=P.reduce((a,s)=>a+ecTaxable(s),0);T.push(t);}}return T;};
+{const _t=updTax;updTax=function(u,dt){const tg=u.route&&u.route[u.ri];if(tg&&!tg.home&&(tg.vi!==undefined||tg.mk)){tg.amt=ecPayers(tg).reduce((a,s)=>a+ecTaxable(s),0);}
+  const ri0=u.ri,s0=u.sack;const r=_t.apply(this,arguments);
+  if(tg&&!tg.home&&u.ri>ri0&&(tg.vi!==undefined||tg.mk)){const got=ecCollect(tg,u.sack-s0);u.sack=s0+got;G.ecTaxed=(G.ecTaxed||0)+got;}return r;};}
+// an intercepted collector: his whole sack goes to the lair pile (it never reaches the castle)
+{const _s=taxSacks;taxSacks=function(){for(const u of units)if(u.tax&&u.dead&&!u.gone&&!u.sackDone){u.sackDone=true;const n=Math.max(0,Math.floor(u.sack||0));
+    if(n>0){D.gold=(D.gold||0)+n;G.ecSackLair=(G.ecSackLair||0)+n;}u.sack=0;addAlarm(4,u.x,u.y);G.stats.taxmen=(G.stats.taxmen||0)+1;puff(u.x,u.y-10,8,'rgba(255,216,74,',90,5);
+    float(u.x,u.y-40,n>0?'The tax collector\'s sack is yours!':'The tax collector\'s sack was empty!','#ffd84a');}return _s.apply(this,arguments);};}
+// wrecked house or shop: its stored gold goes to the lair pile (instead of the old random spill)
+{const _o=onRuin;onRuin=function(s){if(!s||!ecKind(s)||s._loading)return _o.apply(this,arguments);const n=ecGold(s);s.hasGold=false;const r=_o.apply(this,arguments);
+  if(n>0){D.gold=(D.gold||0)+n;G.ecDrop=(G.ecDrop||0)+n;puff(s.x,s.y-20,Math.min(14,4+n),'rgba(255,216,74,',120,5);}s.sg=0;return r;};}
+// ---------- a rich tax man calls for an ESCORT: the nearest patrol lends him soldiers back to the castle ----------
+// Only when he PASSES a patrol (within ~200px) on his route; no patrol near = he walks alone.
+// sack >= 25: 2 soldiers, >= 40: 3, >= 60: 4 (cap). They walk with him, fight the dragon if it comes close (escortStep),
+// and rejoin their patrol's normal route once the gold is delivered (or the tax man is lost). The sack itself looks fuller as it grows.
+const TXE={at:25,steps:[[60,4],[40,3],[25,2]],cap:4,range:200};
+const txeWant=sack=>{for(const [a,n] of TXE.steps)if(sack>=a)return Math.min(TXE.cap,n);return 0;};
+const txeOf=m=>units.filter(u=>!u.dead&&u.escort===m&&u.txe);
+function txeLend(m,u,p){u.txe=1;u.txP=p;u.escort=m;u.eo=[-1.6,1.6,-.6,.6][txeOf(m).length%4];u.patrol=null;u.retreat=false;if(p){const i=p.members.indexOf(u);if(i>=0)p.members.splice(i,1);}}
+function txeRecruit(m){const want=txeWant(m.sack),have=txeOf(m).length;if(want<=have)return 0;let need=want-have,got=0;
+  // only a patrol he is PASSING (any member within ~200px) - he never summons one from afar, and no patrol detours to him
+  const pd=p=>Math.min(...p.members.filter(u=>!u.dead).map(u=>dist(u,m)));
+  const P=patrols.filter(p=>!p.dead&&!p.engaged&&p.members.some(u=>!u.dead)&&pd(p)<=TXE.range).sort((a,b)=>pd(a)-pd(b));
+  for(const p of P){if(need<=0)break;
+    const pick=p.members.filter(u=>!u.dead).sort((a,b)=>(a.mounted?1:0)-(b.mounted?1:0)); // foot soldiers & archers first
+    for(const u of pick){if(need<=0)break;txeLend(m,u,p);need--;got++;}}
+  if(got){m.txeN=(m.txeN||0)+got;G.txeRecruits=(G.txeRecruits||0)+got;if(dist(m,D)<900)float(m.x,m.y-34,'Guards! Escort the King\'s taxes!','#ffe0a0');}return got;}
+function txeRelease(m){for(const u of units){if(u.dead||u.escort!==m||!u.txe)continue;u.escort=null;u.txe=0;const p=u.txP;u.txP=null;
+    if(p){if(!patrols.includes(p)){p.dead=false;p.engaged=false;p.wp=null;patrols.push(p);}p.members.push(u);u.patrol=p;}else u.retreat=true;}
+  G.txeReleased=(G.txeReleased||0)+1;}
+{const _u=updTaxes;updTaxes=function(dt){const r=_u.apply(this,arguments);
+  for(const m of units){if(!m.tax)continue;if(m.dead){if(!m.txeDone){m.txeDone=1;txeRelease(m);}continue;}
+    m.txeT=(m.txeT||0)-dt;if(m.txeT<=0){m.txeT=1;if(m.sack>=TXE.at)txeRecruit(m);}}
+  // released soldiers whose patrol had no one left still need a leader slot: drop empty patrols
+  return r;};}
+// the delivery line marks the tax man dead+gone inside updTax: release his escort the same frame
+{const _t=updTax;updTax=function(u,dt){const r=_t.apply(this,arguments);if(u.dead&&!u.txeDone){u.txeDone=1;txeRelease(u);}return r;};}
+// save/load: tax men on the road keep their sack, route and escort
+const TXE_K=u=>u.type==='archer'?'archer':u.mounted?'cavalry':u.foot?'foot':'knight';
+{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);
+  d.TX=units.filter(u=>u.tax&&!u.dead).map(m=>({x:Math.round(m.x),y:Math.round(m.y),sack:m.sack|0,ri:m.ri|0,route:(m.route||[]).map(t=>svPrim(t)),hp:m.hp,
+    esc:txeOf(m).map(u=>({k:TXE_K(u),hp:Math.round(u.hp),maxHp:u.maxHp,colr:u.colr||null,x:Math.round(u.x),y:Math.round(u.y),eo:u.eo}))}));return d;};}
+{const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);if(!Array.isArray(d.TX))return r;
+  for(let i=units.length-1;i>=0;i--)if(units[i].tax)units.splice(i,1);
+  for(const t of d.TX){const m=mkUnit('villager',t.x,t.y,{job:'tax',tax:true,route:t.route||[],ri:t.ri||0,sack:t.sack||0,hp:t.hp||10,maxHp:10,shirt:'#5a2a6a',home:{x:GATE.x,y:GATE.y+20},v:-1});units.push(m);
+    if(t.esc&&t.esc.length){const p={id:++patrolId,members:[],engaged:false,wp:null,txLoad:1};
+      for(const e of t.esc){const o={hp:e.hp,maxHp:e.maxHp,atk:0};if(e.colr)o.colr=e.colr;let u;
+        if(e.k==='archer')u=mkUnit('archer',e.x,e.y,{hp:e.hp,maxHp:e.maxHp,shootT:R(1,3)});else if(e.k==='cavalry')u=mkCavalry(e.x,e.y,o);else u=mkUnit('knight',e.x,e.y,Object.assign(o,e.k==='foot'?{foot:true}:{}));
+        u.hp=e.hp;u.maxHp=e.maxHp;u.born=G.t;units.push(u);txeLend(m,u,p);if(typeof e.eo==='number')u.eo=e.eo;}}}
+  return r;};}
+// ================= partRK: HOARD RAID TIERS - the raiding champion scales with the lair gold when the raid is announced =================
+// Tier 1 at 100 gold, 2 at 250, 3 at 500, 4 at 1000, then +1 per extra 1000 (2000 = 5, 3000 = 6, ...).
+// Triggers and cooldown are unchanged (RAID_THR 100/200/350/550/850 then +400, x1.4 on Easy; 300s / 420s Easy cooldown):
+// the THRESHOLD decides WHEN a raid comes, the HOARD at announcement decides HOW STRONG it is.
+// Gentle scaling, headcount capped at 8 escorts (9 bodies) so phones stay smooth.
+const RK={cap:8,spearCap:6,archCap:3};
+function raidTier(g){g=Math.floor(g||0);if(g<100)return 0;if(g<250)return 1;if(g<500)return 2;if(g<1000)return 3;return 4+Math.floor((g-1000)/1000);}
+function raidTierStats(T,n,lvl,easy){T=Math.max(1,T);const lv=1+.15*((lvl||1)-1),ez=easy?.75:1;
+  const hp=Math.round((150+60*Math.min(T-1,5)+30*Math.max(0,T-6)+15*Math.min(n||0,4))*lv*ez);
+  const dmg=Math.min(1.6,1+.1*(T-1));
+  let spears=Math.min(RK.spearCap,1+T+((lvl||1)>1?1:0)-(easy?1:0)),archers=T>=3?Math.min(RK.archCap,T-2):0;
+  while(spears+archers>RK.cap)spears--;spears=Math.max(1,spears);
+  const eHp=Math.min(66,30+6*(T-1)),aHp=Math.min(44,22+4*(T-3));return{T,hp,dmg,spears,archers,esc:spears+archers,eHp,aHp};}
+{const _w=startRaidWarning;startRaidWarning=function(){const g=G.stash||0,T=Math.max(1,raidTier(g));const r0=_w.apply(this,arguments);const r=RAID.cur;if(!r)return r0;
+  const S=raidTierStats(T,r.n,G.lvl,G.easy);Object.assign(r,{tier:T,hp:S.hp,dmgM:S.dmg,esc:S.spears,arch:S.archers,eHp:S.eHp,aHp:S.aHp,tierGold:Math.floor(g)});
+  if(G.banner){G.banner.text=`${r.name} (Tier ${T}) rides for your hoard!`;
+    G.banner.sub=`Hoard Raid ${r.n+1}: a champion, ${S.spears} spear${S.spears>1?'s':''}${S.archers?` and ${S.archers} archer${S.archers>1?'s':''}`:''} march out in ${RAID_WARN} seconds. Guard your gold!`;}
+  if(typeof showToast==='function')showToast(`⚔ ${r.short} (Tier ${T}) rides for your hoard!`);return r0;};}
+{const _s=spawnRaid;spawnRaid=function(){const r=RAID.cur;const x0=r.members.length;const res=_s.apply(this,arguments);if(!r.tier)return res;
+  for(const u of r.members){if(u.raidEsc){u.hp=u.maxHp=r.eHp;}u.dmgM=r.dmgM;}
+  const x=GATE.x,y=GATE.y+12,A=[];for(let i=0;i<(r.arch||0);i++){const u=mkUnit('archer',x+R(-20,20),y+20+i*6,{hp:r.aHp,maxHp:r.aHp,shootT:R(1,3),raid:r,raidEsc:true,born:G.t,dmgM:r.dmgM});A.push(u);}
+  r.members.push(...A);units.push(...A);return res;};}
+// raid archers loose arrows from range instead of waiting for the dragon to land beside them
+{const _r=raidStep;raidStep=function(u,dt){if(u.raid&&u.type==='archer'&&!u.champ&&dist(u,D)<400&&!G.over)return false;return _r.apply(this,arguments);};}
+// tier damage: the champion's (and escorts') blows hit a little harder per tier
+let RK_DM=1;
+{const _k=updKnight;updKnight=function(u,dt){if(!u.dmgM)return _k.apply(this,arguments);RK_DM=u.dmgM;try{return _k.apply(this,arguments);}finally{RK_DM=1;}};}
+{const _f=typeof raidFight==='function'?raidFight:null;if(_f)raidFight=function(u,dt){if(!u.dmgM)return _f.apply(this,arguments);RK_DM=u.dmgM;try{return _f.apply(this,arguments);}finally{RK_DM=1;}};}
+{const _a=updArcher;updArcher=function(u,dt){if(!u.dmgM)return _a.apply(this,arguments);const n0=projs.length;const r=_a.apply(this,arguments);for(let i=n0;i<projs.length;i++)if(projs[i].kind==='arrow')projs[i].dmg*=u.dmgM;return r;};}
+{const _c=typeof updCavalry==='function'?updCavalry:null;if(_c)updCavalry=function(u,dt){if(!u.dmgM)return _c.apply(this,arguments);RK_DM=u.dmgM;try{return _c.apply(this,arguments);}finally{RK_DM=1;}};}
+{const _h=hurtDragon;hurtDragon=function(d,src){if(RK_DM!==1)arguments[0]=d*RK_DM;return _h.apply(this,arguments);};}
+// the SHARE of the hoard a champion can carry off grows with the tier, but is only ever PART of it (never all):
+// T1 20%, T2 25%, T3 30%, T4 35%, T5 40%, T6 45%, T7+ 50% (cap). Stop him (beat or eat him) and you keep / win it all back.
+function raidShare(T){return Math.min(.5,.2+.05*(Math.max(1,T)-1));}
+function raidTake(stash,T){stash=Math.floor(stash||0);if(stash<=1)return 0;return Math.max(1,Math.min(stash-1,Math.floor(stash*raidShare(T))));}
+{const _g=raidGrab;raidGrab=function(){const r=RAID.cur;if(!r||!r.tier)return _g.apply(this,arguments);const ch=r.champ,take=raidTake(G.stash,r.tier);
+  r.loot=take;G.stash-=take;r.phase='flee';r.back=raidRoute().reverse().slice(1);r.back.push({x:GATE.x,y:GATE.y+10});
+  for(let i=0;i<10;i++)sparkle(HX(),HY(),2);float(ch.x,ch.y-70,`${r.short} grabs ${take} gold!`,'#ff8a5a');
+  G.banner={text:`${r.name} (Tier ${r.tier}) has stolen ${take} gold!`,sub:`A Tier ${r.tier} champion carries off ${Math.round(raidShare(r.tier)*100)}% of a hoard. Stop him before the sack reaches the castle gate!`,t:4.5};
+  if(typeof SFX!=='undefined')SFX.play('clink');showToast(`💰 ${r.short} is running off with ${take} gold!`);};}
+// ---------- heavy loot: a champion carrying stolen gold walks home SLOWER, with visible gold sacks ----------
+// speed x(1 - .45*min(1, loot/600)): 100 gold ~92%, 300 ~78%, 600+ = 55%. Stop him on the way and it all drops back into the lair pile.
+const RK_SLOW={full:600,min:.55};
+function raidLootMul(loot){return Math.max(RK_SLOW.min,1-(1-RK_SLOW.min)*Math.min(1,(loot||0)/RK_SLOW.full));}
+let RK_SPD=1,RK_U=null;
+{const _m=moveTo;moveTo=function(u,tx,ty,sp,dt){if(RK_U&&u===RK_U&&RK_SPD!==1)arguments[3]=sp*RK_SPD;return _m.apply(this,arguments);};}
+{const _r=raidStep;raidStep=function(u,dt){const r=u.raid;if(u.champ&&r&&r.phase==='flee'&&r.loot>0){RK_U=u;RK_SPD=raidLootMul(r.loot);try{return _r.apply(this,arguments);}finally{RK_U=null;RK_SPD=1;}}return _r.apply(this,arguments);};}
+function rkSacks(u){const r=u.raid;if(!r||!(r.loot>0))return 0;return Math.min(4,1+Math.floor(r.loot/150));}
+function drawLootSacks(u){const n=rkSacks(u);if(!n)return;const f=u.face||1,b=Math.sin((u.anim||0)*2)*1.2,base=u.mounted?-22:-10;
+  for(let i=0;i<n;i++){const sx=u.x-f*(7+i*4)+(i%2?f*2:0),sy=u.y+base-(i>>1)*6+b*(i%2?1:-1),s=5+Math.min(3,r_loot(u)/200);
+    ell(sx,sy,s,s+1.2,'#b88a3e');ell(sx,sy-s-.5,s*.55,1.4,'#7a5a28');line(sx-s*.5,sy-s+.4,sx+s*.5,sy-s+.4,'#e8c050',1);
+    if(Math.sin(G.t*6+i*1.7)>.55)ell(sx+R(-2,2),sy-s-2,1.2,1.2,'#fff4b0');ell(sx-1,sy-1,1.6,1.6,'#ffd84a');}}
+const r_loot=u=>(u.raid&&u.raid.loot)||0;
+{const _d=drawKnight;drawKnight=function(u){const res=_d.apply(this,arguments);if(u.champ&&u.raid&&u.raid.phase==='flee')drawLootSacks(u);return res;};}
+// stopped on the way back: the dropped sacks go straight back to the lair pile with a "+N" pop (plus the usual bonus)
+{const _c=raidChampDown;raidChampDown=function(u,eaten){const r=u&&u.raid,live=r&&RAID.cur===r&&!r.done,back=live?(r.loot||0):0;const res=_c.apply(this,arguments);
+  if(live&&back>0){G.rkReturned=(G.rkReturned||0)+back;if(typeof GA!=='undefined')GA.pop.push({n:back,t:0});puff(u.x,u.y-10,12,'rgba(255,216,74,',150,5);float(u.x,u.y-56,`The gold sacks drop: ${back} gold back to your hoard!`,'#ffd84a');}
+  return res;};}
+// ================= partRC: the RICH desert caravan + Sandhaven's desert soldiers & archers =================
+// One of Sandhaven's two camel caravans is a rich one: colourful camels, a treasure chest (20 gold) and two richly dressed traders.
+// It walks the roads from Sandhaven to the castle gate and back, guarded by desert soldiers (scimitar + round shield) and desert archers.
+// Kill the lead trader or the treasure camel and the 20 gold goes straight to your lair (via the auto-deposit). It comes back from Sandhaven
+// after a while, and fresh every level. Surviving guards stay on as Sandhaven's town guard; during a kingdom-wide muster the town is guarded too.
+const RCV={cur:null,gold:20,respawn:75,first:6,sol:2,arc:2,solHp:28,arcHp:22,arcRange:420,wait:6,townCap:4,milN:[2,1],milCd:30};
+function rcEnds(){return{a:{x:DTOWN.x+40,y:DTOWN.y+60},b:{x:GATE.x+60,y:GATE.y+70}};}
+function rcPath(){const e=rcEnds();let P=null;try{const q=scRoute(e.a,e.b);P=q&&q.P;}catch(_){P=null;}if(!P||P.length<2)P=[e.a,e.b];return P.map(p=>({x:p.x,y:p.y}));}
+function rcAlive(){const c=RCV.cur;return !!(c&&!c.done);}
+function mkDSol(x,y,o){return mkUnit('knight',x,y,Object.assign({foot:true,dsol:true,hp:RCV.solHp,maxHp:RCV.solHp,atk:0,colr:'#d8b878',born:G.t},o||{}));}
+function mkDArc(x,y,o){return mkUnit('archer',x,y,Object.assign({darch:true,hp:RCV.arcHp,maxHp:RCV.arcHp,shootT:R(1,3),born:G.t},o||{}));}
+function spawnRich(o){o=o||{};const P=o.path||rcPath(),ri=Math.max(0,Math.min(P.length-1,o.ri==null?0:o.ri)),dir=o.dir||1,p=o.x!=null?{x:o.x,y:o.y}:P[0];
+  // keep the desert at two caravans: retire a plain one that is out of sight
+  const plain=units.filter(u=>u.carav&&u.type==='villager'&&!u.dead&&!u.rc);if(plain.length>=2){const v=plain.sort((a,b)=>dist(b,D)-dist(a,D))[0];if(dist(v,D)>900){for(const c of units)if(c.carav&&c.type==='animal'){let L=c;while(L&&L.type==='animal')L=L.leader;if(L===v){c.dead=c.gone=true;}}v.dead=v.gone=true;}}
+  const lead=spawnVillager(p.x,p.y,'trader',DTOWN.vi);Object.assign(lead,{carav:true,rc:1,rcLead:true,route:P,ri,rcDir:dir,shirt:'#7a1f6a',turban:1,hp:14,maxHp:14,rcWait:o.wait||0});
+  const t2=spawnVillager(p.x-20,p.y+16,'trader',DTOWN.vi);Object.assign(t2,{rc:1,rcF:lead,shirt:'#1f5a8a',turban:1,hp:12,maxHp:12});
+  if(o.t2===false){t2.dead=t2.gone=true;}
+  const pal=[['#c0392b','#f1c40f','#2e86c1'],['#8e44ad','#f39c12','#16a085'],['#d35400','#27ae60','#f1c40f']],camels=[];let prev=lead;
+  const nc=o.camels==null?3:o.camels;for(let k=0;k<nc;k++){const c=mkUnit('animal',p.x-(k+1)*34,p.y,{species:'camel',carav:true,rc:1,rcPal:pal[k%3],leader:prev,hp:34,maxHp:34,face:1});if(k===0&&o.chest!==false)c.rcChest=true;units.push(c);camels.push(c);prev=c;}
+  const guards=[];const gl=o.guards||[...Array(RCV.sol)].map(()=>({k:'dsoldier'})).concat([...Array(RCV.arc)].map(()=>({k:'darcher'})));
+  gl.forEach((g,i)=>{const x=g.x!=null?g.x:p.x+R(-30,30),y=g.y!=null?g.y:p.y+R(-20,30);const u=g.k==='darcher'?mkDArc(x,y):mkDSol(x,y);if(g.hp)u.hp=g.hp;u.escort=lead;u.eo=[-1.6,1.6,-.6,.6][i%4];u.rcG=true;units.push(u);guards.push(u);});
+  RCV.cur={lead,t2,camels,guards,done:false};G.rcSpawned=(G.rcSpawned||0)+1;return RCV.cur;}
+// the lead trader walks the road there and back again (rests at each end); the second trader follows him
+{const _c=updCaravan;updCaravan=function(u,dt){if(!u.rcLead||u.type!=='villager')return _c.apply(this,arguments);u.anim=(u.anim||0)+dt*4;
+  const dd=dist(u,D);if(dd<200&&!G.over){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,75,dt);if(!u.yelp||G.t-u.yelp>6){u.yelp=G.t;float(u.x,u.y-30,['Guards! Protect the treasure!','Dragon! Hold the line!'][RI(0,1)],'#ffe0a0');}return true;}
+  if(u.rcWait>0){u.rcWait-=dt;return true;}
+  const P=u.route,t=P[u.ri];if(!t)return true;if(moveTo(u,t.x,t.y,38,dt)||dist(u,t)<16){const n=u.ri+u.rcDir;if(n<0||n>=P.length){u.rcDir=-u.rcDir;u.rcWait=RCV.wait;u.rcTrips=(u.rcTrips||0)+1;}else u.ri=n;}
+  return true;};}
+{const _v=updVillager;updVillager=function(u,dt){if(u.rcF){const L=u.rcF;if(!L.dead){u.anim=(u.anim||0)+dt*4;const dd=dist(u,D);
+    if(dd<200&&!G.over){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,75,dt);return;}
+    if(dist(u,L)>28)moveTo(u,L.x-14*(L.face||1),L.y+14,dist(u,L)>100?80:42,dt);u.face=L.x>u.x?1:-1;return;}
+    u.rcF=null;u.home=DTOWN;}return _v.apply(this,arguments);};}
+// desert archers shoot from further out while escorting
+{const _e=escortStep;escortStep=function(k,dt){if(k.darch&&k.escort&&!k.escort.dead&&dist(k,D)<RCV.arcRange&&!G.over)return false;return _e.apply(this,arguments);};}
+// town guards (former caravan guards / muster guards) keep to Sandhaven: soldiers use the 'guard' post leash, archers a short leash of their own
+{const _a=updArcher;updArcher=function(u,dt){if(u.darch&&u.dguard&&!u.retreat){const dd=dist(u,D);if(dd>450||d2(u.x,u.y,u.px,u.py)>560){if(dist(u,{x:u.px,y:u.py})>10)moveTo(u,u.px,u.py,60,dt);u.anim+=dt*6;u.face=D.x>u.x?1:-1;u.shootT=Math.max(u.shootT,.6);return;}}return _a.apply(this,arguments);};}
+function rcTownPost(i){const a=i*2.1+.5,r=110+(i%3)*40;return{x:DTOWN.x+Math.cos(a)*r,y:DTOWN.y+Math.sin(a)*r*.7};}
+function rcMakeGuard(u,i){u.escort=null;u.rcG=false;u.dguard=true;const P=rcTownPost(i);u.px=P.x;u.py=P.y;if(u.dsol){u.post='guard';u.slot='d'+i;}}
+function rcTownGuards(){return units.filter(u=>u.dguard&&!u.dead);}
+function rcRaided(why){const c=RCV.cur;if(!c||c.done)return;c.done=true;const L=c.lead,x=L.x,y=L.y;
+  D.gold+=RCV.gold;G.rcRaids=(G.rcRaids||0)+1;G.stats.richCaravans=(G.stats.richCaravans||0)+1;if(typeof tallyAdd==='function')tallyAdd('richcaravan');
+  const tc=c.camels.find(k=>k.rcChest)||L;float(tc.x,tc.y-50,`+${RCV.gold} gold! The rich caravan's treasure chest is yours`,'#ffd84a');sparkle(tc.x,tc.y,22);puff(tc.x,tc.y-20,14,'rgba(255,216,74,',140,5);
+  for(const k of c.camels)k.rcChest=false;if(typeof SFX!=='undefined')SFX.play('coin',tc.x,tc.y,1);
+  // the guards stay on as Sandhaven's town guard (oldest extras sent home if there are too many)
+  let n=rcTownGuards().length;for(const u of c.guards)if(!u.dead){rcMakeGuard(u,n++);}
+  if(!L.dead){L.rcLead=false;L.carav=false;L.home=DTOWN;}if(c.t2&&!c.t2.dead){c.t2.rcF=null;c.t2.home=DTOWN;}
+  G.rcT=RCV.respawn;RCV.cur=null;}
+function rcCheck(){const c=RCV.cur;if(!c||c.done)return;const chest=c.camels.find(k=>k.rcChest);
+  if(c.lead.dead)rcRaided('lead');else if(chest&&chest.dead)rcRaided('chest');else if(!chest&&c.camels.every(k=>k.dead))rcRaided('camels');}
+function rcUpd(dt){if(G.over)return;rcCheck();
+  if(!RCV.cur){G.rcT=(G.rcT==null?RCV.first:G.rcT)-dt;if(G.rcT<=0){G.rcT=0;spawnRich();}}
+  // too many town guards: send the extras home (out of sight)
+  const tg=rcTownGuards(),cap=RCV.townCap+(G.milOn?3:0);if(tg.length>cap)for(const u of tg.slice(0,tg.length-cap))if(dist(u,D)>900){u.dead=u.gone=true;}
+  // kingdom muster: Sandhaven's desert troops turn out to guard the town
+  G.rcMilT=(G.rcMilT||0)-dt;if(G.milOn&&G.rcMilT<=0){G.rcMilT=RCV.milCd;const s=tg.filter(u=>u.dsol).length,a=tg.filter(u=>u.darch).length;let i=tg.length;
+    for(let k=s;k<RCV.milN[0];k++){const P=rcTownPost(i);const u=mkDSol(P.x,P.y,{milG:true});rcMakeGuard(u,i++);units.push(u);}
+    for(let k=a;k<RCV.milN[1];k++){const P=rcTownPost(i);const u=mkDArc(P.x,P.y,{milG:true});rcMakeGuard(u,i++);units.push(u);}}
+  if(!G.milOn)for(const u of tg)if(u.milG&&dist(u,D)>900){u.dead=u.gone=true;}}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&!paused&&G&&D&&typeof DTOWN!=='undefined')rcUpd(dt);return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);RCV.cur=null;G.rcT=RCV.first;G.rcMilT=0;return r;};}
+// ---- tally: desert soldiers / archers get their own lines, plus raided rich caravans ----
+{const _k=tallyKeyU;tallyKeyU=function(u){if(u&&u.dsol)return'dsoldier';if(u&&u.darch)return'darcher';return _k.apply(this,arguments);};}
+TALLY_SECT.splice(2,0,{id:'desert',name:'Sandhaven (desert)',icon:'🐫',col:'#f0c878',keys:[['dsoldier','Desert soldiers'],['darcher','Desert archers'],['richcaravan','Rich caravans raided']]});
+if(typeof TALLY_LABEL!=='undefined'){TALLY_LABEL.dsoldier='Desert soldiers';TALLY_LABEL.darcher='Desert archers';TALLY_LABEL.richcaravan='Rich caravans raided';}
+// ---- drawing ----
+function drawDesertSoldier(u){const x=u.x,y=u.y,f=u.face||1,g=Math.sin((u.anim||0)*1.6);
+  ell(x,y+1.5,6,2.4,'rgba(0,0,0,.25)');ctx.save();ctx.translate(x,y);ctx.scale(1.28,1.28);
+  line(-1.4,0,-1.4+g*1.6,-4,'#5a4a3a',1.6);line(1.4,0,1.4-g*1.6,-4,'#5a4a3a',1.6);
+  poly([-3.6,-11.5,3.6,-11.5,4.6,-2.5,-4.6,-2.5],u.burn>0?'#f60':'#e2cfa0');rect(-3.6,-7.4,7.2,1.3,'#b0302a'); // sand robe + red sash
+  ell(0,-13.6,2.5,2.5,'#c99a70');ell(0,-15.4,3.4,2.2,'#f4ecd8');ell(f*.8,-16.6,2.2,1.2,'#e8dcc0');rect(-f*3.4-.4,-15.4,1,3,'#f4ecd8'); // turban + tail
+  const sw=u.swing>0?-1.2:0;ctx.strokeStyle='#dfe4ea';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(f*3,-8);ctx.quadraticCurveTo(f*(9+sw*-3),-12+sw*3,f*(8+sw*-4),-17+sw*5);ctx.stroke();rect(f*3-1,-8.6,2,1.4,'#c9a227'); // scimitar
+  ell(-f*3.6,-8,3.4,3.4,'#8a5a2a');ell(-f*3.6,-8,2.2,2.2,'#c9a227');ell(-f*3.6,-8,.8,.8,'#8a5a2a'); // round shield
+  ctx.restore();if(u.hp<u.maxHp){rect(x-7,y-26,14,2,'#400');rect(x-7,y-26,14*u.hp/u.maxHp,2,'#e44');}}
+function drawDesertArcher(u){const x=u.x,y=u.y,f=u.face||1,bob=Math.sin(u.anim||0)*1.2;
+  ell(x,y+1,4,1.8,'rgba(0,0,0,.25)');if(u.dguard)ell(x,y+1,6,2.5,'rgba(255,220,120,.3)');
+  line(x-1.2,y,x-1.2+Math.sin(u.anim||0)*1.5,y-4,'#5a4a3a',1.4);line(x+1.2,y,x+1.2-Math.sin(u.anim||0)*1.5,y-4,'#5a4a3a',1.4);
+  poly([x-3,y-10+bob*.3,x+3,y-10+bob*.3,x+3.8,y-3,x-3.8,y-3],u.burn>0?'#f60':'#d9c08a');rect(x-3,y-6.6,6,1.1,'#2a6a8a');
+  ell(x,y-12.5+bob*.3,2.4,2.4,'#c99a70');ell(x,y-14.4+bob*.3,3,1.9,'#2a6a8a');rect(x-f*3,y-14.6,1,3,'#2a6a8a'); // blue turban
+  ctx.strokeStyle='#7a4a1a';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x+f*2,y-14);ctx.quadraticCurveTo(x+f*7,y-12,x+f*4.5,y-8);ctx.quadraticCurveTo(x+f*7,y-4,x+f*2,y-2);ctx.stroke(); // recurve bow
+  line(x+f*2,y-14,x+f*2,y-2,'#eee',.6);rect(x-f*4-1,y-12,2,6,'#8a5a2a');
+  if(u.hp<u.maxHp){rect(x-7,y-22,14,2,'#400');rect(x-7,y-22,14*u.hp/u.maxHp,2,'#e44');}}
+{const _d=drawKnight;drawKnight=function(u){if(u.dsol&&!u.mounted){drawDesertSoldier(u);return;}return _d.apply(this,arguments);};}
+{const _p=drawPerson;drawPerson=function(u){if(u.darch){drawDesertArcher(u);return;}const r=_p.apply(this,arguments);
+  if(u.rc&&u.type==='villager'){const x=u.x,y=u.y,f=u.face||1;line(x-2.8,y-9.5,x+2.8,y-5,'#f1c40f',1.2);ell(x,y-15.6,1,1,'#e74c3c');ell(x+f*2.5,y-7,1,1,'#f1c40f');}return r;};}
+{const _f=drawDesertFauna;drawDesertFauna=function(u){const r=_f.apply(this,arguments);if(u.rc&&u.species==='camel'){const x=u.x,y=u.y,b=Math.abs(Math.sin(u.anim||0))*1.5,P=u.rcPal||['#c0392b','#f1c40f','#2e86c1'];
+    rect(x-14,y-35-b,28,11,P[0]);rect(x-14,y-31-b,28,2.4,P[1]);rect(x-14,y-27.5-b,28,2,P[2]); // striped saddle blanket
+    for(let i=0;i<6;i++){const tx=x-12+i*5;line(tx,y-24.5-b,tx,y-21.5-b+Math.sin(G.t*4+i)*.8,P[(i+1)%3],1.2);ell(tx,y-21-b,1,1,'#f1c40f');} // tassels
+    ell(x+16,y-20-b,1.6,1.6,'#e8c050');line(x+12,y-24-b,x+20,y-24-b,P[1],1.5); // bell + bridle
+    if(u.rcChest){rect(x-8,y-45-b,16,10,'#7a4a1a');rect(x-8,y-45-b,16,3,'#a0662a');rect(x-8.5,y-41.5-b,17,1.4,'#e8c050');rect(x-1.5,y-42-b,3,4,'#e8c050');
+      ell(x-4,y-46-b,2,1.4,'#ffd84a');ell(x+3,y-46.5-b,2,1.4,'#ffd84a');if(Math.sin(G.t*5)>.6)ell(x+R(-6,6),y-48-b,1.2,1.2,'#fff4b0');}}return r;};}
+// ---- save / load (units are not saved: snapshot the rich caravan and Sandhaven's town guard) ----
+{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);const c=RCV.cur,g=u=>({k:u.dsol?'dsoldier':'darcher',hp:Math.round(u.hp),x:Math.round(u.x),y:Math.round(u.y)});
+  d.RCV={cur:c&&!c.done&&!c.lead.dead?{x:Math.round(c.lead.x),y:Math.round(c.lead.y),ri:c.lead.ri|0,dir:c.lead.rcDir||1,wait:+(c.lead.rcWait||0).toFixed(1),t2:!!(c.t2&&!c.t2.dead),
+    camels:c.camels.filter(k=>!k.dead).length,chest:c.camels.some(k=>k.rcChest&&!k.dead),guards:c.guards.filter(u=>!u.dead).map(g)}:null,town:rcTownGuards().map(u=>Object.assign(g(u),{mil:!!u.milG}))};return d;};}
+{const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);if(!d||!d.RCV)return r;
+  for(let i=units.length-1;i>=0;i--){const u=units[i];if(u.rc||u.dsol||u.darch)units.splice(i,1);}RCV.cur=null;
+  if(d.RCV.cur){const c=d.RCV.cur;spawnRich({x:c.x,y:c.y,ri:c.ri,dir:c.dir,wait:c.wait,t2:c.t2,camels:c.camels,chest:c.chest,guards:c.guards});G.rcSpawned=Math.max(0,(G.rcSpawned||1)-1);}
+  (d.RCV.town||[]).forEach((t,i)=>{const u=t.k==='darcher'?mkDArc(t.x,t.y):mkDSol(t.x,t.y);u.hp=t.hp||u.hp;if(t.mil)u.milG=true;rcMakeGuard(u,i);units.push(u);});
+  return r;};}
+// ======================= partBT: EVERY BITE HURTS =======================
+// A bite that can't swallow its target (too big, an alpha or champion not yet worn down, the prince, bosses, bulls, wild dragons, a whale...)
+// still deals bite damage, with a jaw-snap impact cue and a red "-N". Edible targets are eaten exactly as before.
+// The bite never takes a tough target below 1 HP, so you wear it down and then swallow it. King William and Princess Elizabeth are untouchable.
+const BT={dmg:18,cues:[],hits:0,last:null};
+function btDmg(u){return Math.round(BT.dmg*(D.alt<.3?1:.8)*(G.lvl>1?1+.05*(G.lvl-1):1));}
+function btSafe(u){return !u||u.dead||u.inside||u.princess||u.isPrincess||u.isKing||u.king;}
+function btCue(u,n){const x=u.x,y=u.y-(u.type==='sea'?10:22);BT.cues.push({x,y,t:0,n});if(BT.cues.length>12)BT.cues.shift();
+  if(n>0)float(x+30,y-4,`-${n}`,'#ff5a4a');G.shake=Math.max(G.shake||0,2.5);if(typeof SFX!=='undefined'&&SFX.chomp)SFX.chomp(1);}
+{const _te=tryEat;tryEat=function(){
+  if(!G||G.over||G.won||scene!=='play')return _te.apply(this,arguments);
+  const T=biteTargets().filter(u=>!btSafe(u)),hp=new Map(T.map(u=>[u,u.hp])),pr=D.princess,gold=(G.stash||0)+(D.gold||0);
+  const r=_te.apply(this,arguments);
+  if(!T.length||D.princess!==pr||(G.stash||0)+(D.gold||0)!==gold)return r;   // nothing in the jaws, or it was a grab (princess / gold)
+  if(T.some(u=>u.dead||u.eaten))return r;                                     // swallowed (or killed): eaten as before
+  const u=T[0],h0=hp.get(u);if(btSafe(u))return r;
+  if(!(h0-u.hp>0)){const d=Math.min(btDmg(u),Math.max(0,Math.ceil(u.hp)-1));if(d>0)hurtUnit(u,d,'bite');}
+  const dealt=Math.max(0,Math.round(h0-(u.dead?0:u.hp)));BT.hits++;BT.last={sp:u.species||u.kind||u.type,dealt,hp:u.hp,max:u.maxHp};btCue(u,dealt);
+  D.eatT=Math.max(D.eatT||0,.3);return r;};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);for(const c of BT.cues)c.t+=dt;BT.cues=BT.cues.filter(c=>c.t<.45);return r;};}
+{const _gp=gfxPost;gfxPost=function(){const r=_gp.apply(this,arguments);
+  for(const c of BT.cues){const k=c.t/.45,a=1-k,s=1+k*.6;ctx.save();ctx.globalAlpha=a;ctx.translate(c.x,c.y);ctx.scale(s,s);
+    ctx.strokeStyle='#fff3c0';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,16+k*10,0,TAU);ctx.stroke();
+    ctx.fillStyle='#ffffff';const g=(1-Math.min(1,k*3))*7;   // two rows of teeth snapping shut
+    for(let i=-2;i<=2;i++){ctx.beginPath();ctx.moveTo(i*6-3,-9-g);ctx.lineTo(i*6+3,-9-g);ctx.lineTo(i*6,-2-g);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(i*6-3,9+g);ctx.lineTo(i*6+3,9+g);ctx.lineTo(i*6,2+g);ctx.closePath();ctx.fill();}
+    ctx.restore();BT.drawn=(BT.drawn||0)+1;}return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
@@ -5958,7 +6658,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
     txt(names[i],tx,my+62,10,G.alarm>=t?'#ffd080':'#999','center',G.alarm>=t);});
   txt(`Level ${G.level}: ${LEVEL_NAMES[G.level]}`,mx+mw,my+18,11,'#fff','right',false);
   if(G.sinceDmg>6&&G.alarm>0)txt(coolMul()>1.4?'cooling fast…':'cooling…',mx,my+18,11,'#9cf','left',false);
-  {const c=concern();panel(VW/2-130,my+74,260,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}   ·   Treasury ${treasury()}g`,VW/2,my+86,10,c.col,'center',false);}
+  {const c=concern();panel(VW/2-100,my+74,200,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}`,VW/2,my+86,10,c.col,'center',false);}
   if(gateBroken()){const s=gateStruct(),[cw,cs]=COST.gate,st=s.state==='building'?`rebuilding ${Math.round(s.build*100)}%`:s.paid||s.builder?'engineers on the way':G.t-(s.ruinT||0)<GATE_REBUILD_WAIT?'rubble settling':(G.wood<cw||G.stone<cs)?`needs ${cw} wood + ${cs} stone`:'awaiting engineers';
     const pl=.75+.25*Math.sin(G.t*4);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(VW/2-190,my+94,380,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(VW/2-189.5,my+94.5,379,19);
     txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller`,VW/2,my+108,11,'#ffd8b0','center');}
@@ -5966,7 +6666,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   else{panel(10,186+hy,250,26);rect(16,192+hy,238*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,204+hy,11);}
   // right panel: score + stockpiles
   // goal panel
-  panel(10,118+hy,250,64);txt(`CASTLE LV ${G.lvl}  ·  Gold carried ${D.gold}`,20,136+hy,12,'#ffd84a');txt(`Stashed in lair: ${G.stash}  (+${G.stash*5} pts)`,20,153+hy,11,'#ffe8a0','left',false);
+  panel(10,118+hy,250,64);txt(`CASTLE LV ${G.lvl}`,20,136+hy,12,'#ffd84a');txt(`Lair hoard worth +${G.stash*5} pts`,20,153+hy,11,'#ffe8a0','left',false);
   txt(D.princess?'Princess Elizabeth: in your claws! Fly to the LAIR':PR.state==='lair'?'Princess Elizabeth: in your lair':(roofOpen()?'Princess Elizabeth: the keep roof is broken: grab her!':'Princess Elizabeth: inside the keep (break its stone roof)'),20,171+hy,11,D.princess?'#ff9ad0':'#f8c8e0','left',false);
   const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,196+hy,11,'#ffc080','left');
   drawStockPill(); // score, hunter counts, ruins/rebuilding live in the pause menu / nowhere now: HUD shows only the stockpile icons
@@ -5997,7 +6697,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
     txt(b.text,VW/2,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,VW/2,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,VW/2,by+50,sm?12:14,'#ffc0a0','center',false);ctx.globalAlpha=1;}
   // controls reminder
   if(!sm&&!TOUCH.on)txt(GPAD.connected?'Stick move · A/RT fire · Y fly/land · X eat/grab · B stomp/dive/scratch · LB map · Start pause':'WASD move · Space fire · F fly/land · E eat/grab · Q stomp/dive/scratch · M map · P pause',14,VH-12,12,'rgba(255,255,255,.75)','left',false);
-  if(!sm&&!TOUCH.on&&!G.over&&!G.won)txt(D.princess?'Goal: carry Princess Elizabeth to your LAIR (follow the gold arrow)':D.gold>0?'Goal: stash the gold in your LAIR, or free Princess Elizabeth from the keep (south castle)':'Goal: raid the castle (south): grab gold piles, break the keep\'s stone roof and grab Princess Elizabeth (E / X)',VW/2,VH-12,13,'#ffe8a0','center');
+  if(!sm&&!TOUCH.on&&!G.over&&!G.won)txt(D.princess?'Goal: carry Princess Elizabeth to your LAIR (follow the gold arrow)':'Goal: raid the castle (south) for gold & the princess (E/X)',VW/2,VH-12,13,'#ffe8a0','center');
   if(G.over)drawOver();else if(G.won)drawWon();if(paused&&!G.over&&!G.won)drawPause();}
 function center(lines,top){let y=top;for(const [s,size,col,bold] of lines){txt(s,VW/2,y,size,col,'center',bold);y+=size*1.45;}}
 let titleSel=0;
@@ -6034,9 +6734,9 @@ function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,
     'FIRE BAR: the red bar under stamina drains while you breathe fire and refills when you stop. Empty = no fire until it recovers a bit. It glows orange while you hold lava shots.',
     'MONSTER FEAST: wear down the giant squid or a sand worm, then eat it: +10% MAX HEALTH each time, fully healed. Your hoard, trophies and bonus carry over between castle levels (reset on death or a new game).',
     'DIVE STOMP: press stomp while flying to tuck your wings and plummet: a huge shockwave that smashes wooden buildings flat and cracks stone (2.4 s cooldown, 6 stamina).',
-    'Villagers fight fires from their wells, rebuild with wood and stone, replant burnt gardens and build fireproof STONE bridges: smash those with stomps or a dive slam.',
+    'Villagers fight fires with buckets from ANY water (wells, town fountains, rivers, ponds, the sea), rebuild with wood and stone, replant burnt gardens and build fireproof STONE bridges: smash those with stomps or a dive slam.',
     'THE SEA (east): fly over water, or land in sea, lake or river to SWIM (slower; stomp becomes a CLAW SCRATCH that rakes boats, sharks, seals, pirates and squid tentacles; bite and fire still work). Hunger drains faster over water!',
-    'Eat fish, sharks and whales; sink boats and cartoon PIRATES (cannons!) for their gold. Rest at the Lonely Lighthouse, then face the GIANT SQUID.',
+    'Eat fish, sharks and whales; sink boats and cartoon PIRATES (archers!) for their gold. Rest at the Lonely Lighthouse, then face the GIANT SQUID.',
     'Wildflowers carpet every region and villagers tend fenced gardens: burn them and they scorch, then regrow. The music follows you from meadow to sea to desert (N mutes).'];
   for(const t of tips){txt(t,W0/2,y,13,'#e8d6c0','center',false);y+=19;}
   txt(GPAD.connected?'🎮 Controller ready':'Plug in an Xbox / PlayStation controller any time',W0/2,y+12,13,GPAD.connected?'#9fd0ff':'#999','center',false);
@@ -6071,7 +6771,7 @@ function drawMap(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),mmh=(WY1-WY0)*s,X=x=>mmx
   for(const u of units)if(u.tax&&!u.dead&&seen(u.x,u.y)){ctx.fillStyle='#c6f';ctx.fillRect(X(u.x)-q/2,Y(u.y)-q/2,q,q);}
   if(typeof storeS==='function'){const s=storeS();if(s){ctx.fillStyle=s.state==='ok'?'#d8a860':'#6a5a4a';ctx.fillRect(X(s.x)-(big?4:2),Y(s.y)-(big?4:2),big?8:4,big?8:4);if(big)txt(s.state==='ok'?'Storehouse':'Storehouse (wrecked)',X(s.x)-8,Y(s.y)+16,9,'#e8d0a0','center');}
     for(const c of carts)if(c.supply&&!c.wrecked){ctx.fillStyle=c.kind==='wood'?'#c08040':'#c8c8c8';ctx.fillRect(X(c.x)-(big?3:1.5),Y(c.y)-(big?3:1.5),big?6:3,big?6:3);}}
-  txt(big?`♜ Castle Aldric · treasury ${treasury()}g`:`Treasury ${treasury()}g`,X(CASTLE.x),Y(CASTLE.y)-(big?20:7),big?11:8,'#ffd84a','center');
+  {const fs=big?11:8,sc=fs/12,a=typeof uiAmt==='function'?uiAmt(treasury()):String(treasury()),cy=Y(CASTLE.y)-(big?20:7);if(big)txt('♜ Castle Aldric',X(CASTLE.x),cy-14,fs,'#ffd84a','center');ctx.font=`bold ${fs}px Georgia`;const w=22*sc+ctx.measureText(a).width,x=X(CASTLE.x)-w/2;if(typeof uiCastle==='function'){uiCastle(x+8*sc,cy-fs*.35,sc);uiCoin(x+15*sc,cy-fs*.35+3*sc,sc);}txt(a,x+22*sc,cy,fs,'#ffd84a','left');}
   ell(X(LAIR.x),Y(LAIR.y),big?8:5,big?6:4,'#c80');txt(big?'LAIR (home)':'LAIR',X(LAIR.x),Y(LAIR.y)-6,9,'#ffd27a','center');
   if(seen(CABIN.x,CABIN.y))ell(X(CABIN.x),Y(CABIN.y),3,3,'#7c4');if(PR.state==='tower'){const pb=big?5:3.5;ell(X(PR.x),Y(PR.y),pb+1.5,pb+1.5,'#fff');ell(X(PR.x),Y(PR.y),pb,pb,'#f6c');txt(big?(roofOpen()?'♛ Princess (roof broken!)':'♛ Princess (in the keep)'):'♛',X(PR.x)-(big?24:0),Y(PR.y)+(big?4:-5),big?10:9,'#ffb0dc',big?'right':'center',false);}
   ell(X(D.x),Y(D.y),big?6:4,big?6:4,Math.floor(G.t*4)%2?'#f33':'#ff0');

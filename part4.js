@@ -4,7 +4,7 @@ function updAlarm(dt){
   let L=0;for(const t of THRESH)if(G.alarm>=t)L++;
   G.waveCD-=dt;G.reinforceT-=dt;
   if(L>G.lastLevel&&G.waveCD<=0)spawnWave(L);
-  else if(L>=1&&G.reinforceT<=0&&G.waveCD<=0){const foes=units.filter(u=>!u.dead&&!u.post&&(u.type==='knight'||u.type==='archer')).length;if(foes<4+L*3)spawnWave(L,true);}
+  else if(L>=1&&G.reinforceT<=0&&G.waveCD<=0){const foes=units.filter(u=>!u.dead&&!u.post&&!u.prince&&(u.type==='knight'||u.type==='archer')).length;if(foes<4+L*3)spawnWave(L,true);}
   if(L<G.lastLevel)G.lastLevel=L;
   G.level=L;
   // enemies give up and ride home if the meter cools to Calm

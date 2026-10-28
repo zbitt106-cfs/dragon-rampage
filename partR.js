@@ -68,23 +68,57 @@ const onRoad=(x,y)=>{const{V}=roadGraph();for(let i=0;i<V.length;i+=1)if(d2(x,y,
 KDEF.well={name:'Village well',hp:270,stone:1,cost:[0,2],gold:[0,1],pts:45,alarm:3,sz:22}; // 3x a hut's 90 hp
 COST.well=KDEF.well.cost;STRUCT_NAME.well=KDEF.well.name;
 function roadNear(x,y,r){for(const R of buildRoads()){if(R.kind==='bridge')continue;const hw=R.w/2+r;for(let i=0;i<R.pts.length-1;i++){const a=R.pts[i],b=R.pts[i+1],dx=b.x-a.x,dy=b.y-a.y,L2=dx*dx+dy*dy||1,t=clamp(((x-a.x)*dx+(y-a.y)*dy)/L2,0,1);if(d2(x,y,a.x+dx*t,a.y+dy*t)<hw)return true;}}return false;}
-function wellSpotOK(x,y){if(roadWet(x,y,26)||inRange(x,y)||castleBox(x,y)||roadNear(x,y,14))return false;for(const s of structures)if(s.state!=='ruin'&&d2(x,y,s.x,s.y)<(s.kind==='well'?120:48))return false;
+function wellSpotOK(x,y){if(roadWet(x,y,26)||inRange(x,y)||castleBox(x,y)||roadNear(x,y,14))return false;for(const s of structures)if(s.state!=='ruin'&&d2(x,y,s.x,s.y)<(isWaterSrc(s)?120:48))return false;
   for(const f of FARMS){const F=f.field;if(x>F.x-20&&x<F.x+F.w+20&&y>F.y-20&&y<F.y+F.h+20)return false;}return true;}
-function placeWells(){VILLAGES.forEach((v,vi)=>{const huts=structures.filter(s=>s.v===vi&&(s.kind==='hut')).length,big=huts>=8||MARKETS.some(M=>M.v===vi);const want=big?2:1;let got=0;
-  for(let ring=0;ring<8&&got<want;ring++)for(let k=0;k<16&&got<want;k++){const a=k/16*TAU+ring*.37+(got?Math.PI:0),r=40+ring*22+(got?60:0),x=v.x+Math.cos(a)*r,y=v.y+Math.sin(a)*r*.8;
+// bigger, nicer towns (8+ huts or a market) get a stone FOUNTAIN in the town square (+ at most 1 well); small villages keep their well
+KDEF.fountain={name:'Town fountain',hp:540,stone:1,cost:[0,4],gold:[1,3],pts:90,alarm:4,sz:30}; // 2x a well, 6x a hut
+COST.fountain=KDEF.fountain.cost;STRUCT_NAME.fountain=KDEF.fountain.name;
+const isWaterSrc=s=>s.kind==='well'||s.kind==='fountain';
+function bigTown(vi){const huts=structures.filter(s=>s.v===vi&&s.kind==='hut').length;return huts>=8||MARKETS.some(M=>M.v===vi);}
+function placeWells(){VILLAGES.forEach((v,vi)=>{const big=bigTown(vi);let got=0,fnt=0;
+  if(big)for(let ring=0;ring<10&&!fnt;ring++)for(let k=0;k<(ring?16:1)&&!fnt;k++){const a=k/16*TAU+ring*.37,r=ring*20,x=v.x+Math.cos(a)*r,y=v.y+Math.sin(a)*r*.8;
+    if(wellSpotOK(x,y)&&!structures.some(t=>t.state!=='ruin'&&d2(x,y,t.x,t.y)<70)){const s=kAdd('fountain',x,y,vi);s.hasGold=true;fnt=1;}}
+  const want=1;
+  for(let ring=0;ring<8&&got<want;ring++)for(let k=0;k<16&&got<want;k++){const a=k/16*TAU+ring*.37+(fnt?Math.PI:0),r=40+ring*22+(fnt?60:0),x=v.x+Math.cos(a)*r,y=v.y+Math.sin(a)*r*.8;
     if(wellSpotOK(x,y)){const s=kAdd('well',x,y,vi);s.hasGold=true;got++;}}
-  v.wells=got;});}
-function nearestWell(x,y){let b=null,bd=1e18;for(const s of structures){if(s.kind!=='well'||s.state!=='ok')continue;const d=d2(x,y,s.x,s.y);if(d<bd){bd=d;b=s;}}return b&&bd<900?b:null;}
-// fetching water: from the nearest standing well; with none in reach, scoop slowly from a trough/puddle on the spot (much slower fire-fighting)
-function wellFetch(u,w,dt){if(w.well&&w.well.state!=='ok')w.well=nearestWell(u.x,u.y);
+  v.wells=got;v.fountains=fnt;});}
+function nearestWell(x,y){let b=null,bd=1e18;for(const s of structures){if(!isWaterSrc(s)||s.state!=='ok')continue;const d=d2(x,y,s.x,s.y);if(d<bd){bd=d;b=s;}}return b&&bd<900?b:null;}
+// ANY water fights fires: wells, fountains, rivers, ponds, the lake and the sea shore - whichever is nearest the fire
+const anyWater=(x,y)=>inWater(x,y)||(typeof isFresh==='function'&&isFresh(x,y))||(typeof inOasis==='function'&&inOasis(x,y));
+function waterKind(x,y){if(inSea(x,y))return 'sea';if(inLake(x,y))return 'lake';if(riverD(x,y)<RIVW||jriverD(x,y)<JRW)return 'river';return 'pond';}
+function natWater(fx,fy,maxR){maxR=maxR||900;for(let r=24;r<=maxR;r+=24){const n=Math.max(12,Math.round(r/14));for(let k=0;k<n;k++){const a=k/n*TAU,x=fx+Math.cos(a)*r,y=fy+Math.sin(a)*r;
+    if(!anyWater(x,y))continue;let bx=x,by=y;for(let t=0;t<12&&anyWater(bx,by);t++){bx-=Math.cos(a)*10;by-=Math.sin(a)*10;}if(anyWater(bx,by))continue;
+    return{x:bx,y:by,state:'ok',nat:waterKind(x,y),r};}}return null;}
+function waterFor(f,u){const now=G.t;if(!f.wsrc||now-f.wsrcT>4){f.wsrcT=now;let best=null,bd=900;
+    for(const s of structures){if(!isWaterSrc(s)||s.state!=='ok')continue;const d=dist(s,f);if(d<bd){bd=d;best=s;}}
+    const n=natWater(f.x,f.y,Math.min(bd,900));if(n&&n.r<bd){best=n;}f.wsrc=best;}
+  if(f.wsrc&&u&&dist(u,f.wsrc)>1400)return nearestWell(u.x,u.y);return f.wsrc;}
+// fetching water: from the source picked for the fire; with none in reach, scoop slowly from a trough/puddle on the spot (much slower fire-fighting)
+function wellFetch(u,w,dt){if(w.well&&w.well.state!=='ok')w.well=w.f?waterFor(Object.assign(w.f,{wsrc:null}),u):nearestWell(u.x,u.y);
   if(!w.well){if(!w.slowMsg){w.slowMsg=1;if(dist(u,D)<900)float(u.x,u.y-30,'No well! Scooping a puddle…','#a8d0ff');}w.t-=dt*.1;return w.t<=0;}
-  if(moveTo(u,w.well.x+14,w.well.y+10,55,dt)){w.t-=dt;return w.t<=0;}return false;}
+  const nat=w.well.nat,tx=w.well.x+(nat?0:14),ty=w.well.y+(nat?0:10);
+  if(moveTo(u,tx,ty,55,dt)||(nat&&dist(u,w.well)<16)){if(nat&&!w.natMsg){w.natMsg=1;G.natFetch=(G.natFetch||0)+1;G.natLast=nat;if(dist(u,D)<900)float(u.x,u.y-30,nat==='sea'?'A bucket from the sea!':nat==='river'?'A bucket from the river!':'A bucket from the '+nat+'!','#a8d0ff');}
+    w.t-=dt;return w.t<=0;}return false;}
 function biteWell(){if(D.alt>=.3)return false;const mx=D.x+Math.cos(D.ang)*70,my=D.y+Math.sin(D.ang)*70;
-  for(const s of structures){if(s.kind!=='well'||s.state!=='ok'||d2(mx,my,s.x,s.y)>60)continue;HEAVY=true;try{hurtStruct(s,50);}finally{HEAVY=false;}
-    D.eatCD=.6;D.eatT=.3;puff(s.x,s.y-10,8,'rgba(170,165,150,',90,6);float(s.x,s.y-40,s.state==='ruin'?'CRUNCH! The well caves in':'Crunch! You gnaw the well stones','#d8d0c0');if(typeof SFX!=='undefined'&&SFX.play)SFX.play('crashStone',s.x,s.y,.5);return true;}return false;}
+  for(const s of structures){if(!isWaterSrc(s)||s.state!=='ok'||d2(mx,my,s.x,s.y)>(s.kind==='fountain'?72:60))continue;HEAVY=true;try{hurtStruct(s,50);}finally{HEAVY=false;}
+    D.eatCD=.6;D.eatT=.3;puff(s.x,s.y-10,8,'rgba(170,165,150,',90,6);float(s.x,s.y-40,s.kind==='fountain'?(s.state==='ruin'?'CRASH! The fountain topples':'Crunch! The fountain is solid stone'):s.state==='ruin'?'CRUNCH! The well caves in':'Crunch! You gnaw the well stones','#d8d0c0');if(typeof SFX!=='undefined'&&SFX.play)SFX.play('crashStone',s.x,s.y,.5);return true;}return false;}
 function drawWell(s){const x=s.x,y=s.y;if(s.state!=='ok'){for(let i=0;i<6;i++){const a=i,b=hsh01(s)*7+i;ell(x+Math.cos(b)*12,y+Math.sin(b)*5,6,4,i%2?'#8a8a90':'#6e6e74');}return;}
   ell(x+4,y+4,20,7,'rgba(0,0,0,.22)');ell(x,y,17,8,'#6e6e76');rect(x-17,y-12,34,12,'#8a8a92');ell(x,y-12,17,8,'#9c9ca4');ell(x,y-12,11,5,'#1e3a6a');ell(x-3,y-13,4,1.5,'rgba(255,255,255,.35)');
   for(let i=0;i<5;i++){const xx=x-15+i*7.5;line(xx,y-12,xx,y,'rgba(60,60,66,.5)',1);}line(x-17,y-6,x+17,y-6,'rgba(60,60,66,.45)',1);
   rect(x-15,y-36,3,26,'#6b4a26');rect(x+12,y-36,3,26,'#6b4a26');poly([x-20,y-34,x,y-46,x+20,y-34],'#93622d');poly([x,y-46,x+20,y-34,x+12,y-34],'#7a4f22');
   line(x-12,y-28,x+12,y-28,'#5a3a1a',2);line(x,y-28,x,y-16,'#999',1);rect(x-3,y-18,6,5,'#7a5a30');
   if(s.hp<s.maxHp*.6){line(x-8,y-11,x-3,y-3,'#333',1.2);line(x+6,y-10,x+9,y-2,'#333',1.2);}}
+
+function drawFountain(s){const x=s.x,y=s.y;if(s.state!=='ok'){for(let i=0;i<9;i++){const b=hsh01(s)*7+i*1.3;ell(x+Math.cos(b)*20,y+Math.sin(b)*8,7,4.5,i%2?'#a8a8b0':'#8a8a92');}
+    ell(x,y,14,5,'rgba(90,140,200,.35)');return;}
+  const t=G.t+(s.id||0)*3;ell(x+5,y+6,32,11,'rgba(0,0,0,.22)');
+  // octagonal basin
+  ell(x,y,30,12,'#8e8e98');rect(x-30,y-10,60,10,'#a4a4ae');ell(x,y-10,30,12,'#b8b8c2');ell(x,y-10,25,9.5,'#2f6fb0');
+  for(let i=0;i<7;i++){const xx=x-26+i*8.6;line(xx,y-10,xx,y,'rgba(70,70,80,.45)',1);}
+  for(let i=0;i<3;i++){const ph=(t*.9+i/3)%1;ctx.strokeStyle=`rgba(220,240,255,${.5*(1-ph)})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(x,y-10,6+ph*16,2.4+ph*6,0,0,TAU);ctx.stroke();}
+  // pillar + upper bowl
+  rect(x-4,y-34,8,24,'#a0a0aa');ell(x,y-34,13,5,'#b8b8c2');ell(x,y-35,9,3.2,'#3f80c0');rect(x-2,y-46,4,11,'#a0a0aa');ell(x,y-46,4,2,'#c8c8d0');
+  // spray
+  for(let i=0;i<6;i++){const a=i/6*TAU+t,f=(t*1.6+i/6)%1,px=x+Math.cos(a)*f*16,py=y-48+(-18*f+30*f*f);ell(px,py,1.6,2.2,'rgba(200,230,255,.85)');}
+  for(let i=0;i<4;i++){const a=i/4*TAU+t*.7;line(x+Math.cos(a)*11,y-33,x+Math.cos(a)*17,y-14,'rgba(190,225,255,.55)',1.2);}
+  if(s.hp<s.maxHp*.6){line(x-14,y-8,x-8,y,'#333',1.3);line(x+10,y-9,x+14,y-1,'#333',1.3);line(x-2,y-30,x+2,y-22,'#333',1);}}
