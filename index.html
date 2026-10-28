@@ -543,7 +543,7 @@ function updDragon(dt){
   const wasSwim=D.swim;D.swim=D.mode==='ground'&&D.alt<.25&&inWater(D.x,D.y)&&!onBridge(D.x,D.y);D.overWater=D.alt>=.25&&inWater(D.x,D.y);
   if(D.swim&&!wasSwim){puff(D.x,D.y,24,'rgba(220,240,255,',150,12);if(!G.swimTip){G.swimTip=1;float(D.x,D.y-90,'Splash! Swimming: slower. Stomp becomes a CLAW SCRATCH (Q); bite & fire still work','#bfe6ff');}}
   if(D.swim&&D.mode==='ground')D.st=Math.max(0,D.st-DR.groundRegen*.5*dt); // half stamina regen in the water
-  const sp=lerp(DR.groundSpeed,DR.airSpeed,D.alt)*(D.eatT>0?0.4:1)*(D.stompT>0?0.3:1)*(D.swim?0.55:1);
+  const sp=lerp(DR.groundSpeed,DR.airSpeed,D.alt)*(typeof updCruise==='function'?updCruise(dt,ix,iy):1)*(D.eatT>0?0.4:1)*(D.stompT>0?0.3:1)*(D.swim?0.55:1);
   const acc=D.alt>0.5?4:8;D.vx=lerp(D.vx,ix*sp,Math.min(1,acc*dt));D.vy=lerp(D.vy,iy*sp,Math.min(1,acc*dt));
   const ox_=D.x,oy_=D.y;D.x=clamp(D.x+D.vx*dt,WX0+60,WX1-60);D.y=clamp(D.y+D.vy*dt,WY0+60,WY1-60);
   // castle walls block a walking dragon (fly over them, or smash the gate)
@@ -4646,7 +4646,7 @@ const WD_CRAGS=(()=>{let s=90210;const r=()=>{s=(s*16807)%2147483647;return s/21
   for(let t=0;out.length<14&&t<400;t++){const a=r()*TAU,k=Math.sqrt(r())*.86,x=Math.round(WD_E.x+Math.cos(a)*WD_E.rx*k),y=Math.round(WD_E.y+Math.sin(a)*WD_E.ry*k);
     if(WD_NESTS.some(n=>d2(x,y,n.x,n.y)<260)||out.some(c=>d2(x,y,c.x,c.y)<300))continue;out.push({x,y,s:.8+r()*.6,v:Math.floor(r()*3)});}return out;})();
 function addPeaksDecor(r,Rr){for(const c of WD_CRAGS)DECOR.push({k:'wdcrag',x:c.x,y:c.y,s:c.s,v:c.v});
-  WD_NESTS.forEach((n,i)=>DECOR.push({k:'wdnest',x:n.x,y:n.y,eggs:2+i%3,i}));
+  WD_NESTS.forEach((n,i)=>DECOR.push({k:'wdnest',x:n.x,y:n.y,eggs:0,i})   /* roost nests are empty: the eggs are all in the guarded egg nest (partWF) */);
   for(let i=0;i<70;i++){const x=Rr(WD_E.x-WD_E.rx,WD_E.x+WD_E.rx),y=Rr(WD_E.y-WD_E.ry,WD_E.y+WD_E.ry);if(inDP(x,y,.95))DECOR.push({k:'wdrock',x,y,s:Rr(.5,1.2)});}}
 {const _ad=addDesertDecor;addDesertDecor=function(r,Rr){_ad(r,Rr);addPeaksDecor(r,Rr);};}
 const WD_DECOR=new Set(['wdcrag','wdnest','wdrock']);
@@ -4668,7 +4668,7 @@ HEAL.wdragon=45;FOOD.wdragon=45;FAUNA_ART.add('wdragon');
 const WD_N=6,WD_COLS=[['#3f9a4a','#22602a','#d8f0a8','rgba(40,110,50,.9)'],['#3a6fc8','#20407a','#b8d8ff','rgba(40,80,160,.9)'],['#8a4ac8','#52287a','#e8c8ff','rgba(100,50,150,.9)'],
   ['#d8a830','#8a6a18','#fff0a8','rgba(170,120,30,.9)'],['#2aa8a0','#16645e','#c0fff0','rgba(30,120,110,.9)'],['#e07a2a','#8a4210','#ffe0a8','rgba(170,80,30,.9)'],['#9aa4b0','#5a6470','#f4f8fc','rgba(110,120,135,.9)']];
 const WD_SCALE=.45; // vs. the player's draw scale DS: about 45% of the player's size
-HN_DIET.wdragon={prey:['mgoat','goat','eagle','hawk','sparrow'],r:700};HN_NICE.wdragon='a wild dragon';HN_WHO.wdragon='A wild dragon';
+HN_DIET.wdragon={prey:['mgoat','goat','cougar','eagle','hawk','sparrow'],r:700};HN_NICE.wdragon='a wild dragon';HN_WHO.wdragon='A wild dragon';
 function mkWD(x,y,col,nest,o){const u=mkUnit('animal',x,y,Object.assign({species:'wdragon',wild:true,free:true,zone:'drpeaks',hp:FAUNA.wdragon.hp,maxHp:FAUNA.wdragon.hp,col,nest,st:'perch',alt:0,ang:R(0,TAU),flapT:R(0,6),t:R(2,8),cd:0,fcd:0,fireT:0,full:R(10,40),
     home:{x:WD_E.x-WD_E.rx,y:WD_E.y-WD_E.ry,w:WD_E.rx*2,h:WD_E.ry*2}},o||{}));units.push(u);return u;}
 function wdPerchSpot(u){const P=WD_CRAGS.concat(WD_NESTS);let best=P[0],bd=1e9;for(const p of P){const d=d2(p.x,p.y,u.x,u.y)+R(0,900);if(d<bd&&!units.some(o=>o!==u&&!o.dead&&o.species==='wdragon'&&o.perch===p)){bd=d;best=p;}}return best;}
@@ -4696,14 +4696,14 @@ function updWD(u,dt){const easy=G.easy,dd=dist(u,D);u.cd-=dt;u.fcd-=dt;u.t-=dt;u
   if(u.st!=='attack'&&u.st!=='flee'&&thr&&u.hp>u.maxHp*.3&&(dd<aggR||(u.angry&&G.t-u.angry<5&&dd<900)))wdAggro(u);
   if(u.st==='attack'){u.atkT-=dt;if(!thr||u.atkT<=0||u.hp<u.maxHp*.3){u.st=u.hp<u.maxHp*.3?'flee':'home';if(u.st==='flee')float(u.x,u.y-50,'Eep! The wild dragon flees to its nest','#ffe6a8');return;}
     up(D.alt>.5?.95:.7);u.orb=(u.orb||R(0,TAU))+dt*(1+u.col*.07);const R0=dd>260?0:110;wdMove(u,D.x+Math.cos(u.orb)*R0,D.y+Math.sin(u.orb)*R0*.7,FAUNA.wdragon.sp*(easy?.8:1),dt);
-    if(dd<240&&dd>60&&u.fcd<=0){u.fcd=easy?4.5:2.8;u.ang=Math.atan2(D.y-u.y,D.x-u.x);wdFire(u,1);const dmg=easy?2:4;hurtDragon(dmg,'wdragon');float(D.x+R(-20,20),D.y-heightOf()-80,`Fwoosh! Wild dragon fire! -${dmg}`,'#ffb070');}
-    else if(dd<80&&u.cd<=0){u.cd=easy?2.2:1.4;const dmg=easy?3:FAUNA.wdragon.bite;hurtDragon(dmg,'wdragon');float(D.x+R(-20,20),D.y-heightOf()-70,`Wild dragon bite! -${dmg}`,'#ffb0a0');}
+    // (their weak fire is only for hunting: against you they just bite)
+    if(dd<80&&u.cd<=0){u.cd=easy?2.2:1.4;const dmg=easy?3:FAUNA.wdragon.bite;hurtDragon(dmg,'wdragon');float(D.x+R(-20,20),D.y-heightOf()-70,`Wild dragon bite! -${dmg}`,'#ffb0a0');}
     return;}
   if(u.st==='flee'||u.st==='home'){up(.8);const n=WD_NESTS[u.nest]||WD_NESTS[0];if(wdMove(u,n.x+(u.col%2?24:-24),n.y,FAUNA.wdragon.sp*(u.st==='flee'?1.1:.7),dt)){u.st='perch';u.perch=n;u.t=R(10,18);}return;}
   const T=u.hPrey;
   if(T){if(!hnAlive(T)||u.hT>14||!inDP(T.x,T.y,1)){hnDrop(u);u.full=R(6,12);u.st='fly';return;}u.hT+=dt;up(T.flap!==undefined?.9:.55);const d=dist(u,T);
-    if(d<34){hnCatch(u,T);u.st='perch';u.perch=null;u.t=R(4,8);return;}
-    wdMove(u,T.x,T.y,FAUNA.wdragon.sp*1.12,dt);if(d<150&&u.fcd<=0){u.fcd=3;wdFire(u,.6);}T.hChased=G.t;return;}
+    if(d<34){if(wdPreyResists(u,T))return;hnCatch(u,T);u.st='perch';u.perch=null;u.t=R(4,8);return;}
+    wdMove(u,T.x,T.y,FAUNA.wdragon.sp*1.12,dt);if(d<150&&u.fcd<=0){u.fcd=3;wdHuntFire(u,T);}T.hChased=G.t;return;}
   if(u.st==='perch'){up(0);if(u.perch&&d2(u.x,u.y,u.perch.x,u.perch.y)>6)wdMove(u,u.perch.x,u.perch.y,60,dt);if(u.hp<u.maxHp)u.hp=Math.min(u.maxHp,u.hp+1.5*dt);
     if(u.t<=0){u.st='fly';u.t=R(9,16);u.wp=null;u.perch=null;}return;}
   if(u.st==='land'){up(.25);const p=u.perch||(u.perch=wdPerchSpot(u));if(wdMove(u,p.x,p.y-4,FAUNA.wdragon.sp*.6,dt)){u.st='perch';u.t=R(6,14);}return;}
@@ -5661,6 +5661,157 @@ tallyAddSect('coast','Animals · Coast & sea','🦈','#6fb8e8',[['dolphin','Dolp
     const u=mkUnit('animal',x,y,{species:sp,wild:true,zone:F.zone,home,hp:F.hp,maxHp:F.hp,free:true,pack:pk,male:L[i+5]?1:0,t:R(0,3),jt:0,face:rnd()<.5?1:-1});
     if(u.male)tfMakeLeader(u);u.hp=Math.min(u.maxHp,L[i+3]||u.maxHp);units.push(u);}
   if(mp>packId)packId=mp;NW.grp=Math.max(G.nwG||0,NW.grp);return r;};}
+
+// ===================== partAL: turf guardians (male lion, white alpha wolf, silverback, any partTF leader) =====================
+// A full-health leader can't be swallowed on the first bite: the bite is shrugged off (and stings him).
+// One or two hits of any kind (bite, claw, stomp, fire burst, lava) bring him under AL_TH of his max HP,
+// then he is dizzy (little orbiting stars) and can be gulped like any other animal.
+const AL_TH=.78,AL_REBUFF=.24;
+const alWeak=u=>u.hp<=u.maxHp*AL_TH;
+function alTough(u){return tfIsLeader(u)&&!alWeak(u);}
+function alRebuff(u){const L=TF_L[u.species];hurtUnit(u,Math.ceil(u.maxHp*AL_REBUFF),'bite');u.roarFx=1.2;G.alRebuffs=(G.alRebuffs||0)+1;
+  if(dist(u,D)<1200)float(u.x,u.y-60,`${L.who} shrugs off the bite!`,'#ffd27a');}
+for(const sp in TF_L){const prev=TOUGH[sp];
+  TOUGH[sp]={chk:u=>tfIsLeader(u)?!alWeak(u):!!(prev&&prev.chk(u)),hit:u=>{if(tfIsLeader(u))alRebuff(u);else if(prev)prev.hit(u);}};}
+// small dizzy stars over a weakened leader
+{const _da=drawAnimal;drawAnimal=function(u){_da.apply(this,arguments);
+  if(!u.dead&&tfIsLeader(u)&&alWeak(u)){if(!u.alDz){u.alDz=1;G.alDizzy=(G.alDizzy||0)+1;}
+    const L=TF_L[u.species],sc=L.scale||1.2,hy=u.y-38*sc,t=G.t*3.2;
+    for(let i=0;i<3;i++){const a=t+i*TAU/3;hnStar(u.x+Math.cos(a)*14*sc,hy+Math.sin(a)*4,3.2,i%2?'#ffe35a':'#fff7c0');}}
+  else if(u.alDz&&!alWeak(u))u.alDz=0;};}
+
+// ===================== partWF: Dragon Peaks extras =====================
+// 1) wild dragons are IMMUNE to the player's fire breath (no damage, no burning; a little "shrug" puff). Bites, claws, stomps, lava still hurt.
+// 2) their own weak fire is only for HUNTING (goats, birds, mountain lions): it singes prey, never the player, and only leaves tiny scorches.
+//    Mountain lions in the peaks fight back with a claw swipe until they're worn down.
+// 3) the DRAGON EGG NEST: a rocky nest of speckled eggs the roost guards. Come close and they stop hunting and rush to defend it
+//    (swoop, bite, claw). Eggs can be eaten (E: cartoon gulp, food) or smashed (stomp, claw, lava, or a bite when you're already full):
+//    a crack and a puff of shell bits, no bonus. Either makes the guards extra aggressive. 3 eggs, reset every castle level; saved with the game.
+//    Each egg eaten = +5 permanent max fire on this life (kept across levels, reset on death / new game).
+let WF_LAVA=0;
+{const _ls=lavaSplash;lavaSplash=function(x,y){WF_LAVA++;try{const r=_ls.apply(this,arguments);if(wfNearNest(x,y,95))wfSmash('lava');return r;}finally{WF_LAVA--;}};}
+{const _uv=updVolcano;updVolcano=function(){WF_LAVA++;try{return _uv.apply(this,arguments);}finally{WF_LAVA--;}};}
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){
+  if(u&&!u.dead&&u.species==='wdragon'&&src==='fire'&&!WF_LAVA){u.burn=0;G.wdImmune=(G.wdImmune||0)+1;
+    if(!u.imT||G.t-u.imT>.8){u.imT=G.t;puff(u.x,u.y-20,5,'rgba(255,240,200,',60,6);if(dist(u,D)<900&&(!G.wdImmT||G.t-G.wdImmT>4)){G.wdImmT=G.t;float(u.x,u.y-56,'Immune! *shrug*','#ffe6a8');}}
+    return;}
+  return _hu.apply(this,arguments);};}
+// ---------- weak hunting fire ----------
+function wdHuntFire(u,T){u.ang=Math.atan2(T.y-u.y,T.x-u.x);wdFire(u,.45);G.wdHuntFires=(G.wdHuntFires||0)+1;
+  if(dist(u,T)>170)return;
+  if(T.flap!==undefined){T.singe=G.t;G.wdSinged=(G.wdSinged||0)+1;return;}   // a bird: a puff of feathers, it's caught on the next pass
+  if(T.type==='animal'){const dmg=T.species==='cougar'?7:5;T.hp=Math.max(1,T.hp-dmg);T.singe=G.t;G.wdSinged=(G.wdSinged||0)+1;puff(T.x,T.y-8,4,'rgba(90,80,70,',50,5);
+    if(rnd()<.35)scorch(T.x+R(-8,8),T.y+R(-6,6),7);}}                    // tiny scorch marks only, never a wildfire
+function wdPreyResists(u,T){if(!T||T.species!=='cougar'||T.hp<=T.maxHp*.5)return false;
+  u.hp=Math.max(1,u.hp-4);u.fcd=Math.min(u.fcd,.4);const a=Math.atan2(u.y-T.y,u.x-T.x);u.x+=Math.cos(a)*50;u.y+=Math.sin(a)*50;T.face=u.x>T.x?1:-1;T.leap=.3;
+  G.wdCougarSwipes=(G.wdCougarSwipes||0)+1;if(dist(T,D)<900&&(!G.wdSwT||G.t-G.wdSwT>3)){G.wdSwT=G.t;float(T.x,T.y-50,'Rrrowr! The mountain lion swipes back!','#ffd27a');}
+  return true;}
+// a couple of mountain lions live in the peaks (prey for the roost)
+function wdCougar(){const Z=ZONES.drpeaks;let p=null;for(let t=0;!p&&t<40;t++){const q=Z.s();if(Z.ok(q.x,q.y)&&d2(q.x,q.y,D.x,D.y)>700&&d2(q.x,q.y,WDN.x,WDN.y)>500)p=q;}if(!p)return;
+  units.push(mkUnit('animal',p.x,p.y,{species:'cougar',wild:true,zone:'drpeaks',home:{x:p.x-400,y:p.y-250,w:800,h:500},hp:FAUNA.cougar.hp,maxHp:FAUNA.cougar.hp,free:true,t:R(0,3),jt:0,wdc:1}));}
+// ---------- the egg nest ----------
+const WDN=(()=>{for(const [x,y] of [[-14800,-980],[-14650,-1500],[-15600,-1100],[-13900,-1000]])if(!WD_CRAGS.some(c=>d2(x,y,c.x,c.y)<220)&&!WD_NESTS.some(n=>d2(x,y,n.x,n.y)<300))return{x,y};return{x:-14800,y:-980};})();
+const WDN_MAX=3,WDN_R=560,WDN_FIRE=5;   // 3 eggs per castle level (reset with every level, like all creatures); no relaying mid-level
+function wfEggs(){if(G.wdEggs==null)G.wdEggs=WDN_MAX;return G.wdEggs;}
+function wfNearNest(x,y,r){return d2(x,y,WDN.x,WDN.y)<r;}
+function wfFury(why){G.wdFury=G.t+(why==='near'?10:20);
+  for(const u of units)if(!u.dead&&u.species==='wdragon'&&!(u.daze>0)&&u.hp>u.maxHp*.3&&dist(u,WDN)<3200){if(u.hPrey)hnDrop(u);
+    if(u.st!=='attack'){u.st='attack';u.angry=G.t;u.atkT=0;}u.atkT=Math.max(u.atkT||0,why==='near'?12:20);u.fury=G.wdFury;}}
+function wfEggFx(){puff(WDN.x,WDN.y-8,8,'rgba(250,245,230,',90,6);for(let i=0;i<6;i++)hnFx(WDN.x+R(-16,16),WDN.y-6+R(-6,6),'stars');}
+// special food: each egg gives +5 PERMANENT max fire (the red bar), kept across levels on the same life, reset on death / new game
+function wfFireMax(){return FM.max+(D.fireBonus||0);}
+function wfEat(){if(wfEggs()<=0)return false;G.wdEggs--;tallyAdd('wdegg');G.stats.wdEggs=(G.stats.wdEggs||0)+1;
+  if(D.maxFire===undefined)fireInit();D.fireBonus=(D.fireBonus||0)+WDN_FIRE;D.maxFire=wfFireMax();D.fire=D.maxFire;D.fireOut=false;feed(10);D.eatCD=.6;D.eatT=.3;
+  if(typeof mhBanner==='function')mhBanner(`Fire lasts longer! (+${WDN_FIRE})`,`Max fire ${D.maxFire}  ·  ${G.wdEggs} egg${G.wdEggs===1?'':'s'} left in the nest`,3.2);else G.banner={text:`Fire lasts longer! (+${WDN_FIRE})`,sub:'',t:3.2};
+  if(typeof SFX!=='undefined')SFX.play('gulp',WDN.x,WDN.y,.9);wfEggFx();float(WDN.x,WDN.y-50,'GULP! A dragon egg!','#ffe08a');wfFury('egg');return true;}
+function wfSmash(how){if(wfEggs()<=0)return false;G.wdEggs--;tallyAdd('wdeggx');G.stats.wdEggsX=(G.stats.wdEggsX||0)+1;G.wdSmashBy=how;
+  if(typeof SFX!=='undefined')SFX.play('eggCrack',WDN.x,WDN.y,1);
+  puff(WDN.x,WDN.y-10,10,'rgba(245,240,225,',120,5);G.wdShells=G.wdShells||[];
+  for(let i=0;i<8;i++)G.wdShells.push({x:WDN.x+R(-10,10),y:WDN.y-8,vx:R(-90,90),vy:R(-120,-40),t:0,c:WD_EGG[RI(0,WD_EGG.length-1)]});
+  float(WDN.x,WDN.y-50,'CRACK! Egg smashed','#f4e8d0');wfFury('smash');return true;}
+Object.assign(SFX_DEF,{eggCrack:(a,B,o,t)=>{nz(a,B,o,t,.06,'highpass',3500,0,3,.8);nz(a,B,o,t+.04,.12,'bandpass',2200,900,4,.5);for(let i=0;i<4;i++)nz(a,B,o,t+.06+i*.04,.03,'bandpass',4000+i*500,0,6,.3);osc(a,o,t,'triangle',900,300,.08,.2);return .3;}});
+tallyAddSect('drpeaks','Animals · The Dragon Peaks','🐉','#c89aff',[['wdegg','Dragon eggs eaten'],['wdeggx','Dragon eggs smashed']]);
+// bite (E): at the nest, gulp an egg; when you're already full (Normal), the bite just cracks it
+{const _te=tryEat;tryEat=function(){const mx=D.x+Math.cos(D.ang)*70,my=D.y+Math.sin(D.ang)*70;
+  if(D.alt<.3&&wfEggs()>0&&!(D.eatCD>0)&&(wfNearNest(mx,my,60)||wfNearNest(D.x,D.y,45))){if(!G.easy&&D.hunger>=D.maxHunger-.5){D.eatCD=.6;D.eatT=.3;return wfSmash('bite');}return wfEat();}
+  return _te.apply(this,arguments);};}
+{const _ds=doStomp;doStomp=function(){const r=_ds.apply(this,arguments);if(wfNearNest(D.x,D.y,DR.stompR+40))wfSmash('stomp');return r;};}
+{const _cs=clawScratch;clawScratch=function(){const was=D.scratchCD>0,r=_cs.apply(this,arguments);if(!was&&D.scratchCD>0&&typeof inScratch==='function'&&inScratch(WDN.x,WDN.y,30))wfSmash('claw');return r;};}
+// ---------- per-frame: guarding, hunting near the nest, relaying, cougars ----------
+function wfTick(dt){if(!G||!D||G.over)return;wfEggs();
+  if(!DECOR.some(o=>o.k==='wdegg')){for(let i=DECOR.length-1;i>=0;i--){const o=DECOR[i];if(o.k!=='wdnest'&&d2(o.x,o.y,WDN.x,WDN.y)<(o.k==='peak'?190:130))DECOR.splice(i,1);} // clear rocks/crags off the nest so it reads clearly
+    DECOR.push({k:'wdegg',x:WDN.x,y:WDN.y});}
+  const near=d2(D.x,D.y,WDN.x,WDN.y)<WDN_R;
+  if(near&&(!G.wdNearT||G.t-G.wdNearT>3)){G.wdNearT=G.t;wfFury('near');G.wdDefends=(G.wdDefends||0)+1;
+    if(!G.wdGuardMsg||G.t-G.wdGuardMsg>20){G.wdGuardMsg=G.t;float(WDN.x,WDN.y-70,'SKRAAA! The roost rushes to guard the eggs!','#ffb070');}}
+  G.wdCT=(G.wdCT||0)+dt;if(G.wdCT>20){G.wdCT=0;if(units.filter(u=>!u.dead&&u.species==='cougar'&&u.wdc).length<2)wdCougar();}
+  if(G.wdShells){for(const s of G.wdShells){s.t+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=320*dt;}G.wdShells=G.wdShells.filter(s=>s.t<.7);}}
+{const _uw=updWD;updWD=function(u,dt){
+  if(u.fury>G.t&&!(u.daze>0)){u.cd-=dt*.6;u.clawCD=(u.clawCD||0)-dt;const dd=dist(u,D);           // extra aggressive guards: faster bites + claw swipes
+    if(u.st==='attack'&&dd<110&&u.clawCD<=0){u.clawCD=G.easy?2.6:1.6;const dmg=G.easy?1:2;hurtDragon(dmg,'wdragon');G.wdClaws=(G.wdClaws||0)+1;if(rnd()<.5)float(D.x+R(-20,20),D.y-heightOf()-60,`Wild dragon claw! -${dmg}`,'#ffb0a0');}}
+  if(u.st==='fly'&&u.wp&&!u.wp.nb){if(rnd()<.55){const a=R(0,TAU),r=R(150,700);u.wp={x:WDN.x+Math.cos(a)*r,y:WDN.y+Math.sin(a)*r*.6,nb:1};}else u.wp.nb=1;} // hunt around the nest
+  const r=_uw.apply(this,arguments);
+  if(u.st==='attack'&&u.fury>G.t)u.atkT=Math.max(u.atkT,1);
+  return r;};}
+{const _uwd=wdMove;wdMove=function(u,tx,ty,sp,dt){return _uwd.call(this,u,tx,ty,u.fury>G.t&&u.st==='attack'?sp*1.25:sp,dt);};}
+{const _ud=updFauna;updFauna=function(dt){const r=_ud.apply(this,arguments);try{wfTick(dt);}catch(e){}return r;};}
+// ---------- drawing ----------
+function drawEggNest(o){const x=o.x,y=o.y,n=wfEggs();ell(x,y+6,64,20,'rgba(0,0,0,.25)');
+  for(let i=0;i<12;i++){const a=i/12*TAU,rx=x+Math.cos(a)*50,ry=y+Math.sin(a)*16;ell(rx,ry,13,8,i%2?'#8a8078':'#a49a90');ell(rx-3,ry-3,5,3,'#c4bab0');}
+  ell(x,y-1,42,13,'#7a5a30');ell(x,y-3,34,10,'#5a3e1e');
+  ctx.strokeStyle='#b08a50';ctx.lineWidth=2;for(let i=0;i<10;i++){const a=i*.63;ctx.beginPath();ctx.moveTo(x+Math.cos(a)*38,y-2+Math.sin(a)*11);ctx.lineTo(x+Math.cos(a+1.1)*33,y-2+Math.sin(a+1.1)*10);ctx.stroke();}
+  const P=[[-20,-4],[-6,-7],[8,-6],[21,-3],[0,1]];
+  for(let e=0;e<n;e++){const [ex,ey]=P[e],c=WD_EGG[(e*3+1)%WD_EGG.length],wob=Math.sin(G.t*2.4+e*1.7)*.07;ctx.save();ctx.translate(x+ex,y+ey-6);ctx.rotate(wob);
+    ell(0,0,7.5,10,c);ctx.fillStyle='rgba(90,60,120,.35)';for(let k=0;k<5;k++){ctx.beginPath();ctx.arc(Math.cos(k*2.4+e)*4,Math.sin(k*1.9+e)*6,1.3,0,TAU);ctx.fill();}
+    ell(-2.5,-4,2,3,'rgba(255,255,255,.75)');ctx.restore();}
+  if(G.wdShells)for(const s of G.wdShells){const k=1-s.t/.7;ctx.globalAlpha=k;poly([s.x-3,s.y,s.x,s.y-4,s.x+3,s.y,s.x,s.y+2],s.c);ctx.globalAlpha=1;}
+  if(d2(D.x,D.y,x,y)<WDN_R+300)txt('Dragon egg nest',x,y-34,11,'rgba(255,240,210,.85)','center',true);}
+{const _dd=drawDecor;drawDecor=function(o){if(o.k==='wdegg'){drawEggNest(o);return;}_dd(o);};}
+{const _sm=drawSeaMap;drawSeaMap=function(X,Y,big,q){_sm.apply(this,arguments);if(seen(WDN.x,WDN.y)){ctx.fillStyle='#ffe08a';ctx.fillRect(X(WDN.x)-q,Y(WDN.y)-q,q*2,q*2);}};}
+// ---------- save / load ----------
+{const _ss=svSnapshot;svSnapshot=function(){wfEggs();G.wdEggS=[G.wdEggs,D.fireBonus||0];return _ss.apply(this,arguments);};}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);if(Array.isArray(G.wdEggS)){G.wdEggs=clamp(G.wdEggS[0]|0,0,WDN_MAX);D.fireBonus=Math.max(0,G.wdEggS[1]|0);D.maxFire=wfFireMax();D.fire=Math.min(D.fire==null?D.maxFire:D.fire,D.maxFire);}G.wdShells=[];return r;};}
+// fire bonus carry-over between castle levels (same life); a brand-new game / death resets it
+let WF_CARRY=null;
+{const _nl=nextLevel;nextLevel=function(){WF_CARRY={fb:D.fireBonus||0};try{return _nl.apply(this,arguments);}finally{WF_CARRY=null;}};}
+{const _ng=newGame;newGame=function(){const c=WF_CARRY;const r=_ng.apply(this,arguments);D.fireBonus=c?c.fb:0;D.maxFire=wfFireMax();D.fire=D.maxFire;return r;};}
+// ======================= CRUISE SPEED: steady flight with no combat input slowly speeds up (1x → 1.8x over ~5 s) =======================
+// Works for keyboard, touch joystick and gamepad (it reads the final movement vector). Any combat input (fire, bite, claw, stomp, lava),
+// landing / diving, a sharp turn or stopping resets it. Flying stamina drains at the normal rate, so cruising simply covers more ground per
+// stamina; it won't build while stamina is low (<15%) and fades if you're tiring. Subtle wind streaks show the speed-up.
+const CR={max:1.8,ramp:5,delay:.6,turn:1.05,minSt:.15};
+function crReset(why){if(D.cruise>1.05){G.crResets=(G.crResets||0)+1;G.crWhy=why;}D.cruise=1;D.crT=0;}
+function updCruise(dt,ix,iy){if(D.cruise===undefined){D.cruise=1;D.crT=0;D.crA=null;D.crLava=D.lava||0;}
+  const mag=Math.hypot(ix,iy),lava=D.lava||0;
+  const combat=D.breath||keys[' ']||GPAD.fire||D.eatT>0||D.stompT>0||(D.scratchT||0)>0||lava<D.crLava;D.crLava=lava;
+  if(combat){crReset('combat');D.crA=null;return 1;}
+  if(D.mode!=='air'||D.altT<1||D.diving||D.alt<.85){crReset('land');D.crA=null;return 1;}
+  if(mag<.5){crReset('stop');D.crA=null;return 1;}
+  const a=Math.atan2(iy,ix);
+  if(D.crA!=null&&Math.abs(angDiff(a,D.crA))>CR.turn){D.crA=a;crReset('turn');return 1;}
+  // gentle steering keeps cruise: the reference heading follows slowly
+  D.crA=D.crA==null?a:D.crA+angDiff(a,D.crA)*Math.min(1,2.5*dt);
+  const stF=D.st/(D.maxSt||DR.maxSt||100);
+  if(stF<CR.minSt){D.cruise=Math.max(1,D.cruise-.4*dt);return D.cruise;}
+  D.crT+=dt;if(D.crT>CR.delay)D.cruise=Math.min(CR.max,D.cruise+(CR.max-1)/CR.ramp*dt);
+  G.crPeak=Math.max(G.crPeak||1,D.cruise);return D.cruise;}
+// any combat action resets cruise immediately (touch buttons, keys and gamepad all end up in these)
+{const _a=tryEat;tryEat=function(){if(D&&D.cruise>1)crReset('combat');return _a.apply(this,arguments);};}
+{const _a=doStomp;doStomp=function(){if(D&&D.cruise>1)crReset('combat');return _a.apply(this,arguments);};}
+{const _a=clawScratch;clawScratch=function(){if(D&&D.cruise>1)crReset('combat');return _a.apply(this,arguments);};}
+{const _a=tryEatBird;tryEatBird=function(){if(D&&D.cruise>1)crReset('combat');return _a.apply(this,arguments);};}
+// wind streaks behind a cruising dragon
+{const _dd=drawDragon;drawDragon=function(){
+  if(D.cruise>1.08&&D.alt>.5){const k=clamp((D.cruise-1)/(CR.max-1),0,1),h=heightOf(),sp=Math.hypot(D.vx,D.vy)||1,ux=D.vx/sp,uy=D.vy/sp,nx=-uy,ny=ux;
+    ctx.save();ctx.lineCap='round';
+    for(let i=0;i<7;i++){const s=((G.t*2.3+i*.37)%1),off=(i-3)*16+Math.sin(i*7.1)*6,len=40+60*k;
+      const bx=D.x-ux*(30+s*140)+nx*off,by=D.y-h-uy*(30+s*140)+ny*off;
+      ctx.globalAlpha=.10+.32*k*(1-s);ctx.strokeStyle='#eef6ff';ctx.lineWidth=1.5+k;
+      ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx-ux*len,by-uy*len);ctx.stroke();}
+    ctx.restore();G.crDrawn=(G.crDrawn||0)+1;}
+  return _dd.apply(this,arguments);};}
+// save: cruise is momentary and is not saved (a loaded game starts at normal speed)
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);D.cruise=1;D.crT=0;D.crA=null;return r;};}
 // ================= partLA: LAIR GUIDE ARROW =================
 // A small gold arrow pinned to the screen edge that points home to the LAIR, with the distance. It hides
 // while the lair is on screen. It glows and pulses bright gold while you carry Princess Elizabeth or loot.

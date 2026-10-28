@@ -36,7 +36,7 @@ function updDragon(dt){
   const wasSwim=D.swim;D.swim=D.mode==='ground'&&D.alt<.25&&inWater(D.x,D.y)&&!onBridge(D.x,D.y);D.overWater=D.alt>=.25&&inWater(D.x,D.y);
   if(D.swim&&!wasSwim){puff(D.x,D.y,24,'rgba(220,240,255,',150,12);if(!G.swimTip){G.swimTip=1;float(D.x,D.y-90,'Splash! Swimming: slower. Stomp becomes a CLAW SCRATCH (Q); bite & fire still work','#bfe6ff');}}
   if(D.swim&&D.mode==='ground')D.st=Math.max(0,D.st-DR.groundRegen*.5*dt); // half stamina regen in the water
-  const sp=lerp(DR.groundSpeed,DR.airSpeed,D.alt)*(D.eatT>0?0.4:1)*(D.stompT>0?0.3:1)*(D.swim?0.55:1);
+  const sp=lerp(DR.groundSpeed,DR.airSpeed,D.alt)*(typeof updCruise==='function'?updCruise(dt,ix,iy):1)*(D.eatT>0?0.4:1)*(D.stompT>0?0.3:1)*(D.swim?0.55:1);
   const acc=D.alt>0.5?4:8;D.vx=lerp(D.vx,ix*sp,Math.min(1,acc*dt));D.vy=lerp(D.vy,iy*sp,Math.min(1,acc*dt));
   const ox_=D.x,oy_=D.y;D.x=clamp(D.x+D.vx*dt,WX0+60,WX1-60);D.y=clamp(D.y+D.vy*dt,WY0+60,WY1-60);
   // castle walls block a walking dragon (fly over them, or smash the gate)

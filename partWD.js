@@ -22,7 +22,7 @@ const WD_CRAGS=(()=>{let s=90210;const r=()=>{s=(s*16807)%2147483647;return s/21
   for(let t=0;out.length<14&&t<400;t++){const a=r()*TAU,k=Math.sqrt(r())*.86,x=Math.round(WD_E.x+Math.cos(a)*WD_E.rx*k),y=Math.round(WD_E.y+Math.sin(a)*WD_E.ry*k);
     if(WD_NESTS.some(n=>d2(x,y,n.x,n.y)<260)||out.some(c=>d2(x,y,c.x,c.y)<300))continue;out.push({x,y,s:.8+r()*.6,v:Math.floor(r()*3)});}return out;})();
 function addPeaksDecor(r,Rr){for(const c of WD_CRAGS)DECOR.push({k:'wdcrag',x:c.x,y:c.y,s:c.s,v:c.v});
-  WD_NESTS.forEach((n,i)=>DECOR.push({k:'wdnest',x:n.x,y:n.y,eggs:2+i%3,i}));
+  WD_NESTS.forEach((n,i)=>DECOR.push({k:'wdnest',x:n.x,y:n.y,eggs:0,i})   /* roost nests are empty: the eggs are all in the guarded egg nest (partWF) */);
   for(let i=0;i<70;i++){const x=Rr(WD_E.x-WD_E.rx,WD_E.x+WD_E.rx),y=Rr(WD_E.y-WD_E.ry,WD_E.y+WD_E.ry);if(inDP(x,y,.95))DECOR.push({k:'wdrock',x,y,s:Rr(.5,1.2)});}}
 {const _ad=addDesertDecor;addDesertDecor=function(r,Rr){_ad(r,Rr);addPeaksDecor(r,Rr);};}
 const WD_DECOR=new Set(['wdcrag','wdnest','wdrock']);
@@ -44,7 +44,7 @@ HEAL.wdragon=45;FOOD.wdragon=45;FAUNA_ART.add('wdragon');
 const WD_N=6,WD_COLS=[['#3f9a4a','#22602a','#d8f0a8','rgba(40,110,50,.9)'],['#3a6fc8','#20407a','#b8d8ff','rgba(40,80,160,.9)'],['#8a4ac8','#52287a','#e8c8ff','rgba(100,50,150,.9)'],
   ['#d8a830','#8a6a18','#fff0a8','rgba(170,120,30,.9)'],['#2aa8a0','#16645e','#c0fff0','rgba(30,120,110,.9)'],['#e07a2a','#8a4210','#ffe0a8','rgba(170,80,30,.9)'],['#9aa4b0','#5a6470','#f4f8fc','rgba(110,120,135,.9)']];
 const WD_SCALE=.45; // vs. the player's draw scale DS: about 45% of the player's size
-HN_DIET.wdragon={prey:['mgoat','goat','eagle','hawk','sparrow'],r:700};HN_NICE.wdragon='a wild dragon';HN_WHO.wdragon='A wild dragon';
+HN_DIET.wdragon={prey:['mgoat','goat','cougar','eagle','hawk','sparrow'],r:700};HN_NICE.wdragon='a wild dragon';HN_WHO.wdragon='A wild dragon';
 function mkWD(x,y,col,nest,o){const u=mkUnit('animal',x,y,Object.assign({species:'wdragon',wild:true,free:true,zone:'drpeaks',hp:FAUNA.wdragon.hp,maxHp:FAUNA.wdragon.hp,col,nest,st:'perch',alt:0,ang:R(0,TAU),flapT:R(0,6),t:R(2,8),cd:0,fcd:0,fireT:0,full:R(10,40),
     home:{x:WD_E.x-WD_E.rx,y:WD_E.y-WD_E.ry,w:WD_E.rx*2,h:WD_E.ry*2}},o||{}));units.push(u);return u;}
 function wdPerchSpot(u){const P=WD_CRAGS.concat(WD_NESTS);let best=P[0],bd=1e9;for(const p of P){const d=d2(p.x,p.y,u.x,u.y)+R(0,900);if(d<bd&&!units.some(o=>o!==u&&!o.dead&&o.species==='wdragon'&&o.perch===p)){bd=d;best=p;}}return best;}
@@ -72,14 +72,14 @@ function updWD(u,dt){const easy=G.easy,dd=dist(u,D);u.cd-=dt;u.fcd-=dt;u.t-=dt;u
   if(u.st!=='attack'&&u.st!=='flee'&&thr&&u.hp>u.maxHp*.3&&(dd<aggR||(u.angry&&G.t-u.angry<5&&dd<900)))wdAggro(u);
   if(u.st==='attack'){u.atkT-=dt;if(!thr||u.atkT<=0||u.hp<u.maxHp*.3){u.st=u.hp<u.maxHp*.3?'flee':'home';if(u.st==='flee')float(u.x,u.y-50,'Eep! The wild dragon flees to its nest','#ffe6a8');return;}
     up(D.alt>.5?.95:.7);u.orb=(u.orb||R(0,TAU))+dt*(1+u.col*.07);const R0=dd>260?0:110;wdMove(u,D.x+Math.cos(u.orb)*R0,D.y+Math.sin(u.orb)*R0*.7,FAUNA.wdragon.sp*(easy?.8:1),dt);
-    if(dd<240&&dd>60&&u.fcd<=0){u.fcd=easy?4.5:2.8;u.ang=Math.atan2(D.y-u.y,D.x-u.x);wdFire(u,1);const dmg=easy?2:4;hurtDragon(dmg,'wdragon');float(D.x+R(-20,20),D.y-heightOf()-80,`Fwoosh! Wild dragon fire! -${dmg}`,'#ffb070');}
-    else if(dd<80&&u.cd<=0){u.cd=easy?2.2:1.4;const dmg=easy?3:FAUNA.wdragon.bite;hurtDragon(dmg,'wdragon');float(D.x+R(-20,20),D.y-heightOf()-70,`Wild dragon bite! -${dmg}`,'#ffb0a0');}
+    // (their weak fire is only for hunting: against you they just bite)
+    if(dd<80&&u.cd<=0){u.cd=easy?2.2:1.4;const dmg=easy?3:FAUNA.wdragon.bite;hurtDragon(dmg,'wdragon');float(D.x+R(-20,20),D.y-heightOf()-70,`Wild dragon bite! -${dmg}`,'#ffb0a0');}
     return;}
   if(u.st==='flee'||u.st==='home'){up(.8);const n=WD_NESTS[u.nest]||WD_NESTS[0];if(wdMove(u,n.x+(u.col%2?24:-24),n.y,FAUNA.wdragon.sp*(u.st==='flee'?1.1:.7),dt)){u.st='perch';u.perch=n;u.t=R(10,18);}return;}
   const T=u.hPrey;
   if(T){if(!hnAlive(T)||u.hT>14||!inDP(T.x,T.y,1)){hnDrop(u);u.full=R(6,12);u.st='fly';return;}u.hT+=dt;up(T.flap!==undefined?.9:.55);const d=dist(u,T);
-    if(d<34){hnCatch(u,T);u.st='perch';u.perch=null;u.t=R(4,8);return;}
-    wdMove(u,T.x,T.y,FAUNA.wdragon.sp*1.12,dt);if(d<150&&u.fcd<=0){u.fcd=3;wdFire(u,.6);}T.hChased=G.t;return;}
+    if(d<34){if(wdPreyResists(u,T))return;hnCatch(u,T);u.st='perch';u.perch=null;u.t=R(4,8);return;}
+    wdMove(u,T.x,T.y,FAUNA.wdragon.sp*1.12,dt);if(d<150&&u.fcd<=0){u.fcd=3;wdHuntFire(u,T);}T.hChased=G.t;return;}
   if(u.st==='perch'){up(0);if(u.perch&&d2(u.x,u.y,u.perch.x,u.perch.y)>6)wdMove(u,u.perch.x,u.perch.y,60,dt);if(u.hp<u.maxHp)u.hp=Math.min(u.maxHp,u.hp+1.5*dt);
     if(u.t<=0){u.st='fly';u.t=R(9,16);u.wp=null;u.perch=null;}return;}
   if(u.st==='land'){up(.25);const p=u.perch||(u.perch=wdPerchSpot(u));if(wdMove(u,p.x,p.y-4,FAUNA.wdragon.sp*.6,dt)){u.st='perch';u.t=R(6,14);}return;}

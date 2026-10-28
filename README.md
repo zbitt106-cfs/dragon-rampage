@@ -5,7 +5,7 @@ A single-file browser game where you play a dragon. Open `index.html`; it needs 
 ## Building from source
 The source is split into parts, which are concatenated in this order:
 ```
-cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partRN.js partFM.js partMH.js partGH.js partKM.js partPR.js partHN.js partSJ.js partKW.js partWD.js partMR.js partBL.js partOC.js partTF.js partPB.js partHU.js partNW.js partLA.js partUI.js part6.js > index.html
+cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partRN.js partFM.js partMH.js partGH.js partKM.js partPR.js partHN.js partSJ.js partKW.js partWD.js partMR.js partBL.js partOC.js partTF.js partPB.js partHU.js partNW.js partAL.js partWF.js partCR.js partLA.js partUI.js part6.js > index.html
 ```
 (`bash build.sh` does the same.)
 
@@ -50,6 +50,9 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partPB.js: plant fire in every biome (acacias, savanna grass, jungle trees and ferns, cacti, desert scrub, palms, mountain pines, Dragon Peaks heather)
 - partHU.js: three hunters per hunters' cabin
 - partNW.js: gorilla troops (silverback), giant river otters, dolphins, orcas, flying fish and marine iguanas; small wild dragons give +10 max health
+- partAL.js: alpha / turf leaders (male lion, white alpha wolf, silverback) shrug off the first bite; worn to ~78% HP (1-2 hits of bite, claw, stomp, fire or lava) they get dizzy stars and become edible
+- partWF.js: Dragon Peaks wild dragons are immune to your fire (lava, bites, claws and stomps still hurt); their weak fire is only for hunting goats, birds and mountain lions (never hurts you; small scorches only; mountain lions swipe back); a guarded 3-egg nest: eat an egg for +5 permanent max fire (kept across levels on the same life, reset on death/new game, saved), or smash it (stomp, claw, lava, full-belly bite) for no bonus; the guards attack when you come near. Eggs reset every castle level
+- partCR.js: cruise speed: steady flight with no combat input ramps from 1x to 1.8x over ~5 s (keyboard, touch, gamepad); combat, landing, diving, a sharp turn or stopping resets it; normal stamina drain; wind streaks
 - partLA.js: the small gold lair guide arrow, pinned to the screen edge in the lair's direction (glows while carrying)
 - partUI.js: the compact wood/stone stockpile icons (HUD and pause menu); the score shows only in the pause menu
 - part6.js: main loop, HUD, minimap and world map, title screen
