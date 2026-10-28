@@ -12,7 +12,7 @@ Object.assign(PRIDES,{gorilla:{n:2,size:5},gotter:{n:3,size:4}});
 // the jungle river: giant otters live on both banks and in the water; jungle fish swim in it
 ZONES.jotter={ok:(x,y)=>regionKey(x,y)==='jungle'&&jriverD(x,y)<190,s:()=>{const i=RI(0,JRIVER.length-2),k=rnd(),sd=rnd()<.5?-1:1;return{x:JRIVER[i][0]+(JRIVER[i+1][0]-JRIVER[i][0])*k+sd*R(0,120),y:JRIVER[i][1]+(JRIVER[i+1][1]-JRIVER[i][1])*k};}};
 ZONES.jwater={ok:(x,y)=>jriverD(x,y)<JRW-8,s:()=>{const i=RI(0,JRIVER.length-2),k=rnd();return{x:JRIVER[i][0]+(JRIVER[i+1][0]-JRIVER[i][0])*k+R(-20,20),y:JRIVER[i][1]+(JRIVER[i+1][1]-JRIVER[i][1])*k};}};
-const NW_JFISH=12;
+const NW_JFISH=13; // was 12 (jungle population +5%)
 function nwJFish(far,at){const Z=ZONES.jwater;let p=at||null;for(let t=0;!p&&t<60;t++){const q=Z.s();if(Z.ok(q.x,q.y)&&(!far||d2(q.x,q.y,D.x,D.y)>800))p=q;}if(!p)return null;
   const u=mkUnit('animal',p.x,p.y,{species:'fish',wild:true,free:true,zone:'jwater',jfish:1,hp:2,maxHp:2,home:{x:p.x-200,y:p.y-200,w:400,h:400},t:R(0,3),jt:0,face:rnd()<.5?1:-1});units.push(u);return u;}
 const nwSilver=u=>!!(u&&u.species==='gorilla'&&u.male);

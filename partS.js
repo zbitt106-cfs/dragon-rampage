@@ -8,7 +8,7 @@ const ISEAL_ROCKS=[[-1,-.1],[.95,.25],[.2,1.0],[-.6,.85]].map(([a,b])=>({x:LH.x+
 const DOCK={x:LH.x-LH.r-40,y:LH.y+40};
 const isLand=(x,y)=>!inWater(x,y);
 function seaPoint(minD,maxD,opt){opt=opt||{};for(let t=0;t<120;t++){let x,y;
-    if(opt.deep){x=R(8150+SEA_DX,WX1-300);y=R(WY0+500,WY1-400);}else if(rnd()<.72){x=R(5600+SEA_DX,opt.noDeep?7800+SEA_DX:WX1-300);y=R(WY0+500,WY1-400);}else{x=R(-9600,7600+SEA_DX);y=R(4500,WY1-300);}
+    if(opt.deep){x=R(8150+SEA_DX,WX1-300);y=R(MWY0+500,WY1-400);}else if(rnd()<.72){x=R(5600+SEA_DX,opt.noDeep?7800+SEA_DX:WX1-300);y=R(MWY0+500,WY1-400);}else{x=R(-9600,7600+SEA_DX);y=R(4500,WY1-300);}
     if(!inSea(x,y))continue;const dd=seaD(x,y);if(dd<minD||dd>maxD)continue;if(opt.noDeep&&inDeep(x,y))continue;if(opt.deep&&!inDeep(x,y))continue;
     if(opt.avoidIsle&&d2(x,y,LH.x,LH.y)<900&&rnd()>.08)continue;if(d2(x,y,LH.x,LH.y)<LH.r+90)continue;if(opt.far&&d2(x,y,D.x,D.y)<1300)continue;return{x,y};}return null;}
 function lakePoint(r){const a=R(0,TAU),k=R(0,r||.75);return{x:LAKE.x+Math.cos(a)*LAKE.rx*k,y:LAKE.y+Math.sin(a)*LAKE.ry*k};}

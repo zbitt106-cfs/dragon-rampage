@@ -82,7 +82,8 @@ ZONES.jungle={ok:(x,y)=>regionKey(x,y)==='jungle'&&!inWater(x,y),s:()=>({x:R(-16
 ZONES.jbank={ok:(x,y)=>regionKey(x,y)==='jungle'&&!inWater(x,y)&&jriverD(x,y)<330,s:()=>{const i=RI(0,JRIVER.length-2),k=rnd(),sd=rnd()<.5?-1:1;return{x:JRIVER[i][0]+(JRIVER[i+1][0]-JRIVER[i][0])*k+sd*R(JRW+20,300),y:JRIVER[i][1]+(JRIVER[i+1][1]-JRIVER[i][1])*k+R(-40,40)};}};
 // base populations (prey get the +5% stochastic boost through PREY_SP / HN_BASE like every other prey species)
 const SJ_PLAN=[['zebra',10],['gazelle',12],['wildebeest',12],['giraffe',5],['elephant',4],['warthog',8],['ostrich',6],['cheetah',3],
-  ['monkey',12],['tapir',6],['capybara',10],['frog',14],['jaguar',3],['tiger',2],['python',4]];
+  ['monkey',13],['tapir',7],['capybara',11],['frog',15], // jungle population +5% (was 12/6/10/14; with the gorillas, otters, fish, crocs and birds the jungle base goes 107 -> 112)
+  ['jaguar',3],['tiger',2],['python',4]];
 const SJ_PREY=['zebra','gazelle','wildebeest','giraffe','elephant','warthog','ostrich','monkey','tapir','capybara','frog'];
 for(const[s,n]of SJ_PLAN){FAUNA_PLAN.push([s,n]);HN_BASE.plan.push([s,n]);}for(const s of SJ_PREY)PREY_SP.add(s);
 const PRIDES={lion:{n:2,size:3},hyena:{n:2,size:4}}; // lion prides & hyena clans (pack members share a home and get angry together)

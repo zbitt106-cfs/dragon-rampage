@@ -1,6 +1,7 @@
 // ======================= the big explorable world: regions, terrain, decor, fog of war =======================
 const SEA_DX=3000,MAP_V=2; // v2 map: the Sapphire Coast moved 3000 east to make room for the East March (2nd lumber camp + 2nd mine)
-const WX0=-17400,WY0=-2600,WX1=9800+SEA_DX,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
+const MWY0=-2600; // the old north edge (Frostpeak range); the Northern Realms (partNR) fill WY0..MWY0
+const WX0=-17400,WY0=-11400,WX1=9800+SEA_DX,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
 const coastX=y=>5500+SEA_DX+140*Math.sin(y/530)+60*Math.sin(y/190+1);
 const coastY=x=>4450+110*Math.sin(x/470)+50*Math.sin(x/170+2);
 const frostY=x=>-260+90*Math.sin(x/420)+40*Math.sin(x/150);
@@ -16,7 +17,7 @@ function riverD(x,y){let m=1e9;for(let i=0;i<RIVER.length-1;i++){const[ax,ay]=RI
 const inLake=(x,y)=>inOasis(x,y)||inLake0(x,y)||(x<-8600&&x>-12700&&inWHole(x,y));
 const inLake0=(x,y)=>{const dx=(x-LAKE.x)/LAKE.rx,dy=(y-LAKE.y)/LAKE.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<1+.07*Math.sin(a*5)+.04*Math.sin(a*9);};
 const LH={x:7350+SEA_DX,y:2100,r:290}; // the Lonely Lighthouse island, just before the deep water
-const onIsle=(x,y)=>{const dx=x-LH.x,dy=(y-LH.y)*1.25,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(LH.r*(1+.1*Math.sin(a*5)+.06*Math.sin(a*3+1)))**2;};
+const onIsle=(x,y)=>{if(y<-4000)return onWzIsle(x,y);const dx=x-LH.x,dy=(y-LH.y)*1.25,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(LH.r*(1+.1*Math.sin(a*5)+.06*Math.sin(a*3+1)))**2;};
 const seaD=(x,y)=>Math.max(x-coastX(y),y-coastY(x));
 const DEEPX=y=>7900+SEA_DX+120*Math.sin(y/600); // east of this the Kraken Deep begins
 const inSea=(x,y)=>(x>coastX(y)||y>coastY(x))&&!onIsle(x,y);
@@ -75,6 +76,7 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
     if(onIsle(x,y)){const ld=d2(x,y,LH.x,LH.y);c=ld>LH.r*.78?mix([228,210,160],[200,182,130],n):mix([96,140,70],[124,160,84],n);}
     else if(inSea(x,y)&&d2(x,y,LH.x,LH.y)<LH.r*1.6){const dd=Math.max(seaD(x,y),0);c=mix([90,190,205],[30,80,150],clamp((d2(x,y,LH.x,LH.y)-LH.r)/(LH.r*.6),0,1));c=mix(c,[255,255,255],(n-.5)*.12+.03);}
     else if(inSea(x,y)){const dd=Math.max(x-coastX(y),y-coastY(x));c=mix([84,165,200],[26,66,138],clamp(dd/600,0,1));if(dd<22)c=mix([220,240,245],c,dd/22);c=mix(c,[255,255,255],(n-.5)*.12+.03);}
+    else if(y<MWY0+200&&wy<nrEdge(wx)){c=nrCol(x,y,wx,wy,n);}
     else if(inLake(x,y)||riverD(x,y)<RIVW||jriverD(x,y)<JRW){const ld=Math.min(riverD(x,y),jriverD(x,y));c=[58,108,172];if(ld<RIVW&&ld>RIVW-8)c=[90,140,190];c=mix(c,[30,70,140],n*.3);}
     else if(onBeach(x,y)){c=mix([230,212,155],[205,185,130],n);}
     else if(wy<frostY(wx)||inRange(wx,wy)||wx<WX0+650){const t=clamp((frostY(wx)-wy)/500,0,1)+(inRange(wx,wy)?clamp(Math.min(wx-RANGE0,RANGE1-wx,passEdge(wx,wy))/260,0,1):0)+(wx<WX0+650?clamp((WX0+650-wx)/300,0,1):0);c=mix([118,132,100],[238,242,250],clamp(t,0,1));if(n>.6)c=mix(c,[130,130,140],.7);}
@@ -102,7 +104,7 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   g.restore();
   // decor (purely visual, never blocks movement)
   let s=4242;const r=()=>{s=Math.imul(s^s>>>15,2246822519)+0x9E3779B9|0;return((s^s>>>13)>>>0)/4294967296;},Rr=(a,b)=>a+r()*(b-a);DECOR=[];
-  for(let y=WY0+100;y<-1050;y+=200)for(let x=WX0+60;x<WX1;x+=230+Rr(-40,40)){const xx=x+Rr(-60,60),yy=y+Rr(-60,60);if(!inSea(xx,yy)&&!(Math.abs(xx-LAIR.x)<480&&yy>LAIR.y-320&&yy<LAIR.y+760))DECOR.push({k:'peak',x:xx,y:yy,w:Rr(200,360),h:Rr(.7,1)});}
+  for(let y=MWY0+100;y<-1050;y+=200)for(let x=WX0+60;x<WX1;x+=230+Rr(-40,40)){const xx=x+Rr(-60,60),yy=y+Rr(-60,60);if(!inSea(xx,yy)&&!(Math.abs(xx-LAIR.x)<480&&yy>LAIR.y-320&&yy<LAIR.y+760))DECOR.push({k:'peak',x:xx,y:yy,w:Rr(200,360),h:Rr(.7,1)});}
   for(let y=-1000;y<WY1-300;y+=210)for(let x=WX0+40;x<WX0+640;x+=200)DECOR.push({k:'peak',x:x+Rr(-50,50),y:y+Rr(-50,50),w:Rr(180,300),h:Rr(.6,.9)});
   for(let y=-1000;y<coastY(-3300)-150;y+=190)for(let x=RANGE0+90;x<RANGE1-60;x+=190){const xx=x+Rr(-40,40),yy=y+Rr(-40,40);if(inRange(xx,yy)&&passEdge(xx,yy)>90)DECOR.push({k:'peak',x:xx,y:yy,w:Rr(170,280),h:Rr(.6,.9)});}
   addDesertDecor(r,Rr);
@@ -152,7 +154,7 @@ function updWorld(dt){
     if(!G.homeMsgT||G.t-G.homeMsgT>12){G.homeMsgT=G.t;float(D.x,D.y-90,'Home sweet lair: resting heals you','#9fffa8');}}
   // soft world edges: the far ocean and the northern peaks gently push the dragon back
   const push=(v,a,b)=>v<a?(a-v):v>b?(b-v):0;const px=push(D.x,WX0+220,WX1-220),py=push(D.y,WY0+260,WY1-220);
-  if(px||py){D.x+=px*2*dt;D.y+=py*2*dt;if(!G.edgeMsgT||G.t-G.edgeMsgT>6){G.edgeMsgT=G.t;float(D.x,D.y-90,D.y<WY0+400?'The peaks are too high to cross!':D.x<WX0+400?'Endless crags block the way':'The open sea stretches forever...','#cfe8ff');}}}
+  if(px||py){D.x+=px*2*dt;D.y+=py*2*dt;if(!G.edgeMsgT||G.t-G.edgeMsgT>6){G.edgeMsgT=G.t;float(D.x,D.y-90,D.y<WY0+400?'The frozen Northern Wastes stretch on forever...':D.x<WX0+400?'Endless crags block the way':'The open sea stretches forever...','#cfe8ff');}}}
 function drawRegionBanner(){const b=G.regBanner;if(!b)return;const al=clamp(Math.min(b.t,3.2-b.t)*2.5,0,1),sm=VW<760;ctx.globalAlpha=al;const y=(sm?150:132)+(typeof gateBroken==='function'&&gateBroken()&&!sm?26:0)+(typeof raidHudOn==='function'&&raidHudOn()&&!sm?24:0);
   const name=REGION_NAMES[b.k];ctx.font=`bold ${sm?18:26}px Georgia`;const w=Math.max(ctx.measureText(name).width+70,sm?260:380),rcx=Math.max(VW/2,(typeof UI!=='undefined'&&UI.col?UI.col.x+UI.col.w+8:0)+w/2); // shifted right if needed to clear the left HUD column
   ctx.fillStyle='rgba(20,24,40,.72)';ctx.fillRect(rcx-w/2,y-30,w,b.first?74:58);ctx.strokeStyle='rgba(255,215,120,.7)';ctx.strokeRect(rcx-w/2+.5,y-29.5,w-1,(b.first?74:58)-1);

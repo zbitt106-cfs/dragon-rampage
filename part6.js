@@ -106,7 +106,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   if(sm){panel(10,cy,colW,26);rect(16,cy+6,(colW-12)*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,cy+18,11);cy+=30;}
   UI.colY=cy;UI.col={x:10,y:10,w:colW,h:cy-4-10};
   // minimap: top-right corner (inside the safe area: drawHUD runs in withSafe), shrunk if needed to stay clear of the centred WANTED / boss bars
-  {const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000)),room=Math.floor(VW/2-(sm?210:260)-20),mmw=Math.max(120,Math.min(base,room)),mmh=mmw*(WY1-WY0)/(WX1-WX0);
+  {const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000)),room=Math.floor(VW/2-(sm?210:260)-20),mm0=Math.max(120,Math.min(base,room,Math.round((sm||TOUCH.on?104:150)*(WX1-WX0)/(WY1-WY0)))),mmCap=TOUCH.on&&VH<520?Math.max(56,VH*0.12):1e9,mmw=Math.min(mm0,Math.round(mmCap*(WX1-WX0)/(WY1-WY0))),mmh=mmw*(WY1-WY0)/(WX1-WX0); // short landscape phones: cap the minimap height (the world got taller with the Northern Realms) so the region banner stays clear of the touch buttons
     let mx0=VW-mmw-8,my0=8;
     // phones with rounded screen corners (any safe-area inset): keep the map's outer corner out of the ~55 pt corner curve
     if(typeof TOUCH!=='undefined'&&TOUCH.on&&SAFE.t+SAFE.r+SAFE.b+SAFE.l>0){const need=56/UIS,gr=SAFE.r+5,gt=SAFE.t+5;if(gr<need&&gt<need){if(need-gr<=need-gt)mx0-=need-gr;else my0+=need-gt;}}drawMap(mx0,my0,mmw,false);UI.mm={x:mx0-3,y:my0-3,w:mmw+6,h:mmh+6+12};}

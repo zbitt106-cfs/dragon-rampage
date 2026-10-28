@@ -16,14 +16,14 @@ const ZONES={
   water:{ok:(x,y)=>!inSea(x,y)&&(inLake(x,y)||riverD(x,y)<RIVW-8),s:()=>{if(rnd()<.6){const a=R(0,TAU),r=R(0,.8);return{x:LAKE.x+Math.cos(a)*LAKE.rx*r,y:LAKE.y+Math.sin(a)*LAKE.ry*r};}
     const i=RI(0,RIVER.length-2),t=rnd();return{x:RIVER[i][0]+(RIVER[i+1][0]-RIVER[i][0])*t,y:RIVER[i][1]+(RIVER[i+1][1]-RIVER[i][1])*t};}},
   shore:{ok:(x,y)=>true,s:()=>{const a=R(0,TAU);return{x:LAKE.x+Math.cos(a)*LAKE.rx*1.06,y:LAKE.y+Math.sin(a)*LAKE.ry*1.06};}},
-  mountain:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+500&&x>WX0+300&&!inSea(x,y),s:()=>({x:R(-2700,5000+SEA_DX),y:R(-1700,-450)})},
+  mountain:{ok:(x,y)=>y<frostY(x)-120&&y>MWY0+500&&x>WX0+300&&!inSea(x,y),s:()=>({x:R(-2700,5000+SEA_DX),y:R(-1700,-450)})},
   hills:{ok:(x,y)=>{const k=regionKey(x,y);return k==='hills'||k==='crags';},s:()=>{const q=rnd();return q<.2?{x:R(2700,3150),y:R(950,1650)}:q<.7?{x:R(3300,5600),y:R(-50,2950)}:{x:R(6600,8400),y:R(1950,3150)};}},
   beach:{ok:onBeach,s:()=>{if(rnd()<.75){const y=R(-50,4300);return{x:coastX(y)-R(20,150),y};}const x=R(400,5300+SEA_DX);return{x,y:coastY(x)-R(20,130)};}},
   paddock:{ok:()=>true,s:()=>{const P=PADDOCKS[RI(0,PADDOCKS.length-1)];return{x:P.x+R(15,P.w-15),y:P.y+R(15,P.h-15),P};}},
   // the slopes around Dragon Peak: a healthy mountain-goat herd lives here
-  summit:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+420&&!inSea(x,y)&&d2(x,y,LAIR.x,LAIR.y)>230&&d2(x,y,LAIR.x,LAIR.y)<1300,s:()=>{const a=R(0,TAU),r=R(300,1150);return{x:LAIR.x+Math.cos(a)*r,y:LAIR.y+Math.sin(a)*r*.75};}},
+  summit:{ok:(x,y)=>y<frostY(x)-120&&y>MWY0+420&&!inSea(x,y)&&d2(x,y,LAIR.x,LAIR.y)>230&&d2(x,y,LAIR.x,LAIR.y)<1300,s:()=>{const a=R(0,TAU),r=R(300,1150);return{x:LAIR.x+Math.cos(a)*r,y:LAIR.y+Math.sin(a)*r*.75};}},
   // mountain lions prowl the snowy mountains and the eastern hills
-  peaks:{ok:(x,y)=>(y<frostY(x)-120&&y>WY0+420&&x>WX0+300&&!inSea(x,y))||regionKey(x,y)==='hills'||regionKey(x,y)==='crags',s:()=>{const q=rnd();return q<.6?{x:R(-2000,5000+SEA_DX),y:R(-1900,-500)}:q<.8?{x:R(3300,5600),y:R(-50,2950)}:{x:R(6600,8400),y:R(1950,3150)};}},
+  peaks:{ok:(x,y)=>(y<frostY(x)-120&&y>MWY0+420&&x>WX0+300&&!inSea(x,y))||regionKey(x,y)==='hills'||regionKey(x,y)==='crags',s:()=>{const q=rnd();return q<.6?{x:R(-2000,5000+SEA_DX),y:R(-1900,-500)}:q<.8?{x:R(3300,5600),y:R(-50,2950)}:{x:R(6600,8400),y:R(1950,3150)};}},
   any:{ok:(x,y)=>!inSea(x,y),s:()=>({x:D.x,y:D.y})}};
 let packId=0;
 function spawnWild(sp,far,at){const F=FAUNA[sp],zk=sp==='mgoat'&&rnd()<.7?'summit':F.zone,Z=ZONES[zk];let p=at||null;

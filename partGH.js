@@ -3,8 +3,8 @@
 const GH={centers:[[-8500,-950],[-6700,-1350],[-4900,-850]],goats:[4,6],lions:2,goatEvery:22,lionEvery:60};
 let GH_HERDS=[];
 function ghStructNear(x,y){for(const s of structures)if(d2(x,y,s.x,s.y)<110)return true;return false;}
-ZONES.dnpeaks={ok:(x,y)=>y<frostY(x)-120&&y>WY0+450&&x>WX0+350&&x<RANGE0-60&&!inSea(x,y)&&!inLake(x,y)&&(typeof riverD!=='function'||riverD(x,y)>RIVW+30)&&!ghStructNear(x,y),
-  s:()=>({x:R(WX0+500,RANGE0-200),y:R(WY0+550,-450)})};
+ZONES.dnpeaks={ok:(x,y)=>y<frostY(x)-120&&y>MWY0+450&&x>WX0+350&&x<RANGE0-60&&!inSea(x,y)&&!inLake(x,y)&&(typeof riverD!=='function'||riverD(x,y)>RIVW+30)&&!ghStructNear(x,y),
+  s:()=>({x:R(WX0+500,RANGE0-200),y:R(MWY0+550,-450)})};
 function ghPoint(h,r,far){for(let t=0;t<60;t++){const a=R(0,TAU),q=R(0,r),x=h.x+Math.cos(a)*q,y=h.y+Math.sin(a)*q*.7;if(ZONES.dnpeaks.ok(x,y)&&(!far||d2(x,y,D.x,D.y)>800))return{x,y};}return null;}
 function ghSpawn(h,sp){const far=G&&G.t>1,p=ghPoint(h,sp==='cougar'?420:220,far);if(!p)return null;const F=FAUNA[sp],big=sp==='cougar',hw=big?1300:900,hh=big?900:620;
   const u=mkUnit('animal',p.x,p.y,{species:sp,wild:true,zone:'dnpeaks',herd:h.i,home:{x:h.x-hw/2,y:h.y-hh/2,w:hw,h:hh},hp:F.hp,maxHp:F.hp,free:true,pack:0,t:R(0,3),jt:0});units.push(u);return u;}
