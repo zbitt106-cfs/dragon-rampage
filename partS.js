@@ -13,12 +13,16 @@ function seaPoint(minD,maxD,opt){opt=opt||{};for(let t=0;t<120;t++){let x,y;
     if(opt.avoidIsle&&d2(x,y,LH.x,LH.y)<900&&rnd()>.08)continue;if(d2(x,y,LH.x,LH.y)<LH.r+90)continue;if(opt.far&&d2(x,y,D.x,D.y)<1300)continue;return{x,y};}return null;}
 function lakePoint(r){const a=R(0,TAU),k=R(0,r||.75);return{x:LAKE.x+Math.cos(a)*LAKE.rx*k,y:LAKE.y+Math.sin(a)*LAKE.ry*k};}
 function mkSea(kind,x,y,o){const u=mkUnit('sea',x,y,Object.assign({kind,hp:10,maxHp:10,ang:R(0,TAU),cd:0,t:R(0,3)},o||{}));units.push(u);return u;}
+// the giant squid's lair point (spawn + roam centre): a random Kraken Deep point moved SQ_DY px south, kept ≥260 px inside the deep on every side
+const SQ_DY=320;
+function sqDeepOK(x,y){if(y>WY1-450||!inDeep(x,y))return false;for(let a=0;a<8;a++)if(!inDeep(x+Math.cos(a*TAU/8)*260,y+Math.sin(a*TAU/8)*260))return false;return true;}
+function sqSpot(far){let p=null;for(let t=0;t<40;t++){p=seaPoint(0,9e9,{deep:true,far});if(!p)continue;for(const dy of [SQ_DY,SQ_DY-70,SQ_DY+80])if(sqDeepOK(p.x,p.y+dy))return{x:p.x,y:p.y+dy,from:{x:p.x,y:p.y}};}return p;}
 function spawnSea(kind,far){let p;
   if(kind==='lakeschool'){p=lakePoint(.7);return mkSea('school',p.x,p.y,{n:RI(5,8),hp:999,maxHp:999,lake:true});}
   if(kind==='school'){p=seaPoint(120,2600,{far});if(p)mkSea('school',p.x,p.y,{n:RI(6,9),hp:999,maxHp:999});return;}
   if(kind==='shark'){p=seaPoint(350,3000,{far});if(p)mkSea('shark',p.x,p.y,{hp:28,maxHp:28});return;}
   if(kind==='whale'){p=seaPoint(700,3200,{far,noDeep:rnd()<.5});if(p)mkSea('whale',p.x,p.y,{hp:140,maxHp:140,spoutT:R(2,6)});return;}
-  if(kind==='squid'){p=seaPoint(0,9e9,{deep:true,far});if(p){mkSea('squid',p.x,p.y,{hp:700,maxHp:700,home:{x:p.x,y:p.y},state:'lurk',sub:1});float(D.x,D.y-120,'Something HUGE stirs in the Kraken Deep...','#c8a0ff');}return;}
+  if(kind==='squid'){p=sqSpot(far);if(p){mkSea('squid',p.x,p.y,{hp:700,maxHp:700,home:{x:p.x,y:p.y},state:'lurk',sub:1});float(D.x,D.y-120,'Something HUGE stirs in the Kraken Deep...','#c8a0ff');}return;}
   if(kind==='islander'){const job=units.some(u=>!u.dead&&u.kind==='islander'&&u.job==='keeper')?'fisher':'keeper';const a=R(0,TAU);
     mkSea('islander',job==='keeper'?LH.x+20:DOCK.x+R(-10,30),job==='keeper'?LH.y+40:DOCK.y+R(-20,20),{job,hp:8,maxHp:8,face:1,anim:0});return;}
   if(kind==='iseal'){const free=ISEAL_ROCKS.find(r=>!units.some(u=>!u.dead&&u.kind==='iseal'&&u.rock===r))||ISEAL_ROCKS[0];mkSea('iseal',free.x,free.y,{rock:free,state:'rock',hp:18,maxHp:18,face:rnd()<.5?1:-1});return;}

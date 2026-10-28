@@ -84,6 +84,7 @@ const PADDOCKS=[{x:1950,y:930,w:300,h:170},{x:1100,y:2480,w:420,h:240},{x:1300,y
 const ROCKS=[]; // decorative hills/rocks (not burnable)
 const LAIR={x:2300,y:-1750};        // the dragon's nest on Dragon Peak, the highest summit of the Frostpeak Mountains (deliver gold + princess here)
 const CABIN={x:-1500,y:1100};         // hunter's cabin deep in the north-west forest
+const CABINS=[CABIN,{x:-2300,y:3300,name:'Deepwood south'},{x:7600,y:300,name:'Eastwood'}]; // three hunters' cabins: Deepwood north (the original), Deepwood south, the Eastwood
 const WILD={x:-1950,y:780,w:900,h:700}; // deer & rabbit range around the cabin
 const PONDS=[{x:1200,y:600,rx:70,ry:42},{x:2080,y:1430,rx:80,ry:46},{x:1500,y:3300,rx:520,ry:300,lake:1},{x:3000,y:3470,rx:110,ry:28,lake:1}];
 const PRINCESS_TOWER={x:1790+CDX,y:125+CDY}; // decorative pink tower (the princess is held inside the keep)
@@ -114,7 +115,7 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
   FARMS.forEach((f,fi)=>{const s=addStruct('barn',f.barn.x,f.barn.y,f.v);s.farm=fi;
     const F=f.field;for(let y=F.y;y<F.y+F.h;y+=22)for(let x=F.x;x<F.x+F.w;x+=22)cells.push({x:x+11,y:y+11,crop:F.crop,growth:SR(.7,1),fire:0,burnt:false,farm:fi,claimed:null});});
   addStruct('logpile',LOGPILE_POS.x,LOGPILE_POS.y,-1);
-  addStruct('cabin',CABIN.x,CABIN.y,-1);
+  CABINS.forEach((C,ci)=>{const s=addStruct('cabin',C.x,C.y,-1);s.cb=ci;});
   const gt=addStruct('gate',GATE.x,CWALL.y1+6,-1);gt.hp=gt.maxHp=260+80*(lvl-1);
   const br=addStruct('barracks',1430+CDX,250+CDY,-1);br.hp=br.maxHp=220+60*(lvl-1);
   PR={x:KEEP_POS.x,y:KEEP_POS.y-30,state:'tower',quip:0,t:0}; // state 'tower' = held in the castle (inside the keep)
@@ -131,7 +132,7 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
       const P=f.pen;if(x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30)return true;if(d2(x,y,f.barn.x,f.barn.y)<70)return true;}
     if(x>2650&&y>920&&y<1680)return true; if(d2(x,y,CAMP.x,CAMP.y)<90||d2(x,y,LOGPILE_POS.x,LOGPILE_POS.y)<70)return true;
     if(d2(x,y,1600,1450)<120)return true; if(PONDS.some(p=>d2(x,y,p.x,p.y)<110))return true; if(inWater(x,y)||riverD(x,y)<RIVW+40||onBeach(x,y))return true;
-    {const lx=(x-LAKE.x)/(LAKE.rx+70),ly=(y-LAKE.y)/(LAKE.ry+70);if(lx*lx+ly*ly<1)return true;} if(PADDOCKS.some(P=>x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30))return true; if(d2(x,y,LAIR.x,LAIR.y)<170||d2(x,y,CABIN.x,CABIN.y)<75)return true; return false;};
+    {const lx=(x-LAKE.x)/(LAKE.rx+70),ly=(y-LAKE.y)/(LAKE.ry+70);if(lx*lx+ly*ly<1)return true;} if(PADDOCKS.some(P=>x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30))return true; if(d2(x,y,LAIR.x,LAIR.y)<170||CABINS.some(C=>d2(x,y,C.x,C.y)<75))return true; return false;};
   let tries=0;while(trees.length<240&&tries<5000){tries++;const x=SR(40,430),y=SR(300,2150);if(!blocked(x,y))addTree(x,y);}
   tries=0;while(trees.length<262&&tries<900){tries++;const x=SR(1250,1960),y=SR(120,440);if(!blocked(x,y)&&!(y<frostY(x)+60))addTree(x,y);} // a little wood where the old castle used to stand
   tries=0;while(trees.length<442&&tries<5000){tries++;const x=SR(40,WW-40),y=SR(420,WH-40);if(!blocked(x,y))addTree(x,y);}
@@ -185,8 +186,8 @@ function buildGround(){
   g.beginPath();g.ellipse(2760,1330,140,90,0,0,TAU);g.fill();
   // castle grounds, courtyard flagstones, roads to lair & cabin
   // (the castle grounds are painted into the world terrain now that Castle Aldric stands in the south; see buildTerrain)
-  g.fillStyle='rgba(40,70,30,.4)';g.beginPath();g.ellipse(CABIN.x,CABIN.y,90,70,0,0,TAU);g.fill();
-  g.fillStyle='#8a7a62';g.beginPath();g.ellipse(CABIN.x+10,CABIN.y+20,60,40,0,0,TAU);g.fill();
+  for(const C of CABINS){g.fillStyle='rgba(40,70,30,.4)';g.beginPath();g.ellipse(C.x,C.y,90,70,0,0,TAU);g.fill();
+  g.fillStyle='#8a7a62';g.beginPath();g.ellipse(C.x+10,C.y+20,60,40,0,0,TAU);g.fill();}
   g.fillStyle='#5a4a3a';g.beginPath();g.ellipse(LAIR.x,LAIR.y,170,120,0,0,TAU);g.fill();g.fillStyle='#6e5d48';g.beginPath();g.ellipse(LAIR.x,LAIR.y,130,90,0,0,TAU);g.fill();
   // ponds (ducks & geese)
   PONDS.forEach(p=>{g.fillStyle='#4a6a3a';g.beginPath();g.ellipse(p.x,p.y,p.rx+10,p.ry+8,0,0,TAU);g.fill();g.fillStyle='#3a6aa8';g.beginPath();g.ellipse(p.x,p.y,p.rx,p.ry,0,0,TAU);g.fill();
@@ -212,7 +213,10 @@ const DESX0=-9250;                                      // desert content keeps 
 const desW=y=>-8600+170*Math.sin(y/560+1)+80*Math.sin(y/190);   // desert | savanna border (wavy, blended in the terrain)
 const savW=y=>-12700+220*Math.sin(y/640+2)+90*Math.sin(y/230+.5); // savanna | jungle border
 const WHOLE={x:-10600,y:2050,rx:270,ry:165};            // the savanna watering hole
-function inWHole(x,y,k){const dx=(x-WHOLE.x)/WHOLE.rx,dy=(y-WHOLE.y)/WHOLE.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(k||1)*(1+.07*Math.sin(a*5+1));}
+const WHOLE2={x:-11300,y:3450,rx:230,ry:145,ph:2.3};      // a second, smaller watering hole in the south-west savanna (~1500 px from the first)
+const WHOLES=[WHOLE,WHOLE2];
+function inWHole1(H,x,y,k){const dx=(x-H.x)/H.rx,dy=(y-H.y)/H.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(k||1)*(1+.07*Math.sin(a*5+1+(H.ph||0)));}
+function inWHole(x,y,k){for(const H of WHOLES)if(inWHole1(H,x,y,k))return true;return false;}
 const JRIVER=[[-14250,-120],[-14650,420],[-14300,1000],[-14720,1600],[-14380,2200],[-14820,2800],[-14480,3400],[-14760,4000],[-14600,4700]],JRW=56; // the jungle river, mountains -> sea
 function jriverD(x,y){if(x>-13700||x<-15500)return 1e9;let m=1e9;for(let i=0;i<JRIVER.length-1;i++){const[ax,ay]=JRIVER[i],[bx,by]=JRIVER[i+1],dx=bx-ax,dy=by-ay;
   const t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy),0,1);const d=Math.hypot(x-ax-dx*t,y-ay-dy*t);if(d<m)m=d;}return m;}
@@ -232,7 +236,7 @@ function vnoise(x,y){const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx
 function fbm(x,y){return vnoise(x,y)*.5+vnoise(x*2.1+5,y*2.1+3)*.3+vnoise(x*4.3+9,y*4.3+1)*.2;}
 function riverD(x,y){let m=1e9;for(let i=0;i<RIVER.length-1;i++){const[ax,ay]=RIVER[i],[bx,by]=RIVER[i+1],dx=bx-ax,dy=by-ay;
   const t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy),0,1);const d=Math.hypot(x-ax-dx*t,y-ay-dy*t);if(d<m)m=d;}return m;}
-const inLake=(x,y)=>inOasis(x,y)||inLake0(x,y)||(x<-9800&&x>-11400&&inWHole(x,y));
+const inLake=(x,y)=>inOasis(x,y)||inLake0(x,y)||(x<-8600&&x>-12700&&inWHole(x,y));
 const inLake0=(x,y)=>{const dx=(x-LAKE.x)/LAKE.rx,dy=(y-LAKE.y)/LAKE.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<1+.07*Math.sin(a*5)+.04*Math.sin(a*9);};
 const LH={x:7350+SEA_DX,y:2100,r:290}; // the Lonely Lighthouse island, just before the deep water
 const onIsle=(x,y)=>{const dx=x-LH.x,dy=(y-LH.y)*1.25,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(LH.r*(1+.1*Math.sin(a*5)+.06*Math.sin(a*3+1)))**2;};
@@ -255,10 +259,10 @@ fixShoreFootprints();
 const onBeach=(x,y)=>!inSea(x,y)&&!onIsle(x,y)&&(x>coastX(y)-170||y>coastY(x)-150);
 const REGION_NAMES={farm:'The Kingdom Farmlands',castle:'Castle Aldric',forest:'The Deepwood',hills:'The Rocky Hills',lake:'Mirror Lake & the Silver River',
   mountain:'The Frostpeak Mountains',coast:'The Sapphire Coast',south:'The Southern Farmlands',lair:"Dragon's Roost (home)",sea:'The Sapphire Sea',isle:'The Lonely Lighthouse',deep:'The Kraken Deep',desert:'The Scorching Sands',eastwood:'The Eastwood',crags:'The Iron Crags',march:'The East March'};
-const REGION_SUB={farm:'Villages, farms and fat, tasty livestock',castle:'Gold, guards and Princess Elizabeth locked inside the keep: break its stone roof!',forest:"Deer, boars, wolves, bears and the hunter's cabin",
+const REGION_SUB={farm:'Villages, farms and fat, tasty livestock',castle:'Gold, guards and Princess Elizabeth locked inside the keep: break its stone roof!',forest:"Deer, boars, wolves, bears and two hunters' cabins",
   hills:'The mine, goats and rocky crags',lake:'Ducks, geese, jumping fish and busy beavers',mountain:'Snowy cliffs, mountain goats, eagles and hawks',
   coast:'Seagulls, crabs and lazy seals',south:'More villages and farms to explore',lair:'Your home base: land here to rest and heal',sea:'Swim or soar: fish, sharks, whales, boats and pirates!',isle:'A quiet rest stop: catch your breath and heal',deep:'Something huge stirs below... the GIANT SQUID',desert:'Dunes, cacti, camels, scorpions… and something under the sand',
-  eastwood:'The kingdom\'s second lumber camp, deer, boars and wolves',crags:'The new iron mine, goats and rocky crags',march:'New kingdom land: roads, carts and grazing'};
+  eastwood:'The kingdom\'s second lumber camp, a hunters\' cabin, deer, boars and wolves',crags:'The new iron mine, goats and rocky crags',march:'New kingdom land: roads, carts and grazing'};
 const REGION_LABEL={farm:[1000,1500],castle:[CASTLE.x,CWALL.y0-80],forest:[-1700,1700],hills:[4300,1300],lake:[1250,2960],mountain:[1500,-1500],coast:[8650,2400],south:[700,3500],lair:[LAIR.x,LAIR.y-260],sea:[6500,4900],isle:[7350+SEA_DX,2480],deep:[8850+SEA_DX,900],desert:[-6600,1150],eastwood:[7300,500],crags:[7600,2750],march:[6300,3350]};
 function regionKey(x,y){
   if(d2(x,y,LAIR.x,LAIR.y)<420)return'lair';
@@ -303,7 +307,7 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
     else if((wx>3250&&wy<3000)||(wx>2650&&wy>900&&wy<1700&&x>2600)){c=mix([112,132,82],[146,130,106],clamp(n*1.6-.3,0,1));}
     else{c=mix([86,134,56],[112,158,70],n);if(fbm(x/900+7,y/900)>.66)c=mix(c,[132,160,74],.5);}
     // muddy shores
-    if(!inWater(x,y)){const ldx=(x-LAKE.x)/(LAKE.rx*1.1),ldy=(y-LAKE.y)/(LAKE.ry*1.1);if(ldx*ldx+ldy*ldy<1.05||riverD(x,y)<RIVW+16)c=mix(c,[74,100,56],.6);else if(x<-9800&&(jriverD(x,y)<JRW+18||(x>-11400&&inWHole(x,y,1.3))))c=mix(c,[96,84,52],.65);}
+    if(!inWater(x,y)){const ldx=(x-LAKE.x)/(LAKE.rx*1.1),ldy=(y-LAKE.y)/(LAKE.ry*1.1);if(ldx*ldx+ldy*ldy<1.05||riverD(x,y)<RIVW+16)c=mix(c,[74,100,56],.6);else if(x<-9800&&(jriverD(x,y)<JRW+18||(x>-12700&&inWHole(x,y,1.3))))c=mix(c,[96,84,52],.65);}
     const k=(j*W+i)*4;d[k]=c[0];d[k+1]=c[1];d[k+2]=c[2];d[k+3]=255;}
   g.putImageData(im,0,0);
   // roads, plazas, fields & clearings outside the detailed core map (painted at low res)
@@ -315,7 +319,7 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   for(let i=5;i<V.length;i++){const v=V[i];g.fillStyle='#a8915f';g.beginPath();g.ellipse(v.x,v.y,120,90,0,0,TAU);g.fill();}
   FARMS.forEach(f=>{const F=f.field;g.fillStyle='#7a5a32';g.fillRect(F.x-4,F.y-4,F.w+8,F.h+8);const P=f.pen;g.fillStyle='#7fa84a';g.fillRect(P.x,P.y,P.w,P.h);});
   PADDOCKS.forEach(P=>{g.fillStyle='#86ad52';g.fillRect(P.x,P.y,P.w,P.h);});
-  g.fillStyle='rgba(30,60,26,.6)';g.beginPath();g.ellipse(CABIN.x,CABIN.y,110,80,0,0,TAU);g.fill();g.fillStyle='#8a7a62';g.beginPath();g.ellipse(CABIN.x+10,CABIN.y+20,70,45,0,0,TAU);g.fill();
+  for(const C of CABINS){g.fillStyle='rgba(30,60,26,.6)';g.beginPath();g.ellipse(C.x,C.y,110,80,0,0,TAU);g.fill();g.fillStyle='#8a7a62';g.beginPath();g.ellipse(C.x+10,C.y+20,70,45,0,0,TAU);g.fill();}
   g.fillStyle='#9a8256';g.beginPath();g.ellipse(CAMP2.x+30,CAMP2.y+30,135,115,0,0,TAU);g.fill();g.beginPath();g.ellipse(MINE2.x-60,MINE2.y+60,170,105,0,0,TAU);g.fill();
   g.fillStyle='#8c8e98';g.beginPath();g.ellipse(LAIR.x,LAIR.y+40,330,250,0,0,TAU);g.fill();g.fillStyle='#e8eef6';g.beginPath();g.ellipse(LAIR.x,LAIR.y+40,260,190,0,0,TAU);g.fill();g.fillStyle='#6e6a66';g.beginPath();g.ellipse(LAIR.x,LAIR.y,150,100,0,0,TAU);g.fill();
   g.restore();
@@ -495,7 +499,7 @@ function mkCavalry(x,y,o){return mkUnit('knight',x,y,Object.assign({mounted:true
 // ---------- roaming patrols (independent of the wanted meter) ----------
 let patrols=[],patrolId=0;
 const PATROL_MIX=[['knight','knight','archer'],['cavalry','cavalry','cavalry'],['archer','archer','archer','archer','knight','knight'],['knight','knight','knight'],['cavalry','knight','archer'],['cavalry','cavalry','archer','archer']];
-function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},{x:CABIN.x+110,y:CABIN.y+70},{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60},{x:CAMP2.x+130,y:CAMP2.y+20},{x:MINE2.x-120,y:MINE2.y+80},{x:LOGPILE2.x+60,y:LOGPILE2.y+60}];}
+function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},...CABINS.map(C=>({x:C.x+110,y:C.y+70})),{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60},{x:CAMP2.x+130,y:CAMP2.y+20},{x:MINE2.x-120,y:MINE2.y+80},{x:LOGPILE2.x+60,y:LOGPILE2.y+60}];}
 function spawnPatrol(){const lvl=G.lvl,mix=[...PATROL_MIX[RI(0,PATROL_MIX.length-1)]];for(let i=1;i<lvl;i++)mix.push(['knight','archer','cavalry'][RI(0,2)]);if(G.easy&&mix.length>2)mix.pop();
   const p={id:++patrolId,members:[],engaged:false,wp:null},hpM=1+.2*(lvl-1),colr=['#c33','#33c','#cc3','#3a3'][RI(0,3)];
   const wg=waveGates();mix.forEach((k,i)=>{const x=GATE.x+R(-20,20),y=GATE.y+10+i*6;let u;
@@ -1412,12 +1416,16 @@ function seaPoint(minD,maxD,opt){opt=opt||{};for(let t=0;t<120;t++){let x,y;
     if(opt.avoidIsle&&d2(x,y,LH.x,LH.y)<900&&rnd()>.08)continue;if(d2(x,y,LH.x,LH.y)<LH.r+90)continue;if(opt.far&&d2(x,y,D.x,D.y)<1300)continue;return{x,y};}return null;}
 function lakePoint(r){const a=R(0,TAU),k=R(0,r||.75);return{x:LAKE.x+Math.cos(a)*LAKE.rx*k,y:LAKE.y+Math.sin(a)*LAKE.ry*k};}
 function mkSea(kind,x,y,o){const u=mkUnit('sea',x,y,Object.assign({kind,hp:10,maxHp:10,ang:R(0,TAU),cd:0,t:R(0,3)},o||{}));units.push(u);return u;}
+// the giant squid's lair point (spawn + roam centre): a random Kraken Deep point moved SQ_DY px south, kept ≥260 px inside the deep on every side
+const SQ_DY=320;
+function sqDeepOK(x,y){if(y>WY1-450||!inDeep(x,y))return false;for(let a=0;a<8;a++)if(!inDeep(x+Math.cos(a*TAU/8)*260,y+Math.sin(a*TAU/8)*260))return false;return true;}
+function sqSpot(far){let p=null;for(let t=0;t<40;t++){p=seaPoint(0,9e9,{deep:true,far});if(!p)continue;for(const dy of [SQ_DY,SQ_DY-70,SQ_DY+80])if(sqDeepOK(p.x,p.y+dy))return{x:p.x,y:p.y+dy,from:{x:p.x,y:p.y}};}return p;}
 function spawnSea(kind,far){let p;
   if(kind==='lakeschool'){p=lakePoint(.7);return mkSea('school',p.x,p.y,{n:RI(5,8),hp:999,maxHp:999,lake:true});}
   if(kind==='school'){p=seaPoint(120,2600,{far});if(p)mkSea('school',p.x,p.y,{n:RI(6,9),hp:999,maxHp:999});return;}
   if(kind==='shark'){p=seaPoint(350,3000,{far});if(p)mkSea('shark',p.x,p.y,{hp:28,maxHp:28});return;}
   if(kind==='whale'){p=seaPoint(700,3200,{far,noDeep:rnd()<.5});if(p)mkSea('whale',p.x,p.y,{hp:140,maxHp:140,spoutT:R(2,6)});return;}
-  if(kind==='squid'){p=seaPoint(0,9e9,{deep:true,far});if(p){mkSea('squid',p.x,p.y,{hp:700,maxHp:700,home:{x:p.x,y:p.y},state:'lurk',sub:1});float(D.x,D.y-120,'Something HUGE stirs in the Kraken Deep...','#c8a0ff');}return;}
+  if(kind==='squid'){p=sqSpot(far);if(p){mkSea('squid',p.x,p.y,{hp:700,maxHp:700,home:{x:p.x,y:p.y},state:'lurk',sub:1});float(D.x,D.y-120,'Something HUGE stirs in the Kraken Deep...','#c8a0ff');}return;}
   if(kind==='islander'){const job=units.some(u=>!u.dead&&u.kind==='islander'&&u.job==='keeper')?'fisher':'keeper';const a=R(0,TAU);
     mkSea('islander',job==='keeper'?LH.x+20:DOCK.x+R(-10,30),job==='keeper'?LH.y+40:DOCK.y+R(-20,20),{job,hp:8,maxHp:8,face:1,anim:0});return;}
   if(kind==='iseal'){const free=ISEAL_ROCKS.find(r=>!units.some(u=>!u.dead&&u.kind==='iseal'&&u.rock===r))||ISEAL_ROCKS[0];mkSea('iseal',free.x,free.y,{rock:free,state:'rock',hp:18,maxHp:18,face:rnd()<.5?1:-1});return;}
@@ -4492,7 +4500,7 @@ FAUNA_ART.add('croc');
 const CROC_PLAN=[['river',3],['lake',2],['pond0',1],['pond1',1],['pond3',1],['jriver',4],['whole',1]];
 function inPondE(p,x,y,k){const dx=(x-p.x)/p.rx,dy=(y-p.y)/p.ry;return dx*dx+dy*dy<(k||.7);}
 function isFresh(x,y){if(inSea(x,y)||inOasis(x,y))return false;return inLake0(x,y)||riverD(x,y)<RIVW-12||jriverD(x,y)<JRW-12||inWHole(x,y,.75)||PONDS.some(p=>!(p.x===LAKE.x&&p.y===LAKE.y)&&inPondE(p,x,y));}
-function freshDist(x,y){let m=Math.min(riverD(x,y)-RIVW,jriverD(x,y)-JRW);{const dx=(x-WHOLE.x)/WHOLE.rx,dy=(y-WHOLE.y)/WHOLE.ry;m=Math.min(m,(Math.hypot(dx,dy)-1)*WHOLE.ry);}const lx=(x-LAKE.x)/LAKE.rx,ly=(y-LAKE.y)/LAKE.ry;m=Math.min(m,(Math.hypot(lx,ly)-1)*Math.min(LAKE.rx,LAKE.ry));
+function freshDist(x,y){let m=Math.min(riverD(x,y)-RIVW,jriverD(x,y)-JRW);for(const H of WHOLES){const dx=(x-H.x)/H.rx,dy=(y-H.y)/H.ry;m=Math.min(m,(Math.hypot(dx,dy)-1)*H.ry);}const lx=(x-LAKE.x)/LAKE.rx,ly=(y-LAKE.y)/LAKE.ry;m=Math.min(m,(Math.hypot(lx,ly)-1)*Math.min(LAKE.rx,LAKE.ry));
   for(const p of PONDS){const dx=(x-p.x)/p.rx,dy=(y-p.y)/p.ry;m=Math.min(m,(Math.hypot(dx,dy)-1)*Math.min(p.rx,p.ry));}return m;}
 function crocBody(x,y){if(inLake0(x,y))return 'lake';if(inWHole(x,y,1.2))return 'whole';if(jriverD(x,y)<JRW+30)return 'jriver';for(const i of[0,1,3]){const p=PONDS[i];if(p&&inPondE(p,x,y,1))return 'pond'+i;}return 'river';}
 function crocSpot(body){for(let t=0;t<60;t++){let x,y;
@@ -4575,7 +4583,7 @@ Object.assign(REGION_LABEL,{savanna:[-10700,1250],jungle:[-14700,1500]});
 // ---------- terrain colour, blended smoothly desert -> savanna -> jungle ----------
 const sjMix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],sjS=t=>t*t*(3-2*t);
 function savCol(x,y,n){let c=sjMix([204,174,88],[178,150,70],n);const g=fbm(x/700+11,y/700);if(g>.62)c=sjMix(c,[150,152,74],.45);else if(g<.34)c=sjMix(c,[222,196,128],.4);
-  const wd=Math.hypot((x-WHOLE.x)/(WHOLE.rx+300),(y-WHOLE.y)/(WHOLE.ry+230));if(wd<1.35)c=sjMix([104,140,62],c,clamp((wd-.8)/.55,0,1));return c;}
+  const wd=Math.min(...WHOLES.map(H=>Math.hypot((x-H.x)/(H.rx+300),(y-H.y)/(H.ry+230))));if(wd<1.35)c=sjMix([104,140,62],c,clamp((wd-.8)/.55,0,1));return c;}
 function junCol(x,y,n){let c=sjMix([30,80,36],[50,106,44],n);const g=fbm(x/240+40,y/240);if(g>.6)c=sjMix(c,[18,54,26],.5);else if(g<.3)c=sjMix(c,[66,122,50],.35);
   for(const r of RUINS){const d=d2(x,y,r.x,r.y);if(d<r.w*.75)c=sjMix([128,124,104],c,clamp((d-r.w*.45)/(r.w*.3),0,1));}return c;}
 function westCol(x,y,wx,wy,n){const tD=clamp((wx-desW(wy))/700+.5,0,1);if(tD>=1)return desertCol(x,y,n);const tJ=clamp((savW(wy)-wx)/700+.5,0,1);
@@ -4586,7 +4594,7 @@ function addWildDecor(r,Rr){const okS=(x,y)=>regionKey(x,y)==='savanna'&&!inWate
   for(let i=0;i<50;i++){const x=Rr(-12900,-8500),y=Rr(-100,4200);if(okS(x,y))DECOR.push({k:'termite',x,y,s:Rr(.8,1.35)});}
   for(let i=0;i<320;i++){const x=Rr(-12950,-8350),y=Rr(-150,4250);if(okS(x,y))DECOR.push({k:'tuft',x,y,s:Rr(.7,1.3),lo:i%2});}
   for(let i=0;i<12;i++){const x=Rr(-12600,-8800),y=Rr(100,4000);if(okS(x,y))DECOR.push({k:'kopje',x,y,s:Rr(.8,1.3)});}
-  for(let i=0;i<34;i++){const a=i/34*TAU+Rr(-.1,.1),k=Rr(1.03,1.15);DECOR.push({k:'reed',x:WHOLE.x+Math.cos(a)*WHOLE.rx*k,y:WHOLE.y+Math.sin(a)*WHOLE.ry*k});}
+  for(const H of WHOLES){const n=H===WHOLE?34:28;for(let i=0;i<n;i++){const a=i/n*TAU+Rr(-.1,.1),k=Rr(1.03,1.15);DECOR.push({k:'reed',x:H.x+Math.cos(a)*H.rx*k,y:H.y+Math.sin(a)*H.ry*k});}}
   for(let i=0;i<560;i++){const x=Rr(-16800,-12450),y=Rr(-150,4250);if(okJ(x,y))DECOR.push({k:'jtree',x,y,s:Rr(.85,1.5),v:r()<.6?1:0});}
   for(let i=0;i<460;i++){const x=Rr(-16800,-12450),y=Rr(-150,4250);if(okJ(x,y))DECOR.push({k:'fern',x,y,s:Rr(.7,1.4),lo:i%2});}
   for(let i=0;i<70;i++){const j=Math.floor(r()*(JRIVER.length-1)),p=JRIVER[j],q=JRIVER[j+1],t=r(),x=p[0]+(q[0]-p[0])*t+(r()<.5?-1:1)*(JRW+12),y=p[1]+(q[1]-p[1])*t;if(!inWater(x,y)&&regionKey(x,y)==='jungle')DECOR.push({k:'reed',x,y});}
@@ -5627,6 +5635,41 @@ function huUpd(dt){G.hunterT=1e9;if(G.over||G.won)return;if(!Array.isArray(G.huT
 {const _ss=svSnapshot;svSnapshot=function(){const S=[];for(const u of huLive())S.push(u.hs,Math.round(u.hp));G.huS=S;return _ss.apply(this,arguments);};}
 {const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);const S=d&&d.G&&d.G.huS;if(Array.isArray(S)){for(const u of units)if(u.type==='hunter')u.dead=true;units=units.filter(u=>u.type!=='hunter');
     for(let i=0;i+1<S.length;i+=2){const h=spawnHunter(S[i]);h.hp=Math.min(h.maxHp,S[i+1]);}G.hunterT=1e9;}return r;};}
+// ======================= partCB: THREE hunters' cabins (Deepwood north, Deepwood south, the Eastwood) =======================
+// CABINS (part1) lists the cabins; each is a 'cabin' structure with s.cb = its index. Hunter slots run 0..8: slot hs belongs to cabin floor(hs/3),
+// so every cabin keeps its own trio with exactly the rules of the first one (bow/dagger AI, per-hunter respawn timers, worker refill after a rebuild,
+// militia corner posts, save/load). The single-cabin code in partHU is reused by briefly pointing CABIN at the hunter's own cabin.
+const CB_N=CABINS.length,HU_ALL=HU_N*CB_N;
+const cbOf=u=>u&&u.cb!==undefined?u.cb:Math.floor((u&&u.hs||0)/HU_N)%CB_N;
+const cbSite=ci=>ci?'cabin'+ci:'cabin';
+function cbStruct(ci){return structures.find(s=>s.kind==='cabin'&&(s.cb||0)===ci);}
+function cbWith(ci,fn){const C=CABINS[ci];if(!C||C===CABIN||!ci)return fn();const ox=CABIN.x,oy=CABIN.y;CABIN.x=C.x;CABIN.y=C.y;try{return fn();}finally{CABIN.x=ox;CABIN.y=oy;}}
+HU.want=null;
+huFreeSlot=function(){const used=new Set(huLive().map(u=>u.hs));const order=HU.want!==null&&HU.want!==undefined?[HU.want]:[...Array(CB_N).keys()];
+  for(const c of order)for(let i=c*HU_N;i<c*HU_N+HU_N;i++)if(!used.has(i))return i;return order.length===1?order[0]*HU_N:HU_ALL;};
+huWalkers=function(ci){const id=cbSite(ci||0);return units.filter(u=>!u.dead&&u.wk&&u.wk.id===id&&!u.wk.back).length;};
+{const _sh=spawnHunter;spawnHunter=function(slot){const s=(slot!==undefined&&slot!==null)?slot:huFreeSlot();const ci=Math.floor(s/HU_N)%CB_N;
+  const u=cbWith(ci,()=>_sh.call(this,s));u.hs=s;u.cb=ci;u.home=CABINS[ci];return u;};}
+{const _h=updHunter;updHunter=function(u,dt){if(u.hs===undefined)u.hs=huFreeSlot();if(u.cb===undefined)u.cb=Math.floor(u.hs/HU_N)%CB_N;const a=arguments,t=this;return cbWith(u.cb,()=>_h.apply(t,a));};}
+{const _kp=kmPost;kmPost=function(u){const a=arguments,t=this;if(u&&u.type==='hunter')return cbWith(cbOf(u),()=>_kp.apply(t,a));return _kp.apply(t,a);};}
+// all three trios muster at the start
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);for(const C of CABINS)if(C!==CABIN&&typeof jtClear==='function')jtClear(C.x+10,C.y+15,125);
+  while(huLive().length<HU_ALL&&huFreeSlot()<HU_ALL)spawnHunter();G.huT=Array(HU_ALL).fill(HU_RESP);HU.last=-9;G.hunterT=1e9;return r;};}
+// per-cabin worker refill sites (need 3 each)
+{const _ws=wkSites;wkSites=function(){const L=_ws.apply(this,arguments);const i=L.findIndex(s=>s.id==='cabin');if(i<0)return L;const b=L[i];b.cb=0;b.bp=s=>s.kind==='cabin'&&!s.cb;
+  const add=CABINS.slice(1).map((C,k)=>Object.assign({},b,{id:cbSite(k+1),cb:k+1,name:"hunters' cabin ("+C.name+")",bp:s=>s.kind==='cabin'&&s.cb===k+1,x:C.x+30,y:C.y+30}));L.splice(i+1,0,...add);return L;};}
+{const _wi=wkIsWorker;wkIsWorker=function(u,site){if(site&&site.job==='hunter'){if(u.dead||u.wk)return false;return u.type==='hunter'&&cbOf(u)===(site.cb||0);}return _wi.apply(this,arguments);};}
+{const _wa=wkArrive;wkArrive=function(u,site){if(site&&site.job==='hunter'){const w=HU.want;HU.want=site.cb||0;try{return _wa.apply(this,arguments);}finally{HU.want=w;}}return _wa.apply(this,arguments);};}
+// respawn: each cabin runs the partHU rules for its own three slots
+huUpd=function(dt){G.hunterT=1e9;if(G.over||G.won)return;if(!Array.isArray(G.huT)||G.huT.length<HU_ALL){const o=G.huT||[];G.huT=Array.from({length:HU_ALL},(_,i)=>o[i]!==undefined?o[i]:HU_RESP);}
+  const live=huLive(),used=new Set(live.map(u=>u.hs));
+  for(let c=0;c<CB_N;c++){const cab=cbStruct(c),site=WK.find(s=>s.id===cbSite(c));let room=HU_N-live.filter(u=>cbOf(u)===c).length-huWalkers(c),k=0;
+    for(let j=0;j<HU_N;j++){const i=c*HU_N+j;if(used.has(i)){G.huT[i]=HU_RESP+HU_STAG*j;continue;}
+      if(!cab||cab.state!=='ok'||(site&&(site.down||site.refill))||room<=0){G.huT[i]=Math.max(G.huT[i],HU_RESP+HU_STAG*k);k++;continue;}
+      G.huT[i]-=dt;k++;if(G.huT[i]<=0){G.huT[i]=HU_RESP;spawnHunter(i);room--;}}}};
+// save / load: slots already carry the cabin; saves from before the extra cabins get the two new trios at once
+{const _ss=svSnapshot;svSnapshot=function(){G.cbV=CB_N;return _ss.apply(this,arguments);};}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);if(d&&d.G&&!d.G.cbV){HU.want=null;for(let c=1;c<CB_N;c++){HU.want=c;while(huLive().filter(u=>cbOf(u)===c).length<HU_N)spawnHunter();}HU.want=null;G.cbV=CB_N;}return r;};}
 // ======================= partNW: GORILLAS, GIANT RIVER OTTERS (jungle) · DOLPHINS, ORCAS, FLYING FISH, MARINE IGUANAS (coast & sea) =======================
 // Family-friendly cartoon wildlife: predators "gulp" prey in a puff, no gore. All wild: eating them never raises wanted.
 // + the small wild dragons of Dragon Peaks give +10 permanent max health each (same-life rule as the kraken / sand worm / octopus).
@@ -6397,12 +6440,16 @@ if(typeof svSnapshot==='function'){const _sn=svSnapshot;svSnapshot=function(){co
 // ================= partJT: the ANCIENT JUNGLE TEMPLE (destructible, 100 gold) + MOUNT EMBER (a second lava volcano, far SW jungle) =================
 // Temple: overgrown stepped stone temple with vines. Stone: fire alone never hurts it; stomps (Q, the land claw/stomp), bites and lava do.
 // Wrecked -> cartoon rubble burst + 100 gold straight to the lair hoard ("+100"). Never rebuilt; back every level (initStructsK). Tally + save/load.
-const JT={x:-13700,y:600,hp:700,gold:100,bite:40};
+// the temple stands on the east flank of Mount Ember (VOLC2 at -16650,3950): ~550 px from the crater, clear of the cone, the drink ring
+// and the lava bomb puddles that land south of the cone. It used to stand deep in the jungle at (-13700,600).
+const JT={x:-16110,y:3830,hp:700,gold:100,bite:40,oldX:-13700,oldY:600};
 KDEF.jtemple={name:'Ancient jungle temple',hp:JT.hp,stone:1,cost:[0,0],gold:[0,0],pts:150,alarm:0,sz:80};COST.jtemple=[0,0];STRUCT_NAME.jtemple=KDEF.jtemple.name;
 const JT_LOCK={lock:1,task:null,dead:false,state:'lock'}; // a "builder" that never comes: masons and self-repair skip the ruin
 function jtS(){return structures.find(s=>s.kind==='jtemple');}
 {const B=TALLY_SECT.find(s=>s.id==='build');if(B&&!B.keys.some(k=>k[0]==='b:jtemple'))B.keys.push(['b:jtemple','Ancient jungle temples']);TALLY_LABEL['b:jtemple']='Ancient jungle temples';}
 function jtClear(x,y,r){const far=o=>Math.hypot(o.x-x,(o.y-y)*1.25)>r;DECOR=DECOR.filter(o=>far(o));if(trees)trees=trees.filter(far);if(typeof ROCKS!=='undefined')for(let i=ROCKS.length-1;i>=0;i--)if(!far(ROCKS[i]))ROCKS.splice(i,1);}
+// old saves remember the temple at its old spot: move that record to the new spot so its state (standing / rubble) carries over
+{const _sa=svApply;svApply=function(d){try{if(d&&Array.isArray(d.S))for(const r of d.S)if(r&&r.kind==='jtemple'&&Math.hypot(r.x-JT.x,r.y-JT.y)>300){r.x=JT.x;r.y=JT.y;}}catch(e){}return _sa.apply(this,arguments);};}
 {const _i=initStructsK;initStructsK=function(){const r=_i.apply(this,arguments);if(!jtS()){const s=kAdd('jtemple',JT.x,JT.y,-1);s.hasGold=false;}return r;};}
 {const _s=stoneFire;stoneFire=function(s,dt){if(s&&s.kind==='jtemple')return;return _s.apply(this,arguments);};}
 {const _o=onRuin;onRuin=function(s){if(!s||s.kind!=='jtemple')return _o.apply(this,arguments);s.hasGold=false;const r=_o.apply(this,arguments);s.builder=JT_LOCK;
@@ -6454,10 +6501,10 @@ function nearV2(){return D&&D.mode==='ground'&&D.alt<.3&&!D.swim&&Math.hypot(D.x
 {const _t=txt;txt=function(s){if(VOLC.v2&&s==='Mount Cinder')arguments[0]=VOLC2.name;return _t.apply(this,arguments);};}
 {const _dv=drawVolcano;drawVolcano=function(){_dv.apply(this,arguments);if(Math.abs(cam.x-VOLC2.x)>1900||Math.abs(cam.y-VOLC2.y)>1400)return;withV2(()=>_dv.apply(this,arguments));};}
 // site: no trees, plants, rocks or animals on the cone; animals never spawn there
-function v2Clear(){jtClear(VOLC2.x,VOLC2.y,340);jtClear(VOLC2.x,VOLC2.y+120,300);jtClear(JT.x,JT.y-30,190);
-  for(const u of units)if(u.type==='animal'&&!u.dead&&(Math.hypot(u.x-VOLC2.x,u.y-VOLC2.y)<450||Math.hypot(u.x-JT.x,u.y-JT.y)<200)){u.x+=u.x<VOLC2.x+600?700:0;u.y-=400;}
+function v2Clear(){jtClear(VOLC2.x,VOLC2.y,340);jtClear(VOLC2.x,VOLC2.y+120,300);jtClear(JT.x,JT.y,270);jtClear((JT.x+VOLC2.x)/2+60,(JT.y+VOLC2.y)/2,200);
+  for(const u of units)if(u.type==='animal'&&!u.dead&&(Math.hypot(u.x-VOLC2.x,u.y-VOLC2.y)<450||Math.hypot(u.x-JT.x,u.y-JT.y)<280)){u.x+=u.x<VOLC2.x+600?700:0;u.y-=400;}
   if(typeof pbIndex==='function')pbIndex();}
-const JV_NOSPAWN=(x,y)=>Math.hypot(x-VOLC2.x,y-VOLC2.y)<480||Math.hypot(x-JT.x,y-JT.y)<220;
+const JV_NOSPAWN=(x,y)=>Math.hypot(x-VOLC2.x,y-VOLC2.y)<480||Math.hypot(x-JT.x,y-JT.y)<300;
 for(const k in ZONES){const z=ZONES[k];if(z&&typeof z.ok==='function'){const _ok=z.ok;z.ok=function(x,y){return !JV_NOSPAWN(x,y)&&_ok.apply(this,arguments);};}}
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);v2Clear();VOLC2_T={erupt:9,smoke:0,warn:0};return r;};}
 // smoke, rumbling eruptions, and lava embers that set the nearby jungle alight
@@ -6478,7 +6525,7 @@ function updVolc2(dt){const V=VOLC2,T=VOLC2_T,near=Math.abs(cam.x-V.x)<1600&&Mat
 {const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s,p=.6+.4*Math.sin(G.t*3);
   const vol=(V,lab)=>{const x=X(V.x),y=Y(V.y),k=big?1:.6;poly([x-8*k,y+5*k,x-2.5*k,y-5*k,x+2.5*k,y-5*k,x+8*k,y+5*k],'#5a4a44');ell(x,y-5*k,3*k,1.4*k,`rgba(255,${120+80*p|0},40,1)`);if(big)txt(lab,x,y+16,9,'#ffb070','center',false);G.v2MapDrawn=(G.v2MapDrawn||0)+1;};
   vol(VOLC,'Mount Cinder');vol(VOLC2,'🌋 Mount Ember');
-  const t=jtS();if(t&&(typeof seen!=='function'||seen(t.x,t.y))){ctx.fillStyle=t.state==='ok'?'#d8d0a0':'#555';const x=X(t.x),y=Y(t.y);poly([x-5,y+3,x+5,y+3,x+2,y-4,x-2,y-4],t.state==='ok'?'#c8c09a':'#555');if(big)txt(t.state==='ok'?'Ancient Temple':'Temple (rubble)',x,y+13,9,'#e8e0b0','center',false);}}catch(e){}return r;};}
+  const t=jtS();if(t&&(typeof seen!=='function'||seen(t.x,t.y))){ctx.fillStyle=t.state==='ok'?'#d8d0a0':'#555';const x=X(t.x),y=Y(t.y);poly([x-5,y+3,x+5,y+3,x+2,y-4,x-2,y-4],t.state==='ok'?'#c8c09a':'#555');if(big)txt(t.state==='ok'?'Ancient Temple':'Temple (rubble)',x+6,y-8,9,'#e8e0b0','center',false);}}catch(e){}return r;};}
 // ================= partEC: the TOWN ECONOMY (houses and merchant shops slowly earn gold; the tax man collects it) =================
 // Hidden by design: building gold is never shown (no HUD, no menu line, no coin stacks, no text on buildings).
 // It only becomes the KINGDOM's gold when a tax collector carries his sack into the castle (the castle gold piles).
@@ -6982,6 +7029,15 @@ const _drawCrashFxKA=drawCrashFx;drawCrashFx=function(){_drawCrashFxKA.apply(thi
     rect(p.x-36,p.y-70,72,8,'rgba(0,0,0,.65)');rect(p.x-34,p.y-68,68*k,4,'#ffd23a');txt('Suiting up!',p.x,p.y-76,11,'#ffe08a','center');}
   if(KA.phase==='shelter'&&d2(D.x,D.y,KEEP_POS.x,KEEP_POS.y)<1400){const f=KA.maxHp?KA.hp/KA.maxHp:1,y=KEEP_POS.y-170,w=120;
     txt('🛡 King William is resting in the keep',KEEP_POS.x,y-6,11,'#ffe08a','center');rect(KEEP_POS.x-w/2-2,y-2,w+4,9,'rgba(0,0,0,.65)');rect(KEEP_POS.x-w/2,y,w*f,5,'#7ad070');}};
+// ---- no NEW hoard raids while King William's encounter runs (from 'To the armoury!' through fight, shelter, second wind, dizzy, charge / princess chase).
+// A raid already warned or marching before he went to suit up carries on as normal. When he is calm again the usual raid timers resume after a short grace.
+const KA_RAID_GRACE=20;
+function kaBusy(){return !!G&&KA.phase!=='home'&&KA.phase!=='toHome';}
+{const _ur=updRaids;updRaids=function(dt){if(scene!=='play'||!G||G.over||G.won)return _ur.apply(this,arguments);
+  if(kaBusy()){if(!RAID.cur){KA.raidHold=1;return;}return _ur.apply(this,arguments);} // existing raid continues; new ones wait (cooldown frozen, nothing queued)
+  if(KA.raidHold){KA.raidHold=0;RAID.cd=Math.max(RAID.cd,KA_RAID_GRACE);}return _ur.apply(this,arguments);};}
+{const _cl=raidCdLine;raidCdLine=function(){if(G&&RAID&&!RAID.cur&&kaBusy())return'🛡 No hoard raids while King William is fighting';return _cl.apply(this,arguments);};}
+{const _kr=kaReset;kaReset=function(){KA.raidHold=0;return _kr.apply(this,arguments);};}
 // ======================= partES: THE EAST MARCH (map v2) — a 2nd lumber camp (the Eastwood) and a 2nd mine (the Iron Crags) =======================
 // The Sapphire Coast moved SEA_DX east (partW), opening new kingdom land between Saltmere and the sea. Each new site has its own yard
 // (G.yard2Wood / G.yard2Stone), 3 workers, mine carts (G.cartsPool2), supply carts to the Castle Storehouse along new roads from Saltmere,
@@ -7302,7 +7358,7 @@ function drawMap(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),mmh=(WY1-WY0)*s,X=x=>mmx
     for(const c of carts)if(c.supply&&!c.wrecked){ctx.fillStyle=c.kind==='wood'?'#c08040':'#c8c8c8';ctx.fillRect(X(c.x)-(big?3:1.5),Y(c.y)-(big?3:1.5),big?6:3,big?6:3);}}
   {const fs=big?11:8,sc=fs/12,a=typeof uiAmt==='function'?uiAmt(treasury()):String(treasury()),cy=Y(CASTLE.y)-(big?20:7);if(big)txt('♜ Castle Aldric',X(CASTLE.x),cy-14,fs,'#ffd84a','center');ctx.font=`bold ${fs}px Georgia`;const w=22*sc+ctx.measureText(a).width,x=X(CASTLE.x)-w/2;if(typeof uiCastle==='function'){uiCastle(x+8*sc,cy-fs*.35,sc);uiCoin(x+15*sc,cy-fs*.35+3*sc,sc);}txt(a,x+22*sc,cy,fs,'#ffd84a','left');}
   ell(X(LAIR.x),Y(LAIR.y),big?8:5,big?6:4,'#c80');txt(big?'LAIR (home)':'LAIR',X(LAIR.x),Y(LAIR.y)-6,9,'#ffd27a','center');
-  if(seen(CABIN.x,CABIN.y))ell(X(CABIN.x),Y(CABIN.y),3,3,'#7c4');if(PR.state==='tower'){const pb=big?5:3.5;ell(X(PR.x),Y(PR.y),pb+1.5,pb+1.5,'#fff');ell(X(PR.x),Y(PR.y),pb,pb,'#f6c');txt(big?(roofOpen()?'♛ Princess (roof broken!)':'♛ Princess (in the keep)'):'♛',X(PR.x)-(big?24:0),Y(PR.y)+(big?4:-5),big?10:9,'#ffb0dc',big?'right':'center',false);}
+  for(const C of CABINS)if(seen(C.x,C.y)){const s=structures.find(q=>q.kind==='cabin'&&(q.cb||0)===CABINS.indexOf(C));ell(X(C.x),Y(C.y),big?4:3,big?4:3,s&&s.state!=='ok'?'#555':'#7c4');if(big)txt(s&&s.state!=='ok'?'Cabin (burned)':"Hunters' cabin",X(C.x),Y(C.y)+13,9,'#cfe8b0','center',false);}if(PR.state==='tower'){const pb=big?5:3.5;ell(X(PR.x),Y(PR.y),pb+1.5,pb+1.5,'#fff');ell(X(PR.x),Y(PR.y),pb,pb,'#f6c');txt(big?(roofOpen()?'♛ Princess (roof broken!)':'♛ Princess (in the keep)'):'♛',X(PR.x)-(big?24:0),Y(PR.y)+(big?4:-5),big?10:9,'#ffb0dc',big?'right':'center',false);}
   ell(X(D.x),Y(D.y),big?6:4,big?6:4,Math.floor(G.t*4)%2?'#f33':'#ff0');
   ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1;ctx.strokeRect(X(cam.x-VW/2/cam.z),Y(cam.y-VH/2/cam.z),VW/cam.z*s,VH/cam.z*s);
   if(big){// region names last, nudged off the town / castle / princess labels (skipped if there's no room)

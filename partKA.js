@@ -166,3 +166,12 @@ const _drawCrashFxKA=drawCrashFx;drawCrashFx=function(){_drawCrashFxKA.apply(thi
     rect(p.x-36,p.y-70,72,8,'rgba(0,0,0,.65)');rect(p.x-34,p.y-68,68*k,4,'#ffd23a');txt('Suiting up!',p.x,p.y-76,11,'#ffe08a','center');}
   if(KA.phase==='shelter'&&d2(D.x,D.y,KEEP_POS.x,KEEP_POS.y)<1400){const f=KA.maxHp?KA.hp/KA.maxHp:1,y=KEEP_POS.y-170,w=120;
     txt('🛡 King William is resting in the keep',KEEP_POS.x,y-6,11,'#ffe08a','center');rect(KEEP_POS.x-w/2-2,y-2,w+4,9,'rgba(0,0,0,.65)');rect(KEEP_POS.x-w/2,y,w*f,5,'#7ad070');}};
+// ---- no NEW hoard raids while King William's encounter runs (from 'To the armoury!' through fight, shelter, second wind, dizzy, charge / princess chase).
+// A raid already warned or marching before he went to suit up carries on as normal. When he is calm again the usual raid timers resume after a short grace.
+const KA_RAID_GRACE=20;
+function kaBusy(){return !!G&&KA.phase!=='home'&&KA.phase!=='toHome';}
+{const _ur=updRaids;updRaids=function(dt){if(scene!=='play'||!G||G.over||G.won)return _ur.apply(this,arguments);
+  if(kaBusy()){if(!RAID.cur){KA.raidHold=1;return;}return _ur.apply(this,arguments);} // existing raid continues; new ones wait (cooldown frozen, nothing queued)
+  if(KA.raidHold){KA.raidHold=0;RAID.cd=Math.max(RAID.cd,KA_RAID_GRACE);}return _ur.apply(this,arguments);};}
+{const _cl=raidCdLine;raidCdLine=function(){if(G&&RAID&&!RAID.cur&&kaBusy())return'🛡 No hoard raids while King William is fighting';return _cl.apply(this,arguments);};}
+{const _kr=kaReset;kaReset=function(){KA.raidHold=0;return _kr.apply(this,arguments);};}

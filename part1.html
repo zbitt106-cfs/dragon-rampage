@@ -84,6 +84,7 @@ const PADDOCKS=[{x:1950,y:930,w:300,h:170},{x:1100,y:2480,w:420,h:240},{x:1300,y
 const ROCKS=[]; // decorative hills/rocks (not burnable)
 const LAIR={x:2300,y:-1750};        // the dragon's nest on Dragon Peak, the highest summit of the Frostpeak Mountains (deliver gold + princess here)
 const CABIN={x:-1500,y:1100};         // hunter's cabin deep in the north-west forest
+const CABINS=[CABIN,{x:-2300,y:3300,name:'Deepwood south'},{x:7600,y:300,name:'Eastwood'}]; // three hunters' cabins: Deepwood north (the original), Deepwood south, the Eastwood
 const WILD={x:-1950,y:780,w:900,h:700}; // deer & rabbit range around the cabin
 const PONDS=[{x:1200,y:600,rx:70,ry:42},{x:2080,y:1430,rx:80,ry:46},{x:1500,y:3300,rx:520,ry:300,lake:1},{x:3000,y:3470,rx:110,ry:28,lake:1}];
 const PRINCESS_TOWER={x:1790+CDX,y:125+CDY}; // decorative pink tower (the princess is held inside the keep)
@@ -114,7 +115,7 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
   FARMS.forEach((f,fi)=>{const s=addStruct('barn',f.barn.x,f.barn.y,f.v);s.farm=fi;
     const F=f.field;for(let y=F.y;y<F.y+F.h;y+=22)for(let x=F.x;x<F.x+F.w;x+=22)cells.push({x:x+11,y:y+11,crop:F.crop,growth:SR(.7,1),fire:0,burnt:false,farm:fi,claimed:null});});
   addStruct('logpile',LOGPILE_POS.x,LOGPILE_POS.y,-1);
-  addStruct('cabin',CABIN.x,CABIN.y,-1);
+  CABINS.forEach((C,ci)=>{const s=addStruct('cabin',C.x,C.y,-1);s.cb=ci;});
   const gt=addStruct('gate',GATE.x,CWALL.y1+6,-1);gt.hp=gt.maxHp=260+80*(lvl-1);
   const br=addStruct('barracks',1430+CDX,250+CDY,-1);br.hp=br.maxHp=220+60*(lvl-1);
   PR={x:KEEP_POS.x,y:KEEP_POS.y-30,state:'tower',quip:0,t:0}; // state 'tower' = held in the castle (inside the keep)
@@ -131,7 +132,7 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
       const P=f.pen;if(x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30)return true;if(d2(x,y,f.barn.x,f.barn.y)<70)return true;}
     if(x>2650&&y>920&&y<1680)return true; if(d2(x,y,CAMP.x,CAMP.y)<90||d2(x,y,LOGPILE_POS.x,LOGPILE_POS.y)<70)return true;
     if(d2(x,y,1600,1450)<120)return true; if(PONDS.some(p=>d2(x,y,p.x,p.y)<110))return true; if(inWater(x,y)||riverD(x,y)<RIVW+40||onBeach(x,y))return true;
-    {const lx=(x-LAKE.x)/(LAKE.rx+70),ly=(y-LAKE.y)/(LAKE.ry+70);if(lx*lx+ly*ly<1)return true;} if(PADDOCKS.some(P=>x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30))return true; if(d2(x,y,LAIR.x,LAIR.y)<170||d2(x,y,CABIN.x,CABIN.y)<75)return true; return false;};
+    {const lx=(x-LAKE.x)/(LAKE.rx+70),ly=(y-LAKE.y)/(LAKE.ry+70);if(lx*lx+ly*ly<1)return true;} if(PADDOCKS.some(P=>x>P.x-30&&x<P.x+P.w+30&&y>P.y-30&&y<P.y+P.h+30))return true; if(d2(x,y,LAIR.x,LAIR.y)<170||CABINS.some(C=>d2(x,y,C.x,C.y)<75))return true; return false;};
   let tries=0;while(trees.length<240&&tries<5000){tries++;const x=SR(40,430),y=SR(300,2150);if(!blocked(x,y))addTree(x,y);}
   tries=0;while(trees.length<262&&tries<900){tries++;const x=SR(1250,1960),y=SR(120,440);if(!blocked(x,y)&&!(y<frostY(x)+60))addTree(x,y);} // a little wood where the old castle used to stand
   tries=0;while(trees.length<442&&tries<5000){tries++;const x=SR(40,WW-40),y=SR(420,WH-40);if(!blocked(x,y))addTree(x,y);}
@@ -185,8 +186,8 @@ function buildGround(){
   g.beginPath();g.ellipse(2760,1330,140,90,0,0,TAU);g.fill();
   // castle grounds, courtyard flagstones, roads to lair & cabin
   // (the castle grounds are painted into the world terrain now that Castle Aldric stands in the south; see buildTerrain)
-  g.fillStyle='rgba(40,70,30,.4)';g.beginPath();g.ellipse(CABIN.x,CABIN.y,90,70,0,0,TAU);g.fill();
-  g.fillStyle='#8a7a62';g.beginPath();g.ellipse(CABIN.x+10,CABIN.y+20,60,40,0,0,TAU);g.fill();
+  for(const C of CABINS){g.fillStyle='rgba(40,70,30,.4)';g.beginPath();g.ellipse(C.x,C.y,90,70,0,0,TAU);g.fill();
+  g.fillStyle='#8a7a62';g.beginPath();g.ellipse(C.x+10,C.y+20,60,40,0,0,TAU);g.fill();}
   g.fillStyle='#5a4a3a';g.beginPath();g.ellipse(LAIR.x,LAIR.y,170,120,0,0,TAU);g.fill();g.fillStyle='#6e5d48';g.beginPath();g.ellipse(LAIR.x,LAIR.y,130,90,0,0,TAU);g.fill();
   // ponds (ducks & geese)
   PONDS.forEach(p=>{g.fillStyle='#4a6a3a';g.beginPath();g.ellipse(p.x,p.y,p.rx+10,p.ry+8,0,0,TAU);g.fill();g.fillStyle='#3a6aa8';g.beginPath();g.ellipse(p.x,p.y,p.rx,p.ry,0,0,TAU);g.fill();

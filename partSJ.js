@@ -10,7 +10,7 @@ Object.assign(REGION_LABEL,{savanna:[-10700,1250],jungle:[-14700,1500]});
 // ---------- terrain colour, blended smoothly desert -> savanna -> jungle ----------
 const sjMix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],sjS=t=>t*t*(3-2*t);
 function savCol(x,y,n){let c=sjMix([204,174,88],[178,150,70],n);const g=fbm(x/700+11,y/700);if(g>.62)c=sjMix(c,[150,152,74],.45);else if(g<.34)c=sjMix(c,[222,196,128],.4);
-  const wd=Math.hypot((x-WHOLE.x)/(WHOLE.rx+300),(y-WHOLE.y)/(WHOLE.ry+230));if(wd<1.35)c=sjMix([104,140,62],c,clamp((wd-.8)/.55,0,1));return c;}
+  const wd=Math.min(...WHOLES.map(H=>Math.hypot((x-H.x)/(H.rx+300),(y-H.y)/(H.ry+230))));if(wd<1.35)c=sjMix([104,140,62],c,clamp((wd-.8)/.55,0,1));return c;}
 function junCol(x,y,n){let c=sjMix([30,80,36],[50,106,44],n);const g=fbm(x/240+40,y/240);if(g>.6)c=sjMix(c,[18,54,26],.5);else if(g<.3)c=sjMix(c,[66,122,50],.35);
   for(const r of RUINS){const d=d2(x,y,r.x,r.y);if(d<r.w*.75)c=sjMix([128,124,104],c,clamp((d-r.w*.45)/(r.w*.3),0,1));}return c;}
 function westCol(x,y,wx,wy,n){const tD=clamp((wx-desW(wy))/700+.5,0,1);if(tD>=1)return desertCol(x,y,n);const tJ=clamp((savW(wy)-wx)/700+.5,0,1);
@@ -21,7 +21,7 @@ function addWildDecor(r,Rr){const okS=(x,y)=>regionKey(x,y)==='savanna'&&!inWate
   for(let i=0;i<50;i++){const x=Rr(-12900,-8500),y=Rr(-100,4200);if(okS(x,y))DECOR.push({k:'termite',x,y,s:Rr(.8,1.35)});}
   for(let i=0;i<320;i++){const x=Rr(-12950,-8350),y=Rr(-150,4250);if(okS(x,y))DECOR.push({k:'tuft',x,y,s:Rr(.7,1.3),lo:i%2});}
   for(let i=0;i<12;i++){const x=Rr(-12600,-8800),y=Rr(100,4000);if(okS(x,y))DECOR.push({k:'kopje',x,y,s:Rr(.8,1.3)});}
-  for(let i=0;i<34;i++){const a=i/34*TAU+Rr(-.1,.1),k=Rr(1.03,1.15);DECOR.push({k:'reed',x:WHOLE.x+Math.cos(a)*WHOLE.rx*k,y:WHOLE.y+Math.sin(a)*WHOLE.ry*k});}
+  for(const H of WHOLES){const n=H===WHOLE?34:28;for(let i=0;i<n;i++){const a=i/n*TAU+Rr(-.1,.1),k=Rr(1.03,1.15);DECOR.push({k:'reed',x:H.x+Math.cos(a)*H.rx*k,y:H.y+Math.sin(a)*H.ry*k});}}
   for(let i=0;i<560;i++){const x=Rr(-16800,-12450),y=Rr(-150,4250);if(okJ(x,y))DECOR.push({k:'jtree',x,y,s:Rr(.85,1.5),v:r()<.6?1:0});}
   for(let i=0;i<460;i++){const x=Rr(-16800,-12450),y=Rr(-150,4250);if(okJ(x,y))DECOR.push({k:'fern',x,y,s:Rr(.7,1.4),lo:i%2});}
   for(let i=0;i<70;i++){const j=Math.floor(r()*(JRIVER.length-1)),p=JRIVER[j],q=JRIVER[j+1],t=r(),x=p[0]+(q[0]-p[0])*t+(r()<.5?-1:1)*(JRW+12),y=p[1]+(q[1]-p[1])*t;if(!inWater(x,y)&&regionKey(x,y)==='jungle')DECOR.push({k:'reed',x,y});}

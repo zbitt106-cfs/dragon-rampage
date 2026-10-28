@@ -167,7 +167,7 @@ FAUNA_ART.add('croc');
 const CROC_PLAN=[['river',3],['lake',2],['pond0',1],['pond1',1],['pond3',1],['jriver',4],['whole',1]];
 function inPondE(p,x,y,k){const dx=(x-p.x)/p.rx,dy=(y-p.y)/p.ry;return dx*dx+dy*dy<(k||.7);}
 function isFresh(x,y){if(inSea(x,y)||inOasis(x,y))return false;return inLake0(x,y)||riverD(x,y)<RIVW-12||jriverD(x,y)<JRW-12||inWHole(x,y,.75)||PONDS.some(p=>!(p.x===LAKE.x&&p.y===LAKE.y)&&inPondE(p,x,y));}
-function freshDist(x,y){let m=Math.min(riverD(x,y)-RIVW,jriverD(x,y)-JRW);{const dx=(x-WHOLE.x)/WHOLE.rx,dy=(y-WHOLE.y)/WHOLE.ry;m=Math.min(m,(Math.hypot(dx,dy)-1)*WHOLE.ry);}const lx=(x-LAKE.x)/LAKE.rx,ly=(y-LAKE.y)/LAKE.ry;m=Math.min(m,(Math.hypot(lx,ly)-1)*Math.min(LAKE.rx,LAKE.ry));
+function freshDist(x,y){let m=Math.min(riverD(x,y)-RIVW,jriverD(x,y)-JRW);for(const H of WHOLES){const dx=(x-H.x)/H.rx,dy=(y-H.y)/H.ry;m=Math.min(m,(Math.hypot(dx,dy)-1)*H.ry);}const lx=(x-LAKE.x)/LAKE.rx,ly=(y-LAKE.y)/LAKE.ry;m=Math.min(m,(Math.hypot(lx,ly)-1)*Math.min(LAKE.rx,LAKE.ry));
   for(const p of PONDS){const dx=(x-p.x)/p.rx,dy=(y-p.y)/p.ry;m=Math.min(m,(Math.hypot(dx,dy)-1)*Math.min(p.rx,p.ry));}return m;}
 function crocBody(x,y){if(inLake0(x,y))return 'lake';if(inWHole(x,y,1.2))return 'whole';if(jriverD(x,y)<JRW+30)return 'jriver';for(const i of[0,1,3]){const p=PONDS[i];if(p&&inPondE(p,x,y,1))return 'pond'+i;}return 'river';}
 function crocSpot(body){for(let t=0;t<60;t++){let x,y;

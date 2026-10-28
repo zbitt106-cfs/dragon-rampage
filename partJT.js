@@ -1,12 +1,16 @@
 // ================= partJT: the ANCIENT JUNGLE TEMPLE (destructible, 100 gold) + MOUNT EMBER (a second lava volcano, far SW jungle) =================
 // Temple: overgrown stepped stone temple with vines. Stone: fire alone never hurts it; stomps (Q, the land claw/stomp), bites and lava do.
 // Wrecked -> cartoon rubble burst + 100 gold straight to the lair hoard ("+100"). Never rebuilt; back every level (initStructsK). Tally + save/load.
-const JT={x:-13700,y:600,hp:700,gold:100,bite:40};
+// the temple stands on the east flank of Mount Ember (VOLC2 at -16650,3950): ~550 px from the crater, clear of the cone, the drink ring
+// and the lava bomb puddles that land south of the cone. It used to stand deep in the jungle at (-13700,600).
+const JT={x:-16110,y:3830,hp:700,gold:100,bite:40,oldX:-13700,oldY:600};
 KDEF.jtemple={name:'Ancient jungle temple',hp:JT.hp,stone:1,cost:[0,0],gold:[0,0],pts:150,alarm:0,sz:80};COST.jtemple=[0,0];STRUCT_NAME.jtemple=KDEF.jtemple.name;
 const JT_LOCK={lock:1,task:null,dead:false,state:'lock'}; // a "builder" that never comes: masons and self-repair skip the ruin
 function jtS(){return structures.find(s=>s.kind==='jtemple');}
 {const B=TALLY_SECT.find(s=>s.id==='build');if(B&&!B.keys.some(k=>k[0]==='b:jtemple'))B.keys.push(['b:jtemple','Ancient jungle temples']);TALLY_LABEL['b:jtemple']='Ancient jungle temples';}
 function jtClear(x,y,r){const far=o=>Math.hypot(o.x-x,(o.y-y)*1.25)>r;DECOR=DECOR.filter(o=>far(o));if(trees)trees=trees.filter(far);if(typeof ROCKS!=='undefined')for(let i=ROCKS.length-1;i>=0;i--)if(!far(ROCKS[i]))ROCKS.splice(i,1);}
+// old saves remember the temple at its old spot: move that record to the new spot so its state (standing / rubble) carries over
+{const _sa=svApply;svApply=function(d){try{if(d&&Array.isArray(d.S))for(const r of d.S)if(r&&r.kind==='jtemple'&&Math.hypot(r.x-JT.x,r.y-JT.y)>300){r.x=JT.x;r.y=JT.y;}}catch(e){}return _sa.apply(this,arguments);};}
 {const _i=initStructsK;initStructsK=function(){const r=_i.apply(this,arguments);if(!jtS()){const s=kAdd('jtemple',JT.x,JT.y,-1);s.hasGold=false;}return r;};}
 {const _s=stoneFire;stoneFire=function(s,dt){if(s&&s.kind==='jtemple')return;return _s.apply(this,arguments);};}
 {const _o=onRuin;onRuin=function(s){if(!s||s.kind!=='jtemple')return _o.apply(this,arguments);s.hasGold=false;const r=_o.apply(this,arguments);s.builder=JT_LOCK;
@@ -58,10 +62,10 @@ function nearV2(){return D&&D.mode==='ground'&&D.alt<.3&&!D.swim&&Math.hypot(D.x
 {const _t=txt;txt=function(s){if(VOLC.v2&&s==='Mount Cinder')arguments[0]=VOLC2.name;return _t.apply(this,arguments);};}
 {const _dv=drawVolcano;drawVolcano=function(){_dv.apply(this,arguments);if(Math.abs(cam.x-VOLC2.x)>1900||Math.abs(cam.y-VOLC2.y)>1400)return;withV2(()=>_dv.apply(this,arguments));};}
 // site: no trees, plants, rocks or animals on the cone; animals never spawn there
-function v2Clear(){jtClear(VOLC2.x,VOLC2.y,340);jtClear(VOLC2.x,VOLC2.y+120,300);jtClear(JT.x,JT.y-30,190);
-  for(const u of units)if(u.type==='animal'&&!u.dead&&(Math.hypot(u.x-VOLC2.x,u.y-VOLC2.y)<450||Math.hypot(u.x-JT.x,u.y-JT.y)<200)){u.x+=u.x<VOLC2.x+600?700:0;u.y-=400;}
+function v2Clear(){jtClear(VOLC2.x,VOLC2.y,340);jtClear(VOLC2.x,VOLC2.y+120,300);jtClear(JT.x,JT.y,270);jtClear((JT.x+VOLC2.x)/2+60,(JT.y+VOLC2.y)/2,200);
+  for(const u of units)if(u.type==='animal'&&!u.dead&&(Math.hypot(u.x-VOLC2.x,u.y-VOLC2.y)<450||Math.hypot(u.x-JT.x,u.y-JT.y)<280)){u.x+=u.x<VOLC2.x+600?700:0;u.y-=400;}
   if(typeof pbIndex==='function')pbIndex();}
-const JV_NOSPAWN=(x,y)=>Math.hypot(x-VOLC2.x,y-VOLC2.y)<480||Math.hypot(x-JT.x,y-JT.y)<220;
+const JV_NOSPAWN=(x,y)=>Math.hypot(x-VOLC2.x,y-VOLC2.y)<480||Math.hypot(x-JT.x,y-JT.y)<300;
 for(const k in ZONES){const z=ZONES[k];if(z&&typeof z.ok==='function'){const _ok=z.ok;z.ok=function(x,y){return !JV_NOSPAWN(x,y)&&_ok.apply(this,arguments);};}}
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);v2Clear();VOLC2_T={erupt:9,smoke:0,warn:0};return r;};}
 // smoke, rumbling eruptions, and lava embers that set the nearby jungle alight
@@ -82,4 +86,4 @@ function updVolc2(dt){const V=VOLC2,T=VOLC2_T,near=Math.abs(cam.x-V.x)<1600&&Mat
 {const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s,p=.6+.4*Math.sin(G.t*3);
   const vol=(V,lab)=>{const x=X(V.x),y=Y(V.y),k=big?1:.6;poly([x-8*k,y+5*k,x-2.5*k,y-5*k,x+2.5*k,y-5*k,x+8*k,y+5*k],'#5a4a44');ell(x,y-5*k,3*k,1.4*k,`rgba(255,${120+80*p|0},40,1)`);if(big)txt(lab,x,y+16,9,'#ffb070','center',false);G.v2MapDrawn=(G.v2MapDrawn||0)+1;};
   vol(VOLC,'Mount Cinder');vol(VOLC2,'🌋 Mount Ember');
-  const t=jtS();if(t&&(typeof seen!=='function'||seen(t.x,t.y))){ctx.fillStyle=t.state==='ok'?'#d8d0a0':'#555';const x=X(t.x),y=Y(t.y);poly([x-5,y+3,x+5,y+3,x+2,y-4,x-2,y-4],t.state==='ok'?'#c8c09a':'#555');if(big)txt(t.state==='ok'?'Ancient Temple':'Temple (rubble)',x,y+13,9,'#e8e0b0','center',false);}}catch(e){}return r;};}
+  const t=jtS();if(t&&(typeof seen!=='function'||seen(t.x,t.y))){ctx.fillStyle=t.state==='ok'?'#d8d0a0':'#555';const x=X(t.x),y=Y(t.y);poly([x-5,y+3,x+5,y+3,x+2,y-4,x-2,y-4],t.state==='ok'?'#c8c09a':'#555');if(big)txt(t.state==='ok'?'Ancient Temple':'Temple (rubble)',x+6,y-8,9,'#e8e0b0','center',false);}}catch(e){}return r;};}

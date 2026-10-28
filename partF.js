@@ -114,7 +114,7 @@ function mkCavalry(x,y,o){return mkUnit('knight',x,y,Object.assign({mounted:true
 // ---------- roaming patrols (independent of the wanted meter) ----------
 let patrols=[],patrolId=0;
 const PATROL_MIX=[['knight','knight','archer'],['cavalry','cavalry','cavalry'],['archer','archer','archer','archer','knight','knight'],['knight','knight','knight'],['cavalry','knight','archer'],['cavalry','cavalry','archer','archer']];
-function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},{x:CABIN.x+110,y:CABIN.y+70},{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60},{x:CAMP2.x+130,y:CAMP2.y+20},{x:MINE2.x-120,y:MINE2.y+80},{x:LOGPILE2.x+60,y:LOGPILE2.y+60}];}
+function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},...CABINS.map(C=>({x:C.x+110,y:C.y+70})),{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60},{x:CAMP2.x+130,y:CAMP2.y+20},{x:MINE2.x-120,y:MINE2.y+80},{x:LOGPILE2.x+60,y:LOGPILE2.y+60}];}
 function spawnPatrol(){const lvl=G.lvl,mix=[...PATROL_MIX[RI(0,PATROL_MIX.length-1)]];for(let i=1;i<lvl;i++)mix.push(['knight','archer','cavalry'][RI(0,2)]);if(G.easy&&mix.length>2)mix.pop();
   const p={id:++patrolId,members:[],engaged:false,wp:null},hpM=1+.2*(lvl-1),colr=['#c33','#33c','#cc3','#3a3'][RI(0,3)];
   const wg=waveGates();mix.forEach((k,i)=>{const x=GATE.x+R(-20,20),y=GATE.y+10+i*6;let u;
