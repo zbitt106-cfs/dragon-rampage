@@ -17,5 +17,8 @@ function drawFireBar(x,y,w,h){bar(x,y,w,h,D.fire/(D.maxFire||100),fireBarCol(),f
   else if(D.fireOut&&Math.floor(G.t*4)%2){ctx.strokeStyle='#ffd0c0';ctx.lineWidth=2;ctx.strokeRect(x-1,y-1,w+2,h+2);}}
 // mobile: a red fire-meter ring around the FIRE button
 {const _dt=drawTouch;drawTouch=function(){_dt.apply(this,arguments);if(!TOUCH.on||scene!=='play'||!G||G.over||G.won||!TOUCH.btns)return;const o=TOUCH.btns.find(b=>b.id==='fire');if(!o||D.maxFire===undefined)return;
-  const f=clamp(D.fire/D.maxFire,0,1);ctx.lineWidth=6;ctx.strokeStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.arc(o.x,o.y,o.r+7,0,TAU);ctx.stroke();
-  ctx.strokeStyle=fireBarCol();ctx.beginPath();ctx.arc(o.x,o.y,o.r+7,-Math.PI/2,-Math.PI/2+TAU*f);ctx.stroke();};}
+  const f=clamp(D.fire/D.maxFire,0,1);ctx.lineWidth=8;ctx.strokeStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(o.x,o.y,o.r+8,0,TAU);ctx.stroke();
+  ctx.strokeStyle=f>=.999&&!D.fireOut?'#ff6a2a':fireBarCol();ctx.beginPath();ctx.arc(o.x,o.y,o.r+8,-Math.PI/2,-Math.PI/2+TAU*f);ctx.stroke();
+  // the number (the HUD has no fire gauge on phones)
+  const s=D.fireOut?'EMPTY':`🔥 ${Math.ceil(D.fire)}`;ctx.font='bold 13px Georgia';const w=ctx.measureText(s).width+12;ctx.fillStyle='rgba(20,10,6,.8)';ctx.fillRect(o.x-w/2,o.y+o.r-24,w,18);
+  txt(s,o.x,o.y+o.r-10,13,D.fireOut?'#ff8a7a':f<.25?'#ffb08a':'#fff2d0','center');};}

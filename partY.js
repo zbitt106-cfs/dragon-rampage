@@ -60,13 +60,14 @@ function tallyRows(){const rows=[];for(const s of TALLY_SECT){if(!s.keys.length)
 
 // ================= the pause menu (also used on the title screen for Continue / Load) =================
 const PM={on:false,from:'pause',scr:'main',sel:0,scroll:0,confirm:null,msg:null,msgT:0,hit:[],drag:null,vis:10};
-const PM_MAIN=[['▶  Resume','resume'],["📜  Dragon's Tally",'tally'],['💾  Save Game','save'],['📂  Load Game','load'],['⟲  Restart (new game)','restart']];
+const PM_MAIN=[['▶  Resume','resume'],["📜  Dragon's Tally",'tally'],['💾  Save Game','save'],['📂  Load Game','load'],['⟳  Flip screen 90°: OFF','flip'],['⟲  Restart (new game)','restart']];
+function pmFlipLabel(){for(const r of PM_MAIN)if(r[1]==='flip')r[0]='⟳  Flip screen 90°: '+(FLIP?'ON':'OFF');}pmFlipLabel();
 function pmOpen(scr,from){PM.on=true;PM.from=from||'pause';PM.scr=scr||'main';PM.sel=0;PM.scroll=0;PM.confirm=null;PM.msg=null;PM.drag=null;
   if(PM.scr==='load'){const L=svList();let b=-1,bt=0;L.forEach((s,i)=>{if(s.info&&s.info.when>bt){bt=s.info.when;b=i;}});PM.sel=Math.max(0,b);}}
 function pmClose(){PM.on=false;PM.confirm=null;PM.drag=null;}
 function pmSay(m){PM.msg=m;PM.msgT=performance.now();}
 function pmBack(){if(PM.confirm){PM.confirm=null;return;}if(PM.scr==='main'||PM.from==='title'){if(PM.from==='title')pmClose();else paused=false;return;}PM.scr='main';PM.sel={tally:1,save:2,load:3}[PM.scr]||0;PM.sel=0;}
-function pmAct(a){if(a==='resume'){paused=false;pmClose();}else if(a==='tally'){PM.scr='tally';PM.scroll=0;}else if(a==='save'){PM.scr='save';PM.sel=0;}else if(a==='load'){PM.scr='load';PM.sel=0;}
+function pmAct(a){if(a==='flip'){setFlip(!FLIP);pmFlipLabel();pmSay(FLIP?'Screen flipped 90° (turn your phone)':'Screen back to normal');return;}if(a==='resume'){paused=false;pmClose();}else if(a==='tally'){PM.scr='tally';PM.scroll=0;}else if(a==='save'){PM.scr='save';PM.sel=0;}else if(a==='load'){PM.scr='load';PM.sel=0;}
   else if(a==='restart'){PM.confirm={q:'Restart and begin a brand-new game?',sub:'(Your saves and the all-time tally are kept.)',sel:1,yes:()=>{pmClose();newGame();paused=false;}};}}
 function pmTallyReset(){PM.confirm={q:"Reset the ALL-TIME Dragon's Tally?",sub:'Every all-time count goes back to 0. This cannot be undone.',sel:1,yes:()=>{tallyReset();pmSay('All-time tally reset.');}};}
 function pmSlotAct(i){const L=svList();
@@ -92,7 +93,7 @@ function pmBtn(x,y,w,h,label,f,on,col){panel(x,y,w,h);if(on){ctx.strokeStyle='#f
 function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;PM.hit=[];
   ctx.fillStyle='rgba(6,4,10,.66)';ctx.fillRect(0,0,VW,VH);
   const aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,PM.scr==='tally'?680:600),x0=S.l+(aw-W)/2,cx=x0+W/2;
-  if(PM.scr==='main'){const rh=touch?46:38,H=86+PM_MAIN.length*(rh+8)+96,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
+  if(PM.scr==='main'){const rh=Math.max(30,Math.min(touch?46:38,Math.floor((ah-16-182)/PM_MAIN.length)-8)),H=86+PM_MAIN.length*(rh+8)+96,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
     txt('PAUSED',cx,y0+44,36,'#ffd24a','center');
     if(scene==='play'&&G){const fs=touch?13:14;txt(`Score ${G.over?G.score:calcScore()}`,x0+18,y0+30,fs+2,'#ffe08a','left');{const l=typeof pauseExtraLine==='function'?pauseExtraLine():'';txt(`Wave ${G.waveNum}`+(l?`  ·  ${l}`:''),x0+18,y0+50,fs-2,'#ddd','left',false);}
       const sw=uiStockW(fs);uiStock(x0+W-18-sw,y0+24,fs);const gw=typeof uiGoldW==='function'?uiGoldW(fs):0;if(gw)uiGold(x0+W-18-gw,y0+46,fs);}

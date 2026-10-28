@@ -27,9 +27,17 @@ function touchLayout(){const S=SAFE,b=[];const fx=VW-S.r-92,fy=VH-S.b-92;
   b.push({id:'pause',x:S.l+34,y:my+54,r:24,label:paused?'▶':'II',key:'p',col:'#557'});
   TOUCH.btns=b;return b;}
 function hitBtn(x,y){let best=null,bd=1e9;for(const b of TOUCH.btns){const d=Math.hypot(x-b.x,y-b.y);if(d<b.r*1.3&&d<bd){bd=d;best=b;}}return best;}
-function tpos(t){return{x:t.clientX/UIS,y:t.clientY/UIS};}
+function tpos(t){return toGame(t.clientX,t.clientY);} // handles the flipped (rotated 90°) canvas
+// title-screen "Flip screen" button (bottom-right, inside the safe area)
+function flipBtn(){return{x:VW-SAFE.r-58,y:VH-SAFE.b-50,r:34};}
+// every resize / rotation / flip: re-lay the touch controls at once; if the screen size really changed,
+// let go of the stick and held buttons (they were under the old layout)
+let _rlW=0,_rlH=0;
+function onRelayout(){const ch=Math.abs(VW-_rlW)>2||Math.abs(VH-_rlH)>2;_rlW=VW;_rlH=VH;
+  if(ch){TOUCH.joy=null;TOUCH.mx=TOUCH.my=0;for(const k in TOUCH.held){const b=TOUCH.held[k];if(b.hold)keys[b.key]=false;b.down=false;}TOUCH.held={};}
+  try{touchLayout();}catch(e){}}
 // title menu hit test (geometry mirrors drawTitle)
-function titleTap(x,y){const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
+function titleTap(x,y){{const f=flipBtn();if(Math.hypot(x-f.x,y-f.y)<f.r*1.25){setFlip(!FLIP);return true;}}const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
   for(let i=0;i<6;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
       if(i===5){pmOpen('load','title');return true;}if(i===0)pressed['enter']=true;else if(i===1||i===2)pressed['enter']=true;
       else{const k=i===3?'music':'sfx';if(AUD.muted)toggleMute();else setVol(k,lx>g.cx+60?Math.min(1,AUD[k]+.1):lx<g.cx-60?Math.max(0,AUD[k]-.1):(AUD[k]>=1?0:AUD[k]+.1));if(k==='sfx')SFX.play('coin');}
@@ -54,7 +62,7 @@ function joyUpd(){const j=TOUCH.joy;if(!j){TOUCH.mx=TOUCH.my=0;return;}let dx=j.
 function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){if(PM.on&&PM.drag){pmDragMove(t.identifier,tpos(t).y);continue;}const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
 function onTouchEnd(e){e.preventDefault();for(const t of e.changedTouches){if(PM.drag&&PM.drag.id===t.identifier)PM.drag=null;const j=TOUCH.joy;if(j&&j.id===t.identifier){TOUCH.joy=null;joyUpd();}
     const b=TOUCH.held[t.identifier];if(b){delete TOUCH.held[t.identifier];if(b.hold&&!Object.values(TOUCH.held).some(o=>o.key===b.key))keys[b.key]=false;b.down=false;}}}
-cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900)return;audio();const p={x:e.clientX/UIS,y:e.clientY/UIS};
+cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900)return;audio();const p=toGame(e.clientX,e.clientY);
   if(PM.on&&scene==='title'){return;}if(scene==='title')titleTap(p.x,p.y);else if(TOUCH.rot){TOUCH.rotOK=true;TOUCH.rot=false;}}catch(_){}});
 cv.addEventListener('touchstart',onTouchStart,{passive:false});cv.addEventListener('touchmove',onTouchMove,{passive:false});
 cv.addEventListener('touchend',onTouchEnd,{passive:false});cv.addEventListener('touchcancel',onTouchEnd,{passive:false});
@@ -82,6 +90,8 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
     txt('Rotation locked? Tap anywhere to play in portrait',cx,cy+240,20,'rgba(243,220,184,.75)','center',false);return;}
   if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+6*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
     txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');}
+  if(scene==='title'&&!PM.on){const f=flipBtn();ctx.globalAlpha=.8;ctx.fillStyle='#557';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=FLIP?'#ffd24a':'#fff';ctx.lineWidth=3;ctx.stroke();
+    txt('\u27f3',f.x,f.y-4,22,'#fff','center',false);txt(FLIP?'FLIP ON':'FLIP',f.x,f.y+18,11,FLIP?'#ffd24a':'#fff','center');}
   if(scene!=='play')return;
   const b=touchLayout();ctx.textAlign='center';
   if(!(G.over||G.won)){

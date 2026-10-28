@@ -69,13 +69,16 @@ const lbHit=(b,L)=>L.some(o=>b.x0<o.x1&&b.x1>o.x0&&b.y0<o.y1&&b.y1>o.y0);
 function txt(s,x,y,size,col,align,bold){ctx.font=`${bold===false?'':'bold '}${size}px Georgia`;ctx.textAlign=align||'left';if(MAPLB)MAPLB.push(lbBox(s,x,y,size,align||'left'));ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillText(s,x+1.5,y+1.5);ctx.fillStyle=col||'#fff';ctx.fillText(s,x,y);}
 function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   // dragon vitals + mode
-  const hy=(G.easy?0:18)+18,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),104+hy);txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
+  // phones: no fire gauge here (the FIRE button's ring + number shows it); a compact lava counter takes that row only while there are lava shots
+  const tch=typeof TOUCH!=='undefined'&&TOUCH.on,lvR=tch&&D.lava>0,fb=tch?(lvR?18:0):18,hy=(G.easy?0:18)+fb,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),104+hy);UI.fireGauge=!tch;UI.lavaRow=lvR?{x:20,y:76,w:230,h:14}:null;txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
   bar(20,36,hbw,16,D.hp/D.maxHp,D.hp/D.maxHp<.3?'#e33':'#c0302a',`Health ${Math.ceil(D.hp)}/${D.maxHp}`);
   bar(20,58,230,14,D.st/D.maxSt,D.mode==='air'&&D.st<25?(Math.floor(G.t*4)%2?'#f0a020':'#a06010'):'#e0b030',`Stamina ${Math.ceil(D.st)}`);
-  if(typeof drawFireBar==='function')drawFireBar(20,76,230,14); // FIRE meter, right under stamina
+  if(!tch){if(typeof drawFireBar==='function')drawFireBar(20,76,230,14);} // FIRE meter, right under stamina (desktop)
+  else if(lvR){const pl=.75+.25*Math.sin(G.t*6),n=typeof LAVA_MAX!=='undefined'?LAVA_MAX:D.lava;rect(20,76,230,14,'#5a1808');ctx.strokeStyle=`rgba(255,${150+80*pl|0},50,1)`;ctx.lineWidth=1.5;ctx.strokeRect(20,76,230,14);
+    txt(`🌋 Lava ×${D.lava}`,26,88,11,'#ffd27a');for(let i=0;i<n;i++){ctx.fillStyle=i<D.lava?'#ff8a20':'#4a2a20';ctx.fillRect(110+i*(130/n),79,Math.max(2,130/n-1.5),8);}}
   if(!G.easy){const hf=D.hunger/D.maxHunger,st=D.hunger<=0,low=hf<=HUNGER.low/100,pl=.5+.5*Math.sin(G.t*9);
-    drawDrumstick(28,103,st?`rgba(255,${Math.round(80*pl)},${Math.round(80*pl)},1)`:low?'#ffb060':'#e8c090');bar(38,96,212,14,st?1:hf,st?`rgba(${150+Math.round(105*pl)},20,20,1)`:low?(Math.floor(G.t*3)%2?'#e07020':'#a04810'):'#b8742a',st?'STARVING! Eat something!':`Hunger ${Math.ceil(D.hunger)}${low?'  (hungry!)':''}`);
-    if(st){ctx.strokeStyle=`rgba(255,60,60,${pl})`;ctx.lineWidth=2;ctx.strokeRect(37,95,214,16);
+    drawDrumstick(28,85+fb,st?`rgba(255,${Math.round(80*pl)},${Math.round(80*pl)},1)`:low?'#ffb060':'#e8c090');bar(38,78+fb,212,14,st?1:hf,st?`rgba(${150+Math.round(105*pl)},20,20,1)`:low?(Math.floor(G.t*3)%2?'#e07020':'#a04810'):'#b8742a',st?'STARVING! Eat something!':`Hunger ${Math.ceil(D.hunger)}${low?'  (hungry!)':''}`);
+    if(st){ctx.strokeStyle=`rgba(255,60,60,${pl})`;ctx.lineWidth=2;ctx.strokeRect(37,77+fb,214,16);
       if(!G.over&&!G.won)txt('⚠ STARVING! Eat a villager or animal! ⚠',VW/2,VH*.30,VW<760?18:24,`rgba(255,${Math.round(90+90*pl)},${Math.round(60+60*pl)},1)`,'center');}}
   const air=D.mode==='air';rect(20,78+hy,230,28,air?'#2a4a7a':'#4a3a22');
   txt(air?(D.alt<.95?'⇧ TAKING OFF…':'⇧ FLYING'):(D.swim?'≈ SWIMMING (slower)':D.alt>0.02?'⇩ LANDING…':'⇩ ON THE GROUND'),30,97+hy,14,air?'#cfe6ff':'#f2dcb0');
@@ -104,7 +107,9 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   UI.colY=cy;UI.col={x:10,y:10,w:colW,h:cy-4-10};
   // minimap: top-right corner (inside the safe area: drawHUD runs in withSafe), shrunk if needed to stay clear of the centred WANTED / boss bars
   {const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000)),room=Math.floor(VW/2-(sm?210:260)-20),mmw=Math.max(120,Math.min(base,room)),mmh=mmw*(WY1-WY0)/(WX1-WX0);
-    const mx0=VW-mmw-10,my0=10;drawMap(mx0,my0,mmw,false);UI.mm={x:mx0-3,y:my0-3,w:mmw+6,h:mmh+6+12};}
+    let mx0=VW-mmw-8,my0=8;
+    // phones with rounded screen corners (any safe-area inset): keep the map's outer corner out of the ~55 pt corner curve
+    if(typeof TOUCH!=='undefined'&&TOUCH.on&&SAFE.t+SAFE.r+SAFE.b+SAFE.l>0){const need=56/UIS,gr=SAFE.r+5,gt=SAFE.t+5;if(gr<need&&gt<need){if(need-gr<=need-gt)mx0-=need-gr;else my0+=need-gt;}}drawMap(mx0,my0,mmw,false);UI.mm={x:mx0-3,y:my0-3,w:mmw+6,h:mmh+6+12};}
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);
     txt(`WORLD MAP  ·  explored ${exploredPct()}%  ·  regions found ${Object.keys(G.visited).length}/${Object.keys(REGION_NAMES).length}  ·  M / LB to close`,VW/2,52,16,'#ffd24a','center');}
   if(false){const mmw=0,mmh=0,mmx=0,mmy=0,s=1;

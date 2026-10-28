@@ -43,20 +43,32 @@ function viewOrient(){let a=null,b=null;
   const x=a&&b?(a===b?a:null):(a||b);let m=null;try{m=matchMedia('(orientation: landscape)').matches?'L':'P';}catch(e){}
   return x&&m&&x===m?x:null;} // only when the device AND the CSS viewport agree (never fights split-screen or emulators)
 function viewSize(){const de=document.documentElement,vv=window.visualViewport,c=[];
+  // visible area first (visualViewport), then the layout viewport, then the window
+  if(IS_TOUCH&&vv&&vv.width>0&&vv.height>0&&Math.abs((vv.scale||1)-1)<.02)c.push([vv.width,vv.height]);
   if(IS_TOUCH&&de&&de.clientWidth>0&&de.clientHeight>0)c.push([de.clientWidth,de.clientHeight]);
   if(innerWidth>0&&innerHeight>0)c.push([innerWidth,innerHeight]);
-  if(IS_TOUCH&&vv&&vv.width>0&&vv.height>0&&Math.abs((vv.scale||1)-1)<.02)c.push([vv.width,vv.height]);
   if(!c.length)c.push([(screen&&screen.width)||960,(screen&&screen.height)||640]);
   let [w,h]=c[0];const o=IS_TOUCH&&Math.abs(w-h)>40?viewOrient():null;
   if(o){const L=o==='L',m=c.find(([x,y])=>(x>y)===L);if(m)[w,h]=m;else if((w>h)!==L)[w,h]=[h,w];}
   return [Math.round(w),Math.round(h)];}
-let _rsW=0,_rsH=0;
-function resize(){const [w,h]=viewSize();_rsW=w;_rsH=h;
+// FLIP: manual "Flip screen 90°" (pause menu / title button). The whole canvas is turned with a CSS transform,
+// so the game plays sideways even with the phone's rotation lock on or if the browser never reports a rotation.
+// Game point (x,y) -> screen (physW - y, x); touches are mapped back with toGame().
+let FLIP=false;try{FLIP=localStorage.getItem('dr_flip')==='1';}catch(e){}
+let _rsW=0,_rsH=0,_physW=0,_physH=0;
+function toGame(cx,cy){return FLIP?{x:cy/UIS,y:(_physW-cx)/UIS}:{x:cx/UIS,y:cy/UIS};}
+function resize(){const [pw,ph]=viewSize();_rsW=pw;_rsH=ph;_physW=pw;_physH=ph;const w=FLIP?ph:pw,h=FLIP?pw:ph;
   UIS=IS_TOUCH?Math.min(1,Math.max(.5,Math.min(w,h)/520)):1;
   let hi=true;try{hi=GFX_HI;}catch(e){}
-  const dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);
+  let dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);
+  if(w*h*dpr*dpr>8e6)dpr=Math.sqrt(8e6/(w*h)); // stay far below iOS canvas memory limits
   VW=Math.round(w/UIS);VH=Math.round(h/UIS);DPR=dpr*UIS;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';
-  try{const s=getComputedStyle(document.getElementById('safe'));SAFE.t=(parseFloat(s.paddingTop)||0)/UIS;SAFE.r=(parseFloat(s.paddingRight)||0)/UIS;SAFE.b=(parseFloat(s.paddingBottom)||0)/UIS;SAFE.l=(parseFloat(s.paddingLeft)||0)/UIS;}catch(e){}}
+  cv.style.transformOrigin='0 0';cv.style.transform=FLIP?`translate(${pw}px,0) rotate(90deg)`:'';
+  try{const s=getComputedStyle(document.getElementById('safe'));const t=(parseFloat(s.paddingTop)||0),r=(parseFloat(s.paddingRight)||0),bt=(parseFloat(s.paddingBottom)||0),l=(parseFloat(s.paddingLeft)||0);
+    // flipped: game top = screen right, game right = screen bottom, game bottom = screen left, game left = screen top
+    if(FLIP){SAFE.t=r/UIS;SAFE.r=bt/UIS;SAFE.b=l/UIS;SAFE.l=t/UIS;}else{SAFE.t=t/UIS;SAFE.r=r/UIS;SAFE.b=bt/UIS;SAFE.l=l/UIS;}}catch(e){}
+  try{if(typeof onRelayout==='function')onRelayout();}catch(e){}}
+function setFlip(v){FLIP=!!v;try{localStorage.setItem('dr_flip',FLIP?'1':'0');}catch(e){}resize();try{pmFlipLabel();}catch(e){}}
 function resizeSoon(){resize();for(const t of [60,200,450,900,1600])setTimeout(resize,t);}
 addEventListener('resize',resize);addEventListener('orientationchange',resizeSoon);addEventListener('pageshow',resizeSoon);
 try{if(window.visualViewport)visualViewport.addEventListener('resize',resize);}catch(e){}

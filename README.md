@@ -94,6 +94,9 @@ The title screen also has **Music volume** and **Sound effects** rows (←/→ i
 
 ### Touch (phones and tablets)
 - Phones play in **both portrait and landscape**: just turn the phone, even mid-game, and the view, HUD and touch controls re-lay themselves out (no "rotate your phone" block). The title menu works either way: tap **Start game**, or anywhere in the "Tap down here to start" strip in portrait. After a rotation the game cross-checks the device orientation, because some big iPhones (Pro Max, iOS 26) briefly report the old screen size.
+- **Flip screen 90°**: if your phone won't rotate the game (rotation lock, or a home-screen app that ignores turning), tap **FLIP** on the title screen or **⟳ Flip screen 90°** in the pause (II) menu. The whole game turns sideways, touch controls follow it, and it re-lays itself out immediately. Tap it again to turn it back. The choice is remembered.
+- **Phone HUD**: there is no fire gauge on phones, because the FIRE button shows your fire (🔥 number, and an orange ring when it's full). A compact **🌋 Lava ×n** counter appears up top only while you have lava shots. Desktop keeps the full fire gauge.
+- **Minimap** sits in the top-right corner on every screen. On phones it stays inside the safe area, clear of the notch/Dynamic Island and the rounded screen corners, in portrait, landscape and Flip mode.
 - The screen re-sizes after every rotation and toolbar change (iPhone Safari reports its new size late, so it re-measures a few times). The game loop keeps running even if one frame hits an error.
 - **Left thumb:** touch anywhere on the left half and drag. The joystick appears under your thumb.
 - **Right thumb:** **FIRE** (hold), **BITE**, **STOMP** (it reads DIVE while flying and does the crash dive stomp) and **FLY** (it reads LAND in the air). **MAP** and **II** (pause) sit on the left edge.
@@ -280,6 +283,12 @@ A craggy roost of smaller **wild dragons** with their nests, mountain goats and 
 - **Roadrunners** (desert) zig-zag away at top speed with dust puffs and a "Meep meep!".
 - **Jackals** are small scavenger-hunters that chase meerkats and roadrunners.
 - **Bulls** (1–2 per cow pen) paw the ground, snort steam, then charge and ram. A damaged fence lets a bull break out, chase you briefly and trot home. Their tough hide means they must be worn down before you can swallow them. Farmers mend the fences.
+
+## Quick dodges
+Hunters and nimble animals (deer, gazelles, rabbits, foxes, wolves and the white alpha, jackals, hyenas, big cats, monkeys, meerkats, roadrunners) sometimes see an attack coming and **dash sideways** in a puff of dust ("Dodged!"). It works against fire, lava, stomps, scratches and bites. A dodge only happens if they've had a moment to notice you, it has a few seconds' cooldown, and grabbed, carried or eaten creatures can't dodge. Heavy animals (bears, boars, bulls, elephants, crocodiles and so on) never dodge.
+
+## Exploration carries over
+The fog of war you've cleared and the places you've discovered stay revealed when you move up a level, and they're kept in your save. Only a brand-new game starts with a fresh map.
 
 ## Predators hunt, and more prey
 - Prey populations (spawn counts and respawn caps for wild prey, herds, fish schools and birds) are **5% higher**, rounded per group, so some groups gain one animal and small groups stay the same.

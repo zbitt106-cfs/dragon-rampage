@@ -43,20 +43,32 @@ function viewOrient(){let a=null,b=null;
   const x=a&&b?(a===b?a:null):(a||b);let m=null;try{m=matchMedia('(orientation: landscape)').matches?'L':'P';}catch(e){}
   return x&&m&&x===m?x:null;} // only when the device AND the CSS viewport agree (never fights split-screen or emulators)
 function viewSize(){const de=document.documentElement,vv=window.visualViewport,c=[];
+  // visible area first (visualViewport), then the layout viewport, then the window
+  if(IS_TOUCH&&vv&&vv.width>0&&vv.height>0&&Math.abs((vv.scale||1)-1)<.02)c.push([vv.width,vv.height]);
   if(IS_TOUCH&&de&&de.clientWidth>0&&de.clientHeight>0)c.push([de.clientWidth,de.clientHeight]);
   if(innerWidth>0&&innerHeight>0)c.push([innerWidth,innerHeight]);
-  if(IS_TOUCH&&vv&&vv.width>0&&vv.height>0&&Math.abs((vv.scale||1)-1)<.02)c.push([vv.width,vv.height]);
   if(!c.length)c.push([(screen&&screen.width)||960,(screen&&screen.height)||640]);
   let [w,h]=c[0];const o=IS_TOUCH&&Math.abs(w-h)>40?viewOrient():null;
   if(o){const L=o==='L',m=c.find(([x,y])=>(x>y)===L);if(m)[w,h]=m;else if((w>h)!==L)[w,h]=[h,w];}
   return [Math.round(w),Math.round(h)];}
-let _rsW=0,_rsH=0;
-function resize(){const [w,h]=viewSize();_rsW=w;_rsH=h;
+// FLIP: manual "Flip screen 90°" (pause menu / title button). The whole canvas is turned with a CSS transform,
+// so the game plays sideways even with the phone's rotation lock on or if the browser never reports a rotation.
+// Game point (x,y) -> screen (physW - y, x); touches are mapped back with toGame().
+let FLIP=false;try{FLIP=localStorage.getItem('dr_flip')==='1';}catch(e){}
+let _rsW=0,_rsH=0,_physW=0,_physH=0;
+function toGame(cx,cy){return FLIP?{x:cy/UIS,y:(_physW-cx)/UIS}:{x:cx/UIS,y:cy/UIS};}
+function resize(){const [pw,ph]=viewSize();_rsW=pw;_rsH=ph;_physW=pw;_physH=ph;const w=FLIP?ph:pw,h=FLIP?pw:ph;
   UIS=IS_TOUCH?Math.min(1,Math.max(.5,Math.min(w,h)/520)):1;
   let hi=true;try{hi=GFX_HI;}catch(e){}
-  const dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);
+  let dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);
+  if(w*h*dpr*dpr>8e6)dpr=Math.sqrt(8e6/(w*h)); // stay far below iOS canvas memory limits
   VW=Math.round(w/UIS);VH=Math.round(h/UIS);DPR=dpr*UIS;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';
-  try{const s=getComputedStyle(document.getElementById('safe'));SAFE.t=(parseFloat(s.paddingTop)||0)/UIS;SAFE.r=(parseFloat(s.paddingRight)||0)/UIS;SAFE.b=(parseFloat(s.paddingBottom)||0)/UIS;SAFE.l=(parseFloat(s.paddingLeft)||0)/UIS;}catch(e){}}
+  cv.style.transformOrigin='0 0';cv.style.transform=FLIP?`translate(${pw}px,0) rotate(90deg)`:'';
+  try{const s=getComputedStyle(document.getElementById('safe'));const t=(parseFloat(s.paddingTop)||0),r=(parseFloat(s.paddingRight)||0),bt=(parseFloat(s.paddingBottom)||0),l=(parseFloat(s.paddingLeft)||0);
+    // flipped: game top = screen right, game right = screen bottom, game bottom = screen left, game left = screen top
+    if(FLIP){SAFE.t=r/UIS;SAFE.r=bt/UIS;SAFE.b=l/UIS;SAFE.l=t/UIS;}else{SAFE.t=t/UIS;SAFE.r=r/UIS;SAFE.b=bt/UIS;SAFE.l=l/UIS;}}catch(e){}
+  try{if(typeof onRelayout==='function')onRelayout();}catch(e){}}
+function setFlip(v){FLIP=!!v;try{localStorage.setItem('dr_flip',FLIP?'1':'0');}catch(e){}resize();try{pmFlipLabel();}catch(e){}}
 function resizeSoon(){resize();for(const t of [60,200,450,900,1600])setTimeout(resize,t);}
 addEventListener('resize',resize);addEventListener('orientationchange',resizeSoon);addEventListener('pageshow',resizeSoon);
 try{if(window.visualViewport)visualViewport.addEventListener('resize',resize);}catch(e){}
@@ -2942,7 +2954,8 @@ const _drawMapV=drawMap;drawMap=function(mmx,mmy,mmw,big){_drawMapV(mmx,mmy,mmw,
   ctx.fillStyle='#3a2a26';ctx.beginPath();ctx.moveTo(X-(big?9:5),Y+(big?6:4));ctx.lineTo(X,Y-(big?9:5));ctx.lineTo(X+(big?9:5),Y+(big?6:4));ctx.fill();ctx.fillStyle=`rgba(255,${140+80*Math.sin(Date.now()/250)|0},40,1)`;ctx.beginPath();ctx.arc(X,Y-(big?6:3),big?3:2,0,TAU);ctx.fill();
   if(big)txt('Volcano',X,Y+18,10,'#ffb080','center',false);};
 // ---------- HUD badge ----------
-const _drawHUDV=drawHUD;drawHUD=function(){_drawHUDV();if(scene!=='play'||!D)return;const y=typeof UI!=='undefined'&&UI.colY?UI.colY:226; // next slot of the left HUD column
+const _drawHUDV=drawHUD;drawHUD=function(){_drawHUDV();if(scene!=='play'||!D)return;if(typeof TOUCH!=='undefined'&&TOUCH.on)return; // phones: lava counter lives in the vitals panel (part6)
+  const y=typeof UI!=='undefined'&&UI.colY?UI.colY:226; // next slot of the left HUD column
   if(D.lava>0){const pl=.75+.25*Math.sin(G.t*6);ctx.fillStyle=`rgba(90,24,8,${.85})`;ctx.fillRect(10,y,170,28);ctx.strokeStyle=`rgba(255,${150+80*pl|0},50,1)`;ctx.lineWidth=2;ctx.strokeRect(11,y+1,168,26);
     for(let i=0;i<LAVA_MAX;i++){ctx.fillStyle=i<D.lava?'#ff8a20':'#4a2a20';ctx.fillRect(98+i*4,y+9,3,10);}txt(`Lava: ${D.lava}`,18,y+19,14,'#ffd27a');if(UI.col)UI.col.h=Math.max(UI.col.h,y+28-UI.col.y);}
   else if(D.lavaCD>0){txt(`Volcano refills in ${Math.ceil(D.lavaCD)}s`,14,y+18,11,'#ffb080','left');if(UI.col)UI.col.h=Math.max(UI.col.h,y+22-UI.col.y);}};
@@ -3203,9 +3216,17 @@ function touchLayout(){const S=SAFE,b=[];const fx=VW-S.r-92,fy=VH-S.b-92;
   b.push({id:'pause',x:S.l+34,y:my+54,r:24,label:paused?'▶':'II',key:'p',col:'#557'});
   TOUCH.btns=b;return b;}
 function hitBtn(x,y){let best=null,bd=1e9;for(const b of TOUCH.btns){const d=Math.hypot(x-b.x,y-b.y);if(d<b.r*1.3&&d<bd){bd=d;best=b;}}return best;}
-function tpos(t){return{x:t.clientX/UIS,y:t.clientY/UIS};}
+function tpos(t){return toGame(t.clientX,t.clientY);} // handles the flipped (rotated 90°) canvas
+// title-screen "Flip screen" button (bottom-right, inside the safe area)
+function flipBtn(){return{x:VW-SAFE.r-58,y:VH-SAFE.b-50,r:34};}
+// every resize / rotation / flip: re-lay the touch controls at once; if the screen size really changed,
+// let go of the stick and held buttons (they were under the old layout)
+let _rlW=0,_rlH=0;
+function onRelayout(){const ch=Math.abs(VW-_rlW)>2||Math.abs(VH-_rlH)>2;_rlW=VW;_rlH=VH;
+  if(ch){TOUCH.joy=null;TOUCH.mx=TOUCH.my=0;for(const k in TOUCH.held){const b=TOUCH.held[k];if(b.hold)keys[b.key]=false;b.down=false;}TOUCH.held={};}
+  try{touchLayout();}catch(e){}}
 // title menu hit test (geometry mirrors drawTitle)
-function titleTap(x,y){const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
+function titleTap(x,y){{const f=flipBtn();if(Math.hypot(x-f.x,y-f.y)<f.r*1.25){setFlip(!FLIP);return true;}}const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
   for(let i=0;i<6;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
       if(i===5){pmOpen('load','title');return true;}if(i===0)pressed['enter']=true;else if(i===1||i===2)pressed['enter']=true;
       else{const k=i===3?'music':'sfx';if(AUD.muted)toggleMute();else setVol(k,lx>g.cx+60?Math.min(1,AUD[k]+.1):lx<g.cx-60?Math.max(0,AUD[k]-.1):(AUD[k]>=1?0:AUD[k]+.1));if(k==='sfx')SFX.play('coin');}
@@ -3230,7 +3251,7 @@ function joyUpd(){const j=TOUCH.joy;if(!j){TOUCH.mx=TOUCH.my=0;return;}let dx=j.
 function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){if(PM.on&&PM.drag){pmDragMove(t.identifier,tpos(t).y);continue;}const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
 function onTouchEnd(e){e.preventDefault();for(const t of e.changedTouches){if(PM.drag&&PM.drag.id===t.identifier)PM.drag=null;const j=TOUCH.joy;if(j&&j.id===t.identifier){TOUCH.joy=null;joyUpd();}
     const b=TOUCH.held[t.identifier];if(b){delete TOUCH.held[t.identifier];if(b.hold&&!Object.values(TOUCH.held).some(o=>o.key===b.key))keys[b.key]=false;b.down=false;}}}
-cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900)return;audio();const p={x:e.clientX/UIS,y:e.clientY/UIS};
+cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900)return;audio();const p=toGame(e.clientX,e.clientY);
   if(PM.on&&scene==='title'){return;}if(scene==='title')titleTap(p.x,p.y);else if(TOUCH.rot){TOUCH.rotOK=true;TOUCH.rot=false;}}catch(_){}});
 cv.addEventListener('touchstart',onTouchStart,{passive:false});cv.addEventListener('touchmove',onTouchMove,{passive:false});
 cv.addEventListener('touchend',onTouchEnd,{passive:false});cv.addEventListener('touchcancel',onTouchEnd,{passive:false});
@@ -3258,6 +3279,8 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
     txt('Rotation locked? Tap anywhere to play in portrait',cx,cy+240,20,'rgba(243,220,184,.75)','center',false);return;}
   if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+6*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
     txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');}
+  if(scene==='title'&&!PM.on){const f=flipBtn();ctx.globalAlpha=.8;ctx.fillStyle='#557';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=FLIP?'#ffd24a':'#fff';ctx.lineWidth=3;ctx.stroke();
+    txt('\u27f3',f.x,f.y-4,22,'#fff','center',false);txt(FLIP?'FLIP ON':'FLIP',f.x,f.y+18,11,FLIP?'#ffd24a':'#fff','center');}
   if(scene!=='play')return;
   const b=touchLayout();ctx.textAlign='center';
   if(!(G.over||G.won)){
@@ -3399,13 +3422,14 @@ function tallyRows(){const rows=[];for(const s of TALLY_SECT){if(!s.keys.length)
 
 // ================= the pause menu (also used on the title screen for Continue / Load) =================
 const PM={on:false,from:'pause',scr:'main',sel:0,scroll:0,confirm:null,msg:null,msgT:0,hit:[],drag:null,vis:10};
-const PM_MAIN=[['▶  Resume','resume'],["📜  Dragon's Tally",'tally'],['💾  Save Game','save'],['📂  Load Game','load'],['⟲  Restart (new game)','restart']];
+const PM_MAIN=[['▶  Resume','resume'],["📜  Dragon's Tally",'tally'],['💾  Save Game','save'],['📂  Load Game','load'],['⟳  Flip screen 90°: OFF','flip'],['⟲  Restart (new game)','restart']];
+function pmFlipLabel(){for(const r of PM_MAIN)if(r[1]==='flip')r[0]='⟳  Flip screen 90°: '+(FLIP?'ON':'OFF');}pmFlipLabel();
 function pmOpen(scr,from){PM.on=true;PM.from=from||'pause';PM.scr=scr||'main';PM.sel=0;PM.scroll=0;PM.confirm=null;PM.msg=null;PM.drag=null;
   if(PM.scr==='load'){const L=svList();let b=-1,bt=0;L.forEach((s,i)=>{if(s.info&&s.info.when>bt){bt=s.info.when;b=i;}});PM.sel=Math.max(0,b);}}
 function pmClose(){PM.on=false;PM.confirm=null;PM.drag=null;}
 function pmSay(m){PM.msg=m;PM.msgT=performance.now();}
 function pmBack(){if(PM.confirm){PM.confirm=null;return;}if(PM.scr==='main'||PM.from==='title'){if(PM.from==='title')pmClose();else paused=false;return;}PM.scr='main';PM.sel={tally:1,save:2,load:3}[PM.scr]||0;PM.sel=0;}
-function pmAct(a){if(a==='resume'){paused=false;pmClose();}else if(a==='tally'){PM.scr='tally';PM.scroll=0;}else if(a==='save'){PM.scr='save';PM.sel=0;}else if(a==='load'){PM.scr='load';PM.sel=0;}
+function pmAct(a){if(a==='flip'){setFlip(!FLIP);pmFlipLabel();pmSay(FLIP?'Screen flipped 90° (turn your phone)':'Screen back to normal');return;}if(a==='resume'){paused=false;pmClose();}else if(a==='tally'){PM.scr='tally';PM.scroll=0;}else if(a==='save'){PM.scr='save';PM.sel=0;}else if(a==='load'){PM.scr='load';PM.sel=0;}
   else if(a==='restart'){PM.confirm={q:'Restart and begin a brand-new game?',sub:'(Your saves and the all-time tally are kept.)',sel:1,yes:()=>{pmClose();newGame();paused=false;}};}}
 function pmTallyReset(){PM.confirm={q:"Reset the ALL-TIME Dragon's Tally?",sub:'Every all-time count goes back to 0. This cannot be undone.',sel:1,yes:()=>{tallyReset();pmSay('All-time tally reset.');}};}
 function pmSlotAct(i){const L=svList();
@@ -3431,7 +3455,7 @@ function pmBtn(x,y,w,h,label,f,on,col){panel(x,y,w,h);if(on){ctx.strokeStyle='#f
 function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;PM.hit=[];
   ctx.fillStyle='rgba(6,4,10,.66)';ctx.fillRect(0,0,VW,VH);
   const aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,PM.scr==='tally'?680:600),x0=S.l+(aw-W)/2,cx=x0+W/2;
-  if(PM.scr==='main'){const rh=touch?46:38,H=86+PM_MAIN.length*(rh+8)+96,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
+  if(PM.scr==='main'){const rh=Math.max(30,Math.min(touch?46:38,Math.floor((ah-16-182)/PM_MAIN.length)-8)),H=86+PM_MAIN.length*(rh+8)+96,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
     txt('PAUSED',cx,y0+44,36,'#ffd24a','center');
     if(scene==='play'&&G){const fs=touch?13:14;txt(`Score ${G.over?G.score:calcScore()}`,x0+18,y0+30,fs+2,'#ffe08a','left');{const l=typeof pauseExtraLine==='function'?pauseExtraLine():'';txt(`Wave ${G.waveNum}`+(l?`  ·  ${l}`:''),x0+18,y0+50,fs-2,'#ddd','left',false);}
       const sw=uiStockW(fs);uiStock(x0+W-18-sw,y0+24,fs);const gw=typeof uiGoldW==='function'?uiGoldW(fs):0;if(gw)uiGold(x0+W-18-gw,y0+46,fs);}
@@ -3843,8 +3867,11 @@ function drawFireBar(x,y,w,h){bar(x,y,w,h,D.fire/(D.maxFire||100),fireBarCol(),f
   else if(D.fireOut&&Math.floor(G.t*4)%2){ctx.strokeStyle='#ffd0c0';ctx.lineWidth=2;ctx.strokeRect(x-1,y-1,w+2,h+2);}}
 // mobile: a red fire-meter ring around the FIRE button
 {const _dt=drawTouch;drawTouch=function(){_dt.apply(this,arguments);if(!TOUCH.on||scene!=='play'||!G||G.over||G.won||!TOUCH.btns)return;const o=TOUCH.btns.find(b=>b.id==='fire');if(!o||D.maxFire===undefined)return;
-  const f=clamp(D.fire/D.maxFire,0,1);ctx.lineWidth=6;ctx.strokeStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.arc(o.x,o.y,o.r+7,0,TAU);ctx.stroke();
-  ctx.strokeStyle=fireBarCol();ctx.beginPath();ctx.arc(o.x,o.y,o.r+7,-Math.PI/2,-Math.PI/2+TAU*f);ctx.stroke();};}
+  const f=clamp(D.fire/D.maxFire,0,1);ctx.lineWidth=8;ctx.strokeStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(o.x,o.y,o.r+8,0,TAU);ctx.stroke();
+  ctx.strokeStyle=f>=.999&&!D.fireOut?'#ff6a2a':fireBarCol();ctx.beginPath();ctx.arc(o.x,o.y,o.r+8,-Math.PI/2,-Math.PI/2+TAU*f);ctx.stroke();
+  // the number (the HUD has no fire gauge on phones)
+  const s=D.fireOut?'EMPTY':`🔥 ${Math.ceil(D.fire)}`;ctx.font='bold 13px Georgia';const w=ctx.measureText(s).width+12;ctx.fillStyle='rgba(20,10,6,.8)';ctx.fillRect(o.x-w/2,o.y+o.r-24,w,18);
+  txt(s,o.x,o.y+o.r-10,13,D.fireOut?'#ff8a7a':f<.25?'#ffb08a':'#fff2d0','center');};}
 // ======================= MONSTER FEAST + GLUTTON: permanent max-health growth on this life =======================
 // Eating the giant squid (kraken) or a sand worm: +50 max health each, plus a full heal.
 // Glutton: food eaten (sized by how big / filling each thing is) fills "whale's worth" milestones. Each one gives +5 max health;
@@ -7160,6 +7187,44 @@ function esMigrate(d0){const d=Object.assign({},d0),sh=x=>x>ES_OLDX?x+SEA_DX:x;
   if(!G.scT)G.scT={};for(const k of['camp2','mine2'])if(G.scT[k]==null)G.scT[k]=SC.respawn;
   // old saves have no East March carts: start one from each new yard
   for(const k of['camp2','mine2'])if(!carts.some(c=>c.supply&&c.src===k&&!c.wrecked))scSpawn(k);return r;};}
+// ======================= partDG: quick dodge dashes (hunters + agile animals) & map exploration kept between levels =======================
+// A hunter or a quick, agile animal that has noticed the dragon (been near it for a moment) may side-step an incoming
+// bite, fire breath, lava glob, stomp or claw: a short sideways dash with a little dust puff. Fair: only sometimes, then a
+// 3.5 s cooldown (a failed try also blocks re-tries for ~1 s), never while carried / grabbed / eaten / inside, never the
+// slow or heavy animals. Dodging only moves the unit: it does not touch packs, alphas, rallies or herds.
+const DG={cd:3.5,failCd:1.1,dash:.22,speed:270,aware:.6,awareR:330,
+  ch:{hunter:.45,deer:.35,rabbit:.4,fox:.35,wolf:.35,alpha:.45,lion:.35,cougar:.4,jaguar:.4,cheetah:.45,tiger:.3,gazelle:.4,monkey:.4,jackal:.35,hyena:.3,roadrunner:.45,meerkat:.35},
+  n:0,tries:0,on:true};
+function dgChance(u){if(!u||u.dead||u.inside||u.eaten||u.carried||u.grabbed||u.princess||u.isPrincess||u.mounted||u.militia&&u.type!=='hunter')return 0;
+  if(u.type==='hunter')return DG.ch.hunter;if(u.type!=='animal')return 0;if(u.species==='wolf'&&u.alpha)return DG.ch.alpha;return DG.ch[u.species]||0;}
+function dgCan(u){return DG.on&&!(G&&(G.over||G.won))&&dgChance(u)>0&&!(u.dgCd>0)&&(u.dgAw||0)>=DG.aware&&!(u.daze>0)&&!(u.dizzy);}
+// roll once; on success start the dash. Returns true if the unit dodged.
+function dgTry(u,src){if(!dgCan(u))return false;DG.tries++;if(rnd()>=dgChance(u)){u.dgCd=DG.failCd;return false;}
+  const ax=u.x-D.x,ay=u.y-D.y,a=Math.atan2(ay,ax);let side=angDiff(a,D.ang)>=0?1:-1;if(rnd()<.15)side=-side;
+  const b=a+side*Math.PI/2*.85;u.dgT=DG.dash;u.dgVx=Math.cos(b)*DG.speed;u.dgVy=Math.sin(b)*DG.speed;u.dgCd=DG.cd;u.dgInv=DG.dash+.1;
+  DG.n++;G.stats.dodges=(G.stats.dodges||0)+1;puff(u.x,u.y+4,7,'rgba(190,170,130,',55,6);
+  float(u.x,u.y-30,u.type==='hunter'?'Dodged!':'Dodge!','#e8e0c8');return true;}
+// bite: the dodgers leave the jaws before the bite resolves (outermost tryEat wrapper)
+{const _bt=biteTargets;biteTargets=function(){const L=_bt.apply(this,arguments);return L.filter(u=>!(u.dgInv>0));};}
+{const _te=tryEat;tryEat=function(){if(!(D.eatCD>0)&&!D.princess){let T=[];try{T=_bt0();}catch(e){}for(const u of T.slice(0,BITE_MAX))dgTry(u,'bite');}return _te.apply(this,arguments);};}
+function _bt0(){return biteTargets();}
+// fire / lava / stomp / claw: the first hit of an attack can be side-stepped (burning that was already going on can't)
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){if(u&&!u.dead&&(src==='fire'||src==='lava'||src==='stomp'||src==='scratch')){
+    if(u.dgInv>0){if(src==='fire'&&!(u._pb>0))u.burn=0;return;}
+    if((src!=='fire'||!(u._pb>0))&&dgTry(u,src)){if(!(u._pb>0))u.burn=0;return;}}
+  return _hu.apply(this,arguments);};}
+function dgUpd(dt){const R2=DG.awareR*DG.awareR,dx0=D.x,dy0=D.y;for(const u of units){if(u.dead)continue;const dx=u.x-dx0,dy=u.y-dy0,near=dx*dx+dy*dy<R2;
+  if(!near&&!(u.dgAw>0)&&!(u.dgCd>0)&&!(u.dgInv>0)&&!(u.dgT>0)){u._pb=u.burn||0;continue;}if(!(dgChance(u)>0))continue;
+  u.dgAw=near?Math.min(3,(u.dgAw||0)+dt):Math.max(0,(u.dgAw||0)-dt*2);
+  if(u.dgCd>0)u.dgCd-=dt;if(u.dgInv>0)u.dgInv-=dt;
+  if(u.dgT>0){u.dgT-=dt;u.x=clamp(u.x+u.dgVx*dt,WX0+20,WX1-20);u.y=clamp(u.y+u.dgVy*dt,WY0+20,WY1-20);if(rnd()<dt*30)puff(u.x,u.y+4,1,'rgba(190,170,130,',25,4);}
+  u._pb=u.burn||0;}}
+{const _up=update;update=function(dt){const r=_up.apply(this,arguments);if(G&&scene==='play'&&!paused)dgUpd(dt);return r;};}
+
+// ---- exploration is kept through level-ups (a brand-new game starts unexplored); manual/auto saves already store FOG + G.visited ----
+{const _nl=nextLevel;nextLevel=function(){const keep=FOG?FOG.slice():null,vis=Object.assign({},G.visited||{});const r=_nl.apply(this,arguments);
+  if(keep&&FOG&&keep.length===FOG.length){for(let k=0;k<keep.length;k++)if(keep[k])FOG[k]=1;fogDirty=true;}
+  G.visited=Object.assign(vis,G.visited||{});return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
@@ -7231,13 +7296,16 @@ const lbHit=(b,L)=>L.some(o=>b.x0<o.x1&&b.x1>o.x0&&b.y0<o.y1&&b.y1>o.y0);
 function txt(s,x,y,size,col,align,bold){ctx.font=`${bold===false?'':'bold '}${size}px Georgia`;ctx.textAlign=align||'left';if(MAPLB)MAPLB.push(lbBox(s,x,y,size,align||'left'));ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillText(s,x+1.5,y+1.5);ctx.fillStyle=col||'#fff';ctx.fillText(s,x,y);}
 function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   // dragon vitals + mode
-  const hy=(G.easy?0:18)+18,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),104+hy);txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
+  // phones: no fire gauge here (the FIRE button's ring + number shows it); a compact lava counter takes that row only while there are lava shots
+  const tch=typeof TOUCH!=='undefined'&&TOUCH.on,lvR=tch&&D.lava>0,fb=tch?(lvR?18:0):18,hy=(G.easy?0:18)+fb,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),104+hy);UI.fireGauge=!tch;UI.lavaRow=lvR?{x:20,y:76,w:230,h:14}:null;txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
   bar(20,36,hbw,16,D.hp/D.maxHp,D.hp/D.maxHp<.3?'#e33':'#c0302a',`Health ${Math.ceil(D.hp)}/${D.maxHp}`);
   bar(20,58,230,14,D.st/D.maxSt,D.mode==='air'&&D.st<25?(Math.floor(G.t*4)%2?'#f0a020':'#a06010'):'#e0b030',`Stamina ${Math.ceil(D.st)}`);
-  if(typeof drawFireBar==='function')drawFireBar(20,76,230,14); // FIRE meter, right under stamina
+  if(!tch){if(typeof drawFireBar==='function')drawFireBar(20,76,230,14);} // FIRE meter, right under stamina (desktop)
+  else if(lvR){const pl=.75+.25*Math.sin(G.t*6),n=typeof LAVA_MAX!=='undefined'?LAVA_MAX:D.lava;rect(20,76,230,14,'#5a1808');ctx.strokeStyle=`rgba(255,${150+80*pl|0},50,1)`;ctx.lineWidth=1.5;ctx.strokeRect(20,76,230,14);
+    txt(`🌋 Lava ×${D.lava}`,26,88,11,'#ffd27a');for(let i=0;i<n;i++){ctx.fillStyle=i<D.lava?'#ff8a20':'#4a2a20';ctx.fillRect(110+i*(130/n),79,Math.max(2,130/n-1.5),8);}}
   if(!G.easy){const hf=D.hunger/D.maxHunger,st=D.hunger<=0,low=hf<=HUNGER.low/100,pl=.5+.5*Math.sin(G.t*9);
-    drawDrumstick(28,103,st?`rgba(255,${Math.round(80*pl)},${Math.round(80*pl)},1)`:low?'#ffb060':'#e8c090');bar(38,96,212,14,st?1:hf,st?`rgba(${150+Math.round(105*pl)},20,20,1)`:low?(Math.floor(G.t*3)%2?'#e07020':'#a04810'):'#b8742a',st?'STARVING! Eat something!':`Hunger ${Math.ceil(D.hunger)}${low?'  (hungry!)':''}`);
-    if(st){ctx.strokeStyle=`rgba(255,60,60,${pl})`;ctx.lineWidth=2;ctx.strokeRect(37,95,214,16);
+    drawDrumstick(28,85+fb,st?`rgba(255,${Math.round(80*pl)},${Math.round(80*pl)},1)`:low?'#ffb060':'#e8c090');bar(38,78+fb,212,14,st?1:hf,st?`rgba(${150+Math.round(105*pl)},20,20,1)`:low?(Math.floor(G.t*3)%2?'#e07020':'#a04810'):'#b8742a',st?'STARVING! Eat something!':`Hunger ${Math.ceil(D.hunger)}${low?'  (hungry!)':''}`);
+    if(st){ctx.strokeStyle=`rgba(255,60,60,${pl})`;ctx.lineWidth=2;ctx.strokeRect(37,77+fb,214,16);
       if(!G.over&&!G.won)txt('⚠ STARVING! Eat a villager or animal! ⚠',VW/2,VH*.30,VW<760?18:24,`rgba(255,${Math.round(90+90*pl)},${Math.round(60+60*pl)},1)`,'center');}}
   const air=D.mode==='air';rect(20,78+hy,230,28,air?'#2a4a7a':'#4a3a22');
   txt(air?(D.alt<.95?'⇧ TAKING OFF…':'⇧ FLYING'):(D.swim?'≈ SWIMMING (slower)':D.alt>0.02?'⇩ LANDING…':'⇩ ON THE GROUND'),30,97+hy,14,air?'#cfe6ff':'#f2dcb0');
@@ -7266,7 +7334,9 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   UI.colY=cy;UI.col={x:10,y:10,w:colW,h:cy-4-10};
   // minimap: top-right corner (inside the safe area: drawHUD runs in withSafe), shrunk if needed to stay clear of the centred WANTED / boss bars
   {const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000)),room=Math.floor(VW/2-(sm?210:260)-20),mmw=Math.max(120,Math.min(base,room)),mmh=mmw*(WY1-WY0)/(WX1-WX0);
-    const mx0=VW-mmw-10,my0=10;drawMap(mx0,my0,mmw,false);UI.mm={x:mx0-3,y:my0-3,w:mmw+6,h:mmh+6+12};}
+    let mx0=VW-mmw-8,my0=8;
+    // phones with rounded screen corners (any safe-area inset): keep the map's outer corner out of the ~55 pt corner curve
+    if(typeof TOUCH!=='undefined'&&TOUCH.on&&SAFE.t+SAFE.r+SAFE.b+SAFE.l>0){const need=56/UIS,gr=SAFE.r+5,gt=SAFE.t+5;if(gr<need&&gt<need){if(need-gr<=need-gt)mx0-=need-gr;else my0+=need-gt;}}drawMap(mx0,my0,mmw,false);UI.mm={x:mx0-3,y:my0-3,w:mmw+6,h:mmh+6+12};}
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);
     txt(`WORLD MAP  ·  explored ${exploredPct()}%  ·  regions found ${Object.keys(G.visited).length}/${Object.keys(REGION_NAMES).length}  ·  M / LB to close`,VW/2,52,16,'#ffd24a','center');}
   if(false){const mmw=0,mmh=0,mmx=0,mmy=0,s=1;
