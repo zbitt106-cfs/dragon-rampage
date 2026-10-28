@@ -1,7 +1,7 @@
 
 // ================= part7: castle goal, lair, hunter, bucket brigade, easy mode, gamepad =================
 // ---------- sound (WebAudio horn, created on first input) ----------
-let AC=null;function audio(){try{if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(C)AC=new C();}if(AC&&AC.state==='suspended')AC.resume();}catch(e){}return AC;}
+let AC=null;function audio(){try{if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(C)AC=new C();}if(AC&&AC.state==='suspended'){const pr=AC.resume();if(pr&&pr.catch)pr.catch(()=>{});}}catch(e){}return AC;}
 addEventListener('keydown',()=>audio(),{once:true});addEventListener('pointerdown',()=>audio(),{once:true});
 function horn(){const a=AC;if(!a)return;try{const t=a.currentTime,o=a.createOscillator(),o2=a.createOscillator(),f=a.createBiquadFilter(),g=a.createGain();
   o.type='sawtooth';o2.type='sawtooth';o.frequency.setValueAtTime(196,t);o.frequency.linearRampToValueAtTime(220,t+.25);o.frequency.setValueAtTime(220,t+1.2);o.frequency.linearRampToValueAtTime(196,t+1.6);o2.frequency.value=147;

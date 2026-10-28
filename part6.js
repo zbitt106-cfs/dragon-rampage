@@ -236,7 +236,11 @@ function update(dt){G.t+=dt;G.fc++;if(P('m'))G.bigMap=!G.bigMap;G.shake=Math.max
   taxSacks();for(let i=units.length-1;i>=0;i--)if(units[i].dead)units.splice(i,1);
   for(let i=siege.length-1;i>=0;i--)if(siege[i].dead&&!siege[i].gone){siege[i].deadT=(siege[i].deadT||0)+dt;if(siege[i].deadT>25)siege.splice(i,1);}
   updProjs(dt);updParts(dt);if(GFX_HI)gfxTick(dt);}
-function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
+let FRAME_ERR=null,FRAME_ERRN=0;
+function frame(ts){try{frameBody(ts);}catch(e){FRAME_ERRN++;if(!FRAME_ERR||FRAME_ERRN<4)try{console.error('frame error',e);}catch(_){}FRAME_ERR={msg:String(e&&e.message||e),t:performance.now()};pressed={};
+    try{ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='rgba(120,0,0,.85)';ctx.fillRect(0,0,cv.width,Math.round(28*DPR));ctx.fillStyle='#fff';ctx.font=Math.round(14*DPR)+'px Georgia';ctx.textAlign='left';ctx.fillText('Oops: '+FRAME_ERR.msg.slice(0,90),8*DPR,19*DPR);}catch(_){}}
+  requestAnimationFrame(frame);}
+function frameBody(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
   pollPad(dt);touchTick();if(P('n'))toggleMute();musicTick(dt);sfxTick(dt);
   if(scene==='title'&&PM.on){pmInput();pressed={};G.t+=dt;}
   else if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(5,titleSel+1);
@@ -248,7 +252,7 @@ function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
     else{G.t+=dt;cam.x=1700+Math.sin(ts/9000)*700;cam.y=1900+Math.cos(ts/11000)*1300;cam.z=1;updFire(dt);updEconomy(dt);G.fc++;for(const u of units){const t=farTick(u,dt);if(!t)continue;if(u.type==='villager')updVillager(u,t);else if(u.type==='animal'){if(u.wild)updWild(u,t);else updAnimal(u,t);}}updBirds(dt);updParts(dt);}}
   else{ const used=PM.on&&PM.from==='pause'&&paused&&!G.over&&!G.won&&pmInput();
     if(!used&&(P('p')||P('escape'))&&!G.over)paused=!paused;
-    if(paused&&!PM.on&&scene==='play'&&!G.over&&!G.won){pmOpen('main','pause');svAuto();}
+    if(paused&&!PM.on&&scene==='play'&&!G.over&&!G.won&&!TOUCH.rotPaused){pmOpen('main','pause');svAuto();}
     if(!paused&&PM.on&&PM.from==='pause')pmClose();
     if(!used&&((G.over&&(P('r')||(P('enter')&&G.overT>1)))||(paused&&P('r')))||(G.won&&P('r'))){newGame();paused=false;}
     else if(G.won&&G.wonT>1&&(P('enter')||P(' '))){nextLevel();paused=false;}
@@ -256,7 +260,7 @@ function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
     cam.z=clamp(Math.min(VW/1150,VH/760),.55,1.15)*(1-.12*D.alt);cam.x=lerp(cam.x,D.x+D.vx*.35,Math.min(1,dt*5));cam.y=lerp(cam.y,D.y-heightOf()*.5+D.vy*.35,Math.min(1,dt*5));}
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#000';ctx.fillRect(0,0,cv.width,cv.height);
   drawWorld();if(scene==='title')drawTitle();else withSafe(drawHUD);drawTouch();if(PM.on)drawPM();drawToast();
-  pressed={};requestAnimationFrame(frame);}
+  pressed={};}
 newGame();D.x=-9999;requestAnimationFrame(frame);
 // test hook
 window.DRG={setEasy,tryEat,biteTargets,kingdomMul,concern,isWild,LIVESTOCK,mkUnit,get birds(){return birds},mkBird,get PR(){return PR},eatUnit,feed,HUNGER,updHunger,get ships(){return ships},get loot(){return loot},get cballs(){return cballs},LH,ISEAL_ROCKS,DOCK,get G(){return G},get D(){return D},get units(){return units},get siege(){return siege},get structures(){return structures},get trees(){return trees},get cells(){return cells},get carts(){return carts},get boulders(){return boulders},get projs(){return projs},

@@ -124,7 +124,7 @@ function updHunger(dt){if(G.easy||G.over||G.won){D.hunger=D.maxHunger;D.starveT=
   if(D.hunger<=HUNGER.low&&D.hunger>0&&!D.hungryWarn){D.hungryWarn=true;float(D.x,D.y-heightOf()-90,'Getting hungry… eat something!','#ffb060');}
   if(D.hunger<=0){D.starveT+=dt;D.hp-=HUNGER.starveHp*dt;D.hurt=Math.max(D.hurt,.05);
     if(Math.floor(D.starveT/3)!==Math.floor((D.starveT-dt)/3))float(D.x,D.y-heightOf()-90,'Starving!','#ff5050');
-    if(D.hp<=0){D.hp=0;G.over=true;G.overT=0;G.starved=true;G.score=calcScore();if(G.score>best){best=G.score;localStorage.setItem('dr_best',best);}}}
+    if(D.hp<=0){D.hp=0;G.over=true;G.overT=0;G.starved=true;G.score=calcScore();if(G.score>best){best=G.score;try{localStorage.setItem('dr_best',best);}catch(e){}}}}
   else D.starveT=0;}
 function eatUnit(u){if(u.type==='sea'){eatSea(u);return;}u.dead=true;u.eaten=true;dropCarry(u);const heal=Math.round((u.type==='animal'?HEAL[u.species]:u.mounted?HEAL.cavalry:HEAL[u.type])||10);if(u.patrol)patrolHit(u);
   const got=Math.min(heal,D.maxHp-D.hp);D.hp=Math.min(D.maxHp,D.hp+heal);D.st=Math.min(D.maxSt,D.st+8);D.healFx=.6;feed(heal);
@@ -158,7 +158,7 @@ function hurtStruct(s,d){if(s.state==='ruin')return;if(stoneish(s)&&!HEAVY)retur
 function wreckCart(c){if(c.wrecked)return;c.wrecked=true;c.fire=0;c.t=12;G.stats.carts++;addAlarm(3);G.cartsPool=Math.max(0,G.cartsPool);
   if(c.pusher){c.pusher.cart=null;c.pusher=null;}puff(c.x,c.y,12,'rgba(120,110,100,',110,8);float(c.x,c.y-30,c.stone?'Stone cart wrecked!':'Cart wrecked!','#ffb050');c.stone=0;}
 function hurtDragon(d,src){if(G.over||G.won)return;d*=G.dmgMul;if(d>=9)rumble(.7,.9,180);D.hp-=d;D.hurt=.25;G.shake=Math.max(G.shake,Math.min(12,d*.6));float(D.x+R(-20,20),D.y-heightOf()-50,'-'+Math.round(d),'#ff7070');
-  if(D.hp<=0){D.hp=0;G.over=true;G.overT=0;G.score=calcScore();if(G.score>best){best=G.score;localStorage.setItem('dr_best',best);}}}
+  if(D.hp<=0){D.hp=0;G.over=true;G.overT=0;G.score=calcScore();if(G.score>best){best=G.score;try{localStorage.setItem('dr_best',best);}catch(e){}}}}
 function hurtSiege(g,d){if(g.dead)return;g.hp-=d;if(g.hp<=0){g.dead=true;g.fire=0;G.stats.siege++;addAlarm(5);scorch(g.x,g.y,40);puff(g.x,g.y,25,'rgba(80,60,40,',150,12);
   float(g.x,g.y-40,g.kind==='scorpion'?'Scorpion destroyed!':'Catapult destroyed!','#ffe28a');for(const c of units)if(c.siege===g)c.siege=null;}}
 function calcScore(){const s=G.stats;return Math.round(s.huts*50+s.barns*90+s.trees*6+s.crops*3+s.eaten*30+s.animals*15+s.knights*40+s.archers*30+s.siege*150+s.carts*25+s.piles*120+(s.castle||0)*200+(s.hunters||0)*60+(s.birdPts||0)+(s.seaPts||0)+(s.regions||0)*100+(s.comboPts||0)+(s.cougars||0)*120+(s.coinPts||0)+(s.kPts||0)+(s.bridges||0)*80+G.stash*5+(G.won?1000*G.lvl:0)+G.t*2)+G.bank;}

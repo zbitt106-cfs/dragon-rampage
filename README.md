@@ -69,7 +69,8 @@ The title screen also has **Music volume** and **Sound effects** rows (←/→ i
 **DIVE STOMP:** press stomp while flying to fold your wings and plummet. The shockwave smashes wooden buildings flat and cracks stone (2.4 s cooldown, costs 6 stamina). A normal stomp also damages wood.
 
 ### Touch (phones and tablets)
-- Play in landscape. In portrait the game pauses and shows a "Rotate your phone" hint.
+- Landscape is best. The title menu works in both orientations: tap **Start game**, or tap anywhere in the big "Tap down here to start" strip. If you start in portrait, the game pauses and shows a "Rotate your phone" hint. The hint clears by itself when you turn the phone sideways. If rotation is locked, tap the hint to play on in portrait.
+- The screen re-sizes after every rotation and toolbar change (iPhone Safari reports its new size late, so it re-measures a few times). The game loop keeps running even if one frame hits an error.
 - **Left thumb:** touch anywhere on the left half and drag. The joystick appears under your thumb.
 - **Right thumb:** **FIRE** (hold), **BITE**, **STOMP** (it reads DIVE while flying and does the crash dive stomp) and **FLY** (it reads LAND in the air). **MAP** and **II** (pause) sit on the left edge.
 - On the title screen, tap a row to change it. Tap the left or right side of a volume row to turn it down or up.

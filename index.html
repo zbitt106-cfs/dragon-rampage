@@ -10,8 +10,9 @@
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Dragon%27s%20Rampage%22%2C%22short_name%22%3A%22Dragon%20Rampage%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22landscape%22%2C%22background_color%22%3A%22%23111111%22%2C%22theme_color%22%3A%22%231a0e08%22%7D">
 <title>Dragon's Rampage</title>
 <style>
-html,body{margin:0;height:100%;background:#111;overflow:hidden;font-family:Georgia,'Times New Roman',serif}
-canvas{display:block;width:100vw;height:100vh;image-rendering:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;width:100%;background:#111;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;font-family:Georgia,'Times New Roman',serif}
+body{position:fixed;inset:0}
+canvas{position:fixed;left:0;top:0;display:block;width:100vw;height:100vh;height:100dvh;image-rendering:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 #safe{position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 </style></head><body>
 <canvas id="c"></canvas><div id="safe"></div>
@@ -27,13 +28,24 @@ let VW=960,VH=640,DPR=1,UIS=1;
 // device pixels (capped for speed: 2x, or 1.5x in Low graphics).
 const IS_TOUCH=(()=>{try{return matchMedia('(pointer:coarse)').matches;}catch(e){return false;}})();
 const SAFE={l:0,r:0,t:0,b:0};
-function resize(){const w=innerWidth,h=innerHeight;
+// iPhone Safari reports the new size late after a rotation, so we re-measure a few times, and we also
+// listen to visualViewport (toolbar show/hide) - a stale size used to leave the game drawn for the wrong orientation.
+function viewSize(){let w=innerWidth||0,h=innerHeight||0;const de=document.documentElement;
+  if(de&&de.clientWidth&&de.clientHeight&&IS_TOUCH){w=de.clientWidth;h=de.clientHeight;}
+  if(!(w>0&&h>0)){w=(screen&&screen.width)||960;h=(screen&&screen.height)||640;}return [w,h];}
+let _rsW=0,_rsH=0;
+function resize(){const [w,h]=viewSize();_rsW=w;_rsH=h;
   UIS=IS_TOUCH?Math.min(1,Math.max(.5,Math.min(w,h)/520)):1;
   let hi=true;try{hi=GFX_HI;}catch(e){}
   const dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);
   VW=Math.round(w/UIS);VH=Math.round(h/UIS);DPR=dpr*UIS;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';
   try{const s=getComputedStyle(document.getElementById('safe'));SAFE.t=(parseFloat(s.paddingTop)||0)/UIS;SAFE.r=(parseFloat(s.paddingRight)||0)/UIS;SAFE.b=(parseFloat(s.paddingBottom)||0)/UIS;SAFE.l=(parseFloat(s.paddingLeft)||0)/UIS;}catch(e){}}
-addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));resize();
+function resizeSoon(){resize();for(const t of [60,200,450,900,1600])setTimeout(resize,t);}
+addEventListener('resize',resize);addEventListener('orientationchange',resizeSoon);addEventListener('pageshow',resizeSoon);
+try{if(window.visualViewport)visualViewport.addEventListener('resize',resize);}catch(e){}
+try{const mq=matchMedia('(orientation: landscape)');const f=()=>resizeSoon();mq.addEventListener?mq.addEventListener('change',f):mq.addListener&&mq.addListener(f);}catch(e){}
+try{if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',resizeSoon);}catch(e){}
+resize();
 const WW=3200,WH=2200;
 const TAU=Math.PI*2;
 const rnd=Math.random, R=(a,b)=>a+rnd()*(b-a), RI=(a,b)=>Math.floor(R(a,b+1));
@@ -74,11 +86,11 @@ const PRINCESS_TOWER={x:1790+CDX,y:125+CDY}; // decorative pink tower (the princ
 const KEEP_POS={x:1610+CDX,y:150+CDY};        // the great keep: Princess Elizabeth is locked inside, under its stone roof
 const CWALL={x0:1320+CDX,x1:1880+CDX,y0:65+CDY,y1:315+CDY}; // castle wall rectangle
 const TOWER_SPOTS=[[1320,65],[1880,65],[1320,315],[1880,315],[1460,65],[1740,315],[1320,190],[1880,190],[1460,315],[1600,65],[1740,65],[1530,315]].map(([x,y])=>[x+CDX,y+CDY]);
-let EASY=localStorage.getItem('dr_easy')==='1';
+let EASY=(()=>{try{return localStorage.getItem('dr_easy')==='1';}catch(e){return false;}})();
 
 // ---------- state ----------
 let PR, goldPiles, G, D, structures, trees, cells, units, siege, projs, boulders, carts, parts, texts, ground, gctx;
-let keys={}, pressed={}, scene='title', paused=false, last=0, best=+(localStorage.getItem('dr_best')||0);
+let keys={}, pressed={}, scene='title', paused=false, last=0, best=(()=>{try{return +(localStorage.getItem('dr_best')||0)||0;}catch(e){return 0;}})();
 const THRESH=[13,28,44,60,76,90],ALARM_GAIN=.5; // wanted tiers: foot soldiers > knights > archers > mounted knights > siege > militia
 const LEVEL_NAMES=['Calm','Foot soldiers','+ Knights','+ Archers','+ Mounted knights','+ Siege','Militia'];
 
@@ -615,7 +627,7 @@ function updHunger(dt){if(G.easy||G.over||G.won){D.hunger=D.maxHunger;D.starveT=
   if(D.hunger<=HUNGER.low&&D.hunger>0&&!D.hungryWarn){D.hungryWarn=true;float(D.x,D.y-heightOf()-90,'Getting hungry… eat something!','#ffb060');}
   if(D.hunger<=0){D.starveT+=dt;D.hp-=HUNGER.starveHp*dt;D.hurt=Math.max(D.hurt,.05);
     if(Math.floor(D.starveT/3)!==Math.floor((D.starveT-dt)/3))float(D.x,D.y-heightOf()-90,'Starving!','#ff5050');
-    if(D.hp<=0){D.hp=0;G.over=true;G.overT=0;G.starved=true;G.score=calcScore();if(G.score>best){best=G.score;localStorage.setItem('dr_best',best);}}}
+    if(D.hp<=0){D.hp=0;G.over=true;G.overT=0;G.starved=true;G.score=calcScore();if(G.score>best){best=G.score;try{localStorage.setItem('dr_best',best);}catch(e){}}}}
   else D.starveT=0;}
 function eatUnit(u){if(u.type==='sea'){eatSea(u);return;}u.dead=true;u.eaten=true;dropCarry(u);const heal=Math.round((u.type==='animal'?HEAL[u.species]:u.mounted?HEAL.cavalry:HEAL[u.type])||10);if(u.patrol)patrolHit(u);
   const got=Math.min(heal,D.maxHp-D.hp);D.hp=Math.min(D.maxHp,D.hp+heal);D.st=Math.min(D.maxSt,D.st+8);D.healFx=.6;feed(heal);
@@ -649,7 +661,7 @@ function hurtStruct(s,d){if(s.state==='ruin')return;if(stoneish(s)&&!HEAVY)retur
 function wreckCart(c){if(c.wrecked)return;c.wrecked=true;c.fire=0;c.t=12;G.stats.carts++;addAlarm(3);G.cartsPool=Math.max(0,G.cartsPool);
   if(c.pusher){c.pusher.cart=null;c.pusher=null;}puff(c.x,c.y,12,'rgba(120,110,100,',110,8);float(c.x,c.y-30,c.stone?'Stone cart wrecked!':'Cart wrecked!','#ffb050');c.stone=0;}
 function hurtDragon(d,src){if(G.over||G.won)return;d*=G.dmgMul;if(d>=9)rumble(.7,.9,180);D.hp-=d;D.hurt=.25;G.shake=Math.max(G.shake,Math.min(12,d*.6));float(D.x+R(-20,20),D.y-heightOf()-50,'-'+Math.round(d),'#ff7070');
-  if(D.hp<=0){D.hp=0;G.over=true;G.overT=0;G.score=calcScore();if(G.score>best){best=G.score;localStorage.setItem('dr_best',best);}}}
+  if(D.hp<=0){D.hp=0;G.over=true;G.overT=0;G.score=calcScore();if(G.score>best){best=G.score;try{localStorage.setItem('dr_best',best);}catch(e){}}}}
 function hurtSiege(g,d){if(g.dead)return;g.hp-=d;if(g.hp<=0){g.dead=true;g.fire=0;G.stats.siege++;addAlarm(5);scorch(g.x,g.y,40);puff(g.x,g.y,25,'rgba(80,60,40,',150,12);
   float(g.x,g.y-40,g.kind==='scorpion'?'Scorpion destroyed!':'Catapult destroyed!','#ffe28a');for(const c of units)if(c.siege===g)c.siege=null;}}
 function calcScore(){const s=G.stats;return Math.round(s.huts*50+s.barns*90+s.trees*6+s.crops*3+s.eaten*30+s.animals*15+s.knights*40+s.archers*30+s.siege*150+s.carts*25+s.piles*120+(s.castle||0)*200+(s.hunters||0)*60+(s.birdPts||0)+(s.seaPts||0)+(s.regions||0)*100+(s.comboPts||0)+(s.cougars||0)*120+(s.coinPts||0)+(s.kPts||0)+(s.bridges||0)*80+G.stash*5+(G.won?1000*G.lvl:0)+G.t*2)+G.bank;}
@@ -1103,7 +1115,7 @@ function drawDragon(){const h=heightOf(),x=D.x,y=D.y,a=D.ang,alt=D.alt;
 
 // ================= part7: castle goal, lair, hunter, bucket brigade, easy mode, gamepad =================
 // ---------- sound (WebAudio horn, created on first input) ----------
-let AC=null;function audio(){try{if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(C)AC=new C();}if(AC&&AC.state==='suspended')AC.resume();}catch(e){}return AC;}
+let AC=null;function audio(){try{if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(C)AC=new C();}if(AC&&AC.state==='suspended'){const pr=AC.resume();if(pr&&pr.catch)pr.catch(()=>{});}}catch(e){}return AC;}
 addEventListener('keydown',()=>audio(),{once:true});addEventListener('pointerdown',()=>audio(),{once:true});
 function horn(){const a=AC;if(!a)return;try{const t=a.currentTime,o=a.createOscillator(),o2=a.createOscillator(),f=a.createBiquadFilter(),g=a.createGain();
   o.type='sawtooth';o2.type='sawtooth';o.frequency.setValueAtTime(196,t);o.frequency.linearRampToValueAtTime(220,t+.25);o.frequency.setValueAtTime(220,t+1.2);o.frequency.linearRampToValueAtTime(196,t+1.6);o2.frequency.value=147;
@@ -3062,7 +3074,7 @@ const _updPartsPE=updParts;updParts=function(dt){_updPartsPE(dt);if(scene!=='pla
 // Virtual joystick (left thumb, floats to wherever you touch) + FIRE / BITE / STOMP / FLY buttons
 // (right thumb) + MAP / PAUSE. STOMP while flying = crash DIVE STOMP (same as Q in the air).
 // Also: safe-area aware HUD, rotate-to-landscape hint, iOS audio unlock, auto Low graphics.
-const TOUCH={on:IS_TOUCH,mx:0,my:0,joy:null,held:{},btns:[],rot:false,rotPaused:false,taps:0,
+const TOUCH={on:IS_TOUCH,mx:0,my:0,joy:null,held:{},btns:[],rot:false,rotPaused:false,taps:0,portrait:false,rotOK:false,lastTouch:0,
   JR:62};
 (function(){ // first visit on a phone/tablet: default to Low graphics (fast); the title menu can still switch it
   let saved=null;try{saved=localStorage.getItem('dr_gfx');}catch(e){}
@@ -3072,7 +3084,7 @@ const TOUCH={on:IS_TOUCH,mx:0,my:0,joy:null,held:{},btns:[],rot:false,rotPaused:
 // iOS / Safari only lets audio start inside a touchend (or click): resume the context and play a
 // 1-sample silent buffer to unlock it.
 const _setGfx0=setGfx;setGfx=function(v){_setGfx0(v);if(IS_TOUCH)resize();};
-function audioUnlock(){const a=audio();if(!a)return;try{if(a.state!=='running')a.resume();const b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0);}catch(e){}
+function audioUnlock(){const a=audio();if(!a)return;try{if(a.state!=='running'){const pr=a.resume();if(pr&&pr.catch)pr.catch(()=>{});}const b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0);}catch(e){}
   if(a.state==='running'&&!TOUCH.unlocked){TOUCH.unlocked=true;}}
 addEventListener('touchend',audioUnlock,{passive:true});addEventListener('click',audioUnlock);
 addEventListener('keydown',()=>{if(!IS_TOUCH)TOUCH.on=false;});
@@ -3094,11 +3106,11 @@ function titleTap(x,y){const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k
       else{const k=i===3?'music':'sfx';if(AUD.muted)toggleMute();else setVol(k,lx>g.cx+60?Math.min(1,AUD[k]+.1):lx<g.cx-60?Math.max(0,AUD[k]-.1):(AUD[k]>=1?0:AUD[k]+.1));if(k==='sfx')SFX.play('coin');}
       return true;}}
   if(ly>g.y0+6*36+20){pressed['enter']=true;titleSel=0;}return true;}
-function onTouchStart(e){e.preventDefault();TOUCH.on=true;audio();if(!TOUCH.btns.length)touchLayout();
+function onTouchStart(e){if(e.cancelable)e.preventDefault();TOUCH.on=true;TOUCH.lastTouch=Date.now();audio();try{if(!TOUCH.btns.length)touchLayout();}catch(_){}
   for(const t of e.changedTouches){const p=tpos(t);TOUCH.taps++;
+    if(TOUCH.rot){TOUCH.rotOK=true;TOUCH.rot=false;continue;} // rotation locked? a tap on the hint plays on in portrait
     if(PM.on){pmTap(p.x,p.y,t.identifier);continue;}
     if(scene==='title'){titleTap(p.x,p.y);continue;}
-    if(TOUCH.rot)continue;
     const b=hitBtn(p.x,p.y);
     if(b&&!(G.over||G.won)){TOUCH.held[t.identifier]=b;pressed[b.key]=true;if(b.hold)keys[b.key]=true;b.down=true;continue;}
     if(G.over&&G.overT>1){pressed['enter']=true;continue;}
@@ -3113,6 +3125,8 @@ function joyUpd(){const j=TOUCH.joy;if(!j){TOUCH.mx=TOUCH.my=0;return;}let dx=j.
 function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){if(PM.on&&PM.drag){pmDragMove(t.identifier,tpos(t).y);continue;}const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
 function onTouchEnd(e){e.preventDefault();for(const t of e.changedTouches){if(PM.drag&&PM.drag.id===t.identifier)PM.drag=null;const j=TOUCH.joy;if(j&&j.id===t.identifier){TOUCH.joy=null;joyUpd();}
     const b=TOUCH.held[t.identifier];if(b){delete TOUCH.held[t.identifier];if(b.hold&&!Object.values(TOUCH.held).some(o=>o.key===b.key))keys[b.key]=false;b.down=false;}}}
+cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900)return;audio();const p={x:e.clientX/UIS,y:e.clientY/UIS};
+  if(PM.on&&scene==='title'){return;}if(scene==='title')titleTap(p.x,p.y);else if(TOUCH.rot){TOUCH.rotOK=true;TOUCH.rot=false;}}catch(_){}});
 cv.addEventListener('touchstart',onTouchStart,{passive:false});cv.addEventListener('touchmove',onTouchMove,{passive:false});
 cv.addEventListener('touchend',onTouchEnd,{passive:false});cv.addEventListener('touchcancel',onTouchEnd,{passive:false});
 // stop iOS rubber-banding / double-tap zoom / long-press menus outside the canvas too
@@ -3121,7 +3135,8 @@ document.addEventListener('gesturestart',e=>e.preventDefault());document.addEven
 addEventListener('blur',()=>{TOUCH.joy=null;TOUCH.mx=TOUCH.my=0;for(const k in TOUCH.held){const b=TOUCH.held[k];if(b.hold)keys[b.key]=false;}TOUCH.held={};});
 
 // called every frame from frame(): portrait = pause + rotate hint
-function touchTick(){if(!TOUCH.on)return;TOUCH.rot=IS_TOUCH&&VH>VW*1.05;
+function touchTick(){if(!TOUCH.on)return;TOUCH.portrait=IS_TOUCH&&VH>VW*1.05;if(!TOUCH.portrait)TOUCH.rotOK=false;
+  TOUCH.rot=TOUCH.portrait&&scene==='play'&&!TOUCH.rotOK;
   if(TOUCH.rot&&scene==='play'&&!paused&&!G.over&&!G.won){paused=true;TOUCH.rotPaused=true;}
   if(!TOUCH.rot&&TOUCH.rotPaused){paused=false;TOUCH.rotPaused=false;}
   if(TOUCH.rot&&TOUCH.joy){TOUCH.joy=null;joyUpd();}}
@@ -3133,7 +3148,10 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
   if(TOUCH.rot){ctx.fillStyle='rgba(8,4,2,.93)';ctx.fillRect(0,0,VW,VH);const cx=VW/2,cy=VH*.42,a=(performance.now()/900)%TAU,r=Math.min(1,Math.max(0,Math.sin(a)*1.4));
     ctx.save();ctx.translate(cx,cy);ctx.rotate(-r*Math.PI/2);ctx.strokeStyle='#ffd24a';ctx.lineWidth=6;ctx.beginPath();ctx.roundRect?ctx.roundRect(-45,-80,90,160,14):ctx.rect(-45,-80,90,160);ctx.stroke();
     ctx.fillStyle='#ffd24a';ctx.beginPath();ctx.arc(0,62,6,0,TAU);ctx.fill();ctx.restore();
-    txt('Rotate your phone',cx,cy+150,40,'#ffd24a','center');txt('Dragon\'s Rampage plays in landscape',cx,cy+195,24,'#f3dcb8','center',false);return;}
+    txt('Rotate your phone',cx,cy+150,40,'#ffd24a','center');txt('Dragon\'s Rampage plays best in landscape',cx,cy+195,24,'#f3dcb8','center',false);
+    txt('Rotation locked? Tap anywhere to play in portrait',cx,cy+240,20,'rgba(243,220,184,.75)','center',false);return;}
+  if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+6*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
+    txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');const y2=VH-SAFE.b-40;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y2-28,VW,44);txt('\u21bb Best in landscape: turn your phone',VW/2,y2,19,'#f3dcb8','center',false);}
   if(scene!=='play')return;
   const b=touchLayout();ctx.textAlign='center';
   if(!(G.over||G.won)){
@@ -5711,7 +5729,11 @@ function update(dt){G.t+=dt;G.fc++;if(P('m'))G.bigMap=!G.bigMap;G.shake=Math.max
   taxSacks();for(let i=units.length-1;i>=0;i--)if(units[i].dead)units.splice(i,1);
   for(let i=siege.length-1;i>=0;i--)if(siege[i].dead&&!siege[i].gone){siege[i].deadT=(siege[i].deadT||0)+dt;if(siege[i].deadT>25)siege.splice(i,1);}
   updProjs(dt);updParts(dt);if(GFX_HI)gfxTick(dt);}
-function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
+let FRAME_ERR=null,FRAME_ERRN=0;
+function frame(ts){try{frameBody(ts);}catch(e){FRAME_ERRN++;if(!FRAME_ERR||FRAME_ERRN<4)try{console.error('frame error',e);}catch(_){}FRAME_ERR={msg:String(e&&e.message||e),t:performance.now()};pressed={};
+    try{ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='rgba(120,0,0,.85)';ctx.fillRect(0,0,cv.width,Math.round(28*DPR));ctx.fillStyle='#fff';ctx.font=Math.round(14*DPR)+'px Georgia';ctx.textAlign='left';ctx.fillText('Oops: '+FRAME_ERR.msg.slice(0,90),8*DPR,19*DPR);}catch(_){}}
+  requestAnimationFrame(frame);}
+function frameBody(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
   pollPad(dt);touchTick();if(P('n'))toggleMute();musicTick(dt);sfxTick(dt);
   if(scene==='title'&&PM.on){pmInput();pressed={};G.t+=dt;}
   else if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(5,titleSel+1);
@@ -5723,7 +5745,7 @@ function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
     else{G.t+=dt;cam.x=1700+Math.sin(ts/9000)*700;cam.y=1900+Math.cos(ts/11000)*1300;cam.z=1;updFire(dt);updEconomy(dt);G.fc++;for(const u of units){const t=farTick(u,dt);if(!t)continue;if(u.type==='villager')updVillager(u,t);else if(u.type==='animal'){if(u.wild)updWild(u,t);else updAnimal(u,t);}}updBirds(dt);updParts(dt);}}
   else{ const used=PM.on&&PM.from==='pause'&&paused&&!G.over&&!G.won&&pmInput();
     if(!used&&(P('p')||P('escape'))&&!G.over)paused=!paused;
-    if(paused&&!PM.on&&scene==='play'&&!G.over&&!G.won){pmOpen('main','pause');svAuto();}
+    if(paused&&!PM.on&&scene==='play'&&!G.over&&!G.won&&!TOUCH.rotPaused){pmOpen('main','pause');svAuto();}
     if(!paused&&PM.on&&PM.from==='pause')pmClose();
     if(!used&&((G.over&&(P('r')||(P('enter')&&G.overT>1)))||(paused&&P('r')))||(G.won&&P('r'))){newGame();paused=false;}
     else if(G.won&&G.wonT>1&&(P('enter')||P(' '))){nextLevel();paused=false;}
@@ -5731,7 +5753,7 @@ function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
     cam.z=clamp(Math.min(VW/1150,VH/760),.55,1.15)*(1-.12*D.alt);cam.x=lerp(cam.x,D.x+D.vx*.35,Math.min(1,dt*5));cam.y=lerp(cam.y,D.y-heightOf()*.5+D.vy*.35,Math.min(1,dt*5));}
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#000';ctx.fillRect(0,0,cv.width,cv.height);
   drawWorld();if(scene==='title')drawTitle();else withSafe(drawHUD);drawTouch();if(PM.on)drawPM();drawToast();
-  pressed={};requestAnimationFrame(frame);}
+  pressed={};}
 newGame();D.x=-9999;requestAnimationFrame(frame);
 // test hook
 window.DRG={setEasy,tryEat,biteTargets,kingdomMul,concern,isWild,LIVESTOCK,mkUnit,get birds(){return birds},mkBird,get PR(){return PR},eatUnit,feed,HUNGER,updHunger,get ships(){return ships},get loot(){return loot},get cballs(){return cballs},LH,ISEAL_ROCKS,DOCK,get G(){return G},get D(){return D},get units(){return units},get siege(){return siege},get structures(){return structures},get trees(){return trees},get cells(){return cells},get carts(){return carts},get boulders(){return boulders},get projs(){return projs},
