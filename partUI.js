@@ -1,5 +1,5 @@
 // ================= partUI: compact stockpile icons (wood log + stone rock) =================
-// The kingdom's DELIVERED stockpile (G.wood / G.stone) as two tiny icons with amounts. Used on the HUD (top right)
+// The kingdom's DELIVERED stockpile (G.wood / G.stone) as two tiny icons with amounts. Used on the HUD (left column, under CASTLE LV)
 // and in the pause menu. The score is shown only in the pause menu (it is still tracked and saved as before).
 function uiLog(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
   ctx.fillStyle='#8a5a2b';ctx.strokeStyle='#3a220e';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-8,-4);ctx.lineTo(6,-4);ctx.lineTo(6,4);ctx.lineTo(-8,4);ctx.closePath();ctx.fill();ctx.stroke();
@@ -31,11 +31,13 @@ function uiGold(x,y,fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;
   let cx=x+8*s;uiCastle(cx,y,s);uiCoin(cx+7*s,y+3*s,s);cx+=14*s;txt(a,cx,y+fs*.38,fs,'#ffd84a','left');cx+=w1+11*s;
   uiDragon(cx,y,s);uiCoin(cx+8*s,y+3*s,s);cx+=15*s;txt(b,cx,y+fs*.38,fs,'#ffe8a0','left');cx+=w2;UI.goldTxt=[a,b];return cx-x;}
 function uiGoldW(fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;return 8*s+14*s+ctx.measureText(uiAmt(uiTreasury())).width+11*s+15*s+ctx.measureText(uiAmt(G.stash||0)).width;}
-// HUD: compact pill, top right (replaces the old score / hunters / ruins / rebuilding panel)
-// One row "[log] [rock] | [castle$] [dragon$]" when it fits right of the WANTED panel, else two right-aligned rows (iPhone landscape).
-function drawStockPill(){const S=typeof SAFE!=='undefined'?SAFE:{r:0,t:0},touch=TOUCH&&TOUCH.on,fs=touch?12:13,ws=uiStockW(fs),wg=uiGoldW(fs),gap=12,y=10+(touch?S.t:0),right=VW-S.r-10;
-  const mw=Math.min(380,VW-560>0?380:VW-300),wantR=VW/2+mw/2+16,one=Math.ceil(ws+gap+wg)+18;
-  if(right-one>=wantR){const x=right-one,h=24;panel(x,y,one,h);UI.pill={x,y,w:one,h,rows:1};uiStock(x+8,y+h/2,fs);
-    ctx.strokeStyle='rgba(255,220,140,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+8+ws+gap/2,y+5);ctx.lineTo(x+8+ws+gap/2,y+h-5);ctx.stroke();uiGold(x+8+ws+gap,y+h/2,fs);}
-  else{const w=Math.ceil(Math.max(ws,wg))+18,h=42,x=right-w;panel(x,y,w,h);UI.pill={x,y,w,h,rows:2};uiStock(x+w-10-ws,y+12,fs);uiGold(x+w-10-wg,y+31,fs);}}
-const UI={pill:null};
+// HUD: compact resource pill in the LEFT column, directly under the CASTLE LV panel (x,y = top-left, w = column width).
+// One row "[log] [rock] | [castle$] [dragon$]" when it fits the column, else two left-aligned rows. Returns its height.
+function drawStockPill(x,y,cw){const touch=TOUCH&&TOUCH.on,fs=touch?12:13,ws=uiStockW(fs),wg=uiGoldW(fs),gap=12;x=x==null?10:x;y=y==null?150:y;cw=cw||250;
+  const one=Math.ceil(ws+gap+wg)+18;
+  if(one<=cw){const h=24;panel(x,y,cw,h);UI.pill={x,y,w:cw,h,rows:1};uiStock(x+8,y+h/2,fs);
+    ctx.strokeStyle='rgba(255,220,140,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+8+ws+gap/2,y+5);ctx.lineTo(x+8+ws+gap/2,y+h-5);ctx.stroke();uiGold(x+8+ws+gap,y+h/2,fs);return h;}
+  const h=42;panel(x,y,cw,h);UI.pill={x,y,w:cw,h,rows:2};uiStock(x+8,y+12,fs);uiGold(x+8,y+31,fs);return h;}
+const UI={pill:null,col:null,mm:null};
+// widest a screen-centred HUD bar may be and still clear the left HUD column
+function uiCenterW(w){const r=UI.col?UI.col.x+UI.col.w+8:268;return Math.max(160,Math.min(w,2*(VW/2-r)));}

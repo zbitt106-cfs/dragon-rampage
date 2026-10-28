@@ -2,12 +2,12 @@
 // A small gold arrow pinned to the screen edge that points home to the LAIR, with the distance. It hides
 // while the lair is on screen. It glows and pulses bright gold while you carry Princess Elizabeth or loot.
 // The hunter edge arrows stay small blue (knights) and green (archers) at the screen edges.
-// It is drawn after every HUD layer and kept clear of the HUD panels and the touch buttons.
+// It is drawn after every HUD layer and kept clear of the HUD panels (left column, top-right minimap) and the touch buttons.
 const LA={last:null};
 function laHide(){return scene!=='play'||!G||!D||G.over||G.won||paused||G.bigMap;}
 function laDragonScreen(){const h=typeof heightOf==='function'?heightOf():0;return{x:(D.x-cam.x)*cam.z+VW/2,y:(D.y-h*.5-cam.y)*cam.z+VH/2};}
 function laLairOnScreen(){const sx=(LAIR.x-cam.x)*cam.z+VW/2,sy=(LAIR.y-cam.y)*cam.z+VH/2,m=30;return sx>m&&sx<VW-m&&sy>m&&sy<VH-m;}
-function laBlocked(x,y,pad){if(typeof TOUCH!=='undefined'&&TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(Math.hypot(x-b.x,y-b.y)<b.r+pad)return true;return false;}
+function laBlocked(x,y,pad){if(typeof UI!=='undefined')for(const r of [UI.col,UI.mm])if(r&&x>r.x-pad&&x<r.x+r.w+pad&&y>r.y-pad&&y<r.y+r.h+pad)return true;if(typeof TOUCH!=='undefined'&&TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(Math.hypot(x-b.x,y-b.y)<b.r+pad)return true;return false;}
 function laSpot(){const sm=VW<760,S=typeof SAFE!=='undefined'?SAFE:{l:0,r:0,t:0,b:0},M=sm?20:24;
   // pinned to the screen border in the lair's direction (from screen centre), small margin, clear of HUD + touch buttons
   const top=(TOUCH&&TOUCH.on?118:sm?96:140)+S.t+(typeof princeHudOn==='function'&&princeHudOn()?(sm?36:30):0),bot=VH-S.b-M-(TOUCH&&TOUCH.on?0:14),lft=S.l+M,rgt=VW-S.r-M;

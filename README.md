@@ -157,7 +157,7 @@ The gate is its own destructible part of the castle; fire or stomps bring it dow
 The engineers wait about 20 s for the dust to settle, then spend 6 wood and 6 stone from the kingdom's stockpiles and rebuild the gate slowly (about 45 s). When it is repaired, the normal wave pace returns.
 
 ## The gold hoard
-The HUD shows gold as icons next to the wood and stone: a **castle + coin** with the amount is the gold still in Castle Aldric, and a **dragon + coin** with the amount is your lair hoard. On narrow screens (iPhone landscape) they sit on a second compact row. The pause menu shows the same icons.
+The HUD shows gold as icons next to the wood and stone: a **castle + coin** with the amount is the gold still in Castle Aldric, and a **dragon + coin** with the amount is your lair hoard. All four resources (wood, stone, kingdom gold, lair hoard) sit on the **left side**, in one compact row directly under the **CASTLE LV** panel (two rows only if the numbers get too wide). The **minimap** sits in the **top-right corner** (inside the iPhone safe area / notch), with its "Explored % · M: map" caption underneath; it shrinks a little on narrower screens so it never touches the centred WANTED panel or boss/raid bars. Announcement banners move below the left column on desktop, or start right of it on touch screens, and stay under the minimap; the lair arrow, hunter arrows and MAP / PAUSE buttons keep clear of both. The pause menu shows the same icons.
 The HUD's castle panel shows only the **castle level**. There is no Princess Elizabeth status line, no lair-hoard points line and no blinking *break the stone roof* label over the keep. The wanted/alarm bar stays, and your score is in the pause menu.
 
 

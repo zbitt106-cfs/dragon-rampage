@@ -22,8 +22,9 @@ function touchLayout(){const S=SAFE,b=[];const fx=VW-S.r-92,fy=VH-S.b-92;
   b.push({id:'bite',x:fx-150,y:fy+18,r:42,label:typeof nearLava==='function'&&nearLava()?'DRINK':'BITE',key:'e',col:typeof nearLava==='function'&&nearLava()?'#e8702a':'#d8a23a'});
   b.push({id:'stomp',x:fx-118,y:fy-104,r:40,label:D&&D.mode==='air'?'DIVE':'STOMP',key:'q',col:'#8a6a4a'});
   b.push({id:'fly',x:fx+8,y:fy-150,r:40,label:D&&D.mode==='air'?'LAND':'FLY',key:'f',col:'#4a86c8'});
-  b.push({id:'map',x:S.l+34,y:S.t+284,r:24,label:'MAP',key:'m',col:'#557'});
-  b.push({id:'pause',x:S.l+34,y:S.t+338,r:24,label:paused?'▶':'II',key:'p',col:'#557'});
+  const colB=typeof UI!=='undefined'&&UI.col?UI.col.y+UI.col.h:0,my=S.t+Math.max(284,colB+40); // MAP / PAUSE stay below the left HUD column
+  b.push({id:'map',x:S.l+34,y:my,r:24,label:'MAP',key:'m',col:'#557'});
+  b.push({id:'pause',x:S.l+34,y:my+54,r:24,label:paused?'▶':'II',key:'p',col:'#557'});
   TOUCH.btns=b;return b;}
 function hitBtn(x,y){let best=null,bd=1e9;for(const b of TOUCH.btns){const d=Math.hypot(x-b.x,y-b.y);if(d<b.r*1.3&&d<bd){bd=d;best=b;}}return best;}
 function tpos(t){return{x:t.clientX/UIS,y:t.clientY/UIS};}

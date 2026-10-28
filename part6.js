@@ -94,14 +94,17 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
     const pl=.75+.25*Math.sin(G.t*4);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(VW/2-190,my+94,380,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(VW/2-189.5,my+94.5,379,19);
     txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller`,VW/2,my+108,11,'#ffd8b0','center');}
   if(G.level>0&&Math.floor(G.t*2)%2)txt('⚠',mx+mw*f,my+41,13,'#fff','center');}
-  else{panel(10,186+hy,250,26);rect(16,192+hy,238*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,204+hy,11);}
-  // right panel: score + stockpiles
-  // goal panel
-  panel(10,118+hy,250,28);txt(`CASTLE LV ${G.lvl}`,20,136+hy,12,'#ffd84a'); // princess status + lair-hoard lines removed from the HUD (castle level stays)
-  const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,162+hy,11,'#ffc080','left');
-  drawStockPill(); // score, hunter counts, ruins/rebuilding live in the pause menu / nowhere now: HUD shows only the stockpile icons
-  // minimap
-  const mmw=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000));drawMap(VW-mmw-10,TOUCH.on?132:VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);
+  // small screens: the compact wanted bar is drawn in the left column, under the resources (below)
+  // LEFT COLUMN under the vitals: CASTLE LV (+ damage note) -> resources -> (small screens) wanted bar -> lava badge (partV)
+  const colW=Math.max(250,hbw+20);let cy=118+hy;
+  panel(10,cy,colW,28);txt(`CASTLE LV ${G.lvl}`,20,cy+18,12,'#ffd84a'); // princess status + lair-hoard lines removed from the HUD (castle level stays)
+  const cs=musterSlow();if(cs>1.05)txt(`damaged: waves ${Math.round((cs-1)*100)}% slower`,10+colW-8,cy+18,10,'#ffc080','right',false);
+  cy+=32;cy+=drawStockPill(10,cy,colW)+4; // resources: wood, stone, kingdom gold, the dragon's hoard
+  if(sm){panel(10,cy,colW,26);rect(16,cy+6,(colW-12)*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,cy+18,11);cy+=30;}
+  UI.colY=cy;UI.col={x:10,y:10,w:colW,h:cy-4-10};
+  // minimap: top-right corner (inside the safe area: drawHUD runs in withSafe), shrunk if needed to stay clear of the centred WANTED / boss bars
+  {const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000)),room=Math.floor(VW/2-(sm?210:260)-20),mmw=Math.max(120,Math.min(base,room)),mmh=mmw*(WY1-WY0)/(WX1-WX0);
+    const mx0=VW-mmw-10,my0=10;drawMap(mx0,my0,mmw,false);UI.mm={x:mx0-3,y:my0-3,w:mmw+6,h:mmh+6+12};}
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);
     txt(`WORLD MAP  ·  explored ${exploredPct()}%  ·  regions found ${Object.keys(G.visited).length}/${Object.keys(REGION_NAMES).length}  ·  M / LB to close`,VW/2,52,16,'#ffd24a','center');}
   if(false){const mmw=0,mmh=0,mmx=0,mmy=0,s=1;
@@ -118,13 +121,18 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   // edge arrows for hunters approaching off-screen
   // (the lair guide arrow is drawn by partLA, on top of every HUD layer)
   for(const u of units){if(u.dead||u.post||(u.type!=='knight'&&u.type!=='archer'))continue;const sx=(u.x-cam.x)*cam.z+VW/2,sy=(u.y-cam.y)*cam.z+VH/2;
-    if(sx>0&&sx<VW&&sy>0&&sy<VH)continue;const ex=clamp(sx,14,VW-14),ey=clamp(sy,130,VH-14),a=Math.atan2(sy-VH/2,sx-VW/2);
+    if(sx>0&&sx<VW&&sy>0&&sy<VH)continue;let ex=clamp(sx,14,VW-14),ey=clamp(sy,130,VH-14);const a=Math.atan2(sy-VH/2,sx-VW/2);
+    for(const r of [UI.col,UI.mm])if(r&&ex>r.x-8&&ex<r.x+r.w+8&&ey>r.y-8&&ey<r.y+r.h+8){if(ey<r.y+r.h+8&&r.y+r.h+14<VH-14)ey=r.y+r.h+14;} // keep clear of the left column / minimap
     ctx.save();ctx.translate(ex,ey);ctx.rotate(a);poly([8,0,-6,-6,-6,6],u.type==='knight'?'rgba(80,160,255,.85)':'rgba(80,255,80,.85)');ctx.restore();}
   // banner
-  if(G.banner){const b=G.banner,al=clamp(Math.min(b.t,4.5-b.t)*2,0,1);ctx.globalAlpha=al;const by=VH*0.26;
-    ctx.fillStyle='rgba(60,0,0,.75)';ctx.fillRect(0,by-46,VW,b.extra?104:86);
-    const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>VW-24?Math.max(10,Math.floor(f*(VW-24)/w)):f;};
-    txt(b.text,VW/2,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,VW/2,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,VW/2,by+50,sm?12:14,'#ffc0a0','center',false);ctx.globalAlpha=1;}
+  if(G.banner){const b=G.banner,al=clamp(Math.min(b.t,4.5-b.t)*2,0,1);ctx.globalAlpha=al;
+    // keep the banner clear of the left HUD column: below it on desktop, beside it (column edge -> right edge) on touch screens
+    const cb=(UI.colY||0)+(D.lava>0?32:D.lavaCD>0?26:0);let by=VH*0.26,bx0=0;if(by-46<cb+6){if(TOUCH.on)bx0=UI.col?UI.col.x+UI.col.w+8:0;else by=cb+52;}if(UI.mm&&bx0+0<UI.mm.x+UI.mm.w&&by-46<UI.mm.y+UI.mm.h+4)by=UI.mm.y+UI.mm.h+50; // and below the top-right minimap
+    const bw=VW-bx0,bcx=bx0+bw/2;UI.banner={x:bx0,y:by-46,w:bw,h:b.extra?104:86};
+    ctx.fillStyle='rgba(60,0,0,.75)';ctx.fillRect(bx0,by-46,bw,b.extra?104:86);
+    const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>bw-24?Math.max(10,Math.floor(f*(bw-24)/w)):f;};
+    txt(b.text,bcx,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,bcx,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,bcx,by+50,fitF(b.extra,sm?12:14,false),'#ffc0a0','center',false);ctx.globalAlpha=1;}
+  else UI.banner=null;
   // controls reminder
   if(!sm&&!TOUCH.on)txt(GPAD.connected?'Stick move · A/RT fire · Y fly/land · X eat/grab · B stomp/dive/scratch · LB map · Start pause':'WASD move · Space fire · F fly/land · E eat/grab · Q stomp/dive/scratch · M map · P pause',14,VH-12,12,'rgba(255,255,255,.75)','left',false);
   if(!sm&&!TOUCH.on&&!G.over&&!G.won)txt(D.princess?'Goal: carry Princess Elizabeth to your LAIR (follow the gold arrow)':'Goal: raid the castle (south) for gold & the princess (E/X)',VW/2,VH-12,13,'#ffe8a0','center');
@@ -210,7 +218,7 @@ function drawMap(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),mmh=(WY1-WY0)*s,X=x=>mmx
     const L=MAPLB;MAPLB=null;ctx.font='bold 13px Georgia';
     for(const k in REGION_LABEL){if(!G.visited[k]||k==='castle')continue;const[lx,ly]=REGION_LABEL[k],nm=REGION_NAMES[k];
       for(const[ox,oy]of[[0,0],[0,-14],[0,14],[0,-26],[0,26],[-50,0],[50,0],[-50,-16],[50,16],[0,-40],[0,40]]){const b=lbBox(nm,X(lx)+ox,Y(ly)+oy,13,'center');if(!lbHit(b,L)){L.push(b);txt(nm,X(lx)+ox,Y(ly)+oy,13,'#fff','center');break;}}}}
-  if(!big)txt(`Explored ${exploredPct()}%  ·  M: map`,mmx+mmw,mmy-8,10,'#ddd','right',false);}
+  if(!big)txt(`Explored ${exploredPct()}%  ·  M: map`,mmx+mmw,mmy<24?mmy+mmh+15:mmy-8,10,'#ddd','right',false);} // caption under the minimap when it sits in the top corner
 // ---------- main loop ----------
 function update(dt){G.t+=dt;G.fc++;if(P('m'))G.bigMap=!G.bigMap;G.shake=Math.max(0,G.shake-dt*30);if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null;}
   if(!G.over&&!G.won)updDragon(dt);else if(G.over)G.overT+=dt;

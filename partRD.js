@@ -97,7 +97,7 @@ const _drawKnightRD=drawKnight;drawKnight=function(u){if(u.champ){drawChampion(u
 // ---- HUD + map ----
 function raidStatus(){const r=RAID.cur;if(!r)return'';if(r.phase==='warn')return`${r.name} marches out in ${Math.ceil(r.t)}s`;const ch=r.champ,m=ch?Math.round(Math.hypot(ch.x-HX(),ch.y-HY())/10):0;
   const esc=r.members.filter(u=>u.raidEsc&&!u.dead).length;return r.phase==='flee'?`${r.short} runs for the castle with ${r.loot} gold! · ${Math.round(dist(ch,GATE)/10)} m to the gate`:`${r.short} + ${esc} spear${esc===1?'':'s'} marching on your hoard · ${m} m away`;}
-const _drawHUDRD=drawHUD;drawHUD=function(){_drawHUDRD();if(!raidHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760,y=sm?(typeof TOUCH!=='undefined'&&TOUCH.on?120:56):10+94+(typeof gateBroken==='function'&&gateBroken()?24:0),w=Math.min(VW-20,440);
+const _drawHUDRD=drawHUD;drawHUD=function(){_drawHUDRD();if(!raidHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760,y=sm?(typeof TOUCH!=='undefined'&&TOUCH.on?120:56):10+94+(typeof gateBroken==='function'&&gateBroken()?24:0),w=uiCenterW(Math.min(VW-20,440));
   const pl=.75+.25*Math.sin(G.t*5),r=RAID.cur;ctx.fillStyle=`rgba(60,30,8,${.85*pl})`;ctx.fillRect(VW/2-w/2,y,w,20);ctx.strokeStyle=r.trim||'#ffd23a';ctx.lineWidth=1.5;ctx.strokeRect(VW/2-w/2+.5,y+.5,w-1,19);
   ctx.fillStyle=r.col;ctx.fillRect(VW/2-w/2+3,y+3,14,14);drawCrest(VW/2-w/2+10,y+10,1.2,r.crest,r.trim);
   txt(`⚔ HOARD RAID: ${raidStatus()}`,VW/2+8,y+14,sm?10:11,'#ffe8b0','center');};

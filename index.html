@@ -357,9 +357,9 @@ function updWorld(dt){
   const push=(v,a,b)=>v<a?(a-v):v>b?(b-v):0;const px=push(D.x,WX0+220,WX1-220),py=push(D.y,WY0+260,WY1-220);
   if(px||py){D.x+=px*2*dt;D.y+=py*2*dt;if(!G.edgeMsgT||G.t-G.edgeMsgT>6){G.edgeMsgT=G.t;float(D.x,D.y-90,D.y<WY0+400?'The peaks are too high to cross!':D.x<WX0+400?'Endless crags block the way':'The open sea stretches forever...','#cfe8ff');}}}
 function drawRegionBanner(){const b=G.regBanner;if(!b)return;const al=clamp(Math.min(b.t,3.2-b.t)*2.5,0,1),sm=VW<760;ctx.globalAlpha=al;const y=(sm?150:132)+(typeof gateBroken==='function'&&gateBroken()&&!sm?26:0)+(typeof raidHudOn==='function'&&raidHudOn()&&!sm?24:0);
-  const name=REGION_NAMES[b.k];ctx.font=`bold ${sm?18:26}px Georgia`;const w=Math.max(ctx.measureText(name).width+70,sm?260:380);
-  ctx.fillStyle='rgba(20,24,40,.72)';ctx.fillRect(VW/2-w/2,y-30,w,b.first?74:58);ctx.strokeStyle='rgba(255,215,120,.7)';ctx.strokeRect(VW/2-w/2+.5,y-29.5,w-1,(b.first?74:58)-1);
-  txt(`~ ${name} ~`,VW/2,y,sm?18:26,'#ffe6a0','center');txt(REGION_SUB[b.k],VW/2,y+20,sm?11:13,'#ddd','center',false);if(b.first)txt('New region discovered! +100',VW/2,y+38,sm?11:13,'#9fffa8','center');ctx.globalAlpha=1;}
+  const name=REGION_NAMES[b.k];ctx.font=`bold ${sm?18:26}px Georgia`;const w=Math.max(ctx.measureText(name).width+70,sm?260:380),rcx=Math.max(VW/2,(typeof UI!=='undefined'&&UI.col?UI.col.x+UI.col.w+8:0)+w/2); // shifted right if needed to clear the left HUD column
+  ctx.fillStyle='rgba(20,24,40,.72)';ctx.fillRect(rcx-w/2,y-30,w,b.first?74:58);ctx.strokeStyle='rgba(255,215,120,.7)';ctx.strokeRect(rcx-w/2+.5,y-29.5,w-1,(b.first?74:58)-1);
+  txt(`~ ${name} ~`,rcx,y,sm?18:26,'#ffe6a0','center');txt(REGION_SUB[b.k],rcx,y+20,sm?11:13,'#ddd','center',false);if(b.first)txt('New region discovered! +100',rcx,y+38,sm?11:13,'#9fffa8','center');ctx.globalAlpha=1;}
 // cheap far simulation: units far from the dragon think 1/8 as often (with the saved-up time)
 function farTick(u,dt){if(Math.abs(u.x-D.x)<1700&&Math.abs(u.y-D.y)<1300)return dt;u.acc=(u.acc||0)+dt;if(u.slot8===undefined)u.slot8=RI(0,7);
   if(((G.fc+u.slot8)&7)!==0)return 0;const a=Math.min(u.acc,.4);u.acc=0;return a;}
@@ -2882,10 +2882,10 @@ const _drawMapV=drawMap;drawMap=function(mmx,mmy,mmw,big){_drawMapV(mmx,mmy,mmw,
   ctx.fillStyle='#3a2a26';ctx.beginPath();ctx.moveTo(X-(big?9:5),Y+(big?6:4));ctx.lineTo(X,Y-(big?9:5));ctx.lineTo(X+(big?9:5),Y+(big?6:4));ctx.fill();ctx.fillStyle=`rgba(255,${140+80*Math.sin(Date.now()/250)|0},40,1)`;ctx.beginPath();ctx.arc(X,Y-(big?6:3),big?3:2,0,TAU);ctx.fill();
   if(big)txt('Volcano',X,Y+18,10,'#ffb080','center',false);};
 // ---------- HUD badge ----------
-const _drawHUDV=drawHUD;drawHUD=function(){_drawHUDV();if(scene!=='play'||!D)return;const y=226;
+const _drawHUDV=drawHUD;drawHUD=function(){_drawHUDV();if(scene!=='play'||!D)return;const y=typeof UI!=='undefined'&&UI.colY?UI.colY:226; // next slot of the left HUD column
   if(D.lava>0){const pl=.75+.25*Math.sin(G.t*6);ctx.fillStyle=`rgba(90,24,8,${.85})`;ctx.fillRect(10,y,170,28);ctx.strokeStyle=`rgba(255,${150+80*pl|0},50,1)`;ctx.lineWidth=2;ctx.strokeRect(11,y+1,168,26);
-    for(let i=0;i<LAVA_MAX;i++){ctx.fillStyle=i<D.lava?'#ff8a20':'#4a2a20';ctx.fillRect(98+i*4,y+9,3,10);}txt(`Lava: ${D.lava}`,18,y+19,14,'#ffd27a');}
-  else if(D.lavaCD>0)txt(`Volcano refills in ${Math.ceil(D.lavaCD)}s`,14,y+18,11,'#ffb080','left');};
+    for(let i=0;i<LAVA_MAX;i++){ctx.fillStyle=i<D.lava?'#ff8a20':'#4a2a20';ctx.fillRect(98+i*4,y+9,3,10);}txt(`Lava: ${D.lava}`,18,y+19,14,'#ffd27a');if(UI.col)UI.col.h=Math.max(UI.col.h,y+28-UI.col.y);}
+  else if(D.lavaCD>0){txt(`Volcano refills in ${Math.ceil(D.lavaCD)}s`,14,y+18,11,'#ffb080','left');if(UI.col)UI.col.h=Math.max(UI.col.h,y+22-UI.col.y);}};
 // ---------- sounds ----------
 Object.assign(SFX_DEF,{
   lavaSpit:(a,B,o,t)=>{osc(a,o,t,'sine',180,60,.18,.7,.01);nz(a,B,o,t,.25,'lowpass',900,200,1,.5);return .3;},
@@ -3055,7 +3055,7 @@ const _drawKnightRD=drawKnight;drawKnight=function(u){if(u.champ){drawChampion(u
 // ---- HUD + map ----
 function raidStatus(){const r=RAID.cur;if(!r)return'';if(r.phase==='warn')return`${r.name} marches out in ${Math.ceil(r.t)}s`;const ch=r.champ,m=ch?Math.round(Math.hypot(ch.x-HX(),ch.y-HY())/10):0;
   const esc=r.members.filter(u=>u.raidEsc&&!u.dead).length;return r.phase==='flee'?`${r.short} runs for the castle with ${r.loot} gold! · ${Math.round(dist(ch,GATE)/10)} m to the gate`:`${r.short} + ${esc} spear${esc===1?'':'s'} marching on your hoard · ${m} m away`;}
-const _drawHUDRD=drawHUD;drawHUD=function(){_drawHUDRD();if(!raidHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760,y=sm?(typeof TOUCH!=='undefined'&&TOUCH.on?120:56):10+94+(typeof gateBroken==='function'&&gateBroken()?24:0),w=Math.min(VW-20,440);
+const _drawHUDRD=drawHUD;drawHUD=function(){_drawHUDRD();if(!raidHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760,y=sm?(typeof TOUCH!=='undefined'&&TOUCH.on?120:56):10+94+(typeof gateBroken==='function'&&gateBroken()?24:0),w=uiCenterW(Math.min(VW-20,440));
   const pl=.75+.25*Math.sin(G.t*5),r=RAID.cur;ctx.fillStyle=`rgba(60,30,8,${.85*pl})`;ctx.fillRect(VW/2-w/2,y,w,20);ctx.strokeStyle=r.trim||'#ffd23a';ctx.lineWidth=1.5;ctx.strokeRect(VW/2-w/2+.5,y+.5,w-1,19);
   ctx.fillStyle=r.col;ctx.fillRect(VW/2-w/2+3,y+3,14,14);drawCrest(VW/2-w/2+10,y+10,1.2,r.crest,r.trim);
   txt(`⚔ HOARD RAID: ${raidStatus()}`,VW/2+8,y+14,sm?10:11,'#ffe8b0','center');};
@@ -3138,8 +3138,9 @@ function touchLayout(){const S=SAFE,b=[];const fx=VW-S.r-92,fy=VH-S.b-92;
   b.push({id:'bite',x:fx-150,y:fy+18,r:42,label:typeof nearLava==='function'&&nearLava()?'DRINK':'BITE',key:'e',col:typeof nearLava==='function'&&nearLava()?'#e8702a':'#d8a23a'});
   b.push({id:'stomp',x:fx-118,y:fy-104,r:40,label:D&&D.mode==='air'?'DIVE':'STOMP',key:'q',col:'#8a6a4a'});
   b.push({id:'fly',x:fx+8,y:fy-150,r:40,label:D&&D.mode==='air'?'LAND':'FLY',key:'f',col:'#4a86c8'});
-  b.push({id:'map',x:S.l+34,y:S.t+284,r:24,label:'MAP',key:'m',col:'#557'});
-  b.push({id:'pause',x:S.l+34,y:S.t+338,r:24,label:paused?'▶':'II',key:'p',col:'#557'});
+  const colB=typeof UI!=='undefined'&&UI.col?UI.col.y+UI.col.h:0,my=S.t+Math.max(284,colB+40); // MAP / PAUSE stay below the left HUD column
+  b.push({id:'map',x:S.l+34,y:my,r:24,label:'MAP',key:'m',col:'#557'});
+  b.push({id:'pause',x:S.l+34,y:my+54,r:24,label:paused?'▶':'II',key:'p',col:'#557'});
   TOUCH.btns=b;return b;}
 function hitBtn(x,y){let best=null,bd=1e9;for(const b of TOUCH.btns){const d=Math.hypot(x-b.x,y-b.y);if(d<b.r*1.3&&d<bd){bd=d;best=b;}}return best;}
 function tpos(t){return{x:t.clientX/UIS,y:t.clientY/UIS};}
@@ -4191,7 +4192,7 @@ const _drawCrashFxPR=drawCrashFx;drawCrashFx=function(){_drawCrashFxPR();const c
     ell(x+7,y+bb*.5,7,5,'#8a5a2a');line(x+1,y+bb*.5,x+13,y+bb*.5,'#5a3a1a',1.2);ell(x,y-6+bb,5,5,'#f0c8a0');ctx.fillStyle='#9aa2ac';ctx.beginPath();ctx.arc(x,y-7+bb,5.4,Math.PI,0);ctx.fill();
     line(x-5,y-3+bb,x-10,y-12+Math.sin(G.t*14+w.ph)*4,'#9aa2ac',2.2);ctx.globalAlpha=1;}};
 // HUD: boss bar at the top of the screen
-function princeHudRect(){const sm=VW<760,tch=typeof TOUCH!=='undefined'&&TOUCH.on,y=sm?(tch?120:56):104+(typeof gateBroken==='function'&&gateBroken()?24:0),w=Math.min(VW-20,sm?420:520);return{x:VW/2-w/2,y,w,h:sm?30:34};}
+function princeHudRect(){const sm=VW<760,tch=typeof TOUCH!=='undefined'&&TOUCH.on,y=sm?(tch?120:56):104+(typeof gateBroken==='function'&&gateBroken()?24:0),w=uiCenterW(Math.min(VW-20,sm?420:520));return{x:VW/2-w/2,y,w,h:sm?30:34};}
 const _drawHUDPR=drawHUD;drawHUD=function(){_drawHUDPR();if(!princeHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);
   const c=PRN.cur,B=princeHudRect(),sm=VW<760,pl=.8+.2*Math.sin(G.t*4);ctx.fillStyle=`rgba(28,14,38,${.88*pl+.08})`;ctx.fillRect(B.x,B.y,B.w,B.h);ctx.strokeStyle=c.trim;ctx.lineWidth=2;ctx.strokeRect(B.x+1,B.y+1,B.w-2,B.h-2);
   ctx.fillStyle=c.col;ctx.fillRect(B.x+4,B.y+4,B.h-8,B.h-8);drawCrest(B.x+B.h/2,B.y+B.h/2,sm?1.5:1.8,c.crest,c.trim);
@@ -6107,12 +6108,12 @@ const LAIR_HUNGER=.4;
 // A small gold arrow pinned to the screen edge that points home to the LAIR, with the distance. It hides
 // while the lair is on screen. It glows and pulses bright gold while you carry Princess Elizabeth or loot.
 // The hunter edge arrows stay small blue (knights) and green (archers) at the screen edges.
-// It is drawn after every HUD layer and kept clear of the HUD panels and the touch buttons.
+// It is drawn after every HUD layer and kept clear of the HUD panels (left column, top-right minimap) and the touch buttons.
 const LA={last:null};
 function laHide(){return scene!=='play'||!G||!D||G.over||G.won||paused||G.bigMap;}
 function laDragonScreen(){const h=typeof heightOf==='function'?heightOf():0;return{x:(D.x-cam.x)*cam.z+VW/2,y:(D.y-h*.5-cam.y)*cam.z+VH/2};}
 function laLairOnScreen(){const sx=(LAIR.x-cam.x)*cam.z+VW/2,sy=(LAIR.y-cam.y)*cam.z+VH/2,m=30;return sx>m&&sx<VW-m&&sy>m&&sy<VH-m;}
-function laBlocked(x,y,pad){if(typeof TOUCH!=='undefined'&&TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(Math.hypot(x-b.x,y-b.y)<b.r+pad)return true;return false;}
+function laBlocked(x,y,pad){if(typeof UI!=='undefined')for(const r of [UI.col,UI.mm])if(r&&x>r.x-pad&&x<r.x+r.w+pad&&y>r.y-pad&&y<r.y+r.h+pad)return true;if(typeof TOUCH!=='undefined'&&TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(Math.hypot(x-b.x,y-b.y)<b.r+pad)return true;return false;}
 function laSpot(){const sm=VW<760,S=typeof SAFE!=='undefined'?SAFE:{l:0,r:0,t:0,b:0},M=sm?20:24;
   // pinned to the screen border in the lair's direction (from screen centre), small margin, clear of HUD + touch buttons
   const top=(TOUCH&&TOUCH.on?118:sm?96:140)+S.t+(typeof princeHudOn==='function'&&princeHudOn()?(sm?36:30):0),bot=VH-S.b-M-(TOUCH&&TOUCH.on?0:14),lft=S.l+M,rgt=VW-S.r-M;
@@ -6139,7 +6140,7 @@ function drawLairArrow(){LA.last=null;if(laHide()||laLairOnScreen())return;
   if(glow)txt('♛ take her home!',p.lx,p.ly+(p.ly>VH/2?-12:12),9,'#ffc0e0','center',false);}
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);drawLairArrow();};}
 // ================= partUI: compact stockpile icons (wood log + stone rock) =================
-// The kingdom's DELIVERED stockpile (G.wood / G.stone) as two tiny icons with amounts. Used on the HUD (top right)
+// The kingdom's DELIVERED stockpile (G.wood / G.stone) as two tiny icons with amounts. Used on the HUD (left column, under CASTLE LV)
 // and in the pause menu. The score is shown only in the pause menu (it is still tracked and saved as before).
 function uiLog(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
   ctx.fillStyle='#8a5a2b';ctx.strokeStyle='#3a220e';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-8,-4);ctx.lineTo(6,-4);ctx.lineTo(6,4);ctx.lineTo(-8,4);ctx.closePath();ctx.fill();ctx.stroke();
@@ -6171,14 +6172,16 @@ function uiGold(x,y,fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;
   let cx=x+8*s;uiCastle(cx,y,s);uiCoin(cx+7*s,y+3*s,s);cx+=14*s;txt(a,cx,y+fs*.38,fs,'#ffd84a','left');cx+=w1+11*s;
   uiDragon(cx,y,s);uiCoin(cx+8*s,y+3*s,s);cx+=15*s;txt(b,cx,y+fs*.38,fs,'#ffe8a0','left');cx+=w2;UI.goldTxt=[a,b];return cx-x;}
 function uiGoldW(fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;return 8*s+14*s+ctx.measureText(uiAmt(uiTreasury())).width+11*s+15*s+ctx.measureText(uiAmt(G.stash||0)).width;}
-// HUD: compact pill, top right (replaces the old score / hunters / ruins / rebuilding panel)
-// One row "[log] [rock] | [castle$] [dragon$]" when it fits right of the WANTED panel, else two right-aligned rows (iPhone landscape).
-function drawStockPill(){const S=typeof SAFE!=='undefined'?SAFE:{r:0,t:0},touch=TOUCH&&TOUCH.on,fs=touch?12:13,ws=uiStockW(fs),wg=uiGoldW(fs),gap=12,y=10+(touch?S.t:0),right=VW-S.r-10;
-  const mw=Math.min(380,VW-560>0?380:VW-300),wantR=VW/2+mw/2+16,one=Math.ceil(ws+gap+wg)+18;
-  if(right-one>=wantR){const x=right-one,h=24;panel(x,y,one,h);UI.pill={x,y,w:one,h,rows:1};uiStock(x+8,y+h/2,fs);
-    ctx.strokeStyle='rgba(255,220,140,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+8+ws+gap/2,y+5);ctx.lineTo(x+8+ws+gap/2,y+h-5);ctx.stroke();uiGold(x+8+ws+gap,y+h/2,fs);}
-  else{const w=Math.ceil(Math.max(ws,wg))+18,h=42,x=right-w;panel(x,y,w,h);UI.pill={x,y,w,h,rows:2};uiStock(x+w-10-ws,y+12,fs);uiGold(x+w-10-wg,y+31,fs);}}
-const UI={pill:null};
+// HUD: compact resource pill in the LEFT column, directly under the CASTLE LV panel (x,y = top-left, w = column width).
+// One row "[log] [rock] | [castle$] [dragon$]" when it fits the column, else two left-aligned rows. Returns its height.
+function drawStockPill(x,y,cw){const touch=TOUCH&&TOUCH.on,fs=touch?12:13,ws=uiStockW(fs),wg=uiGoldW(fs),gap=12;x=x==null?10:x;y=y==null?150:y;cw=cw||250;
+  const one=Math.ceil(ws+gap+wg)+18;
+  if(one<=cw){const h=24;panel(x,y,cw,h);UI.pill={x,y,w:cw,h,rows:1};uiStock(x+8,y+h/2,fs);
+    ctx.strokeStyle='rgba(255,220,140,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+8+ws+gap/2,y+5);ctx.lineTo(x+8+ws+gap/2,y+h-5);ctx.stroke();uiGold(x+8+ws+gap,y+h/2,fs);return h;}
+  const h=42;panel(x,y,cw,h);UI.pill={x,y,w:cw,h,rows:2};uiStock(x+8,y+12,fs);uiGold(x+8,y+31,fs);return h;}
+const UI={pill:null,col:null,mm:null};
+// widest a screen-centred HUD bar may be and still clear the left HUD column
+function uiCenterW(w){const r=UI.col?UI.col.x+UI.col.w+8:268;return Math.max(160,Math.min(w,2*(VW/2-r)));}
 // ================= partGA: gold goes straight to the lair hoard =================
 // Every pick-up path (castle piles, coins / tax sacks / caravans, pirate loot, shells...) still adds to D.gold; this sweep moves it
 // into G.stash the same frame, so nothing is ever carried. The pile, raid thresholds/cooldown (read G.stash), ransom and saves see it at once.
@@ -6193,8 +6196,8 @@ function gaDeposit(){if(!G||!(D.gold>0))return 0;const n=Math.round(D.gold);D.go
 // "+N" with a little coin rising from the dragon icon on the HUD pill
 {const _uiG=uiGold;uiGold=function(x,y,fs){const w=_uiG.apply(this,arguments),s=(fs||12)/12;ctx.font=`bold ${fs||12}px Georgia`;
   const dx=x+w-ctx.measureText(uiAmt(G.stash||0)).width-15*s+4*s;UI.dragonXY={x:dx,y};return w;};}
-{const _dp=drawStockPill;drawStockPill=function(){_dp.apply(this,arguments);const p=UI.dragonXY;if(!p||!GA.pop.length)return;
-  for(const q of GA.pop){const k=q.t/1.4,yy=p.y+46-k*22,a=Math.max(0,1-k*k);ctx.globalAlpha=a;uiCoin(p.x-6,yy,1.15);txt(`+${q.n}`,p.x+1,yy+4,12,'#ffe066','left');}ctx.globalAlpha=1;UI.popDrawn=(UI.popDrawn||0)+1;};}
+{const _dp=drawStockPill;drawStockPill=function(){const h=_dp.apply(this,arguments),p=UI.dragonXY;if(!p||!GA.pop.length)return h;
+  for(const q of GA.pop){const k=q.t/1.4,yy=p.y+46-k*22,a=Math.max(0,1-k*k);ctx.globalAlpha=a;uiCoin(p.x-6,yy,1.15);txt(`+${q.n}`,p.x+1,yy+4,12,'#ffe066','left');}ctx.globalAlpha=1;UI.popDrawn=(UI.popDrawn||0)+1;return h;};}
 // saves never hold "carried" gold: sweep it into the hoard first; old saves with carried gold are swept on load
 {const _ss=svSnapshot;svSnapshot=function(){if(typeof D!=='undefined'&&D&&D.gold>0)gaDeposit();return _ss.apply(this,arguments);};}
 {const _sl=svLoad;svLoad=function(){const r=_sl.apply(this,arguments);if(typeof D!=='undefined'&&D&&D.gold>0)gaDeposit();return r;};}
@@ -6938,14 +6941,17 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
     const pl=.75+.25*Math.sin(G.t*4);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(VW/2-190,my+94,380,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(VW/2-189.5,my+94.5,379,19);
     txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller`,VW/2,my+108,11,'#ffd8b0','center');}
   if(G.level>0&&Math.floor(G.t*2)%2)txt('⚠',mx+mw*f,my+41,13,'#fff','center');}
-  else{panel(10,186+hy,250,26);rect(16,192+hy,238*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,204+hy,11);}
-  // right panel: score + stockpiles
-  // goal panel
-  panel(10,118+hy,250,28);txt(`CASTLE LV ${G.lvl}`,20,136+hy,12,'#ffd84a'); // princess status + lair-hoard lines removed from the HUD (castle level stays)
-  const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,162+hy,11,'#ffc080','left');
-  drawStockPill(); // score, hunter counts, ruins/rebuilding live in the pause menu / nowhere now: HUD shows only the stockpile icons
-  // minimap
-  const mmw=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000));drawMap(VW-mmw-10,TOUCH.on?132:VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);
+  // small screens: the compact wanted bar is drawn in the left column, under the resources (below)
+  // LEFT COLUMN under the vitals: CASTLE LV (+ damage note) -> resources -> (small screens) wanted bar -> lava badge (partV)
+  const colW=Math.max(250,hbw+20);let cy=118+hy;
+  panel(10,cy,colW,28);txt(`CASTLE LV ${G.lvl}`,20,cy+18,12,'#ffd84a'); // princess status + lair-hoard lines removed from the HUD (castle level stays)
+  const cs=musterSlow();if(cs>1.05)txt(`damaged: waves ${Math.round((cs-1)*100)}% slower`,10+colW-8,cy+18,10,'#ffc080','right',false);
+  cy+=32;cy+=drawStockPill(10,cy,colW)+4; // resources: wood, stone, kingdom gold, the dragon's hoard
+  if(sm){panel(10,cy,colW,26);rect(16,cy+6,(colW-12)*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,cy+18,11);cy+=30;}
+  UI.colY=cy;UI.col={x:10,y:10,w:colW,h:cy-4-10};
+  // minimap: top-right corner (inside the safe area: drawHUD runs in withSafe), shrunk if needed to stay clear of the centred WANTED / boss bars
+  {const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000)),room=Math.floor(VW/2-(sm?210:260)-20),mmw=Math.max(120,Math.min(base,room)),mmh=mmw*(WY1-WY0)/(WX1-WX0);
+    const mx0=VW-mmw-10,my0=10;drawMap(mx0,my0,mmw,false);UI.mm={x:mx0-3,y:my0-3,w:mmw+6,h:mmh+6+12};}
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);
     txt(`WORLD MAP  ·  explored ${exploredPct()}%  ·  regions found ${Object.keys(G.visited).length}/${Object.keys(REGION_NAMES).length}  ·  M / LB to close`,VW/2,52,16,'#ffd24a','center');}
   if(false){const mmw=0,mmh=0,mmx=0,mmy=0,s=1;
@@ -6962,13 +6968,18 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   // edge arrows for hunters approaching off-screen
   // (the lair guide arrow is drawn by partLA, on top of every HUD layer)
   for(const u of units){if(u.dead||u.post||(u.type!=='knight'&&u.type!=='archer'))continue;const sx=(u.x-cam.x)*cam.z+VW/2,sy=(u.y-cam.y)*cam.z+VH/2;
-    if(sx>0&&sx<VW&&sy>0&&sy<VH)continue;const ex=clamp(sx,14,VW-14),ey=clamp(sy,130,VH-14),a=Math.atan2(sy-VH/2,sx-VW/2);
+    if(sx>0&&sx<VW&&sy>0&&sy<VH)continue;let ex=clamp(sx,14,VW-14),ey=clamp(sy,130,VH-14);const a=Math.atan2(sy-VH/2,sx-VW/2);
+    for(const r of [UI.col,UI.mm])if(r&&ex>r.x-8&&ex<r.x+r.w+8&&ey>r.y-8&&ey<r.y+r.h+8){if(ey<r.y+r.h+8&&r.y+r.h+14<VH-14)ey=r.y+r.h+14;} // keep clear of the left column / minimap
     ctx.save();ctx.translate(ex,ey);ctx.rotate(a);poly([8,0,-6,-6,-6,6],u.type==='knight'?'rgba(80,160,255,.85)':'rgba(80,255,80,.85)');ctx.restore();}
   // banner
-  if(G.banner){const b=G.banner,al=clamp(Math.min(b.t,4.5-b.t)*2,0,1);ctx.globalAlpha=al;const by=VH*0.26;
-    ctx.fillStyle='rgba(60,0,0,.75)';ctx.fillRect(0,by-46,VW,b.extra?104:86);
-    const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>VW-24?Math.max(10,Math.floor(f*(VW-24)/w)):f;};
-    txt(b.text,VW/2,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,VW/2,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,VW/2,by+50,sm?12:14,'#ffc0a0','center',false);ctx.globalAlpha=1;}
+  if(G.banner){const b=G.banner,al=clamp(Math.min(b.t,4.5-b.t)*2,0,1);ctx.globalAlpha=al;
+    // keep the banner clear of the left HUD column: below it on desktop, beside it (column edge -> right edge) on touch screens
+    const cb=(UI.colY||0)+(D.lava>0?32:D.lavaCD>0?26:0);let by=VH*0.26,bx0=0;if(by-46<cb+6){if(TOUCH.on)bx0=UI.col?UI.col.x+UI.col.w+8:0;else by=cb+52;}if(UI.mm&&bx0+0<UI.mm.x+UI.mm.w&&by-46<UI.mm.y+UI.mm.h+4)by=UI.mm.y+UI.mm.h+50; // and below the top-right minimap
+    const bw=VW-bx0,bcx=bx0+bw/2;UI.banner={x:bx0,y:by-46,w:bw,h:b.extra?104:86};
+    ctx.fillStyle='rgba(60,0,0,.75)';ctx.fillRect(bx0,by-46,bw,b.extra?104:86);
+    const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>bw-24?Math.max(10,Math.floor(f*(bw-24)/w)):f;};
+    txt(b.text,bcx,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,bcx,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,bcx,by+50,fitF(b.extra,sm?12:14,false),'#ffc0a0','center',false);ctx.globalAlpha=1;}
+  else UI.banner=null;
   // controls reminder
   if(!sm&&!TOUCH.on)txt(GPAD.connected?'Stick move · A/RT fire · Y fly/land · X eat/grab · B stomp/dive/scratch · LB map · Start pause':'WASD move · Space fire · F fly/land · E eat/grab · Q stomp/dive/scratch · M map · P pause',14,VH-12,12,'rgba(255,255,255,.75)','left',false);
   if(!sm&&!TOUCH.on&&!G.over&&!G.won)txt(D.princess?'Goal: carry Princess Elizabeth to your LAIR (follow the gold arrow)':'Goal: raid the castle (south) for gold & the princess (E/X)',VW/2,VH-12,13,'#ffe8a0','center');
@@ -7054,7 +7065,7 @@ function drawMap(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),mmh=(WY1-WY0)*s,X=x=>mmx
     const L=MAPLB;MAPLB=null;ctx.font='bold 13px Georgia';
     for(const k in REGION_LABEL){if(!G.visited[k]||k==='castle')continue;const[lx,ly]=REGION_LABEL[k],nm=REGION_NAMES[k];
       for(const[ox,oy]of[[0,0],[0,-14],[0,14],[0,-26],[0,26],[-50,0],[50,0],[-50,-16],[50,16],[0,-40],[0,40]]){const b=lbBox(nm,X(lx)+ox,Y(ly)+oy,13,'center');if(!lbHit(b,L)){L.push(b);txt(nm,X(lx)+ox,Y(ly)+oy,13,'#fff','center');break;}}}}
-  if(!big)txt(`Explored ${exploredPct()}%  ·  M: map`,mmx+mmw,mmy-8,10,'#ddd','right',false);}
+  if(!big)txt(`Explored ${exploredPct()}%  ·  M: map`,mmx+mmw,mmy<24?mmy+mmh+15:mmy-8,10,'#ddd','right',false);} // caption under the minimap when it sits in the top corner
 // ---------- main loop ----------
 function update(dt){G.t+=dt;G.fc++;if(P('m'))G.bigMap=!G.bigMap;G.shake=Math.max(0,G.shake-dt*30);if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null;}
   if(!G.over&&!G.won)updDragon(dt);else if(G.over)G.overT+=dt;

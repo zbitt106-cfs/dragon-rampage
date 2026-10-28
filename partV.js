@@ -105,10 +105,10 @@ const _drawMapV=drawMap;drawMap=function(mmx,mmy,mmw,big){_drawMapV(mmx,mmy,mmw,
   ctx.fillStyle='#3a2a26';ctx.beginPath();ctx.moveTo(X-(big?9:5),Y+(big?6:4));ctx.lineTo(X,Y-(big?9:5));ctx.lineTo(X+(big?9:5),Y+(big?6:4));ctx.fill();ctx.fillStyle=`rgba(255,${140+80*Math.sin(Date.now()/250)|0},40,1)`;ctx.beginPath();ctx.arc(X,Y-(big?6:3),big?3:2,0,TAU);ctx.fill();
   if(big)txt('Volcano',X,Y+18,10,'#ffb080','center',false);};
 // ---------- HUD badge ----------
-const _drawHUDV=drawHUD;drawHUD=function(){_drawHUDV();if(scene!=='play'||!D)return;const y=226;
+const _drawHUDV=drawHUD;drawHUD=function(){_drawHUDV();if(scene!=='play'||!D)return;const y=typeof UI!=='undefined'&&UI.colY?UI.colY:226; // next slot of the left HUD column
   if(D.lava>0){const pl=.75+.25*Math.sin(G.t*6);ctx.fillStyle=`rgba(90,24,8,${.85})`;ctx.fillRect(10,y,170,28);ctx.strokeStyle=`rgba(255,${150+80*pl|0},50,1)`;ctx.lineWidth=2;ctx.strokeRect(11,y+1,168,26);
-    for(let i=0;i<LAVA_MAX;i++){ctx.fillStyle=i<D.lava?'#ff8a20':'#4a2a20';ctx.fillRect(98+i*4,y+9,3,10);}txt(`Lava: ${D.lava}`,18,y+19,14,'#ffd27a');}
-  else if(D.lavaCD>0)txt(`Volcano refills in ${Math.ceil(D.lavaCD)}s`,14,y+18,11,'#ffb080','left');};
+    for(let i=0;i<LAVA_MAX;i++){ctx.fillStyle=i<D.lava?'#ff8a20':'#4a2a20';ctx.fillRect(98+i*4,y+9,3,10);}txt(`Lava: ${D.lava}`,18,y+19,14,'#ffd27a');if(UI.col)UI.col.h=Math.max(UI.col.h,y+28-UI.col.y);}
+  else if(D.lavaCD>0){txt(`Volcano refills in ${Math.ceil(D.lavaCD)}s`,14,y+18,11,'#ffb080','left');if(UI.col)UI.col.h=Math.max(UI.col.h,y+22-UI.col.y);}};
 // ---------- sounds ----------
 Object.assign(SFX_DEF,{
   lavaSpit:(a,B,o,t)=>{osc(a,o,t,'sine',180,60,.18,.7,.01);nz(a,B,o,t,.25,'lowpass',900,200,1,.5);return .3;},
