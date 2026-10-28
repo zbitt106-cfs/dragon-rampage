@@ -10,11 +10,11 @@ function desertCol(x,y,n){const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1]
 // ---------- decor: cacti, palms, mesas, bleached bones ----------
 let MESAS=[];
 function addDesertDecor(r,Rr){MESAS=[];
-  for(let i=0;i<16;i++){const x=Rr(WX0+900,RANGE0-300),y=Rr(-50,4000);if(d2(x,y,DTOWN.x,DTOWN.y)<700||d2(x,y,OASIS.x,OASIS.y)<600||y>coastY(x)-350)continue;const m={k:'mesa',x,y,w:Rr(160,300),h:Rr(70,120)};MESAS.push(m);DECOR.push(m);}
-  for(let i=0;i<420;i++){const x=Rr(WX0+760,RANGE0-60),y=Rr(-120,4200);if(regionKey(x,y)!=='desert'||inLake(x,y)||d2(x,y,DTOWN.x,DTOWN.y)<330||MESAS.some(m=>Math.abs(m.x-x)<m.w*.6&&Math.abs(m.y-y)<60))continue;DECOR.push({k:'cactus',x,y,s:Rr(.7,1.3),arms:r()<.7?(r()<.5?2:1):0});}
+  for(let i=0;i<16;i++){const x=Rr(DESX0+900,RANGE0-300),y=Rr(-50,4000);if(d2(x,y,DTOWN.x,DTOWN.y)<700||d2(x,y,OASIS.x,OASIS.y)<600||y>coastY(x)-350)continue;const m={k:'mesa',x,y,w:Rr(160,300),h:Rr(70,120)};MESAS.push(m);DECOR.push(m);}
+  for(let i=0;i<420;i++){const x=Rr(DESX0+760,RANGE0-60),y=Rr(-120,4200);if(regionKey(x,y)!=='desert'||inLake(x,y)||d2(x,y,DTOWN.x,DTOWN.y)<330||MESAS.some(m=>Math.abs(m.x-x)<m.w*.6&&Math.abs(m.y-y)<60))continue;DECOR.push({k:'cactus',x,y,s:Rr(.7,1.3),arms:r()<.7?(r()<.5?2:1):0});}
   for(let i=0;i<16;i++){const a=i/16*TAU+Rr(-.15,.15);DECOR.push({k:'palm',x:OASIS.x+Math.cos(a)*(OASIS.rx+Rr(25,70)),y:OASIS.y+Math.sin(a)*(OASIS.ry+Rr(20,55)),s:Rr(.9,1.3)});}
   for(const[dx,dy]of[[-150,-120],[170,-110],[-190,110],[200,130]])DECOR.push({k:'palm',x:DTOWN.x+dx,y:DTOWN.y+dy,s:1});
-  for(let i=0;i<26;i++){const x=Rr(WX0+900,RANGE0-200),y=Rr(0,4000);if(regionKey(x,y)==='desert'&&!inLake(x,y))DECOR.push({k:'bones',x,y});}}
+  for(let i=0;i<26;i++){const x=Rr(DESX0+900,RANGE0-200),y=Rr(0,4000);if(regionKey(x,y)==='desert'&&!inLake(x,y))DECOR.push({k:'bones',x,y});}}
 function drawDesertDecor(o){const x=o.x,y=o.y;
   if(o.k==='cactus'){const s=o.s,g='#4f8a3a',dk='#3a6a2a';ell(x+6*s,y+2,12*s,4*s,'rgba(0,0,0,.2)');rect(x-5*s,y-40*s,10*s,40*s,g);ell(x,y-40*s,5*s,5*s,g);rect(x-1*s,y-38*s,2*s,36*s,dk);
     if(o.arms>0){rect(x-15*s,y-26*s,10*s,6*s,g);rect(x-15*s,y-38*s,6*s,14*s,g);ell(x-12*s,y-38*s,3*s,3*s,g);}
@@ -30,7 +30,7 @@ function drawDesertDecor(o){const x=o.x,y=o.y;
 // ---------- desert wildlife ----------
 Object.assign(FAUNA,{camel:{hp:30,sp:70,flee:220,zone:'desert'},lizard:{hp:3,sp:110,flee:170,zone:'desert'},dfox:{hp:7,sp:115,flee:240,zone:'desert'},
   snake:{hp:5,sp:55,bite:1,aggro:85,cd:1.6,say:'Hsss! Snake bite! -1',zone:'desert'},dscorp:{hp:4,sp:60,bite:1,aggro:80,cd:1.5,say:'Scorpion sting! -1',zone:'desert'}});
-ZONES.desert={ok:(x,y)=>regionKey(x,y)==='desert'&&!inLake(x,y),s:()=>({x:R(WX0+800,RANGE0-120),y:R(-80,4100)})};
+ZONES.desert={ok:(x,y)=>regionKey(x,y)==='desert'&&!inLake(x,y),s:()=>({x:R(DESX0+800,RANGE0-120),y:R(-80,4100)})};
 FAUNA_PLAN.push(['camel',10],['lizard',14],['dfox',6],['snake',8],['dscorp',10]);
 Object.assign(HEAL,{camel:34,lizard:4,dfox:8,snake:5,dscorp:4,sandworm:60});
 ['camel','lizard','dfox','snake','dscorp','sandworm'].forEach(s=>FAUNA_ART.add(s));
@@ -49,7 +49,7 @@ function drawDesertFauna(u){const x=u.x,y=u.y,s=u.species,f=u.face||1,b=Math.abs
   if(s==='dfox'){ell(x,y+1,12,3,'rgba(0,0,0,.18)');const c='#e0b070';for(const lx of[-6,5])line(x+lx,y-6-b,x+lx,y,c,2);ell(x,y-9-b,10,5,c);ell(x-f*12,y-10-b,7,3,c);ell(x-f*17,y-10-b,2.5,2,'#fff');
     ell(x+f*10,y-12-b,5,4.5,c);poly([x+f*8,y-15-b,x+f*7,y-27-b,x+f*12,y-16-b],c);poly([x+f*11,y-15-b,x+f*13,y-27-b,x+f*15,y-15-b],c);ell(x+f*14,y-12-b,1,1,'#222');return;}}
 // ---------- the giant sand worm mini-boss ----------
-function spawnWorm(){for(let t=0;t<40;t++){const x=R(WX0+1400,RANGE0-700),y=R(300,3800);if(ZONES.desert.ok(x,y)&&d2(x,y,DTOWN.x,DTOWN.y)>800&&d2(x,y,D.x,D.y)>900){
+function spawnWorm(){for(let t=0;t<40;t++){const x=R(DESX0+1400,RANGE0-700),y=R(300,3800);if(ZONES.desert.ok(x,y)&&d2(x,y,DTOWN.x,DTOWN.y)>800&&d2(x,y,D.x,D.y)>900){
   const u=mkUnit('animal',x,y,{species:'sandworm',wild:true,zone:'desert',home:{x:x-700,y:y-500,w:1400,h:1000},hp:150,maxHp:150,ws:'under',inside:true,t:0,cd:3,face:1});units.push(u);return u;}}return null;}
 function updWorm(u,dt){const dd=dist(u,D),low=D.alt<.4&&!G.over&&!G.won;u.cd-=dt;u.t+=dt;u.anim=(u.anim||0)+dt*4;
   if(u.ws==='under'){u.inside=true;const H=u.home;let tx,ty,sp=55;
@@ -74,7 +74,7 @@ function drawWorm(u){const x=u.x,y=u.y,f=u.face||1,rise=Math.min(1,u.t/.4),H=120
   for(let k=0;k<4;k++)ell(x+R(-40,40),y+R(-4,4),2,2,'rgba(220,190,130,.8)');}
 // ---------- vultures circling over the dunes ----------
 BIRD.vulture={heal:10,pts:45,sp:110,col:'#3a2a22'};
-function spawnVulture(){const c={x:R(WX0+1200,RANGE0-400),y:R(200,3800)};if(regionKey(c.x,c.y)!=='desert')return;for(let i=0;i<RI(2,3);i++){const b=mkBird('vulture',c.x,c.y,{state:'soar',z:R(120,170),cx:c.x,cy:c.y,ang:R(0,TAU),rad:R(110,190),dir:Math.random()<.5?1:-1});birds.push(b);}}
+function spawnVulture(){const c={x:R(DESX0+1200,RANGE0-400),y:R(200,3800)};if(regionKey(c.x,c.y)!=='desert')return;for(let i=0;i<RI(2,3);i++){const b=mkBird('vulture',c.x,c.y,{state:'soar',z:R(120,170),cx:c.x,cy:c.y,ang:R(0,TAU),rad:R(110,190),dir:Math.random()<.5?1:-1});birds.push(b);}}
 function updVulture(b,dt,dd){b.flap+=dt*(Math.sin(G.t*.7+b.id)>.6?6:-12);b.ang+=dt*.55*b.dir;
   if(D.alt>.5&&dd<230){const a=Math.atan2(b.y-D.y,b.x-D.x);b.cx+=Math.cos(a)*120*dt;b.cy+=Math.sin(a)*120*dt;}
   const tx=b.cx+Math.cos(b.ang)*b.rad,ty=b.cy+Math.sin(b.ang)*b.rad*.6;b.vx=(tx-b.x)*2;b.vy=(ty-b.y)*2;b.x=tx;b.y=ty;b.z=lerp(b.z,150+Math.sin(G.t*.4+b.id)*20,dt);}
@@ -90,6 +90,6 @@ function updCaravan(u,dt){u.anim=(u.anim||0)+dt*4;
 // ---------- desert upkeep: worm respawn, vultures, caravans, hotter hunger ----------
 function updDesert(dt){G.desT=(G.desT||0)-dt;if(G.desT>0)return;G.desT=3;
   if(!units.some(u=>u.species==='sandworm'&&!u.dead)){G.wormT=(G.wormT===undefined?0:G.wormT)+3;if(G.wormT>=(G.wormFirst?150:0)){G.wormT=0;G.wormFirst=1;spawnWorm();}}
-  if(birds.filter(b=>b.kind==='vulture'&&!b.dead).length<7)spawnVulture();
+  if(birds.filter(b=>b.kind==='vulture'&&!b.dead&&!b.sav).length<7)spawnVulture();
   if(units.filter(u=>u.carav&&u.type==='villager'&&!u.dead).length<2)spawnCaravan();}
 function desertHunger(){return !G.easy&&regionKey(D.x,D.y)==='desert'?1.35:1;}

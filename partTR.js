@@ -4,7 +4,7 @@ function trophySlot(i){// ring around the pile, filling from the back outwards, 
   const ring=i<14?0:1,j=ring?i-14:i,cnt=ring?18:14,k=Math.ceil(j/2)*(j%2?1:-1),a=-Math.PI/2+k*(TAU/cnt),rx=ring?150:118,ry=ring?86:70;
   return{x:HX()+Math.cos(a)*rx,y:HY()+8+Math.sin(a)*ry,a};}
 function plantTrophy(r){if(!r||TROPHIES.some(t=>t.raidRef===r))return;const i=TROPHIES.length,s=trophySlot(i);
-  TROPHIES.push({name:r.name,short:r.short,col:r.col,trim:r.trim,crest:r.crest,x:s.x,y:s.y,a:s.a,t0:G.t,raidRef:r,ph:Math.random()*6});
+  TROPHIES.push({name:r.name,short:r.short,col:r.col,trim:r.trim,crest:r.crest,big:!!r.big,x:s.x,y:s.y,a:s.a,t0:G.t,raidRef:r,ph:Math.random()*6});
   setTimeout(()=>showToast(`🚩 ${r.short}'s banner is planted at your lair as a trophy`),1200);}
 function drawTrophy(f){const age=Math.min(1,Math.max(0,(G.t-f.t0)/1.2)),e=1-Math.pow(1-age,3),x=f.x,y=f.y,H=54*e,t=G.t;
   if(e<=0)return;ell(x,y+1,9,3.5,'rgba(0,0,0,.28)');

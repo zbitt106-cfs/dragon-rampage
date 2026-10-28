@@ -4,7 +4,7 @@ const TALLY_KEY='dr_tally_v1';
 const SHIP_NM={fishing:'Fishing boats',rowboat:'Rowboats',merchant:'Merchant ships',pirate:'Pirate ships',islander:'Islander canoes'};
 const TALLY_SECT=[
  {id:'people',name:'People',icon:'🧑',col:'#f3c98b',keys:[['villager','Villagers'],['shopper','Market folk'],['farmer','Farmers'],['logger','Loggers'],['miner','Miners'],['mason','Castle masons'],['trader','Desert traders'],['keeper','Lighthouse keeper'],['taxman','Tax collectors'],['hunter','Hunters'],['sailor','Sailors'],['islander','Islanders'],['pirate','Pirates'],['carter','Cart drivers']]},
- {id:'army',name:"The King's army",icon:'⚔',col:'#9fc4ff',keys:[['militia','Militia'],['foot','Foot soldiers'],['knight','Knights'],['cavalry','Mounted knights'],['archer','Archers'],['crew','Siege crews']]},
+ {id:'army',name:"King William's army",icon:'⚔',col:'#9fc4ff',keys:[['militia','Militia'],['foot','Foot soldiers'],['knight','Knights'],['cavalry','Mounted knights'],['archer','Archers'],['crew','Siege crews']]},
  {id:'champ',name:'Brave knights (hoard raiders)',icon:'🛡',col:'#ffd24a',keys:RAID_NAMES.map(n=>['champ:'+n,n])},
  {id:'farm',name:'Animals · Farmlands',icon:'🐄',col:'#b8e07a',keys:[['chicken','Chickens'],['cow','Cows'],['pig','Pigs'],['sheep','Sheep'],['horse','Horses'],['crow','Crows']]},
  {id:'forest',name:'Animals · The Deepwood',icon:'🦌',col:'#7fcf8a',keys:[['deer','Deer'],['rabbit','Rabbits'],['fox','Foxes'],['boar','Boars'],['wolf','Wolves'],['bear','Bears']]},
@@ -92,9 +92,10 @@ function pmBtn(x,y,w,h,label,f,on,col){panel(x,y,w,h);if(on){ctx.strokeStyle='#f
 function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;PM.hit=[];
   ctx.fillStyle='rgba(6,4,10,.66)';ctx.fillRect(0,0,VW,VH);
   const aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,PM.scr==='tally'?680:600),x0=S.l+(aw-W)/2,cx=x0+W/2;
-  if(PM.scr==='main'){const rh=touch?46:38,H=86+PM_MAIN.length*(rh+8)+72,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
+  if(PM.scr==='main'){const rh=touch?46:38,H=86+PM_MAIN.length*(rh+8)+96,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
     txt('PAUSED',cx,y0+44,36,'#ffd24a','center');
     PM_MAIN.forEach(([l,a],i)=>pmBtn(x0+30,y0+70+i*(rh+8),W-60,rh,l,()=>{PM.sel=i;pmAct(a);},PM.sel===i));
+    if(typeof raidCdLine==='function'){const l=raidCdLine();if(l)txt(l,cx,y0+H-64,touch?12:12,'#ffd8a0','center',false);}
     if(typeof drawGlutBar==='function')drawGlutBar(x0+30,y0+H-52,W-60,18);
     txt(touch?'Tap a choice · II resumes':'↑/↓ + Enter (A) choose · P / Esc / Start resume · R / Back restart',cx,y0+H-16,touch?13:12,'#bbb','center',false);}
   else if(PM.scr==='tally')drawTallyScreen(x0,W,S,ah,touch);

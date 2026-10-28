@@ -20,7 +20,7 @@ function svSnapshot(){
     T:trees.map(t=>TREE_C[t.state]||'o').join(''),nT:trees.length,
     C:cells.map(c=>c.burnt?-1:Math.round((c.growth||0)*100)),
     GP:goldPiles.map(p=>svPrim(p)),FOG:svFog(),
-    RAID:{n:RAID.n,thr:RAID.thr,cd:RAID.cd},TROPH:TROPHIES.map(t=>({name:t.name,short:t.short,col:t.col,trim:t.trim,crest:t.crest})),
+    RAID:{n:RAID.n,thr:RAID.thr,cd:RAID.cd},TROPH:TROPHIES.map(t=>({name:t.name,short:t.short,col:t.col,trim:t.trim,crest:t.crest,big:!!t.big})),
     WK:wkSave(),tally:{g:TALLY.game,pr:TALLY.prGame}};}
 function svMeta(d){return{v:d.v,when:d.when,gold:Math.round((d.G.stash||0)+(d.D.gold||0)),stash:d.G.stash||0,carry:d.D.gold||0,wanted:d.G.level||0,lvl:d.lvl||1,playT:d.playT||0,easy:d.easy,pr:d.PR&&d.PR.state};}
 function svWrite(key){if(scene!=='play'||G.over||G.won)return false;try{const d=svSnapshot();localStorage.setItem(key,JSON.stringify(d));localStorage.setItem(key+'_meta',JSON.stringify(svMeta(d)));svCache=null;return true;}catch(e){console.warn('save failed',e);return false;}}

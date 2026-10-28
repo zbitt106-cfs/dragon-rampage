@@ -1,4 +1,7 @@
 // ======================= regional wildlife, mounted knights and roaming patrols =======================
+// prey populations (+5%): each cap is the old count x1.05, rounded up or down at random (once per game) so the average is exactly +5% even for small groups
+const PREY_MUL=1.05;let HN_CAP={};
+function preyN(key,n){if(!(key in HN_CAP)){const x=n*PREY_MUL,f=Math.floor(x+1e-9);HN_CAP[key]=f+(rnd()<x-f?1:0);}return HN_CAP[key];}
 const FAUNA={
   deer:{hp:20,sp:95,flee:260,zone:'forest'},rabbit:{hp:5,sp:85,flee:200,zone:'forest'},fox:{hp:7,sp:105,flee:240,zone:'forest'},
   boar:{hp:16,sp:85,bite:2,aggro:110,cd:1.6,say:'Snort! Bonk! -2',zone:'forest'},
@@ -40,7 +43,7 @@ function updWild(u,dt){const F=FAUNA[u.species],Z=ZONES[u.zone],dd=dist(u,D),ox=
     if(u.state==='back'){u.t2-=dt;const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp*.8,dt);if(u.t2<=0)u.state='idle';if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}return;}
     const angry=low&&(dd<F.aggro||(u.pack&&(G.packAngry[u.pack]||-9)>G.t-3&&dd<F.aggro*2.2));
     if(angry){u.state='hunt';if(u.pack)G.packAngry[u.pack]=G.t;
-      if(!u.growl||G.t-u.growl>6){u.growl=G.t;float(u.x,u.y-26,u.species==='wolf'?'Awooo!':u.species==='bear'?'GRRR!':'Snort snort!','#ffd0a0');}
+      if(!u.growl||G.t-u.growl>6){u.growl=G.t;float(u.x,u.y-26,F.growl||(u.species==='wolf'?'Awooo!':u.species==='bear'?'GRRR!':'Snort snort!'),'#ffd0a0');}
       if(dd>34)moveTo(u,D.x,D.y,F.sp,dt);else if(u.cd<=0){u.cd=F.cd;hurtDragon(F.bite,u.species);float(D.x+R(-20,20),D.y-90,F.say,'#ffb0a0');u.state='back';u.t2=u.species==='bear'?.7:1;}
       if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}return;}
     if(u.state==='hunt')u.state='idle';

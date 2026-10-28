@@ -32,7 +32,7 @@ function floraSprite(pal,v){const key=pal+v;if(FL_SPR[key])return FL_SPR[key];co
     g.fillStyle=col==='#ffd23a'||col==='#ffe060'?'#a0601a':'#ffe27a';g.beginPath();g.arc(x,y,z*.55,0,TAU);g.fill();}
   return FL_SPR[key]={c,W:W+4,H:H+4};}
 function buildFloraBase(){if(FLORA_BASE)return FLORA_BASE;const t0=performance.now(),out=[];let tries=0;
-  while(tries<12000&&out.length<1750){tries++;const x=R(WX0+300,WX1-300),y=R(WY0+300,WY1-300);const pal=floraPal(x,y);if(!pal)continue;
+  while(tries<12000*(WX1-WX0)/20000&&out.length<2400){tries++;const x=R(WX0+300,WX1-300),y=R(WY0+300,WY1-300);const pal=floraPal(x,y);if(!pal)continue;
     if(!floraSpotOK(x,y,22))continue;out.push({x,y,pal,v:RI(0,11)});
     // patches cluster: sometimes add 1-3 neighbours of the same kind
     if(pal!=='desert'&&rnd()<.55)for(let k=RI(1,3);k>0;k--){const nx=x+R(-70,70),ny=y+R(-45,45);if(floraSpotOK(nx,ny,22))out.push({x:nx,y:ny,pal,v:RI(0,11)});}}

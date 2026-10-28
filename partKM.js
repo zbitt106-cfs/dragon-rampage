@@ -9,7 +9,7 @@ const KM_W={
   scythe:{reach:62,dmg:.9,cd:1.4,spd:54,say:['Scythes ready!','Off my crops!']},
   hammer:{reach:50,dmg:1.0,cd:1.5,thr:170,tdmg:.8,tcd:5,pk:'rock',spd:52,say:['Hammers up!','Guard the castle!']},
   bucket:{reach:0,thr:230,tdmg:.5,tcd:2.4,pk:'water',spd:0,say:['Splash it!','Buckets!']},
-  club:{reach:54,dmg:.9,cd:1.4,spd:50,say:['By order of the King!','Clubs out!']},
+  club:{reach:54,dmg:.9,cd:1.4,spd:50,say:['By order of King William!','Clubs out!']},
   staff:{reach:64,dmg:.8,cd:1.3,spd:50,say:['Guard the wagons!','Staffs up!']},
   whip:{reach:96,dmg:.6,cd:1.1,spd:0,say:['Hyah! Crack!','Not my cart!']},
   bow:{reach:0,spd:0,say:['Bow and dagger ready!']},

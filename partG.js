@@ -187,7 +187,7 @@ function drawStructHi(s){const x=s.x,y=s.y,F=s.fire,o={s,fire:F};let txtAfter=nu
   else if(s.kind==='cabin'){o.w=60;o.dp=26;o.H=22;o.R=18;o.wall=F?'#5a3a1a':'#7e5634';o.roof=F?'#3a2a1a':'#4e6e36';o.chimney=true;
     o.front=(w,H,R,n)=>{for(let j=2;j<H;j+=5){const g2=ctx.createLinearGradient(0,-j-2.5,0,-j+2.5);g2.addColorStop(0,'#9a6e44');g2.addColorStop(1,'#5a3a1e');ctx.fillStyle=g2;ctx.fillRect(-w/2,-j-2.5,w,5);ell(-w/2,-j,2.5,2.5,'#c89a62');ell(w/2,-j,2.5,2.5,'#c89a62');}
       rect(-6,-14,12,14,'#3a2410');win(14,-16,8,8,n,o);};
-    txtAfter=()=>{line(x-28,y-6,x-40,y-20,'#6b4a26',2);ell(x-42,y-22,6,4,'#a07a50');ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText("Hunter's Cabin",x,y-62);};}
+    txtAfter=()=>{line(x-28,y-6,x-40,y-20,'#6b4a26',2);ell(x-42,y-22,6,4,'#a07a50');ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText("Hunters' Cabin",x,y-62);};}
   else return false;
   house(x,y,o);if(o.lit)addLight(x,y-14,90,.75,1);if(txtAfter)txtAfter();
   if(F&&s.hp<s.maxHp){rect(x-20,y+8,40,3,'#400');rect(x-20,y+8,40*s.hp/s.maxHp,3,'#f80');}return true;}
@@ -219,7 +219,7 @@ function drawCastleHi(){const W=CWALL,th=22,n=nightAmt();
   if(!kUp('keep')&&PR.state==='tower')drawInsidePrincess(KEEP_POS.x,KEEP_POS.y-14);
   if(n>.25&&kUp('keep')){for(const u of[-50,-30,30,50])addLight(KEEP_POS.x+u,KEEP_POS.y-30,70,.6,1);}
   addLight(GATE.x-50,GATE.y-40,110,.8,1);addLight(GATE.x+50,GATE.y-40,110,.8,1);
-  ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle of King Aldric · Level ${G.lvl}`,CASTLE.x,W.y0-44);
+  ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle Aldric · King William · Level ${G.lvl}`,CASTLE.x,W.y0-44);
   for(const g of goldPiles){if(g.amt<=0){ell(g.x,g.y,14,6,'rgba(90,70,30,.5)');continue;}const k=Math.min(26,Math.ceil(g.amt/3));softShadow(g.x+4,g.y+3,26,9,.5);
     for(let i=0;i<k;i++){const ang=i*2.4,rr=(i%4)*4,cx=g.x+Math.cos(ang)*rr*1.5,cy=g.y-Math.floor(i/4)*4+Math.sin(ang)*rr*.4,cg=ctx.createRadialGradient(cx-2,cy-1.5,.5,cx,cy,6.5);cg.addColorStop(0,'#fff6b0');cg.addColorStop(.5,i%2?'#ffd84a':'#f0b820');cg.addColorStop(1,'#a87a10');
       ctx.fillStyle=cg;ctx.beginPath();ctx.ellipse(cx,cy,6,3.4,0,0,TAU);ctx.fill();}

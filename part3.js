@@ -104,7 +104,7 @@ function updVillager(u,dt){if(u.tax){updTax(u,dt);return;}if(u.carav){updCaravan
     else if(u.state==='work'){u.t-=dt;u.anim+=dt*6;if(u.t<=0){if(c.burnt){c.burnt=false;c.flat=false;c.growth=.05;float(c.x,c.y-16,'Replanted','#b8f0a0');}c.claimed=null;u.cell=null;u.state='idle';}}
   }
 }
-const STRUCT_NAME={hut:'Hut',barn:'Barn',logpile:'Log pile',stonepile:'Stone pile',cabin:"Hunter's cabin",gate:'Castle gate',barracks:'Barracks'};
+const STRUCT_NAME={hut:'Hut',barn:'Barn',logpile:'Log pile',stonepile:'Stone pile',cabin:"Hunters' cabin",gate:'Castle gate',barracks:'Barracks'};
 const ANIM_SP={deer:95,rabbit:85,chicken:45,sheep:55,cow:50,pig:55};
 function updAnimal(u,dt){const P=u.pen,dd=dist(u,D);let sp=u.species==='rabbit'?22:14;
   if(dd<(u.free&&u.species!=='chicken'?260:200)){sp=ANIM_SP[u.species]||55;const a=Math.atan2(u.y-D.y,u.x-D.x)+R(-.5,.5);u.tgt={x:u.x+Math.cos(a)*40,y:u.y+Math.sin(a)*40};}

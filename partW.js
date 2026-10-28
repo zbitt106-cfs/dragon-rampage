@@ -1,5 +1,5 @@
 // ======================= the big explorable world: regions, terrain, decor, fog of war =======================
-const WX0=-10200,WY0=-2600,WX1=9800,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
+const WX0=-17400,WY0=-2600,WX1=9800,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
 const coastX=y=>5500+140*Math.sin(y/530)+60*Math.sin(y/190+1);
 const coastY=x=>4450+110*Math.sin(x/470)+50*Math.sin(x/170+2);
 const frostY=x=>-260+90*Math.sin(x/420)+40*Math.sin(x/150);
@@ -12,7 +12,7 @@ function vnoise(x,y){const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx
 function fbm(x,y){return vnoise(x,y)*.5+vnoise(x*2.1+5,y*2.1+3)*.3+vnoise(x*4.3+9,y*4.3+1)*.2;}
 function riverD(x,y){let m=1e9;for(let i=0;i<RIVER.length-1;i++){const[ax,ay]=RIVER[i],[bx,by]=RIVER[i+1],dx=bx-ax,dy=by-ay;
   const t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy),0,1);const d=Math.hypot(x-ax-dx*t,y-ay-dy*t);if(d<m)m=d;}return m;}
-const inLake=(x,y)=>inOasis(x,y)||inLake0(x,y);
+const inLake=(x,y)=>inOasis(x,y)||inLake0(x,y)||(x<-9800&&x>-11400&&inWHole(x,y));
 const inLake0=(x,y)=>{const dx=(x-LAKE.x)/LAKE.rx,dy=(y-LAKE.y)/LAKE.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<1+.07*Math.sin(a*5)+.04*Math.sin(a*9);};
 const LH={x:7350,y:2100,r:290}; // the Lonely Lighthouse island, just before the deep water
 const onIsle=(x,y)=>{const dx=x-LH.x,dy=(y-LH.y)*1.25,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(LH.r*(1+.1*Math.sin(a*5)+.06*Math.sin(a*3+1)))**2;};
@@ -20,7 +20,7 @@ const seaD=(x,y)=>Math.max(x-coastX(y),y-coastY(x));
 const DEEPX=y=>7900+120*Math.sin(y/600); // east of this the Kraken Deep begins
 const inSea=(x,y)=>(x>coastX(y)||y>coastY(x))&&!onIsle(x,y);
 const inDeep=(x,y)=>x>DEEPX(y)&&inSea(x,y);
-const inWater=(x,y)=>inSea(x,y)||inLake(x,y)||riverD(x,y)<RIVW;
+const inWater=(x,y)=>inSea(x,y)||inLake(x,y)||riverD(x,y)<RIVW||jriverD(x,y)<JRW;
 // ---------- shore safety: no farm, pen, field, paddock or barn may touch water (with a margin of clean sand/grass) ----------
 const SHORE_M=40;
 function boxWet(x0,y0,x1,y1,m){m=m===undefined?SHORE_M:m;for(let x=x0-m;x<=x1+m;x+=8)for(let y=y0-m;y<=y1+m;y+=8)if(inWater(x,y))return true;return false;}
@@ -45,6 +45,7 @@ function regionKey(x,y){
   if(inSea(x,y)){if(inDeep(x,y))return'deep';return seaD(x,y)<260?'coast':'sea';}
   if(x>coastX(y)-260||y>coastY(x)-220)return'coast';
   if(y<frostY(x)||inRange(x,y)||x<WX0+650)return'mountain';
+  if(x<desW(y))return x<savW(y)?'jungle':'savanna';
   if(x<RANGE0)return'desert';
   if(x>CWALL.x0-100&&x<CWALL.x1+100&&y>CWALL.y0-70&&y<CWALL.y1+190)return'castle';
   if(x<forestX(y))return'forest';
@@ -61,15 +62,15 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
     if(onIsle(x,y)){const ld=d2(x,y,LH.x,LH.y);c=ld>LH.r*.78?mix([228,210,160],[200,182,130],n):mix([96,140,70],[124,160,84],n);}
     else if(inSea(x,y)&&d2(x,y,LH.x,LH.y)<LH.r*1.6){const dd=Math.max(seaD(x,y),0);c=mix([90,190,205],[30,80,150],clamp((d2(x,y,LH.x,LH.y)-LH.r)/(LH.r*.6),0,1));c=mix(c,[255,255,255],(n-.5)*.12+.03);}
     else if(inSea(x,y)){const dd=Math.max(x-coastX(y),y-coastY(x));c=mix([84,165,200],[26,66,138],clamp(dd/600,0,1));if(dd<22)c=mix([220,240,245],c,dd/22);c=mix(c,[255,255,255],(n-.5)*.12+.03);}
-    else if(inLake(x,y)||riverD(x,y)<RIVW){const ld=riverD(x,y);c=[58,108,172];if(ld<RIVW&&ld>RIVW-8)c=[90,140,190];c=mix(c,[30,70,140],n*.3);}
+    else if(inLake(x,y)||riverD(x,y)<RIVW||jriverD(x,y)<JRW){const ld=Math.min(riverD(x,y),jriverD(x,y));c=[58,108,172];if(ld<RIVW&&ld>RIVW-8)c=[90,140,190];c=mix(c,[30,70,140],n*.3);}
     else if(onBeach(x,y)){c=mix([230,212,155],[205,185,130],n);}
     else if(wy<frostY(wx)||inRange(wx,wy)||wx<WX0+650){const t=clamp((frostY(wx)-wy)/500,0,1)+(inRange(wx,wy)?clamp(Math.min(wx-RANGE0,RANGE1-wx,passEdge(wx,wy))/260,0,1):0)+(wx<WX0+650?clamp((WX0+650-wx)/300,0,1):0);c=mix([118,132,100],[238,242,250],clamp(t,0,1));if(n>.6)c=mix(c,[130,130,140],.7);}
-    else if(wx<RANGE0){c=desertCol(x,y,n);}
+    else if(wx<RANGE0){c=westCol(x,y,wx,wy,n);}
     else if(wx<forestX(wy)){c=mix([40,76,36],[58,96,44],n);}
     else if((wx>3250&&wy<3000)||(wx>2650&&wy>900&&wy<1700&&x>2600)){c=mix([112,132,82],[146,130,106],clamp(n*1.6-.3,0,1));}
     else{c=mix([86,134,56],[112,158,70],n);if(fbm(x/900+7,y/900)>.66)c=mix(c,[132,160,74],.5);}
     // muddy shores
-    if(!inWater(x,y)){const ldx=(x-LAKE.x)/(LAKE.rx*1.1),ldy=(y-LAKE.y)/(LAKE.ry*1.1);if(ldx*ldx+ldy*ldy<1.05||riverD(x,y)<RIVW+16)c=mix(c,[74,100,56],.6);}
+    if(!inWater(x,y)){const ldx=(x-LAKE.x)/(LAKE.rx*1.1),ldy=(y-LAKE.y)/(LAKE.ry*1.1);if(ldx*ldx+ldy*ldy<1.05||riverD(x,y)<RIVW+16)c=mix(c,[74,100,56],.6);else if(x<-9800&&(jriverD(x,y)<JRW+18||(x>-11400&&inWHole(x,y,1.3))))c=mix(c,[96,84,52],.65);}
     const k=(j*W+i)*4;d[k]=c[0];d[k+1]=c[1];d[k+2]=c[2];d[k+3]=255;}
   g.putImageData(im,0,0);
   // roads, plazas, fields & clearings outside the detailed core map (painted at low res)

@@ -8,7 +8,7 @@ function updAlarm(dt){
   if(L<G.lastLevel)G.lastLevel=L;
   G.level=L;
   // enemies give up and ride home if the meter cools to Calm
-  {const gu=giveUpT();for(const u of units)if(!u.dead&&!u.post&&!u.patrol&&!u.escort&&!u.raid&&(u.type==='knight'||u.type==='archer')&&G.t-(u.born||0)>10&&((L===0&&G.sinceDmg>gu)||(G.sinceDmg>gu&&kingdomMul(D.x,D.y)<.6&&dist(u,D)>1300)))u.retreat=true;}
+  {const gu=giveUpT();for(const u of units)if(!u.dead&&!u.post&&!u.patrol&&!u.escort&&!u.raid&&!u.prince&&(u.type==='knight'||u.type==='archer')&&G.t-(u.born||0)>10&&((L===0&&G.sinceDmg>gu)||(G.sinceDmg>gu&&kingdomMul(D.x,D.y)<.6&&dist(u,D)>1300)))u.retreat=true;}
   // troops muster at the barracks and ride out of the gate one by one
   G.gateOpenT=Math.max(0,G.gateOpenT-dt);
   if(G.spawnQ.length){G.spawnQT-=dt;if(G.spawnQT<=0){G.spawnQT=0.28*musterSlow()*musterNear()*(gateBroken()?2:1);const q=G.spawnQ.shift();G.gateOpenT=Math.max(G.gateOpenT,1.6);const nb=units.length;

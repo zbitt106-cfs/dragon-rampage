@@ -109,7 +109,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   txt(`Ruins ${ruins}  ·  Rebuilding ${bld}`,rx+10,98,11,'#bbb','left',false);
   txt(`Eaten ${G.stats.eaten+G.stats.animals} · Huts ${G.stats.huts+G.stats.barns} · Foes ${G.stats.knights+G.stats.siege}`,rx+10,114,10,'#bbb','left',false);
   // minimap
-  const mmw=sm||TOUCH.on?150:230;drawMap(VW-mmw-10,TOUCH.on?132:VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);
+  const mmw=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000));drawMap(VW-mmw-10,TOUCH.on?132:VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);
     txt(`WORLD MAP  ·  explored ${exploredPct()}%  ·  regions found ${Object.keys(G.visited).length}/${Object.keys(REGION_NAMES).length}  ·  M / LB to close`,VW/2,52,16,'#ffd24a','center');}
   if(false){const mmw=0,mmh=0,mmx=0,mmy=0,s=1;
@@ -124,8 +124,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   ctx.strokeStyle='rgba(255,255,255,.6)';ctx.strokeRect(mmx+(cam.x-VW/2/cam.z)*s,mmy+(cam.y-VH/2/cam.z)*s,VW/cam.z*s,VH/cam.z*s);}
   drawRegionBanner();
   // edge arrows for hunters approaching off-screen
-  if(D.princess||D.gold>0){const sx=(LAIR.x-cam.x)*cam.z+VW/2,sy=(LAIR.y-cam.y)*cam.z+VH/2;if(!(sx>0&&sx<VW&&sy>0&&sy<VH)){const ex=clamp(sx,40,VW-40),ey=clamp(sy,140,VH-40),a=Math.atan2(sy-VH/2,sx-VW/2);
-    ctx.save();ctx.translate(ex,ey);ctx.rotate(a);poly([22,0,-10,-13,-4,0,-10,13],'rgba(255,210,80,.95)');ctx.restore();txt('LAIR',ex-Math.cos(a)*26,ey-Math.sin(a)*26+4,12,'#ffd84a','center');}}
+  // (the lair guide arrow is drawn by partLA, on top of every HUD layer)
   for(const u of units){if(u.dead||u.post||(u.type!=='knight'&&u.type!=='archer'))continue;const sx=(u.x-cam.x)*cam.z+VW/2,sy=(u.y-cam.y)*cam.z+VH/2;
     if(sx>0&&sx<VW&&sy>0&&sy<VH)continue;const ex=clamp(sx,14,VW-14),ey=clamp(sy,130,VH-14),a=Math.atan2(sy-VH/2,sx-VW/2);
     ctx.save();ctx.translate(ex,ey);ctx.rotate(a);poly([8,0,-6,-6,-6,6],u.type==='knight'?'rgba(80,160,255,.85)':'rgba(80,255,80,.85)');ctx.restore();}
@@ -160,10 +159,10 @@ function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,
     ['Stomp · flying = crash DIVE STOMP · swimming = CLAW SCRATCH','Q / Shift','B / Circle'],['Take off / land (from high = DIVE SLAM)','F','Y / Triangle'],['World map','M','LB / L1'],['Mute / unmute music & sound','N','—'],['Pause / start','P / Esc · Enter','Start / Options'],['Restart (game over)','R','Back / Select / Share']];
   const w=740,x=W0/2-w/2;y+=24;panel(x,y-20,w,L.length*23+34);txt('',x,y,1);txt('Action',x+20,y,13,'#f0c070');txt('Keyboard',x+300,y,13,'#f0c070');txt('Controller',x+500,y,13,'#f0c070');y+=24;
   for(const [a,b,c] of L){txt(a,x+20,y,14,'#fff','left',false);txt(b,x+300,y,14,'#ffd080');txt(c,x+500,y,14,'#9fd0ff');y+=23;}
-  y+=20;const tips=['GOAL: raid Castle Aldric (south-central): grab gold piles and Princess Elizabeth, then carry them home to your LAIR on Dragon Peak (far north, top of the snowy mountains).',
+  y+=20;const tips=['GOAL: raid King William\'s Castle Aldric (south-central): grab gold piles and Princess Elizabeth, then carry them home to your LAIR on Dragon Peak (far north, top of the snowy mountains).',
     'Delivering Princess Elizabeth wins the level (she is never hurt, only very cross!). Rest at the lair to heal and catch your breath.',
-    'A huge world to explore: farmlands, the Deepwood, rocky hills, Mirror Lake & the Silver River, snowy peaks, the coast and the open sea. Fog lifts as you go.',
-    'Every region has its own animals to eat (bigger = more healing). Wolves hunt in packs and bears fight back. Fish only while they jump!',
+    'A huge world: farmlands, the Deepwood, hills, Mirror Lake, snowy peaks, the sea, and west past the desert the Golden Savanna and the Emerald Jungle. Fog lifts as you go.',
+    'Every region has its own animals to eat (elephants = a feast). Predators hunt prey too; crocodiles lurk in rivers and ponds and snap back. Fish only while they jump!',
     'HUNGER (normal mode): your belly empties in about a minute or so (faster flying or breathing fire). Eat to refill it, or you starve and lose health. Easy mode: no hunger.',
     'WANTED tiers: foot soldiers, then knights, archers, mounted knights (lance charges) and siege engines from the castle gate. At the top tier whole villages take up spears: the MILITIA!',
     'MOUNT CINDER, the volcano beside your lair: land at the crater and press E / X to drink 20 LAVA SHOTS. Each fire press lobs a glob that cracks even stone and wells!',
@@ -229,6 +228,7 @@ function update(dt){G.t+=dt;G.fc++;if(P('m'))G.bigMap=!G.bigMap;G.shake=Math.max
     if(u.type==='villager'||u.type==='animal'||u.type==='hunter'){const t=farTick(u,dt);if(!t)continue;if(u.carav&&updCaravan(u,t))continue;if(u.species==='sandworm'){updWorm(u,t);continue;}if(u.type==='villager')updVillager(u,t);else if(u.type==='hunter')updHunter(u,t);else if(u.wild)updWild(u,t);else updAnimal(u,t);continue;}
     if(u.patrol&&!u.patrol.engaged)continue;
     if(soldierSwim(u,dt))continue;
+    if(u.prince&&princeStep(u,dt))continue;
     if(u.raid&&raidStep(u,dt))continue;
     if(u.escort&&escortStep(u,dt))continue;
     if(u.type==='knight')updKnight(u,dt);else if(u.type==='archer')updArcher(u,dt);else if(u.type==='crew')updCrew(u,dt);}

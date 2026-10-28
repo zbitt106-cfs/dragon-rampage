@@ -209,10 +209,10 @@ function spawnTaxman(){const T=taxTargets();if(!T.length)return null;T.sort(()=>
   const ne=G.easy?1:RI(1,2);for(let i=0;i<ne;i++){const k=mkUnit('knight',GATE.x+R(-20,20),GATE.y+10,{hp:45,maxHp:45,atk:0,colr:'#c9a227',escort:u,eo:i?-1:1,born:G.t});units.push(k);}
   G.taxmen=(G.taxmen||0)+1;return u;}
 function updTax(u,dt){if(u.state==='flee'){u.t-=dt;if(u.t>0)return;u.state='walk';}
-  const dd=dist(u,D);if(dd<200&&!G.over){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,70,dt);if(!u.yelp||G.t-u.yelp>5){u.yelp=G.t;float(u.x,u.y-30,['The king\'s taxes! Begone!','Not the coin sack!','Guards! GUARDS!'][RI(0,2)],'#ffe0a0');}return;}
+  const dd=dist(u,D);if(dd<200&&!G.over){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,70,dt);if(!u.yelp||G.t-u.yelp>5){u.yelp=G.t;float(u.x,u.y-30,['King William\'s taxes! Begone!','Not the coin sack!','Guards! GUARDS!'][RI(0,2)],'#ffe0a0');}return;}
   const tg=u.ri<u.route.length?u.route[u.ri]:{x:GATE.x,y:GATE.y+10,home:1};
   if(u.wait>0){u.wait-=dt;u.anim+=dt*2;return;}
-  if(moveTo(u,tg.x,tg.y,48,dt)||dist(u,tg)<14){if(tg.home){const p=goldPiles.reduce((a,b)=>a.amt<=b.amt?a:b);p.amt+=u.sack;G.taxIn=(G.taxIn||0)+u.sack;if(dist(u,D)<1500||G.bigMap)float(GATE.x,GATE.y-70,`Taxes collected: +${u.sack} gold to the treasury`,'#ffd84a');u.sack=0;u.dead=true;u.gone=true;return;}
+  if(moveTo(u,tg.x,tg.y,48,dt)||dist(u,tg)<14){if(tg.home){const p=goldPiles.reduce((a,b)=>a.amt<=b.amt?a:b);p.amt+=u.sack;G.taxIn=(G.taxIn||0)+u.sack;if(dist(u,D)<1500||G.bigMap)float(GATE.x,GATE.y-70,`Taxes collected: +${u.sack} gold for King William's treasury`,'#ffd84a');u.sack=0;u.dead=true;u.gone=true;return;}
     const got=Math.min(tg.amt,30);u.sack+=got;u.wait=2;u.ri++;if(dist(u,D)<900)float(u.x,u.y-30,`Tax! +${got} gold`,'#ffd84a');}}
 function escortStep(k,dt){const c=k.escort;if(!c||c.dead){k.escort=null;return false;}const dd=dist(k,D);if(dd<260&&D.alt<.6)return false; // the escort fights when the dragon comes near
   const a=Math.atan2(c.y-k.y,c.x-k.x),tx=c.x-Math.cos(a)*22+k.eo*14,ty=c.y-Math.sin(a)*10+k.eo*10;if(dist(k,c)>30)moveTo(k,tx,ty,dist(k,c)>120?80:52,dt);k.face=c.x>k.x?1:-1;k.born=G.t;k.retreat=false;return true;}

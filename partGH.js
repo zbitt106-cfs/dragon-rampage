@@ -9,7 +9,7 @@ function ghPoint(h,r,far){for(let t=0;t<60;t++){const a=R(0,TAU),q=R(0,r),x=h.x+
 function ghSpawn(h,sp){const far=G&&G.t>1,p=ghPoint(h,sp==='cougar'?420:220,far);if(!p)return null;const F=FAUNA[sp],big=sp==='cougar',hw=big?1300:900,hh=big?900:620;
   const u=mkUnit('animal',p.x,p.y,{species:sp,wild:true,zone:'dnpeaks',herd:h.i,home:{x:h.x-hw/2,y:h.y-hh/2,w:hw,h:hh},hp:F.hp,maxHp:F.hp,free:true,pack:0,t:R(0,3),jt:0});units.push(u);return u;}
 function initGoatHerds(){GH_HERDS=GH.centers.map(([cx,cy],i)=>{let c={x:cx,y:cy};for(let t=0;t<80&&!ZONES.dnpeaks.ok(c.x,c.y);t++)c={x:cx+R(-500,500),y:cy+R(-350,350)};
-    return {i,x:c.x,y:c.y,want:RI(GH.goats[0],GH.goats[1]),gT:GH.goatEvery,lT:GH.lionEvery};});
+    return {i,x:c.x,y:c.y,want:preyN('ghgoat'+i,RI(GH.goats[0],GH.goats[1])),gT:GH.goatEvery,lT:GH.lionEvery};});
   for(const h of GH_HERDS){for(let k=0;k<h.want;k++)ghSpawn(h,'mgoat');for(let k=0;k<GH.lions;k++)ghSpawn(h,'cougar');}}
 function ghCount(h,sp){return units.filter(u=>!u.dead&&u.herd===h.i&&u.species===sp).length;}
 function updGoatHerds(dt){for(const h of GH_HERDS){

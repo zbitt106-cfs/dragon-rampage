@@ -97,10 +97,11 @@ function tryEat(){if(tryGrab())return;
   if(!T.length){if(biteRoof())return;if(tryEatBird())return;if(biteShip())return;if(biteWell())return;}
   if(!T.length){if(D.alt>=0.3)float(D.x,D.y-90,'Swoop closer to snatch!','#ddd');D.eatCD=.25;return;}
   // tough ones fight back: a healthy bear wriggles free, a healthy whale or an awake squid can't be swallowed (only if it's the closest target)
-  const tough=u=>(u.species==='bear'&&u.hp>u.maxHp*.5)||(u.champ&&u.hp>u.maxHp*.5)||(u.species==='sandworm'&&!u.stuck&&u.hp>u.maxHp*.35)||(u.type==='sea'&&((u.kind==='whale'&&u.hp>u.maxHp*.5)||(u.kind==='squid'&&u.state!=='dazed')));
+  const tough=u=>(u.species==='bear'&&u.hp>u.maxHp*.5)||(u.species==='elephant'&&u.hp>u.maxHp*.5)||(u.champ&&u.hp>u.maxHp*.5)||(u.species==='sandworm'&&!u.stuck&&u.hp>u.maxHp*.35)||(u.type==='sea'&&((u.kind==='whale'&&u.hp>u.maxHp*.5)||(u.kind==='squid'&&u.state!=='dazed')));
   const first=T[0];
   if(tough(first)&&T.filter(u=>!tough(u)).length===0){
     if(first.species==='sandworm'){D.eatCD=.8;D.hp-=4*G.dmgMul;D.hurt=.3;float(first.x,first.y-60,'Too big to swallow! Wear the worm down first','#ffd27a');return;}
+    if(first.species==='elephant'){D.eatCD=.8;D.hp-=5*G.dmgMul;D.hurt=.3;float(first.x,first.y-60,'PAWOO! The elephant shakes you off! Wear it down first','#ffd27a');return;}
     if(first.species==='bear'){D.eatCD=.8;D.hp-=5*G.dmgMul;D.hurt=.3;first.angry=3;float(first.x,first.y-40,'The bear wriggles free! Wear it down first','#ffd27a');return;}
     if(first.champ){D.eatCD=.8;D.hp-=6*G.dmgMul;D.hurt=.3;float(first.x,first.y-60,`${first.raid?first.raid.short:'The champion'} raises a shield! Wear them down first`,'#ffd27a');return;}
     D.eatT=.3;eatSea(first);return;}
@@ -150,7 +151,7 @@ function hurtStruct(s,d){if(s.state==='ruin')return;if(stoneish(s)&&!HEAVY)retur
     else if(s.kind==='barn'){G.stats.barns++;addAlarm(10);float(s.x,s.y-50,'Barn destroyed!','#ffb050');}
     else if(s.kind==='logpile'){G.stats.piles++;G.yardWood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned! Rebuilding slowed','#ffb050');}
     else if(s.kind==='stonepile'){G.stats.piles++;G.yardStone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked! Rebuilding slowed','#ffb050');}
-    else if(s.kind==='cabin'){G.stats.huts++;addAlarm(6);float(s.x,s.y-40,"Hunter's cabin burned!",'#ffb050');}
+    else if(s.kind==='cabin'){G.stats.huts++;addAlarm(6);float(s.x,s.y-40,"Hunters' cabin burned!",'#ffb050');}
     else if(s.kind==='gate'){s.ruinT=G.t;G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'The castle gate is smashed! Waves delayed','#ffb050');showToast&&showToast('Castle gate destroyed: waves delayed and smaller until it is rebuilt');}
     else if(s.kind==='bridge'){G.stats.bridges++;addAlarm(6);s.upgBy=null;float(s.x,s.y-50,s.mat==='stone'?'The STONE bridge crumbles into the river!':'The bridge burns and collapses!','#ffb050');}
     else if(s.kind==='barracks'){G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'Barracks destroyed! Fewer, slower knights','#ffb050');}}}

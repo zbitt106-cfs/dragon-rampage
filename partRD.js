@@ -1,7 +1,7 @@
 // ======================= HOARD RAIDS: brave named knights come for the dragon's gold =======================
 const RAID_NAMES=['Sir Gareth the Bold','Sir Roland Ironheart','Dame Elara the Brave','Sir Percival Stoutshield','Dame Isolde of the Silver Lance','Sir Bertram the Unshaken','Sir Cedric Goldspur','Dame Rowena Stormbanner','Sir Tobias the Tall','Sir Aldous Dragonbane','Dame Mirabel the Fearless','Sir Hugo Thunderhelm','Dame Gwendolyn Lionheart','Sir Lancelot the Lesser','Sir Fergus Two-Swords','Dame Beatrix the Bright'];
 const RAID_COLS=[['#c8282e','#ffd23a','lion'],['#2a4fb8','#f4f4f4','star'],['#2f8f3a','#ffd23a','tree'],['#7a2fa0','#ffe08a','crown'],['#d86a12','#1a1a1a','sun'],['#16807e','#f4f4f4','moon'],['#b81e6e','#ffe08a','rose'],['#30343c','#e83a2a','bolt']];
-const RAID_THR=[60,150,300,500,800],RAID_CD=100,RAID_WARN=8;
+const RAID_THR=[100,200,350,550,850],RAID_CD=300,RAID_CD_EASY=420,RAID_WARN=8; // cooldown = seconds of play time after a raid ends
 let RAID={n:0,thr:0,cd:0,cur:null},RAID_NAME_I=Math.floor(Math.random()*RAID_NAMES.length),RAID_COL_I=Math.floor(Math.random()*8);
 function raidThreshold(i){const e=G.easy?1.4:1;return Math.round((i<RAID_THR.length?RAID_THR[i]:RAID_THR[RAID_THR.length-1]+(i-RAID_THR.length+1)*400)*e);}
 function raidActive(){return !!RAID.cur;}
@@ -9,15 +9,15 @@ function raidHudOn(){return !!RAID.cur&&scene==='play';}
 function startRaidWarning(){const n=RAID.n,name=RAID_NAMES[RAID_NAME_I%RAID_NAMES.length];RAID_NAME_I++;const c=RAID_COLS[(RAID_COL_I++)%RAID_COLS.length];
   const esc=Math.min(8,2+n+(G.lvl>1?1:0)-(G.easy?1:0)),hp=Math.round((150+70*n)*(1+.15*(G.lvl-1))*(G.easy?.75:1));
   RAID.cur={n,name,short:name.split(' ').slice(0,2).join(' '),dame:name.startsWith('Dame'),col:c[0],trim:c[1],crest:c[2],esc,hp,phase:'warn',t:RAID_WARN,champ:null,members:[],loot:0,path:null};
-  G.banner={text:`${name} vows before the King to claim the dragon's hoard!`,sub:`Hoard Raid ${n+1}: a champion and ${esc} spear${esc>1?'s':''} march out in ${RAID_WARN} seconds. Guard your gold!`,extra:n===0?'Defeat or eat the champion to win back any stolen gold, plus a bonus.':'',t:4.5};
+  G.banner={text:`${name} vows before King William to claim the dragon's hoard!`,sub:`Hoard Raid ${n+1}: a champion and ${esc} spear${esc>1?'s':''} march out in ${RAID_WARN} seconds. Guard your gold!`,extra:n===0?'Defeat or eat the champion to win back any stolen gold, plus a bonus.':'',t:4.5};
   G.shake=Math.max(G.shake,6);if(typeof SFX!=='undefined')SFX.play('raidHorn');showToast(`⚔ ${name} is coming for your hoard!`);}
 function spawnRaid(){const r=RAID.cur;r.phase='march';const x=GATE.x,y=GATE.y+12;
   const ch=mkUnit('knight',x,y,{hp:r.hp,maxHp:r.hp,atk:0,colr:r.col,champ:true,raid:r,born:G.t});r.champ=ch;r.members.push(ch);
   for(let i=0;i<r.esc;i++){const u=mkUnit('knight',x+R(-20,20),y+10+i*6,{hp:30+6*r.n,maxHp:30+6*r.n,atk:0,foot:true,colr:r.col,raid:r,raidEsc:true,flag:i<2,born:G.t});r.members.push(u);}
   units.push(...r.members);G.gateOpenT=Math.max(G.gateOpenT||0,3);
   r.path=raidRoute();
-  float(x,y-60,`${r.short}: "For the King!"`,'#ffe08a');if(typeof SFX!=='undefined')SFX.play('raidHorn');}
-// out of the southern gate, north along the King's roads (over the Riverbend bridge) to the old castle hill, then up the mountain trail to Dragon Peak
+  float(x,y-60,`${r.short}: "For King William!"`,'#ffe08a');if(typeof SFX!=='undefined')SFX.play('raidHorn');}
+// out of the southern gate, north along King William's roads (over the Riverbend bridge) to the old castle hill, then up the mountain trail to Dragon Peak
 const RAID_TRAIL={x:2070,y:430}; // trailhead at the foot of the Frostpeaks, where the old castle used to stand
 function raidRoute(){const P=[{x:GATE.x,y:GATE.y+24}],rp=typeof roadPath==='function'?roadPath(GATE.x,GATE.y+20,RAID_TRAIL.x,RAID_TRAIL.y):null;
   if(rp)for(const p of rp.P){const l=P[P.length-1];if(dist(l,p)>40)P.push({x:p.x,y:p.y});}else P.push({x:2400,y:3960},{x:2265,y:3340},{x:2350,y:2900},{x:2350,y:1720},{x:2150,y:900});
@@ -40,15 +40,15 @@ function raidGrab(){const r=RAID.cur,ch=r.champ;const take=Math.min(G.stash,Math
   for(let i=0;i<10;i++)sparkle(HX(),HY(),2);float(ch.x,ch.y-70,`${r.short} grabs ${take} gold!`,'#ff8a5a');
   G.banner={text:`${r.name} has stolen ${take} gold!`,sub:'Stop the champion before the sack reaches the castle gate!',t:4.5};if(typeof SFX!=='undefined')SFX.play('clink');showToast(`💰 ${r.short} is running off with ${take} gold!`);}
 function raidEscaped(){const r=RAID.cur,ch=r.champ;ch.dead=true;ch.gone=true;
-  G.banner={text:`${r.name} returns to the King with ${r.loot} gold`,sub:'The court cheers… for now. The hoard is smaller.',t:4.5};endRaid(false);}
+  G.banner={text:`${r.name} returns to King William with ${r.loot} gold`,sub:'The court cheers… for now. The hoard is smaller.',t:4.5};endRaid(false);}
 function raidChampDown(u,eaten){const r=u.raid;if(!r||RAID.cur!==r||r.done)return;r.done=true;const bonus=40+20*r.n,pts=300+150*r.n,back=r.loot;
   G.stash+=back+bonus;G.stats.raidPts=(G.stats.raidPts||0)+pts;G.stats.champs=(G.stats.champs||0)+1;if(typeof hoardDrop==='function'&&back+bonus>0)hoardDrop(back+bonus,u.x,u.y);
   float(u.x,u.y-80,eaten?`${r.dame?'Dame':'Sir'}? Gulp! +${pts} pts`:`${r.short} is defeated! +${pts} pts`,'#ffe08a');sparkle(u.x,u.y,24);
   G.banner={text:eaten?`You gobbled ${r.name}!`:`${r.name} has fallen!`,sub:`${back?back+' stolen gold returns to your hoard':'The hoard is safe'}  +  ${bonus} bonus gold  ·  +${pts} pts`,t:4.5};
   if(typeof SFX!=='undefined')SFX.play('fanfare');showToast(`🏆 Raid beaten: +${back+bonus} gold`);endRaid(true);}
-function endRaid(won){const r=RAID.cur;for(const u of r.members)if(!u.dead){u.raid=null;if(u.raidEsc&&!won){}if(u.raidEsc)u.retreat=!won?true:u.retreat;}RAID.cur=null;RAID.n++;RAID.cd=RAID_CD*(G.easy?1.4:1);}
-function updRaids(dt){if(scene!=='play'||!G||G.over||G.won)return;RAID.cd-=dt;const r=RAID.cur;
-  if(!r){while(RAID.thr<RAID.n)RAID.thr++;if(RAID.cd<=0&&G.stash>=raidThreshold(RAID.thr)){RAID.thr++;startRaidWarning();}return;}
+function endRaid(won){const r=RAID.cur;for(const u of r.members)if(!u.dead){u.raid=null;if(u.raidEsc&&!won){}if(u.raidEsc)u.retreat=!won?true:u.retreat;}RAID.cur=null;RAID.n++;RAID.cd=G.easy?RAID_CD_EASY:RAID_CD;}
+function updRaids(dt){if(scene!=='play'||!G||G.over||G.won)return;const r=RAID.cur;if(!r)RAID.cd=Math.max(0,RAID.cd-dt);
+  if(!r){while(RAID.thr<RAID.n)RAID.thr++;if(RAID.cd<=0&&G.stash>=raidThreshold(RAID.thr)){RAID.thr++;while(G.stash>=raidThreshold(RAID.thr))RAID.thr++;startRaidWarning();}return;} // one raid at a time: crossing several thresholds never queues extra raids
   if(r.phase==='warn'){r.t-=dt;if(r.t<=0)spawnRaid();return;}
   if(r.champ&&r.champ.dead&&!r.done){if(r.champ.gone)return;raidChampDown(r.champ,!!r.champ.eaten);}}
 // ---- hooks ----
@@ -108,3 +108,8 @@ const _drawMapRD=drawMap;drawMap=function(mmx,mmy,mmw,big){_drawMapRD(mmx,mmy,mm
 // ---- sounds ----
 SFX_DEF.raidHorn=(a,B,o,t)=>{[[0,.32,0],[.36,.22,5],[.62,.7,7]].forEach(([dt,len,st])=>{const f=196*Math.pow(2,st/12);osc(a,o,t+dt,'sawtooth',f,f*1.002,len,.16,.04);osc(a,o,t+dt,'square',f*2,f*2.004,len,.05,.04);});return 1.4;};
 if(!SFX_DEF.fanfare)SFX_DEF.fanfare=(a,B,o,t)=>{[0,4,7,12].forEach((st,i)=>{const f=392*Math.pow(2,st/12);osc(a,o,t+i*.11,'triangle',f,f*1.002,i===3?.5:.14,.14,.01);});return .9;};
+
+// pause-menu line: when the next hoard raid can come
+function raidCdLine(){if(!G||!RAID)return'';const r=RAID.cur;if(r)return r.phase==='warn'?'🛡 A hoard raid is about to march!':'🛡 A hoard raid is under way';
+  const need=raidThreshold(RAID.thr);if(RAID.cd>0){const s=Math.ceil(RAID.cd);return`🛡 Next raid possible in ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}  ·  when your hoard reaches ${need} gold`;}
+  return G.stash>=need?'🛡 Next raid possible now':`🛡 Next raid possible now  ·  when your hoard reaches ${need} gold`;}

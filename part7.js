@@ -67,7 +67,7 @@ function updGoal(dt){
   else G.hunterT=20;
   // wild & farmyard animals wander back in
   // (wild animals respawn per region in updFauna)
-  if(rnd()<dt*.05){const f=FARMS[RI(0,FARMS.length-1)];const barn=structures.find(s=>s.kind==='barn'&&dist(s,f.barn)<5);if(barn&&barn.state==='ok'&&units.filter(u=>!u.dead&&u.pen===f.yard).length<4)units.push(mkUnit('animal',f.yard.x+R(10,130),f.yard.y+R(8,42),{species:'chicken',pen:f.yard,hp:6,free:true}));}
+  if(rnd()<dt*.05){const f=FARMS[RI(0,FARMS.length-1)];const barn=structures.find(s=>s.kind==='barn'&&dist(s,f.barn)<5);if(barn&&barn.state==='ok'&&units.filter(u=>!u.dead&&u.pen===f.yard).length<(f.yard.cap||4))units.push(mkUnit('animal',f.yard.x+R(10,130),f.yard.y+R(8,42),{species:'chicken',pen:f.yard,hp:6,free:true}));}
   updFirefight(dt);}
 function nextLevel(){const bank=calcScore();newGame({lvl:G.lvl+1,bank});G.banner={text:`Castle Level ${G.lvl}`,sub:'A tougher castle: thicker gate, more tower archers and guards, more gold.',t:4.5};}
 
@@ -124,10 +124,11 @@ function raptorPerches(){const P=[];for(const r of DECOR)if(r.k==='cliff')P.push
   const tall=trees.filter(t=>t.state==='ok'&&t.s>1.05&&t.x<-300);for(let i=0;i<tall.length;i+=Math.max(1,Math.floor(tall.length/6)))P.push({x:tall[i].x,y:tall[i].y,z:46*tall[i].s,tree:tall[i]});return P;}
 function spawnRaptor(kind){const all=raptorPerches(),P=all.filter(p=>kind==='eagle'?!p.tree:(!!p.tree||rnd()<.25));const p=P.length?P[RI(0,P.length-1)]:{x:R(2700,3100),y:R(400,1800),z:30};
   birds.push(mkBird(kind,p.x,p.y,{state:'perch',z:p.z,perch:p}));}
-function initBirds(){birds=[];for(let i=0;i<4;i++)spawnFlock();
+function pondCap(p){return p.gull?preyN('gull'+GULLS.indexOf(p),3):preyN('pond'+PONDS.indexOf(p),p.lake?7:4);}
+function initBirds(){birds=[];for(let i=0;i<preyN('flocks',4);i++)spawnFlock();
   // start the first flocks already over the map
   const fl={};for(const b of birds){if(!fl[b.flock])fl[b.flock]={x:R(300,WW-300),y:R(400,WH-300)};b.x=fl[b.flock].x+R(-40,40);b.y=fl[b.flock].y+R(-30,30);}
-  PONDS.forEach(p=>{for(let i=0;i<(p.lake?7:4);i++)spawnPondBird(p);});gullHomes().forEach(p=>{for(let i=0;i<3;i++)spawnPondBird(p);});for(let i=0;i<9;i++)spawnCrow();
+  PONDS.forEach(p=>{for(let i=0;i<pondCap(p);i++)spawnPondBird(p);});gullHomes().forEach(p=>{for(let i=0;i<pondCap(p);i++)spawnPondBird(p);});for(let i=0;i<9;i++)spawnCrow();
   for(let i=0;i<4;i++)spawnRaptor('eagle');for(let i=0;i<3;i++)spawnRaptor('hawk');}
 function updBirds(dt){const dz=heightOf();
   for(const b of birds){if(b.dead)continue;const dd=dist(b,D),spd=BIRD[b.kind].sp;b.flap+=dt*(b.state==='ground'||b.state==='perch'?2:14);b.t-=dt;b.cd-=dt;
@@ -142,7 +143,7 @@ function updBirds(dt){const dz=heightOf();
     if(b.state==='ground'){const scare=D.alt>.5?260:200;
       if(b.home){b.hx+=R(-1,1)*dt*20;b.x+=Math.sin(G.t*.7+b.id)*4*dt;b.y+=Math.cos(G.t*.5+b.id)*2*dt;}else if(b.t<=0){b.t=R(.5,2);b.x+=R(-6,6);b.y+=R(-3,3);}
       if(dd<scare&&!G.over){b.state='fly';b.t=R(6,10);const a=Math.atan2(b.y-D.y,b.x-D.x)+R(-.7,.7);b.vx=Math.cos(a)*spd;b.vy=Math.sin(a)*spd;b.honk=1;
-        if(rnd()<.3)float(b.x,b.y-20,b.kind==='crow'?'Caw!':b.kind==='goose'?'HONK!':b.kind==='gull'?'Squawk!':'Quack!','#eee');}}
+        if(rnd()<.3)float(b.x,b.y-20,b.kind==='crow'?'Caw!':b.kind==='goose'?'HONK!':b.kind==='gull'||b.kind==='parrot'?'Squawk!':b.kind==='toucan'?'Croak-croak!':'Quack!','#eee');}}
     else{ // flying
       b.z=lerp(b.z,95,dt*1.5);if(dd<200){const a=Math.atan2(b.y-D.y,b.x-D.x);b.vx=lerp(b.vx,Math.cos(a)*spd,dt*2);b.vy=lerp(b.vy,Math.sin(a)*spd,dt*2);}
       if(b.t<=0&&dd>300){const tg=b.home?{x:b.home.x+R(-b.home.rx,b.home.rx)*.6,y:b.home.y+R(-b.home.ry,b.home.ry)*.6}:(b.tgt||(b.tgt=(()=>{const c=cells.filter(c=>c.state==='ok');return c.length?c[RI(0,c.length-1)]:{x:b.x,y:b.y};})()));
@@ -151,8 +152,8 @@ function updBirds(dt){const dz=heightOf();
       b.x=clamp(b.x+b.vx*dt,WX0+20,WX1-20);b.y=clamp(b.y+b.vy*dt,WY0+20,WY1-20);}}
   for(let i=birds.length-1;i>=0;i--)if(birds[i].dead)birds.splice(i,1);
   // respawning
-  G.birdT=(G.birdT||0)-dt;if(G.birdT<=0){G.birdT=12;const fl=new Set(birds.filter(b=>b.kind==='sparrow').map(b=>b.flock));if(fl.size<4)spawnFlock();
-    PONDS.forEach(p=>{if(birds.filter(b=>b.home===p).length<(p.lake?7:4))spawnPondBird(p);});gullHomes().forEach(p=>{if(birds.filter(b=>b.home===p).length<3)spawnPondBird(p);});if(birds.filter(b=>b.kind==='crow').length<9)spawnCrow();}
+  G.birdT=(G.birdT||0)-dt;if(G.birdT<=0){G.birdT=12;const fl=new Set(birds.filter(b=>b.kind==='sparrow').map(b=>b.flock));if(fl.size<preyN('flocks',4))spawnFlock();
+    PONDS.forEach(p=>{if(birds.filter(b=>b.home===p).length<pondCap(p))spawnPondBird(p);});gullHomes().forEach(p=>{if(birds.filter(b=>b.home===p).length<pondCap(p))spawnPondBird(p);});if(birds.filter(b=>b.kind==='crow').length<9)spawnCrow();}
   G.raptorT=(G.raptorT||0)-dt;if(G.raptorT<=0){G.raptorT=45;for(const k of['eagle','hawk'])if(birds.filter(b=>b.kind===k).length<(k==='eagle'?4:3))spawnRaptor(k);}}
 // eagles & hawks: circle the dragon, swoop-dive to peck/claw for a few HP, then dodge away. A nuisance, not a threat.
 function updRaptor(b,dt,dd,dz){const spd=BIRD[b.kind].sp;

@@ -15,7 +15,7 @@ function drawCastle(){if(GFX_HI){drawCastleHi();return;}const W=CWALL,th=22;
   rect(W.x0-th/2,W.y1-th/2+th-5,W.x1-W.x0+th,5,'#6a6a70');
   // keep (great hall)
   if(kUp('keep')){const kx=KEEP_POS.x,ky=KEEP_POS.y;rect(kx-70,ky-70,140,70,'#9c9ca2');rect(kx-14,ky-30,28,30,'#3a2a20');drawKeepRoofLo(kx,ky);}else if(PR.state==='tower')drawInsidePrincess(KEEP_POS.x,KEEP_POS.y-14);
-  ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle of King Aldric · Level ${G.lvl}`,CASTLE.x,W.y0-30);
+  ctx.fillStyle='#fff';ctx.font='bold 15px Georgia';ctx.textAlign='center';ctx.fillText(`Castle Aldric · King William · Level ${G.lvl}`,CASTLE.x,W.y0-30);
   // gold hoard piles
   for(const g of goldPiles){if(g.amt<=0){ell(g.x,g.y,14,6,'rgba(90,70,30,.5)');continue;}const n=Math.min(26,Math.ceil(g.amt/3));ell(g.x,g.y+2,22,8,'#8a6a10');
     for(let i=0;i<n;i++){const ang=i*2.4,rr=(i%4)*4;ell(g.x+Math.cos(ang)*rr*1.5,g.y-Math.floor(i/4)*4+Math.sin(ang)*rr*.4,6,3.4,i%2?'#ffd84a':'#f0b820');}
@@ -102,7 +102,7 @@ function drawStruct(s){const x=s.x,y=s.y,b=s.state==='building'?s.build:1;
       line(x+46,y-60,x+46,y-84,'#333',2);poly([x+46,y-84,x+62,y-79,x+46,y-74],'#c22');ctx.fillStyle='#fff';ctx.font='bold 10px Georgia';ctx.textAlign='center';ctx.fillText('Barracks',x,y+16);}
   } else if(s.kind==='cabin'){const H=28*b;rect(x-30,y-H+4,60,H,s.fire?'#5a3a1a':'#7a5230');for(let j=0;j<H;j+=6)line(x-30,y-H+4+j,x+30,y-H+4+j,'rgba(40,25,10,.5)',1);
     if(b>=1){poly([x-36,y-22,x,y-46,x+36,y-22],s.fire?'#3a2a1a':'#4a6a32');rect(x-6,y-14,12,18,'#3a2410');rect(x+14,y-36,6,14,'#666');
-      line(x-28,y-6,x-40,y-20,'#6b4a26',2);ell(x-42,y-22,6,4,'#a07a50');ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText("Hunter's Cabin",x,y-56);}
+      line(x-28,y-6,x-40,y-20,'#6b4a26',2);ell(x-42,y-22,6,4,'#a07a50');ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText("Hunters' Cabin",x,y-56);}
   } else if(s.kind==='logpile'){const n=Math.min(18,G.yardWood||0);rect(x-34,y-4,68,6,'#5a3a1c');
     for(let i=0;i<n;i++){const row=Math.floor(i/6),col=i%6,lx=x-27+col*11+row*5,ly=y-6-row*9;ell(lx,ly,5.5,5,'#8a5a2a');ell(lx,ly,3.5,3.3,'#d2a868');}
     if(n===0){ctx.fillStyle='#fdd';ctx.font='10px Georgia';ctx.textAlign='center';ctx.fillText('(empty)',x,y-12);}
