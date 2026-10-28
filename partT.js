@@ -16,13 +16,13 @@ function drawMilitiaKit(u,x,y,f,bob){const st=u.poke>0?4:0,ar=u.throwA>0;
   if(u.hp<u.maxHp){rect(x-6,y-20,12,2,'#400');rect(x-6,y-20,12*u.hp/u.maxHp,2,'#e44');}}
 function militiaOK(u){return u.type==='villager'&&!u.dead&&!u.inside&&!u.tax&&!u.carav&&u.v>=0&&VILLAGES[u.v]&&(u.job==='peasant'||u.job==='farmer')&&!u.task&&!u.water;}
 function updMilitiaAll(dt){G.milT=(G.milT||0)-dt;if(G.milT>0)return;G.milT=.5;
-  const want=G.level>=6&&G.waveNum>=waveGates().mil;
+  const want=G.level>=6; // the HUD says MILITIA at the top tier, so the villagers arm up right then (no extra wave gate)
   if(want)G.milOff=0;else if(G.milOn){G.milOff=(G.milOff||0)+.5;}
-  if(want&&!G.milOn){G.milOn=true;if(!G.seenMil){G.seenMil=true;G.banner={text:'MILITIA! The villagers take up spears!',sub:'Every town defends itself now: they gather in groups, poke and throw spears when you are on the ground or flying low.',extra:'Weak alone, dangerous in numbers. Fly high, or pick them off before they bunch up.',t:5};}}
+  if(want&&!G.milOn){G.milOn=true;if(!G.seenMil){G.seenMil=true;G.banner={text:'MILITIA! The villagers take up spears!',sub:'Every town defends itself now: they gather in groups, poke and throw spears when you are on the ground or flying low.',extra:'They are the weakest fighters in the kingdom (a feeble poke), but they stand their ground instead of running away.',t:5};}}
   if(G.milOn&&!want&&G.milOff>=8){G.milOn=false;for(const u of units)if(u.militia){u.militia=false;u.state='idle';u.tgt=null;}float(D.x,D.y-120,'The militia goes home','#cfe');}
   if(!G.milOn)return;
   const per={},rally={};for(const u of units)if(u.militia&&!u.dead){per[u.v]=(per[u.v]||0)+1;const r=rally[u.v]||(rally[u.v]={x:0,y:0,n:0});r.x+=u.x;r.y+=u.y;r.n++;}
-  for(const u of units)if(!u.militia&&militiaOK(u)&&(per[u.v]||0)<12&&d2(u.x,u.y,VILLAGES[u.v].x,VILLAGES[u.v].y)<700){u.militia=true;u.state='idle';u.tgt=null;per[u.v]=(per[u.v]||0)+1;u.hp=u.maxHp=Math.max(u.maxHp||10,14);u.throwT=R(1,3);if(rnd()<.3)float(u.x,u.y-24,['To arms!','Spears!','Get the beast!','For our homes!'][RI(0,3)],'#fdd');}
+  for(const u of units)if(!u.militia&&militiaOK(u)&&(per[u.v]||0)<12&&d2(u.x,u.y,VILLAGES[u.v].x,VILLAGES[u.v].y)<700){u.militia=true;u.state='idle';u.tgt=null;per[u.v]=(per[u.v]||0)+1;u.hp=u.maxHp=FBN.milHp;u.throwT=R(2,5);if(rnd()<.3)float(u.x,u.y-24,['To arms!','Spears!','Get the beast!','For our homes!'][RI(0,3)],'#fdd');}
   G.milRally=rally;for(const k in rally){const r=rally[k];r.x/=r.n;r.y/=r.n;}
   for(const u of units)if(u.militia&&!u.dead){let n=0;for(const o of units)if(o!==u&&o.militia&&!o.dead&&Math.abs(o.x-u.x)<150&&Math.abs(o.y-u.y)<150)n++;u.allies=n;}}
 function militiaCount(){let n=0;for(const u of units)if(u.militia&&!u.dead)n++;return n;}
@@ -34,9 +34,9 @@ function updMilitia(u,dt){if(!G.milOn||G.over){u.militia=false;return false;}
     if(al<2&&dd>200&&r&&r.n>1&&d2(u.x,u.y,r.x,r.y)>40){moveTo(u,r.x,r.y,62,dt);u.anim+=dt*10;} // bunch up first
     else if(low&&dd>46){moveTo(u,D.x,D.y,dd>300?60:52,dt);u.anim+=dt*9;}
     else if(!low){const a=u.id*TAU+G.t*.3;moveTo(u,D.x+Math.cos(a)*110,D.y+Math.sin(a)*70,40,dt);u.anim+=dt*6;}
-    if(low&&D.alt<DR.hitAltSword&&dd<60&&u.atk<=0){u.atk=R(1.1,1.5);u.poke=.22;hurtDragon(.7*k,'spear');}
-    else if(dd>70&&dd<270&&u.throwT<=0&&D.alt<.6){u.throwT=R(3.2,4.5);u.throwA=.35;const T=dd/300,px=D.x+D.vx*T*.5,py=D.y+D.vy*T*.5,a=Math.atan2(py-u.y,px-u.x);
-      projs.push({kind:'spear',x:u.x,y:u.y,z:12,vx:Math.cos(a)*300,vy:Math.sin(a)*300,tz:heightOf()+10,life:T+.25,dmg:Math.round(1.6*k*10)/10});}
+    if(low&&D.alt<DR.hitAltSword&&dd<60&&u.atk<=0){u.atk=FBN.milCd*R(.92,1.1);u.poke=.22;hurtDragon(FBN.milDmg,'spear');}
+    else if(dd>70&&dd<270&&u.throwT<=0&&D.alt<.6){u.throwT=FBN.milTcd*R(.9,1.15);u.throwA=.35;const T=dd/300,px=D.x+D.vx*T*.5,py=D.y+D.vy*T*.5,a=Math.atan2(py-u.y,px-u.x);
+      projs.push({kind:'spear',x:u.x,y:u.y,z:12,vx:Math.cos(a)*300,vy:Math.sin(a)*300,tz:heightOf()+10,life:T+.25,dmg:FBN.milTdmg});}
     return true;}
   // no dragon about: stand guard around the village, never hide
   if(u.state!=='walk'||!u.tgt){u.tgt={x:V.x+R(-150,150),y:V.y+R(-110,110)};u.state='walk';u.wait=R(1,4);}

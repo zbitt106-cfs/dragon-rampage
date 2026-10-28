@@ -1,14 +1,17 @@
 // ======================= KINGDOM-WIDE MILITIA: at the Militia tier EVERY villager arms up with their own tool and guards their own post =======================
 const KM={postR:760,leash:880,home:150};
+// fight-back tiers: militia (spear) = the weakest fighters; workers (axe/pickaxe/pitchfork/scythe) hit a bit harder; soldiers hit far harder (4 per swing)
+const FBN={milDmg:.5,milCd:2.2,milTdmg:.4,milTcd:6,milHp:8,workHp:14};
+const FB_SOLO=new Set(['spear','axe','pick','fork','scythe']); // no crowd bonus, so a mob never out-hits a soldier
 // reach/dmg/cd = melee; thr/tdmg/tcd/pk = throw (range, damage, cooldown, projectile look)
 const KM_W={
-  spear:{reach:56,dmg:.7,cd:1.3,thr:270,tdmg:1.6,tcd:3.8,pk:'spear',spd:58,say:['To arms!','Spears up!','For our homes!']},
-  axe:{reach:52,dmg:1.0,cd:1.5,thr:190,tdmg:1.3,tcd:5,pk:'axe',spd:56,say:['Timber-r-r!','Axes ready!','Guard the camp!']},
-  pick:{reach:50,dmg:1.1,cd:1.6,thr:180,tdmg:.8,tcd:4.5,pk:'rock',spd:52,say:['Pickaxes up!','Not our mine!','Rocks away!']},
-  fork:{reach:68,dmg:.8,cd:1.2,spd:56,say:['Pitchforks!','Off my farm!','Shoo, dragon!']},
-  scythe:{reach:62,dmg:.9,cd:1.4,spd:54,say:['Scythes ready!','Off my crops!']},
+  spear:{reach:56,dmg:.5,cd:2.2,thr:270,tdmg:.4,tcd:6,pk:'spear',spd:58,say:['To arms!','Spears up!','For our homes!']},
+  axe:{reach:52,dmg:2.0,cd:1.8,thr:190,tdmg:1.3,tcd:5,pk:'axe',spd:56,say:['Timber-r-r!','Axes ready!','Guard the camp!']},
+  pick:{reach:50,dmg:2.2,cd:2.0,thr:180,tdmg:.8,tcd:4.5,pk:'rock',spd:52,say:['Pickaxes up!','Not our mine!','Rocks away!']},
+  fork:{reach:68,dmg:1.8,cd:1.6,spd:56,say:['Pitchforks!','Off my farm!','Shoo, dragon!']},
+  scythe:{reach:62,dmg:2.0,cd:1.8,spd:54,say:['Scythes ready!','Off my crops!']},
   hammer:{reach:50,dmg:1.0,cd:1.5,thr:170,tdmg:.8,tcd:5,pk:'rock',spd:52,say:['Hammers up!','Guard the castle!']},
-  bucket:{reach:0,thr:230,tdmg:.5,tcd:2.4,pk:'water',spd:0,say:['Splash it!','Buckets!']},
+  bucket:{reach:0,thr:230,tdmg:.6,tcd:2.4,pk:'water',spd:0,say:['Splash it!','Buckets!']},
   club:{reach:54,dmg:.9,cd:1.4,spd:50,say:['By order of King William!','Clubs out!']},
   staff:{reach:64,dmg:.8,cd:1.3,spd:50,say:['Guard the wagons!','Staffs up!']},
   whip:{reach:96,dmg:.6,cd:1.1,spd:0,say:['Hyah! Crack!','Not my cart!']},
@@ -37,7 +40,7 @@ function kmBlocked(x,y){return (typeof inWater==='function'&&inWater(x,y))||(typ
 function kmMove(u,tx,ty,sp,dt){const ox=u.x,oy=u.y;const r=moveTo(u,tx,ty,sp,dt);if(kmBlocked(u.x,u.y)&&!kmBlocked(ox,oy)){u.x=ox;u.y=oy;}return r;}
 function kmClampLeash(P,x,y){const k=d2(x,y,P.x,P.y);if(k<=KM.leash)return[x,y];return[P.x+(x-P.x)*KM.leash/k,P.y+(y-P.y)*KM.leash/k];}
 function kmThreat(P){return d2(D.x,D.y,P.x,P.y)<KM.postR;}
-function kmSwing(u,W){u.atk=W.cd*R(.9,1.15);u.poke=.25;hurtDragon(W.dmg*Math.min(2,1+.12*(u.allies||0)),'tool');
+function kmSwing(u,W){u.atk=W.cd*R(.9,1.15);u.poke=.25;hurtDragon(W.dmg*(FB_SOLO.has(u.arm)?1:Math.min(2,1+.12*(u.allies||0))),'tool');
   if(u.arm==='whip'){float(D.x+R(-20,20),D.y-heightOf()-64,'CRACK!','#ffe0b0');}
   else if(rnd()<.35)float(D.x+R(-20,20),D.y-heightOf()-64,{spear:'Poke!',axe:'Thwack!',pick:'Clonk!',fork:'Prod!',scythe:'Swish!',hammer:'Bonk!',club:'Bonk!',staff:'Whack!',oar:'Thwap!'}[u.arm]||'Bonk!','#ffe0b0');}
 function kmThrow(u,W){const dd=dist(u,D);u.throwT=W.tcd*R(.9,1.2);u.throwA=.35;const sp=W.pk==='water'?260:300,T=dd/sp,px=D.x+D.vx*T*.5,py=D.y+D.vy*T*.5,a=Math.atan2(py-u.y,px-u.x);
@@ -70,7 +73,7 @@ function kmBells(){G.kmBell=6;if(typeof SFX!=='undefined')for(let i=0;i<6;i++)se
 function kmArmAll(){let n=0;
   for(const u of units){if(u.dead)continue;const r=kmRole(u);if(!r){if(u.arm&&u.type==='villager'){u.arm=null;u.militia=false;}continue;}
     if(u.arm!==r){const fresh=!u.arm;u.arm=r;u.engaged=false;if(fresh){u.throwT=R(.5,2.5);u.atk=R(0,1);if(rnd()<.12)float(u.x,u.y-24,KM_W[r].say[RI(0,KM_W[r].say.length-1)],'#fdd');}}
-    if(!KM_ONLY.has(r)&&u.type==='villager'&&!u.inside&&!u.militia){dropCarry(u);u.militia=true;u.state='idle';u.tgt=null;u.ptgt=null;u.hp=u.maxHp=Math.max(u.maxHp||10,14);}
+    if(!KM_ONLY.has(r)&&u.type==='villager'&&!u.inside&&!u.militia){dropCarry(u);u.militia=true;u.state='idle';u.tgt=null;u.ptgt=null;u.hp=u.maxHp=r==='spear'?FBN.milHp:Math.max(u.maxHp||10,FBN.workHp);}
     if(KM_ONLY.has(r)&&u.militia)u.militia=false;n++;}
   G.kmArmed=n;return n;}
 function kmDisarmAll(){for(const u of units)if(u.arm||u.militia){u.arm=null;u.militia=false;u.engaged=false;u.post=null;u.ptgt=null;if(u.type==='villager'){u.state='idle';u.tgt=null;}}G.kmArmed=0;}
@@ -101,7 +104,7 @@ function drawKmProjs(){for(const p of kmProjs){const x=p.x,y=p.y-p.z;ell(p.x,p.y
   else if(p.kind==='bucket'){ctx.save();ctx.translate(x,y);ctx.rotate(p.spin*.6);rect(-3.5,-3,7,6,'#7a5530');rect(-3.5,-3,7,1.3,'#555');ell(0,-3,3.2,1,'#6af');ctx.restore();}}}
 // sprite tweaks: each armed role carries its own tool and a red armband
 function kmDrawTool(u,x,y,f,bob){const st=u.poke>0?4:0,r=u.arm,hy=y-9+bob*.3;
-  rect(x-2.8,y-7.5+bob*.3,5.6,1.3,'#c22');
+  if(!u.noBand)rect(x-2.8,y-7.5+bob*.3,5.6,1.3,'#c22');
   if(r==='axe'){line(x-f*2,y-3,x+f*(7+st),hy-8,'#7a5530',1.3);poly([x+f*(7+st),hy-8,x+f*(10+st),hy-11,x+f*(11+st),hy-6,x+f*(8+st),hy-5],'#c8ccd4');}
   else if(r==='pick'){line(x-f*2,y-3,x+f*(7+st),hy-8,'#7a5530',1.3);ctx.strokeStyle='#bfc4cc';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x+f*(7+st),hy-5,5,-Math.PI*.9,-Math.PI*.1);ctx.stroke();}
   else if(r==='fork'){line(x-f*3,y-2,x+f*(8+st),hy-10,'#8a6a40',1.1);for(let k=-1;k<=1;k++)line(x+f*(8+st)+k*1.6,hy-10,x+f*(9+st)+k*1.6,hy-14,'#ccd',.9);}

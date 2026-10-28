@@ -37,6 +37,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partMH.js: max-health growth: monster feasts (kraken / sand worm +50) and Glutton food milestones (+5)
 - partGH.js: northern mountain-goat herds and the mountain lions that hunt them
 - partKM.js: the kingdom-wide militia (every villager arms up and guards their own post)
+- partFB.js: workers fight back (farmers, lumberjacks and miners defend their worksite with their tools, then go back to work)
 - partRN.js: the princess ransom King William pays after each level win
 - partPR.js: prince boss armies that arrive by sea in royal war fleets (every 5th castle level); after landing the prince and his army hunt the dragon wherever it goes
 - partHN.js: +5% prey, predators that hunt prey, and freshwater crocodiles
@@ -126,6 +127,17 @@ When the MILITIA tier is reached, bells ring in every town and a banner reads **
 | The lighthouse keeper | an oar (and pebbles) | the lighthouse |
 
 They **defend their own post only**: they engage the dragon when it comes within about one screen of the post, never chase it more than a short leash away, and walk back when it leaves. Nobody marches across the map. When the WANTED level drops below the militia tier, everyone puts their tools down and goes back to work. The armed state is kept in saves. It's all cartoon fun: a dragon can still gulp a militiaman whole.
+
+### Who fights back, and how hard
+- **The militia (spear villagers) are the weakest fighters in the kingdom.** They never run away once the Militia tier starts. They close in and poke for **0.5 damage about every 2.2 s**, and now and then throw a spear for **0.4** (about every 6 s). A crowd doesn't make them hit harder, and each has only **8 HP**, so they're easy to beat.
+- The militia arm up as soon as the WANTED bar reaches **Militia**. There's no longer an extra hidden wave gate, which used to leave villagers fleeing while the HUD already said Militia.
+- **Workers fight back even before the Militia tier.** A lumberjack, miner or farmer at their worksite stands up to the dragon instead of fleeing:
+  - lumberjack: axe chop, **2.0 every 1.8 s**;
+  - miner: pickaxe, **2.2 every 2.0 s**;
+  - farmer: pitchfork, **1.8 every 1.6 s**, or scythe, **2.0 every 1.8 s**.
+  - When the dragon leaves (or flies too high to reach) they go back to work. Workers have 10 HP, or 14 when armed at the Militia tier.
+- **Plain unarmed villagers still run away** until the Militia tier.
+- **Soldiers stay far stronger:** a foot soldier hits for 4 every 1.35 s, and knights hit harder still.
 
 ## Kingdom life
 - **Castle Aldric** sits in the south-central kingdom, well away from your lair on Dragon's Roost. Roads, waves, patrols, raids, tax collectors and the map markers all start from there.

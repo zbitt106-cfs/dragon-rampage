@@ -2632,13 +2632,13 @@ function drawMilitiaKit(u,x,y,f,bob){const st=u.poke>0?4:0,ar=u.throwA>0;
   if(u.hp<u.maxHp){rect(x-6,y-20,12,2,'#400');rect(x-6,y-20,12*u.hp/u.maxHp,2,'#e44');}}
 function militiaOK(u){return u.type==='villager'&&!u.dead&&!u.inside&&!u.tax&&!u.carav&&u.v>=0&&VILLAGES[u.v]&&(u.job==='peasant'||u.job==='farmer')&&!u.task&&!u.water;}
 function updMilitiaAll(dt){G.milT=(G.milT||0)-dt;if(G.milT>0)return;G.milT=.5;
-  const want=G.level>=6&&G.waveNum>=waveGates().mil;
+  const want=G.level>=6; // the HUD says MILITIA at the top tier, so the villagers arm up right then (no extra wave gate)
   if(want)G.milOff=0;else if(G.milOn){G.milOff=(G.milOff||0)+.5;}
-  if(want&&!G.milOn){G.milOn=true;if(!G.seenMil){G.seenMil=true;G.banner={text:'MILITIA! The villagers take up spears!',sub:'Every town defends itself now: they gather in groups, poke and throw spears when you are on the ground or flying low.',extra:'Weak alone, dangerous in numbers. Fly high, or pick them off before they bunch up.',t:5};}}
+  if(want&&!G.milOn){G.milOn=true;if(!G.seenMil){G.seenMil=true;G.banner={text:'MILITIA! The villagers take up spears!',sub:'Every town defends itself now: they gather in groups, poke and throw spears when you are on the ground or flying low.',extra:'They are the weakest fighters in the kingdom (a feeble poke), but they stand their ground instead of running away.',t:5};}}
   if(G.milOn&&!want&&G.milOff>=8){G.milOn=false;for(const u of units)if(u.militia){u.militia=false;u.state='idle';u.tgt=null;}float(D.x,D.y-120,'The militia goes home','#cfe');}
   if(!G.milOn)return;
   const per={},rally={};for(const u of units)if(u.militia&&!u.dead){per[u.v]=(per[u.v]||0)+1;const r=rally[u.v]||(rally[u.v]={x:0,y:0,n:0});r.x+=u.x;r.y+=u.y;r.n++;}
-  for(const u of units)if(!u.militia&&militiaOK(u)&&(per[u.v]||0)<12&&d2(u.x,u.y,VILLAGES[u.v].x,VILLAGES[u.v].y)<700){u.militia=true;u.state='idle';u.tgt=null;per[u.v]=(per[u.v]||0)+1;u.hp=u.maxHp=Math.max(u.maxHp||10,14);u.throwT=R(1,3);if(rnd()<.3)float(u.x,u.y-24,['To arms!','Spears!','Get the beast!','For our homes!'][RI(0,3)],'#fdd');}
+  for(const u of units)if(!u.militia&&militiaOK(u)&&(per[u.v]||0)<12&&d2(u.x,u.y,VILLAGES[u.v].x,VILLAGES[u.v].y)<700){u.militia=true;u.state='idle';u.tgt=null;per[u.v]=(per[u.v]||0)+1;u.hp=u.maxHp=FBN.milHp;u.throwT=R(2,5);if(rnd()<.3)float(u.x,u.y-24,['To arms!','Spears!','Get the beast!','For our homes!'][RI(0,3)],'#fdd');}
   G.milRally=rally;for(const k in rally){const r=rally[k];r.x/=r.n;r.y/=r.n;}
   for(const u of units)if(u.militia&&!u.dead){let n=0;for(const o of units)if(o!==u&&o.militia&&!o.dead&&Math.abs(o.x-u.x)<150&&Math.abs(o.y-u.y)<150)n++;u.allies=n;}}
 function militiaCount(){let n=0;for(const u of units)if(u.militia&&!u.dead)n++;return n;}
@@ -2650,9 +2650,9 @@ function updMilitia(u,dt){if(!G.milOn||G.over){u.militia=false;return false;}
     if(al<2&&dd>200&&r&&r.n>1&&d2(u.x,u.y,r.x,r.y)>40){moveTo(u,r.x,r.y,62,dt);u.anim+=dt*10;} // bunch up first
     else if(low&&dd>46){moveTo(u,D.x,D.y,dd>300?60:52,dt);u.anim+=dt*9;}
     else if(!low){const a=u.id*TAU+G.t*.3;moveTo(u,D.x+Math.cos(a)*110,D.y+Math.sin(a)*70,40,dt);u.anim+=dt*6;}
-    if(low&&D.alt<DR.hitAltSword&&dd<60&&u.atk<=0){u.atk=R(1.1,1.5);u.poke=.22;hurtDragon(.7*k,'spear');}
-    else if(dd>70&&dd<270&&u.throwT<=0&&D.alt<.6){u.throwT=R(3.2,4.5);u.throwA=.35;const T=dd/300,px=D.x+D.vx*T*.5,py=D.y+D.vy*T*.5,a=Math.atan2(py-u.y,px-u.x);
-      projs.push({kind:'spear',x:u.x,y:u.y,z:12,vx:Math.cos(a)*300,vy:Math.sin(a)*300,tz:heightOf()+10,life:T+.25,dmg:Math.round(1.6*k*10)/10});}
+    if(low&&D.alt<DR.hitAltSword&&dd<60&&u.atk<=0){u.atk=FBN.milCd*R(.92,1.1);u.poke=.22;hurtDragon(FBN.milDmg,'spear');}
+    else if(dd>70&&dd<270&&u.throwT<=0&&D.alt<.6){u.throwT=FBN.milTcd*R(.9,1.15);u.throwA=.35;const T=dd/300,px=D.x+D.vx*T*.5,py=D.y+D.vy*T*.5,a=Math.atan2(py-u.y,px-u.x);
+      projs.push({kind:'spear',x:u.x,y:u.y,z:12,vx:Math.cos(a)*300,vy:Math.sin(a)*300,tz:heightOf()+10,life:T+.25,dmg:FBN.milTdmg});}
     return true;}
   // no dragon about: stand guard around the village, never hide
   if(u.state!=='walk'||!u.tgt){u.tgt={x:V.x+R(-150,150),y:V.y+R(-110,110)};u.state='walk';u.wait=R(1,4);}
@@ -3858,15 +3858,18 @@ function updGoatHerds(dt){for(const h of GH_HERDS){
   const was=u.state,r=_uc.apply(this,arguments);if(u.state==='feed'&&was!=='feed')u.full=R(35,50);return r;};}
 // ======================= KINGDOM-WIDE MILITIA: at the Militia tier EVERY villager arms up with their own tool and guards their own post =======================
 const KM={postR:760,leash:880,home:150};
+// fight-back tiers: militia (spear) = the weakest fighters; workers (axe/pickaxe/pitchfork/scythe) hit a bit harder; soldiers hit far harder (4 per swing)
+const FBN={milDmg:.5,milCd:2.2,milTdmg:.4,milTcd:6,milHp:8,workHp:14};
+const FB_SOLO=new Set(['spear','axe','pick','fork','scythe']); // no crowd bonus, so a mob never out-hits a soldier
 // reach/dmg/cd = melee; thr/tdmg/tcd/pk = throw (range, damage, cooldown, projectile look)
 const KM_W={
-  spear:{reach:56,dmg:.7,cd:1.3,thr:270,tdmg:1.6,tcd:3.8,pk:'spear',spd:58,say:['To arms!','Spears up!','For our homes!']},
-  axe:{reach:52,dmg:1.0,cd:1.5,thr:190,tdmg:1.3,tcd:5,pk:'axe',spd:56,say:['Timber-r-r!','Axes ready!','Guard the camp!']},
-  pick:{reach:50,dmg:1.1,cd:1.6,thr:180,tdmg:.8,tcd:4.5,pk:'rock',spd:52,say:['Pickaxes up!','Not our mine!','Rocks away!']},
-  fork:{reach:68,dmg:.8,cd:1.2,spd:56,say:['Pitchforks!','Off my farm!','Shoo, dragon!']},
-  scythe:{reach:62,dmg:.9,cd:1.4,spd:54,say:['Scythes ready!','Off my crops!']},
+  spear:{reach:56,dmg:.5,cd:2.2,thr:270,tdmg:.4,tcd:6,pk:'spear',spd:58,say:['To arms!','Spears up!','For our homes!']},
+  axe:{reach:52,dmg:2.0,cd:1.8,thr:190,tdmg:1.3,tcd:5,pk:'axe',spd:56,say:['Timber-r-r!','Axes ready!','Guard the camp!']},
+  pick:{reach:50,dmg:2.2,cd:2.0,thr:180,tdmg:.8,tcd:4.5,pk:'rock',spd:52,say:['Pickaxes up!','Not our mine!','Rocks away!']},
+  fork:{reach:68,dmg:1.8,cd:1.6,spd:56,say:['Pitchforks!','Off my farm!','Shoo, dragon!']},
+  scythe:{reach:62,dmg:2.0,cd:1.8,spd:54,say:['Scythes ready!','Off my crops!']},
   hammer:{reach:50,dmg:1.0,cd:1.5,thr:170,tdmg:.8,tcd:5,pk:'rock',spd:52,say:['Hammers up!','Guard the castle!']},
-  bucket:{reach:0,thr:230,tdmg:.5,tcd:2.4,pk:'water',spd:0,say:['Splash it!','Buckets!']},
+  bucket:{reach:0,thr:230,tdmg:.6,tcd:2.4,pk:'water',spd:0,say:['Splash it!','Buckets!']},
   club:{reach:54,dmg:.9,cd:1.4,spd:50,say:['By order of King William!','Clubs out!']},
   staff:{reach:64,dmg:.8,cd:1.3,spd:50,say:['Guard the wagons!','Staffs up!']},
   whip:{reach:96,dmg:.6,cd:1.1,spd:0,say:['Hyah! Crack!','Not my cart!']},
@@ -3895,7 +3898,7 @@ function kmBlocked(x,y){return (typeof inWater==='function'&&inWater(x,y))||(typ
 function kmMove(u,tx,ty,sp,dt){const ox=u.x,oy=u.y;const r=moveTo(u,tx,ty,sp,dt);if(kmBlocked(u.x,u.y)&&!kmBlocked(ox,oy)){u.x=ox;u.y=oy;}return r;}
 function kmClampLeash(P,x,y){const k=d2(x,y,P.x,P.y);if(k<=KM.leash)return[x,y];return[P.x+(x-P.x)*KM.leash/k,P.y+(y-P.y)*KM.leash/k];}
 function kmThreat(P){return d2(D.x,D.y,P.x,P.y)<KM.postR;}
-function kmSwing(u,W){u.atk=W.cd*R(.9,1.15);u.poke=.25;hurtDragon(W.dmg*Math.min(2,1+.12*(u.allies||0)),'tool');
+function kmSwing(u,W){u.atk=W.cd*R(.9,1.15);u.poke=.25;hurtDragon(W.dmg*(FB_SOLO.has(u.arm)?1:Math.min(2,1+.12*(u.allies||0))),'tool');
   if(u.arm==='whip'){float(D.x+R(-20,20),D.y-heightOf()-64,'CRACK!','#ffe0b0');}
   else if(rnd()<.35)float(D.x+R(-20,20),D.y-heightOf()-64,{spear:'Poke!',axe:'Thwack!',pick:'Clonk!',fork:'Prod!',scythe:'Swish!',hammer:'Bonk!',club:'Bonk!',staff:'Whack!',oar:'Thwap!'}[u.arm]||'Bonk!','#ffe0b0');}
 function kmThrow(u,W){const dd=dist(u,D);u.throwT=W.tcd*R(.9,1.2);u.throwA=.35;const sp=W.pk==='water'?260:300,T=dd/sp,px=D.x+D.vx*T*.5,py=D.y+D.vy*T*.5,a=Math.atan2(py-u.y,px-u.x);
@@ -3928,7 +3931,7 @@ function kmBells(){G.kmBell=6;if(typeof SFX!=='undefined')for(let i=0;i<6;i++)se
 function kmArmAll(){let n=0;
   for(const u of units){if(u.dead)continue;const r=kmRole(u);if(!r){if(u.arm&&u.type==='villager'){u.arm=null;u.militia=false;}continue;}
     if(u.arm!==r){const fresh=!u.arm;u.arm=r;u.engaged=false;if(fresh){u.throwT=R(.5,2.5);u.atk=R(0,1);if(rnd()<.12)float(u.x,u.y-24,KM_W[r].say[RI(0,KM_W[r].say.length-1)],'#fdd');}}
-    if(!KM_ONLY.has(r)&&u.type==='villager'&&!u.inside&&!u.militia){dropCarry(u);u.militia=true;u.state='idle';u.tgt=null;u.ptgt=null;u.hp=u.maxHp=Math.max(u.maxHp||10,14);}
+    if(!KM_ONLY.has(r)&&u.type==='villager'&&!u.inside&&!u.militia){dropCarry(u);u.militia=true;u.state='idle';u.tgt=null;u.ptgt=null;u.hp=u.maxHp=r==='spear'?FBN.milHp:Math.max(u.maxHp||10,FBN.workHp);}
     if(KM_ONLY.has(r)&&u.militia)u.militia=false;n++;}
   G.kmArmed=n;return n;}
 function kmDisarmAll(){for(const u of units)if(u.arm||u.militia){u.arm=null;u.militia=false;u.engaged=false;u.post=null;u.ptgt=null;if(u.type==='villager'){u.state='idle';u.tgt=null;}}G.kmArmed=0;}
@@ -3959,7 +3962,7 @@ function drawKmProjs(){for(const p of kmProjs){const x=p.x,y=p.y-p.z;ell(p.x,p.y
   else if(p.kind==='bucket'){ctx.save();ctx.translate(x,y);ctx.rotate(p.spin*.6);rect(-3.5,-3,7,6,'#7a5530');rect(-3.5,-3,7,1.3,'#555');ell(0,-3,3.2,1,'#6af');ctx.restore();}}}
 // sprite tweaks: each armed role carries its own tool and a red armband
 function kmDrawTool(u,x,y,f,bob){const st=u.poke>0?4:0,r=u.arm,hy=y-9+bob*.3;
-  rect(x-2.8,y-7.5+bob*.3,5.6,1.3,'#c22');
+  if(!u.noBand)rect(x-2.8,y-7.5+bob*.3,5.6,1.3,'#c22');
   if(r==='axe'){line(x-f*2,y-3,x+f*(7+st),hy-8,'#7a5530',1.3);poly([x+f*(7+st),hy-8,x+f*(10+st),hy-11,x+f*(11+st),hy-6,x+f*(8+st),hy-5],'#c8ccd4');}
   else if(r==='pick'){line(x-f*2,y-3,x+f*(7+st),hy-8,'#7a5530',1.3);ctx.strokeStyle='#bfc4cc';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x+f*(7+st),hy-5,5,-Math.PI*.9,-Math.PI*.1);ctx.stroke();}
   else if(r==='fork'){line(x-f*3,y-2,x+f*(8+st),hy-10,'#8a6a40',1.1);for(let k=-1;k<=1;k++)line(x+f*(8+st)+k*1.6,hy-10,x+f*(9+st)+k*1.6,hy-14,'#ccd',.9);}
@@ -3984,6 +3987,40 @@ function kmDrawTool(u,x,y,f,bob){const st=u.poke>0?4:0,r=u.arm,hy=y-9+bob*.3;
 {const _up=update;update=function(dt){_up.apply(this,arguments);if(scene==='play'){if(G.kmBell>0)G.kmBell-=dt;if(kmProjs.length)updKmProjs(dt);}};}
 {const _ng=newGame;newGame=function(){kmProjs=[];return _ng.apply(this,arguments);};}
 SFX_DEF.bell=(a,B,o,t)=>{osc(a,o,t,'sine',880,0,1.4,.35,.004);osc(a,o,t,'sine',1320,0,.9,.15,.004);osc(a,o,t,'triangle',440,0,1.6,.18,.004);return 1.5;};
+// ======================= partFB: WORKERS FIGHT BACK - farmers, lumberjacks and miners defend their worksite with their tools =======================
+// Before the Militia tier, plain villagers still run from the dragon, but a farmer, lumberjack or miner who is at work
+// stands up to it: a pitchfork/scythe prod, an axe chop or a pickaxe clonk (about 2 damage each, every ~1.6-2 s).
+// When the dragon leaves (or flies too high to reach) they go back to work. Soldiers still hit far harder (4 per swing).
+const FBW={siteR:460,hold:110,spd:50,
+  arm:{woodcutter:'axe',miner:'pick'},say:{axe:['Off my trees!','Timber-r-r!','Shoo!'],pick:['Not our mine!','Pickaxe up!','Go away!'],fork:['Off my farm!','Shoo, dragon!','Pitchfork!'],scythe:['Off my crops!','Shoo!']}};
+function fbArm(u){if(u.job==='farmer'){if(!u.kmTool){G.kmFarmN=(G.kmFarmN||0)+1;u.kmTool=G.kmFarmN%2?'fork':'scythe';}return u.kmTool;}return FBW.arm[u.job]||null;}
+function fbSite(u){if(u.job==='woodcutter')return{x:CAMP.x,y:CAMP.y+30,name:'logging camp'};if(u.job==='miner')return{x:MINE.x,y:MINE.y+30,name:'mine'};
+  if(u.job==='farmer'){const F=FARMS[u.farm];if(F)return{x:F.field.x+F.field.w/2,y:F.field.y+F.field.h/2,name:'farm'};}return null;}
+// who may fight back: a worker at (or near) their worksite, not hauling a cart, not inside the mine, not on special duty
+function fbWorker(u){if(!u||u.dead||u.type!=='villager'||u.inside||u.tax||u.carav||u.scart||u.wk||u.rcF||u.water||u.task)return false;
+  if(G.milOn&&(u.militia||u.arm))return false; // the Militia tier has its own (kingdom-wide) fighting
+  if(u.job==='miner'&&(u.state==='haul'||u.state==='return'||u.state==='cart'||u.cart))return false;
+  const S=fbSite(u);return !!S&&fbArm(u)&&d2(u.x,u.y,S.x,S.y)<FBW.siteR;}
+function fbFight(u,dt){const W=KM_W[u.fbArm]||KM_W.axe,S=fbSite(u),dd=dist(u,D),low=D.alt<.55;
+  u.poke=Math.max(0,(u.poke||0)-dt);u.atk=(u.atk||0)-dt;u.face=D.x>u.x?1:-1;
+  if(low&&dd>W.reach*.8){const[tx,ty]=kmClampLeash({x:S.x,y:S.y},D.x,D.y);const k=d2(tx,ty,S.x,S.y);if(k<FBW.siteR)kmMove(u,tx,ty,FBW.spd,dt);u.anim+=dt*9;}
+  else if(!low){u.anim+=dt*4;if(rnd()<dt*.4)float(u.x,u.y-26,'Come down here!','#fdd');}
+  if(low&&D.alt<DR.hitAltSword&&dd<W.reach&&u.atk<=0){u.atk=W.cd*R(.92,1.1);u.poke=.25;hurtDragon(W.dmg,'tool');u.fbHits=(u.fbHits||0)+1;
+    if(rnd()<.35)float(D.x+R(-20,20),D.y-heightOf()-64,{axe:'Chop!',pick:'Clonk!',fork:'Prod!',scythe:'Swish!'}[u.fbArm]||'Bonk!','#ffe0b0');}
+  u.face=D.x>u.x?1:-1;}
+function fbBackToWork(u){u.fbArm=null;u.engaged=false;u.poke=0;
+  if(u.job==='woodcutter')u.state=u.tree&&u.tree.state==='ok'?'towalk':'idle';else if(u.job==='miner')u.state='towalk';else u.state='idle';u.tgt=null;}
+{const _v=updVillager;updVillager=function(u,dt){
+  if(u.state==='fbfight'&&!fbWorker(u)){fbBackToWork(u);}
+  if(!G.over&&fbWorker(u)){const dd=dist(u,D),fighting=u.state==='fbfight';
+    if(dd<fearR()||fighting&&dd<fearR()+FBW.hold){
+      if(!fighting){dropCarry(u);if(u.tree&&u.job==='woodcutter'){u.tree.claimed=null;u.tree=null;}u.state='fbfight';u.fbArm=fbArm(u);u.atk=R(.2,.8);u.fbN=(u.fbN||0)+1;
+        if(rnd()<.5){const L=FBW.say[u.fbArm];float(u.x,u.y-24,L[RI(0,L.length-1)],'#fdd');}}
+      fbFight(u,dt);return;}
+    if(fighting){fbBackToWork(u);if(rnd()<.3)float(u.x,u.y-24,'Back to work!','#cfe');}}
+  return _v.apply(this,arguments);};}
+// draw the worker's tool (no red armband: they're not the militia)
+{const _p=drawPerson;drawPerson=function(u){const r=_p.apply(this,arguments);if(u.fbArm&&!u.arm&&!u.dead&&u.state==='fbfight')kmDrawTool({arm:u.fbArm,poke:u.poke||0,throwA:0,hp:u.hp,maxHp:u.maxHp,noBand:true},u.x,u.y,u.face||1,Math.sin(u.anim||0)*1.2);return r;};}
 // ================= partPR: PRINCE BOSS ARMIES - every 5th castle level a named prince sails in with a royal war fleet =================
 // Warning (herald + horn + war drums, ~10 s) -> warships sail in from the southern sea edge -> they beach at the landing spot (⚓ on the map)
 // -> the army disembarks and the prince (on his white warhorse) and his whole army hunt the dragon down together, wherever it is -> boss fight.
