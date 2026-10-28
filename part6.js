@@ -97,9 +97,8 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   else{panel(10,186+hy,250,26);rect(16,192+hy,238*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,204+hy,11);}
   // right panel: score + stockpiles
   // goal panel
-  panel(10,118+hy,250,64);txt(`CASTLE LV ${G.lvl}`,20,136+hy,12,'#ffd84a');txt(`Lair hoard worth +${G.stash*5} pts`,20,153+hy,11,'#ffe8a0','left',false);
-  txt(D.princess?'Princess Elizabeth: in your claws! Fly to the LAIR':PR.state==='lair'?'Princess Elizabeth: in your lair':(roofOpen()?'Princess Elizabeth: the keep roof is broken: grab her!':'Princess Elizabeth: inside the keep (break its stone roof)'),20,171+hy,11,D.princess?'#ff9ad0':'#f8c8e0','left',false);
-  const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,196+hy,11,'#ffc080','left');
+  panel(10,118+hy,250,28);txt(`CASTLE LV ${G.lvl}`,20,136+hy,12,'#ffd84a'); // princess status + lair-hoard lines removed from the HUD (castle level stays)
+  const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,162+hy,11,'#ffc080','left');
   drawStockPill(); // score, hunter counts, ruins/rebuilding live in the pause menu / nowhere now: HUD shows only the stockpile icons
   // minimap
   const mmw=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000));drawMap(VW-mmw-10,TOUCH.on?132:VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);

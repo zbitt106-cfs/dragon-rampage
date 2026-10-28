@@ -38,7 +38,7 @@ function roofRubble(cx,cy,w){for(let i=0;i<14;i++){const a=hsh01({id:i*7+3}),b=h
 function drawInsidePrincess(x,y){drawPrincess(x,y,true);if(Math.sin(G.t*1.3)>.3)txt('Help! A dragon!',x,y-34,11,'#fff','center');}
 function roofBar(x,y){const r=kroof();if(!r||PR.state!=='tower')return;
   if(r.state==='ok'&&(r.hp<r.maxHp||dist(D,KEEP_POS)<1100)){const w=110,f=r.hp/r.maxHp;rect(x-w/2-2,y-2,w+4,11,'rgba(0,0,0,.6)');rect(x-w/2,y,w*f,7,f>.5?'#b8b8c4':f>.25?'#e0a050':'#e05040');
-    txt('Stone roof',x,y-4,10,'#eee','center');if(dist(D,KEEP_POS)<1300&&Math.sin(G.t*1.6)>-.4)txt(KROOF.hint,x,y-18,12,'#ffb0dc','center');}
+    txt('Stone roof',x,y-4,10,'#eee','center');}
   else if(r.state==='building'){const w=110;rect(x-w/2-2,y-2,w+4,11,'rgba(0,0,0,.6)');rect(x-w/2,y,w*(r.build||0),7,'#7ab8ff');}}
 // low graphics keep roof
 function drawKeepRoofLo(kx,ky){const r=kroof(),open=roofOpen(),stg=roofStage();

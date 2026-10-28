@@ -124,10 +124,18 @@ function nwRespawn(){for(const k of NWK){const n=units.filter(u=>!u.dead&&u.nw&&
   const jf=units.filter(u=>!u.dead&&u.jfish).length;if(jf<NW_JFISH)nwJFish(true);}
 {const _up=updParts;updParts=function(dt){_up(dt);if(scene==='play'&&G&&!G.over)nwTick(dt);};}
 {const _ng=newGame;newGame=function(o){const r=_ng.apply(this,arguments);NW.grp=0;nwInit();return r;};}
-// ---------- the small wild dragons of Dragon Peaks: +10 permanent max health each ----------
-MH.wdragon=10;
+// ---------- the small wild dragons of Dragon Peaks: +5 permanent max STAMINA each (the flying/take-off meter, not fire) ----------
+// Lasts on the same life across castle levels; resets on death / new game (same rule as the nest-egg fire bonus); D.stBonus + D.maxSt are in saves.
+const WD_ST=5,ST_BASE=100;let ST_CARRY=null;
+function stUp(what,x,y){D.stBonus=(D.stBonus||0)+WD_ST;D.maxSt=ST_BASE+D.stBonus;D.st=D.maxSt;G.stats.wdStUps=(G.stats.wdStUps||0)+1;
+  float(D.x,D.y-heightOf()-130,`+${WD_ST} Stamina!`,'#ffe066');sparkle(D.x,D.y-heightOf(),18);
+  const b=G.banner;if(b&&b.t>1.2&&typeof showToast==='function')showToast(`⚡ +${WD_ST} Stamina! (max ${D.maxSt})`);else G.banner={text:`+${WD_ST} Stamina!`,sub:`${what} gives you staying power: max stamina ${D.maxSt}, kept until you die`,t:4};
+  if(typeof SFX!=='undefined'&&SFX.play)SFX.play('coin',D.x,D.y,1);}
 {const _eu=eatUnit;eatUnit=function(u){const w=u&&u.species==='wdragon'&&!u.dead;const r=_eu.apply(this,arguments);
-  if(w&&u.dead){G.stats.wdMaxUps=(G.stats.wdMaxUps||0)+1;maxHpUp('The wild dragon',u.x,u.y,MH.wdragon);}return r;};}
+  if(w&&u.dead)stUp('The wild dragon',u.x,u.y);return r;};}
+{const _nl=nextLevel;nextLevel=function(){ST_CARRY={b:D.stBonus||0};try{return _nl.apply(this,arguments);}finally{ST_CARRY=null;}};}
+{const _ng=newGame;newGame=function(){const c=ST_CARRY;const r=_ng.apply(this,arguments);if(D){D.stBonus=c?c.b:0;D.maxSt=ST_BASE+D.stBonus;D.st=D.maxSt;}return r;};}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);D.stBonus=Math.max(0,D.stBonus|0);D.maxSt=ST_BASE+D.stBonus;D.st=Math.min(D.st==null?D.maxSt:D.st,D.maxSt);return r;};}
 // ---------- drawing ----------
 function drawGorilla(u){const x=u.x,y=u.y,f=u.face||1,sb=u.male,a=u.anim||0,beat=(u.beat>0||u.roarFx>0),B='#2e2a2c',S=sb?'#b8b8c4':'#3c3638',sk='#5a4a48';
   ell(x,y+1,16,4,'rgba(0,0,0,.22)');

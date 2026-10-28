@@ -5,7 +5,7 @@ A single-file browser game where you play a dragon. Open `index.html`; it needs 
 ## Building from source
 The source is split into parts, which are concatenated in this order:
 ```
-cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partRN.js partFM.js partMH.js partGH.js partKM.js partPR.js partHN.js partSJ.js partKW.js partWD.js partMR.js partBL.js partOC.js partTF.js partPB.js partHU.js partNW.js partAL.js partWF.js partCR.js partRT.js partMU.js partLA.js partUI.js partGA.js partKB.js partJT.js partEC.js partRK.js partRC.js partGP.js partBT.js part6.js > index.html
+cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partRN.js partFM.js partMH.js partGH.js partKM.js partPR.js partHN.js partSJ.js partKW.js partWD.js partMR.js partBL.js partOC.js partTF.js partPB.js partHU.js partNW.js partAL.js partWF.js partCR.js partRT.js partMU.js partLA.js partUI.js partGA.js partKB.js partJT.js partEC.js partRK.js partRC.js partGP.js partBT.js partKA.js part6.js > index.html
 ```
 (`bash build.sh` does the same.)
 
@@ -49,7 +49,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partTF.js: territorial pack leaders: the male lion (savanna prides) and the white alpha wolf (Deepwood packs)
 - partPB.js: plant fire in every biome (acacias, savanna grass, jungle trees and ferns, cacti, desert scrub, palms, mountain pines, Dragon Peaks heather)
 - partHU.js: three hunters per hunters' cabin
-- partNW.js: gorilla troops (a 92 HP silverback alpha with a silver back that chest-beats *THUMP THUMP* to call the troop, who drop what they're doing to defend it; 6-point blow with a small shove), giant river otters, dolphins, orcas, flying fish and marine iguanas; small wild dragons give +10 max health
+- partNW.js: gorilla troops (a 92 HP silverback alpha with a silver back that chest-beats *THUMP THUMP* to call the troop, who drop what they're doing to defend it; 6-point blow with a small shove), giant river otters, dolphins, orcas, flying fish and marine iguanas; small wild dragons give +5 permanent max stamina
 - partAL.js: alpha / turf leaders (male lion, white alpha wolf, silverback) shrug off the first bite; worn to ~80% HP (1-2 hits of bite, claw, stomp, fire or lava) they get dizzy stars and become edible. Their turf call **rallies** the alpha and every responder: +12% damage and +8% speed (responders also take 10% less damage; the alpha's wear-down is unchanged), shown by a soft orange glow and sparkles, fading 10 s after the dragon leaves or the alpha is eaten
 - partWF.js: Dragon Peaks wild dragons are immune to your fire (lava, bites, claws and stomps still hurt); their weak fire is only for hunting goats, birds and mountain lions (never hurts you; small scorches only; mountain lions swipe back); a guarded 3-egg nest: eat an egg for +5 permanent max fire (kept across levels on the same life, reset on death/new game, saved), or smash it (stomp, claw, lava, full-belly bite) for no bonus; the guards attack when you come near. Eggs reset every castle level
 - partCR.js: cruise speed: steady flight with no combat input ramps from 1x to 1.8x over ~5 s (keyboard, touch, gamepad); combat, landing, diving, a sharp turn or stopping resets it; normal stamina drain; wind streaks
@@ -63,6 +63,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partRC.js: the rich desert caravan (slower, 10 + 6 escort in formation), Sandhaven's desert soldiers and archers, and the town garrison
 - partGP.js: caravan guards and road patrols chase predators off travellers (non-lethal), plus the worksite patrols at the lumber camp and the mine
 - partBT.js: every bite hurts: targets too tough to swallow yet still take bite damage, with a jaw-snap impact cue and a red -N
+- partKA.js: King William's golden armour: he suits up in the keep, fights as a mini-boss, retreats to the keep with Princess Elizabeth at low health, heals and returns
 - partGA.js: instant gold deposits: every coin you pick up flies straight into the lair hoard, with a coin '+N' pop by the HUD dragon icon
 - partUI.js: the compact wood/stone stockpile icons plus the gold icons (castle + coin = the kingdom's gold, dragon + coin = your lair hoard) on the HUD and in the pause menu; the score shows only in the pause menu
 - part6.js: main loop, HUD, minimap and world map, title screen
@@ -157,6 +158,7 @@ The engineers wait about 20 s for the dust to settle, then spend 6 wood and 6 st
 
 ## The gold hoard
 The HUD shows gold as icons next to the wood and stone: a **castle + coin** with the amount is the gold still in Castle Aldric, and a **dragon + coin** with the amount is your lair hoard. On narrow screens (iPhone landscape) they sit on a second compact row. The pause menu shows the same icons.
+The HUD's castle panel shows only the **castle level**. There is no Princess Elizabeth status line, no lair-hoard points line and no blinking *break the stone roof* label over the keep. The wanted/alarm bar stays, and your score is in the pause menu.
 
 
 **No carrying:** every bit of gold you collect (castle gold piles, coins from buildings, tax sacks, caravans, pirate loot, seashells and so on) goes **straight into the lair hoard** the moment you grab it. A little coin and **+N** pops up next to the dragon icon on the HUD. Raids, raid cooldowns, the ransom and save/load all work from that hoard total.
@@ -243,7 +245,7 @@ The map is 36% wider (27,200 px instead of 20,000). Past the desert crossing, th
 - Hunger: 1.1× in the savanna, normal in the jungle. Flying nonstop from the castle you arrive in the savanna hungry, so snack on a lizard or camel in the desert on the way (the test does this and arrives with plenty left).
 
 ## The Dragon Peaks (far north-west)
-A craggy roost of smaller **wild dragons** with their nests, mountain goats and eagles, plus purple heather (which burns). Wild dragons are never killed outright: worn down to 1 HP they are dazed (cartoon stars) and can be gulped. Hurting one makes it (and, in Normal mode, its roost-mates) defend. A dragonet hatches from a nest about every 100 s while the roost is small.
+A craggy roost of smaller **wild dragons** with their nests, mountain goats and eagles, plus purple heather (which burns). Wild dragons are never killed outright: worn down to 1 HP they are dazed (cartoon stars) and can be gulped. Hurting one makes it (and, in Normal mode, its roost-mates) defend. A dragonet hatches from a nest about every 100 s while the roost is small. **Eating a wild dragon gives +5 permanent max stamina** (the yellow Stamina bar used for flying, not the fire meter; a *"+5 Stamina!"* popup shows it). It stacks, stays on the same life across castle levels, resets on death or a new game (like the nest-egg fire bonus), and is kept in saves. It no longer gives max health. The giant octopus still gives +20 max health.
 
 ## Meerkats, roadrunners, jackals and bulls
 - **Meerkats** (savanna and desert) live in colonies at burrow mounds. A lookout squeaks when the dragon or a predator comes near and everyone dives into the burrows, where they can't be bitten, burned or caught.
@@ -276,6 +278,20 @@ When something is wrecked and the stockpile can't cover the rebuild, **King Will
 ## King William
 Castle Aldric belongs to **King William**. He stands in the castle courtyard with a gold name tag, and when the dragon comes close he shouts orders, starting with *King William: "Guards! Protect Princess Elizabeth!"*. While you carry the princess away, he calls for her rescue. He can't be eaten or hurt. His name is used in the raid and prince announcements (*"… vows before King William to claim the dragon's hoard!"*), the ransom banner, the prince's march, the tax collectors (*"King William's taxes! Begone!"*), the militia (*"By order of King William!"*) and the castle label.
 
+
+## King William's golden armour
+When the dragon threatens Castle Aldric (comes low within about 520 px of the king, or attacks anything within about 700 px of the castle), King William shouts *"To the armoury!"*, runs into the keep and **suits up for about 3.5 s** (banner: **"King William dons his golden armor!"**, a glow and a *Suiting up!* bar at the keep door). He comes out as a **gold-armoured mini-boss** with a crown helm, sword and shield, an HP bar and the label **👑 King William**, and fights beside the guards, staying within 360 px of his courtyard post.
+
+- **Health:** 600 at castle level 1, +100 per level (max 1600). Easy mode ×0.75.
+- **Sword:** 10 damage +1.5 per level (max 22) every 1.1 s. Easy mode ×0.7.
+- **Shield bash:** 8 + castle level damage every 6 s, which shoves the dragon back 40 px (never through walls). Easy mode ×0.7.
+- **Armour:** fire does ×0.55 damage to him, and every other hit ×0.8. A bite does 40 (before armour) and goes *CLANG!*: he can't be eaten.
+- **Retreat:** at **30% health**, the banner **"King William retreats to safety!"** appears. He runs into the keep, where Princess Elizabeth is held under the stone roof. Inside he can't be targeted, and a heal bar shows *King William is resting in the keep*.
+- **Healing:** 3% of his max health per second while inside.
+- **Returning:** he comes back out if the attack is still going **35 s** after he went in and he's at least 90% healed.
+- **Calm:** after 30 s with no threat, he takes the armour off and returns to his post.
+- **He can never be eaten or killed.** His health can't drop below 12%, and nothing can flag him as dead.
+- The armour resets every level. A save made while he's resting in the keep loads with him still resting there.
 ## Every bite hurts
 Your bite **always deals damage**. If the target can be eaten, it is swallowed as before. If it can't be swallowed yet (a bear, elephant or bull at high health, a pack leader or silverback, a wild dragon, a whale, a raid champion, a prince, the sandworm and so on), it still takes bite damage: a jaw-snap ring flashes on it and a red **-N** shows the damage. The bite never takes a tough target below 1 HP, so you wear it down and then swallow it. King William and Princess Elizabeth can't be bitten.
 
