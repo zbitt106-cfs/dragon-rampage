@@ -72,8 +72,8 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - part6.js: main loop, HUD, minimap and world map, title screen
 
 ## Install as an app (PWA)
-On iPhone, open the game in Safari, tap Share, then **Add to Home Screen**. It launches fullscreen in landscape with the dragon icon.
-- `manifest.json`: name, fullscreen display, landscape orientation, theme colours and icons
+On iPhone, open the game in Safari, tap Share, then **Add to Home Screen**. It launches fullscreen with the dragon icon and turns with the phone (portrait or landscape).
+- `manifest.json`: name, fullscreen display, any orientation, theme colours and icons
 - `icons/`: apple-touch-icon (180), 192 and 512 icons, a maskable 512, and iOS splash images (`make_icons.py` regenerates them)
 
 ## Controls
@@ -93,7 +93,7 @@ The title screen also has **Music volume** and **Sound effects** rows (←/→ i
 **DIVE STOMP:** press stomp while flying to fold your wings and plummet. The shockwave smashes wooden buildings flat and cracks stone (2.4 s cooldown, costs 6 stamina). A normal stomp also damages wood.
 
 ### Touch (phones and tablets)
-- Landscape is best. The title menu works in both orientations: tap **Start game**, or tap anywhere in the big "Tap down here to start" strip. If you start in portrait, the game pauses and shows a "Rotate your phone" hint. The hint clears by itself when you turn the phone sideways. If rotation is locked, tap the hint to play on in portrait.
+- Phones play in **both portrait and landscape**: just turn the phone, even mid-game, and the view, HUD and touch controls re-lay themselves out (no "rotate your phone" block). The title menu works either way: tap **Start game**, or anywhere in the "Tap down here to start" strip in portrait. After a rotation the game cross-checks the device orientation, because some big iPhones (Pro Max, iOS 26) briefly report the old screen size.
 - The screen re-sizes after every rotation and toolbar change (iPhone Safari reports its new size late, so it re-measures a few times). The game loop keeps running even if one frame hits an error.
 - **Left thumb:** touch anywhere on the left half and drag. The joystick appears under your thumb.
 - **Right thumb:** **FIRE** (hold), **BITE**, **STOMP** (it reads DIVE while flying and does the crash dive stomp) and **FLY** (it reads LAND in the air). **MAP** and **II** (pause) sit on the left edge.

@@ -1,7 +1,7 @@
 // ======================= MOBILE / TOUCH =======================
 // Virtual joystick (left thumb, floats to wherever you touch) + FIRE / BITE / STOMP / FLY buttons
 // (right thumb) + MAP / PAUSE. STOMP while flying = crash DIVE STOMP (same as Q in the air).
-// Also: safe-area aware HUD, rotate-to-landscape hint, iOS audio unlock, auto Low graphics.
+// Also: safe-area aware HUD, portrait + landscape, iOS audio unlock, auto Low graphics.
 const TOUCH={on:IS_TOUCH,mx:0,my:0,joy:null,held:{},btns:[],rot:false,rotPaused:false,taps:0,portrait:false,rotOK:false,lastTouch:0,
   JR:62};
 (function(){ // first visit on a phone/tablet: default to Low graphics (fast); the title menu can still switch it
@@ -63,9 +63,10 @@ document.addEventListener('touchmove',e=>{if(e.cancelable)e.preventDefault();},{
 document.addEventListener('gesturestart',e=>e.preventDefault());document.addEventListener('contextmenu',e=>{if(IS_TOUCH)e.preventDefault();});
 addEventListener('blur',()=>{TOUCH.joy=null;TOUCH.mx=TOUCH.my=0;for(const k in TOUCH.held){const b=TOUCH.held[k];if(b.hold)keys[b.key]=false;}TOUCH.held={};});
 
-// called every frame from frame(): portrait = pause + rotate hint
-function touchTick(){if(!TOUCH.on)return;TOUCH.portrait=IS_TOUCH&&VH>VW*1.05;if(!TOUCH.portrait)TOUCH.rotOK=false;
-  TOUCH.rot=TOUCH.portrait&&scene==='play'&&!TOUCH.rotOK;
+// called every frame from frame(). Portrait and landscape are both fully playable: no rotate block any more
+// (TOUCH.rot stays false; the old hint code is kept only as dead fallback).
+function touchTick(){if(!TOUCH.on)return;TOUCH.portrait=IS_TOUCH&&VH>VW*1.05;
+  TOUCH.rot=false;
   if(TOUCH.rot&&scene==='play'&&!paused&&!G.over&&!G.won){paused=true;TOUCH.rotPaused=true;}
   if(!TOUCH.rot&&TOUCH.rotPaused){paused=false;TOUCH.rotPaused=false;}
   if(TOUCH.rot&&TOUCH.joy){TOUCH.joy=null;joyUpd();}}
@@ -80,7 +81,7 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
     txt('Rotate your phone',cx,cy+150,40,'#ffd24a','center');txt('Dragon\'s Rampage plays best in landscape',cx,cy+195,24,'#f3dcb8','center',false);
     txt('Rotation locked? Tap anywhere to play in portrait',cx,cy+240,20,'rgba(243,220,184,.75)','center',false);return;}
   if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+6*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
-    txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');const y2=VH-SAFE.b-40;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y2-28,VW,44);txt('\u21bb Best in landscape: turn your phone',VW/2,y2,19,'#f3dcb8','center',false);}
+    txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');}
   if(scene!=='play')return;
   const b=touchLayout();ctx.textAlign='center';
   if(!(G.over||G.won)){

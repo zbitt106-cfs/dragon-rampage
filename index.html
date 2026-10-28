@@ -34,9 +34,22 @@ const IS_TOUCH=(()=>{try{return matchMedia('(pointer:coarse)').matches;}catch(e)
 const SAFE={l:0,r:0,t:0,b:0};
 // iPhone Safari reports the new size late after a rotation, so we re-measure a few times, and we also
 // listen to visualViewport (toolbar show/hide) - a stale size used to leave the game drawn for the wrong orientation.
-function viewSize(){let w=innerWidth||0,h=innerHeight||0;const de=document.documentElement;
-  if(de&&de.clientWidth&&de.clientHeight&&IS_TOUCH){w=de.clientWidth;h=de.clientHeight;}
-  if(!(w>0&&h>0)){w=(screen&&screen.width)||960;h=(screen&&screen.height)||640;}return [w,h];}
+// Phones play in BOTH orientations. After a rotation some iPhones (seen on big Pro Max screens / iOS 26) keep
+// reporting the old width/height for a while, so we cross-check with the device orientation and pick the
+// measurement that matches it (or swap), and poll a few times a second in case a resize event is missed.
+function viewOrient(){let a=null,b=null;
+  try{if(typeof window.orientation==='number')a=Math.abs(window.orientation)===90?'L':'P';}catch(e){}
+  try{const t=screen.orientation&&screen.orientation.type;if(t)b=t.indexOf('landscape')===0?'L':'P';}catch(e){}
+  const x=a&&b?(a===b?a:null):(a||b);let m=null;try{m=matchMedia('(orientation: landscape)').matches?'L':'P';}catch(e){}
+  return x&&m&&x===m?x:null;} // only when the device AND the CSS viewport agree (never fights split-screen or emulators)
+function viewSize(){const de=document.documentElement,vv=window.visualViewport,c=[];
+  if(IS_TOUCH&&de&&de.clientWidth>0&&de.clientHeight>0)c.push([de.clientWidth,de.clientHeight]);
+  if(innerWidth>0&&innerHeight>0)c.push([innerWidth,innerHeight]);
+  if(IS_TOUCH&&vv&&vv.width>0&&vv.height>0&&Math.abs((vv.scale||1)-1)<.02)c.push([vv.width,vv.height]);
+  if(!c.length)c.push([(screen&&screen.width)||960,(screen&&screen.height)||640]);
+  let [w,h]=c[0];const o=IS_TOUCH&&Math.abs(w-h)>40?viewOrient():null;
+  if(o){const L=o==='L',m=c.find(([x,y])=>(x>y)===L);if(m)[w,h]=m;else if((w>h)!==L)[w,h]=[h,w];}
+  return [Math.round(w),Math.round(h)];}
 let _rsW=0,_rsH=0;
 function resize(){const [w,h]=viewSize();_rsW=w;_rsH=h;
   UIS=IS_TOUCH?Math.min(1,Math.max(.5,Math.min(w,h)/520)):1;
@@ -49,6 +62,7 @@ addEventListener('resize',resize);addEventListener('orientationchange',resizeSoo
 try{if(window.visualViewport)visualViewport.addEventListener('resize',resize);}catch(e){}
 try{const mq=matchMedia('(orientation: landscape)');const f=()=>resizeSoon();mq.addEventListener?mq.addEventListener('change',f):mq.addListener&&mq.addListener(f);}catch(e){}
 try{if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',resizeSoon);}catch(e){}
+if(IS_TOUCH)setInterval(()=>{const [w,h]=viewSize();if(w!==_rsW||h!==_rsH)resize();},400);
 resize();
 const WW=3200,WH=2200;
 const TAU=Math.PI*2;
@@ -3163,7 +3177,7 @@ const _updPartsPE=updParts;updParts=function(dt){_updPartsPE(dt);if(scene!=='pla
 // ======================= MOBILE / TOUCH =======================
 // Virtual joystick (left thumb, floats to wherever you touch) + FIRE / BITE / STOMP / FLY buttons
 // (right thumb) + MAP / PAUSE. STOMP while flying = crash DIVE STOMP (same as Q in the air).
-// Also: safe-area aware HUD, rotate-to-landscape hint, iOS audio unlock, auto Low graphics.
+// Also: safe-area aware HUD, portrait + landscape, iOS audio unlock, auto Low graphics.
 const TOUCH={on:IS_TOUCH,mx:0,my:0,joy:null,held:{},btns:[],rot:false,rotPaused:false,taps:0,portrait:false,rotOK:false,lastTouch:0,
   JR:62};
 (function(){ // first visit on a phone/tablet: default to Low graphics (fast); the title menu can still switch it
@@ -3225,9 +3239,10 @@ document.addEventListener('touchmove',e=>{if(e.cancelable)e.preventDefault();},{
 document.addEventListener('gesturestart',e=>e.preventDefault());document.addEventListener('contextmenu',e=>{if(IS_TOUCH)e.preventDefault();});
 addEventListener('blur',()=>{TOUCH.joy=null;TOUCH.mx=TOUCH.my=0;for(const k in TOUCH.held){const b=TOUCH.held[k];if(b.hold)keys[b.key]=false;}TOUCH.held={};});
 
-// called every frame from frame(): portrait = pause + rotate hint
-function touchTick(){if(!TOUCH.on)return;TOUCH.portrait=IS_TOUCH&&VH>VW*1.05;if(!TOUCH.portrait)TOUCH.rotOK=false;
-  TOUCH.rot=TOUCH.portrait&&scene==='play'&&!TOUCH.rotOK;
+// called every frame from frame(). Portrait and landscape are both fully playable: no rotate block any more
+// (TOUCH.rot stays false; the old hint code is kept only as dead fallback).
+function touchTick(){if(!TOUCH.on)return;TOUCH.portrait=IS_TOUCH&&VH>VW*1.05;
+  TOUCH.rot=false;
   if(TOUCH.rot&&scene==='play'&&!paused&&!G.over&&!G.won){paused=true;TOUCH.rotPaused=true;}
   if(!TOUCH.rot&&TOUCH.rotPaused){paused=false;TOUCH.rotPaused=false;}
   if(TOUCH.rot&&TOUCH.joy){TOUCH.joy=null;joyUpd();}}
@@ -3242,7 +3257,7 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
     txt('Rotate your phone',cx,cy+150,40,'#ffd24a','center');txt('Dragon\'s Rampage plays best in landscape',cx,cy+195,24,'#f3dcb8','center',false);
     txt('Rotation locked? Tap anywhere to play in portrait',cx,cy+240,20,'rgba(243,220,184,.75)','center',false);return;}
   if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+6*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
-    txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');const y2=VH-SAFE.b-40;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y2-28,VW,44);txt('\u21bb Best in landscape: turn your phone',VW/2,y2,19,'#f3dcb8','center',false);}
+    txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');}
   if(scene!=='play')return;
   const b=touchLayout();ctx.textAlign='center';
   if(!(G.over||G.won)){
