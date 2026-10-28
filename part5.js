@@ -217,5 +217,5 @@ function drawDragon(){const h=heightOf(),x=D.x,y=D.y,a=D.ang,alt=D.alt;
   if(D.princess){const px=x+Math.cos(a)*30,py=y-h+Math.sin(a)*30+26;line(px,py-26,px,py-12,'#eee',2);drawPrincess(px,py,true,true);
     if(D.quip){ctx.font='bold 13px Georgia';const w=ctx.measureText(D.quip).width+14;rect(px-w/2,py-58,w,20,'rgba(255,255,255,.92)');poly([px-4,py-38,px+4,py-38,px,py-30],'rgba(255,255,255,.92)');ctx.fillStyle='#c0306a';ctx.textAlign='center';ctx.fillText(D.quip,px,py-43);}}
   if(D.gold>0){const gx=x-Math.cos(a)*10,gy=y-h+16;ell(gx,gy,9,8,'#c8a040');ell(gx,gy-8,4,2,'#a08030');ctx.fillStyle='#3a2a00';ctx.font='bold 9px Georgia';ctx.textAlign='center';ctx.fillText(D.gold,gx,gy+3);}
-  if(D.healFx>0){ctx.strokeStyle=`rgba(110,255,130,${D.healFx})`;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(x,y-h,90*(1.4-D.healFx),55*(1.4-D.healFx),0,0,TAU);ctx.stroke();}
-  if(D.stompT>0){ctx.strokeStyle=`rgba(255,230,160,${D.stompT*2})`;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(x,y,DR.stompR*(1.2-D.stompT),DR.stompR*.7*(1.2-D.stompT),0,0,TAU);ctx.stroke();}}
+  if(D.healFx>0){ctx.strokeStyle=`rgba(110,255,130,${D.healFx})`;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(x,y-h,90*Math.max(.05,1.4-D.healFx),55*Math.max(.05,1.4-D.healFx),0,0,TAU);ctx.stroke();}
+  if(D.stompT>0){ctx.strokeStyle=`rgba(255,230,160,${D.stompT*2})`;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(x,y,DR.stompR*Math.max(.05,1.2-D.stompT),DR.stompR*.7*Math.max(.05,1.2-D.stompT),0,0,TAU);ctx.stroke();}}

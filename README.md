@@ -356,7 +356,9 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 
 ## Patrols
 - Patrols roam the roads between villages, the castle and the camps, independent of the wanted meter. Each has a random mix of foot knights, archers and cavalry, plus a banner carrier.
-- Later levels bring bigger, tougher patrols. The number of patrols is capped.
+- Later levels bring bigger, tougher patrols.
+- **How many:** the castle keeps a target number of road patrols out: 3 at castle level 1, 4 at level 2, 5 from level 3 on (easy mode: 2 / 3 / 4), plus up to 2 more when the treasury is full. The first patrol rides out about 20 s into a level, more follow every 25 s (easy 40 s) until the target is reached, and a lost patrol is replaced within about 45 s (easy 70 s).
+- The only limit is the number of soldiers on the map (170). Animals and villagers don't count, so a busy map full of wildlife still gets its patrols. Wanted-level waves are separate and unchanged.
 - They attack if you come close, and attacking them raises the wanted meter.
 - **Keeping the roads safe:** a patrol that meets a predator on the road, or sees one bothering a traveller nearby, shouts "Keep the road safe!" and chases it off (the animal fights back, then runs off), then carries on along its route. The dragon always comes first.
 - **Worksite patrols:** a small squad (3 foot soldiers + 1 archer, with a banner) loops around the **lumber camp** and another around the **mine**. They defend against you and against predators, are fresh every level, and a lost squad is replaced about 60 s later. They don't count toward the road patrol cap.

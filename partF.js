@@ -125,8 +125,16 @@ function spawnPatrol(){const lvl=G.lvl,mix=[...PATROL_MIX[RI(0,PATROL_MIX.length
   let bi=p.members.findIndex(u=>u.type==='knight'&&!u.mounted);if(bi<0)bi=p.members.findIndex(u=>u.type==='knight');const bc=p.members[bi>=0?bi:0];bc.banner=true;p.members.splice(p.members.indexOf(bc),1);p.members.unshift(bc);
   units.push(...p.members);patrols.push(p);G.gateOpenT=Math.max(G.gateOpenT,2);return p;}
 function engagePatrol(p){if(p.engaged)return;p.engaged=true;p.engT=G.t;const L=p.members.find(u=>!u.dead);if(L)float(L.x,L.y-50,'Patrol: "There\'s the dragon!"','#ffe0a0');}
-function updPatrols(dt){G.patrolT-=dt;const cap=(G.easy?2:3)+Math.min(2,G.lvl-1)+treasPatrols();
-  if(G.patrolT<=0){G.patrolT=G.easy?70:45;if(patrols.filter(p=>!p.site).length<cap&&units.length<420)spawnPatrol();}
+// Road patrols: the kingdom keeps a target number on the roads (castle level + a full treasury), replacing lost ones on a timer.
+// The limit counts soldiers only (wildlife no longer blocks patrols on a busy map).
+const PATROL_CFG={every:45,easyEvery:70,refill:25,easyRefill:40,maxSoldiers:170};
+function patrolTarget(){return(G.easy?2:3)+Math.min(2,(G.lvl||1)-1)+treasPatrols();}
+function roadPatrolCount(){let n=0;for(const p of patrols)if(!p.site&&!p.dead&&p.members.some(u=>!u.dead))n++;return n;}
+function soldierCount(){let n=0;for(const u of units)if(!u.dead&&!u.gone&&(u.type==='knight'||u.type==='archer'))n++;return n;}
+function updPatrols(dt){G.patrolT-=dt;
+  if(G.patrolT<=0){const tgt=patrolTarget(),have=roadPatrolCount(),sc=soldierCount();let made=false;
+    if(have<tgt&&sc<PATROL_CFG.maxSoldiers){spawnPatrol();made=true;G.patrolSpawns=(G.patrolSpawns||0)+1;}else if(have<tgt)G.patrolBlocked=(G.patrolBlocked||0)+1;
+    G.patrolT=made&&have+1<tgt?(G.easy?PATROL_CFG.easyRefill:PATROL_CFG.refill):(G.easy?PATROL_CFG.easyEvery:PATROL_CFG.every);}
   const P=patrolPoints();
   for(const p of patrols){p.members=p.members.filter(u=>!u.dead);if(!p.members.length){p.dead=true;continue;}const L=p.members[0],dl=dist(L,D);
     if(!p.engaged){if(dl<340&&!G.over&&!G.won)engagePatrol(p);}
