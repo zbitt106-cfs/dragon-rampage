@@ -25,10 +25,10 @@ function updKeepRoof(dt){const r=kroof();if(!r)return;const st=roofStage();
       if(PR.state==='tower'){G.banner={text:'The keep roof crumbles!',sub:'Princess Elizabeth is revealed inside. Grab her (E / X / BITE)!',t:3.5};float(PR.x,PR.y-90,'Eek! My ceiling!','#ff9ad0');}}
     r.stg=st;}
   // rebuild: only while the princess is still inside
-  if(r.state==='ruin'&&PR.state==='tower'&&G.t-(r.ruinT||0)>KROOF.wait&&dist(r,D)>500){r.state='building';r.build=0;r.selfB=true;if(dist(r,D)<1600)float(KEEP_POS.x,KEEP_POS.y-110,'The castle masons start rebuilding the keep roof…','#b8e0ff');}
+  if(r.state==='ruin'&&PR.state==='tower'&&G.t-(r.ruinT||0)>KROOF.wait&&dist(r,D)>500){r.state='building';r.build=0;r.selfB=true;}
   if(r.state==='building'&&r.selfB){if(PR.state!=='tower'){r.state='ruin';r.selfB=false;r.build=0;return;}if(dist(r,D)<260)return;
     r.build+=dt/KROOF.build*(typeof treasRepair==='function'?treasRepair():1);if(Math.random()<dt*2)puff(KEEP_POS.x+R(-40,40),KEEP_POS.y-60,1,'rgba(200,200,200,',30,5);
-    if(r.build>=1){r.state='ok';r.hp=r.maxHp;r.build=0;r.selfB=false;r.stg=0;r.hasGold=true;if(dist(r,D)<1600)float(KEEP_POS.x,KEEP_POS.y-110,'The masons rebuilt the keep\'s stone roof!','#b8e0ff');}}}
+    if(r.build>=1){r.state='ok';r.hp=r.maxHp;r.build=0;r.selfB=false;r.stg=0;r.hasGold=true;}}}
 // --- drawing ---
 const RCR=[[-.8,.2,-.3,.9],[.1,.1,.6,.8],[-.4,.5,.2,.95],[.5,.3,.9,.6],[-.9,.6,-.6,.3],[0,.3,-.2,.7]];
 function roofCracks(pt,stg){if(stg<1)return;ctx.strokeStyle='rgba(25,22,20,.85)';ctx.lineWidth=stg>2?2.2:1.6;const n=stg===1?2:stg===2?4:6;
@@ -39,7 +39,7 @@ function drawInsidePrincess(x,y){drawPrincess(x,y,true);if(Math.sin(G.t*1.3)>.3)
 function roofBar(x,y){const r=kroof();if(!r||PR.state!=='tower')return;
   if(r.state==='ok'&&(r.hp<r.maxHp||dist(D,KEEP_POS)<1100)){const w=110,f=r.hp/r.maxHp;rect(x-w/2-2,y-2,w+4,11,'rgba(0,0,0,.6)');rect(x-w/2,y,w*f,7,f>.5?'#b8b8c4':f>.25?'#e0a050':'#e05040');
     txt('Stone roof',x,y-4,10,'#eee','center');if(dist(D,KEEP_POS)<1300&&Math.sin(G.t*1.6)>-.4)txt(KROOF.hint,x,y-18,12,'#ffb0dc','center');}
-  else if(r.state==='building'){const w=110;rect(x-w/2-2,y-2,w+4,11,'rgba(0,0,0,.6)');rect(x-w/2,y,w*(r.build||0),7,'#7ab8ff');txt('Masons rebuilding the roof',x,y-4,10,'#b8e0ff','center');}}
+  else if(r.state==='building'){const w=110;rect(x-w/2-2,y-2,w+4,11,'rgba(0,0,0,.6)');rect(x-w/2,y,w*(r.build||0),7,'#7ab8ff');}}
 // low graphics keep roof
 function drawKeepRoofLo(kx,ky){const r=kroof(),open=roofOpen(),stg=roofStage();
   if(!open){poly([kx-80,ky-68,kx,ky-112,kx+80,ky-68],'#7e8290');line(kx-80,ky-68,kx+80,ky-68,'#5a5e68',3);

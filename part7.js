@@ -63,7 +63,7 @@ function updGoal(dt){
     for(let i=0;i<nT;i++)if(!units.some(u=>!u.dead&&u.post==='tower'&&u.slot===i))spawnPost('tower',i);
     for(let i=0;i<nG;i++)if(!units.some(u=>!u.dead&&u.post==='guard'&&u.slot===i))spawnPost('guard',i);}}
   // hunter respawns from his cabin
-  if(!units.some(u=>!u.dead&&(u.type==='hunter'||(u.wk&&u.wk.id==='cabin'&&!u.wk.back)))){const cab=structures.find(s=>s.kind==='cabin');if(cab&&cab.state==='ok'){G.hunterT-=dt;if(G.hunterT<=0){G.hunterT=20;spawnHunter();float(CABIN.x,CABIN.y-60,'The hunter is back!','#cde');}}}
+  if(!units.some(u=>!u.dead&&(u.type==='hunter'||(u.wk&&u.wk.id==='cabin'&&!u.wk.back)))){const cab=structures.find(s=>s.kind==='cabin');if(cab&&cab.state==='ok'){G.hunterT-=dt;if(G.hunterT<=0){G.hunterT=20;spawnHunter();}}}
   else G.hunterT=20;
   // wild & farmyard animals wander back in
   // (wild animals respawn per region in updFauna)

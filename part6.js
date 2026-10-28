@@ -92,7 +92,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   {const c=concern();panel(VW/2-130,my+74,260,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}   ·   Treasury ${treasury()}g`,VW/2,my+86,10,c.col,'center',false);}
   if(gateBroken()){const s=gateStruct(),[cw,cs]=COST.gate,st=s.state==='building'?`rebuilding ${Math.round(s.build*100)}%`:s.paid||s.builder?'engineers on the way':G.t-(s.ruinT||0)<GATE_REBUILD_WAIT?'rubble settling':(G.wood<cw||G.stone<cs)?`needs ${cw} wood + ${cs} stone`:'awaiting engineers';
     const pl=.75+.25*Math.sin(G.t*4);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(VW/2-190,my+94,380,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(VW/2-189.5,my+94.5,379,19);
-    txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller  ·  ${st}`,VW/2,my+108,11,'#ffd8b0','center');}
+    txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller`,VW/2,my+108,11,'#ffd8b0','center');}
   if(G.level>0&&Math.floor(G.t*2)%2)txt('⚠',mx+mw*f,my+41,13,'#fff','center');}
   else{panel(10,186+hy,250,26);rect(16,192+hy,238*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,204+hy,11);}
   // right panel: score + stockpiles
@@ -100,14 +100,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   panel(10,118+hy,250,64);txt(`CASTLE LV ${G.lvl}  ·  Gold carried ${D.gold}`,20,136+hy,12,'#ffd84a');txt(`Stashed in lair: ${G.stash}  (+${G.stash*5} pts)`,20,153+hy,11,'#ffe8a0','left',false);
   txt(D.princess?'Princess Elizabeth: in your claws! Fly to the LAIR':PR.state==='lair'?'Princess Elizabeth: in your lair':(roofOpen()?'Princess Elizabeth: the keep roof is broken: grab her!':'Princess Elizabeth: inside the keep (break its stone roof)'),20,171+hy,11,D.princess?'#ff9ad0':'#f8c8e0','left',false);
   const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,196+hy,11,'#ffc080','left');
-  const rx=VW-210;panel(rx,10,200,112);txt(`Score ${G.over?G.score:calcScore()}`,rx+10,30,15,'#ffe08a');
-  const foes=units.filter(u=>!u.dead&&!u.post&&(u.type==='knight'||u.type==='archer'||u.type==='hunter')).length+siege.filter(g=>!g.dead).length;
-  txt(`Wave ${G.waveNum}  ·  Hunters ${foes}`,rx+10,48,12,'#fbb',false,false);
-  txt(`Kingdom stockpiles (rebuilding)`,rx+10,66,10,'#ccc','left',false);
-  txt(`Storehouse: wood ${G.wood} stone ${G.stone}   Supply carts ${carts.filter(c=>c.supply&&!c.wrecked).length}`,rx+10,82,12,'#e8d0a0','left');
-  const ruins=structures.filter(s=>s.state==='ruin').length,bld=structures.filter(s=>s.state==='building').length;
-  txt(`Ruins ${ruins}  ·  Rebuilding ${bld}`,rx+10,98,11,'#bbb','left',false);
-  txt(`Eaten ${G.stats.eaten+G.stats.animals} · Huts ${G.stats.huts+G.stats.barns} · Foes ${G.stats.knights+G.stats.siege}`,rx+10,114,10,'#bbb','left',false);
+  drawStockPill(); // score, hunter counts, ruins/rebuilding live in the pause menu / nowhere now: HUD shows only the stockpile icons
   // minimap
   const mmw=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000));drawMap(VW-mmw-10,TOUCH.on?132:VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);

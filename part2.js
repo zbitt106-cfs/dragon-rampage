@@ -149,10 +149,10 @@ function hurtStruct(s,d){if(s.state==='ruin')return;if(stoneish(s)&&!HEAVY)retur
     scorch(s.x,s.y+4,s.kind==='barn'?55:40);puff(s.x,s.y,20,'rgba(70,60,50,',120,14);G.shake=Math.max(G.shake,5);
     if(s.kind==='hut'){G.stats.huts++;addAlarm(7);float(s.x,s.y-40,'Hut destroyed!','#ffb050');}
     else if(s.kind==='barn'){G.stats.barns++;addAlarm(10);float(s.x,s.y-50,'Barn destroyed!','#ffb050');}
-    else if(s.kind==='logpile'){G.stats.piles++;G.yardWood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned! Rebuilding slowed','#ffb050');}
-    else if(s.kind==='stonepile'){G.stats.piles++;G.yardStone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked! Rebuilding slowed','#ffb050');}
+    else if(s.kind==='logpile'){G.stats.piles++;G.yardWood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned!','#ffb050');}
+    else if(s.kind==='stonepile'){G.stats.piles++;G.yardStone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked!','#ffb050');}
     else if(s.kind==='cabin'){G.stats.huts++;addAlarm(6);float(s.x,s.y-40,"Hunters' cabin burned!",'#ffb050');}
-    else if(s.kind==='gate'){s.ruinT=G.t;G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'The castle gate is smashed! Waves delayed','#ffb050');showToast&&showToast('Castle gate destroyed: waves delayed and smaller until it is rebuilt');}
+    else if(s.kind==='gate'){s.ruinT=G.t;G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'The castle gate is smashed! Waves delayed','#ffb050');showToast&&showToast('Castle gate destroyed: waves delayed and smaller');}
     else if(s.kind==='bridge'){G.stats.bridges++;addAlarm(6);s.upgBy=null;float(s.x,s.y-50,s.mat==='stone'?'The STONE bridge crumbles into the river!':'The bridge burns and collapses!','#ffb050');}
     else if(s.kind==='barracks'){G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'Barracks destroyed! Fewer, slower knights','#ffb050');}}}
 function wreckCart(c){if(c.wrecked)return;c.wrecked=true;c.fire=0;c.t=12;G.stats.carts++;addAlarm(3);G.cartsPool=Math.max(0,G.cartsPool);

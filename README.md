@@ -5,7 +5,7 @@ A single-file browser game where you play a dragon. Open `index.html`; it needs 
 ## Building from source
 The source is split into parts, which are concatenated in this order:
 ```
-cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partRN.js partFM.js partMH.js partGH.js partKM.js partPR.js partHN.js partSJ.js partKW.js partWD.js partMR.js partBL.js partOC.js partTF.js partPB.js partHU.js partNW.js partLA.js part6.js > index.html
+cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js part7.js partB.js partS.js partG.js partK.js partD.js partR.js partFL.js partT.js partA.js partV.js partH.js partRD.js partTR.js partM.js partP.js partY.js partWK.js partSV.js partSC.js partCS.js partHC.js partRN.js partFM.js partMH.js partGH.js partKM.js partPR.js partHN.js partSJ.js partKW.js partWD.js partMR.js partBL.js partOC.js partTF.js partPB.js partHU.js partNW.js partLA.js partUI.js part6.js > index.html
 ```
 (`bash build.sh` does the same.)
 
@@ -49,8 +49,15 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partTF.js: territorial pack leaders: the male lion (savanna prides) and the white alpha wolf (Deepwood packs)
 - partPB.js: plant fire in every biome (acacias, savanna grass, jungle trees and ferns, cacti, desert scrub, palms, mountain pines, Dragon Peaks heather)
 - partHU.js: three hunters per hunters' cabin
-- partLA.js: the gold lair guide arrow
+- partNW.js: gorilla troops (silverback), giant river otters, dolphins, orcas, flying fish and marine iguanas; small wild dragons give +10 max health
+- partLA.js: the small gold lair guide arrow, pinned to the screen edge in the lair's direction (glows while carrying)
+- partUI.js: the compact wood/stone stockpile icons (HUD and pause menu); the score shows only in the pause menu
 - part6.js: main loop, HUD, minimap and world map, title screen
+
+## Install as an app (PWA)
+On iPhone, open the game in Safari, tap Share, then **Add to Home Screen**. It launches fullscreen in landscape with the dragon icon.
+- `manifest.json`: name, fullscreen display, landscape orientation, theme colours and icons
+- `icons/`: apple-touch-icon (180), 192 and 512 icons, a maskable 512, and iOS splash images (`make_icons.py` regenerates them)
 
 ## Controls
 | Action | Keyboard | Gamepad |

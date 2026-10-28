@@ -23,7 +23,7 @@ function huUpd(dt){G.hunterT=1e9;if(G.over||G.won)return;if(!Array.isArray(G.huT
   const live=huLive(),used=new Set(live.map(u=>u.hs));let room=HU_N-live.length-huWalkers(),k=0;
   for(let i=0;i<HU_N;i++){if(used.has(i)){G.huT[i]=HU_RESP+HU_STAG*i;continue;}
     if(!cab||cab.state!=='ok'||(site&&(site.down||site.refill))||room<=0){G.huT[i]=Math.max(G.huT[i],HU_RESP+HU_STAG*k);k++;continue;}
-    G.huT[i]-=dt;k++;if(G.huT[i]<=0){G.huT[i]=HU_RESP;spawnHunter(i);room--;float(CABIN.x,CABIN.y-60,'A hunter is back!','#cde');}}}
+    G.huT[i]-=dt;k++;if(G.huT[i]<=0){G.huT[i]=HU_RESP;spawnHunter(i);room--;}}}
 {const _up=update;update=function(dt){if(G&&scene==='play')G.hunterT=1e9;const r=_up.apply(this,arguments);if(G&&scene==='play')huUpd(dt);return r;};}
 // fairness wrapper around the hunter AI (outermost: also wraps the militia version)
 {const _h=updHunter;updHunter=function(u,dt){if(u.hs===undefined)u.hs=huFreeSlot();const s=u.hs%HU_N,dd=dist(u,D),ground=D.alt<0.35;

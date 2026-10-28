@@ -69,7 +69,7 @@ function updVillager(u,dt){if(u.tax){updTax(u,dt);return;}if(u.carav){updCaravan
     if(u.task&&u.task.s){const s=u.task.s;if(s.state!=='ruin'&&s.state!=='building'){u.task=null;return;}
       if(u.state==='tobuild'){const bp=s.kind==='bridge'?bridgeEnd(s,u):{x:s.x+18,y:s.y+22};if(moveTo(u,bp.x,bp.y,46,dt)){u.state='build';s.state='building';}}
       else if(u.state==='build'){s.state='building';s.build+=dt/(s.kind==='bridge'?(s.nextMat==='stone'?20:12):s.kind==='gate'?GATE_BUILD_T:9);u.anim+=dt*6;if(rnd()<dt*2)puff(s.x+R(-15,15),s.y,1,'rgba(200,180,140,',30,5);
-        if(s.build>=1){if(s.kind==='bridge'){s.mat=s.nextMat||'wood';s.maxHp=s.mat==='stone'?420:120;}s.state='ok';s.hp=s.maxHp;s.build=0;s.paid=false;s.builder=null;u.task=null;u.state='idle';float(s.x,s.y-40,s.kind==='bridge'?(s.mat==='stone'?'Stone bridge rebuilt':'Wooden bridge rebuilt'):(STRUCT_NAME[s.kind]||s.kind)+' rebuilt','#b8e0ff');if(s.kind==='gate'){G.waveCD=Math.min(G.waveCD,12);G.reinforceT=Math.min(G.reinforceT,35);showToast('Castle gate rebuilt: waves back to full pace');}}}
+        if(s.build>=1){if(s.kind==='bridge'){s.mat=s.nextMat||'wood';s.maxHp=s.mat==='stone'?420:120;}s.state='ok';s.hp=s.maxHp;s.build=0;s.paid=false;s.builder=null;u.task=null;u.state='idle';if(s.kind==='gate'){G.waveCD=Math.min(G.waveCD,12);G.reinforceT=Math.min(G.reinforceT,35);}}}
       else u.state='tobuild';return;}
     if(u.state!=='walk'||!u.tgt){u.tgt={x:u.home.x+R(-140,140),y:u.home.y+R(-100,100)};u.state='walk';u.wait=R(0,3);}
     if(u.wait>0){u.wait-=dt;return;} if(moveTo(u,u.tgt.x,u.tgt.y,32,dt))u.state='idle';

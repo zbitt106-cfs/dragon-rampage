@@ -25,7 +25,7 @@ function wkSpawn(site){const vi=wkHome(site),V0=VILLAGES[vi];if(!V0)return null;
 function wkAbort(u,site){const w=u.wk;if(!w||w.back)return;w.back=true;const k=Math.min(w.i,w.P.length-1);w.P=w.P.slice(0,k).reverse();const V0=VILLAGES[w.vi];w.P.push({x:V0.x+R(-30,30),y:V0.y+R(-20,20)});w.i=0;
   if(dist(u,D)<1600)float(u.x,u.y-26,`The ${site.name} is wrecked! Back home!`,'#ffd0a0');}
 function wkArrive(u,site){u.wk=null;u.state='idle';u.tgt=null;
-  if(site.job==='hunter'){u.dead=true;u.gone=true;const h=spawnHunter();h.x=u.x;h.y=u.y;if(dist(h,D)<1600)float(h.x,h.y-30,'A new hunter takes up the bow and dagger!','#cde');return;}
+  if(site.job==='hunter'){u.dead=true;u.gone=true;const h=spawnHunter();h.x=u.x;h.y=u.y;return;}
   if(site.job==='shopper'){u.shopper=true;u.home={x:site.mkt.x,y:site.mkt.y+20};u.v=site.v;}
   else{u.job=site.job;if(site.v>=0){u.v=site.v;u.home=VILLAGES[site.v]||u.home;}if(site.job==='farmer')u.farm=site.farm;}
   if(dist(u,D)<1600)float(u.x,u.y-26,`New ${site.jobName} at work!`,'#d8f0c0');}

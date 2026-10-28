@@ -155,7 +155,7 @@ function updK(dt){
     const K=KDEF[s.kind];if(!K||!K.self)continue;
     if(s.state==='ruin'&&!s.builder&&G.t-(s.ruinT||0)>35&&dist(s,D)>500){s.state='building';s.build=0;s.selfB=true;}
     if(s.state==='building'&&s.selfB){if(dist(s,D)<260)continue;s.build+=dt/30*treasRepair();if(Math.random()<dt*2)puff(s.x+R(-20,20),s.y,1,'rgba(200,200,200,',30,5);
-      if(s.build>=1){s.state='ok';s.hp=s.maxHp;s.build=0;s.selfB=false;s.paid=false;if(dist(s,D)<1400)float(s.x,s.y-50,`${K.name} repaired by ${CASTLE_KINDS.has(s.kind)?'the castle masons':'the keeper'}`,'#b8e0ff');}}}}
+      if(s.build>=1){s.state='ok';s.hp=s.maxHp;s.build=0;s.selfB=false;s.paid=false;}}}}
 function kUp(kind,pred){const s=structures.find(s=>s.kind===kind&&(!pred||pred(s)));return !s||s.state==='ok';}
 function kS(kind,pred){return structures.find(s=>s.kind===kind&&(!pred||pred(s)));}
 function drawCoins(){for(const c of coins){const sp=Math.cos(G.t*6+c.ph);ell(c.x,c.y+1,5,2,'rgba(0,0,0,.25)');ell(c.x,c.y-3-c.z,4.5*Math.abs(sp)+1,4.5,sp>0?'#ffd84a':'#e0a820');if(Math.sin(G.t*4+c.ph)>.9)ell(c.x+1,c.y-5-c.z,1.4,1.4,'#fff');}}

@@ -60,13 +60,13 @@ function scStep(c,dt){if(c.wrecked)return;
   if(c.st==='wait'){c.halt=true;const s=storeS();
     if(s&&s.state==='ok'){scDeliver(c);c.st='back';c.R=scRoute(STORE_DOOR,SC_SRC[c.src].park());c.s=0;scPlace(c,0,true);return;}
     // the kingdom cannot afford the rebuild: tip the cargo onto the rubble so masons can pay for it
-    const [w,st]=COST.storehouse;if(s&&!s.paid&&(G.wood<w||G.stone<st)&&c.load>0){c.waitT+=dt;if(c.waitT>4){scDeliver(c);float(STORE_DOOR.x,STORE_DOOR.y-64,'Cargo tipped out to rebuild the storehouse','#b8e0ff');c.st='back';c.R=scRoute(STORE_DOOR,SC_SRC[c.src].park());c.s=0;scPlace(c,0,true);}}
+    const [w,st]=COST.storehouse;if(s&&!s.paid&&(G.wood<w||G.stone<st)&&c.load>0){c.waitT+=dt;if(c.waitT>4){scDeliver(c);c.st='back';c.R=scRoute(STORE_DOOR,SC_SRC[c.src].park());c.s=0;scPlace(c,0,true);}}
     return;}
   // on the road
   c.s+=SC.speed*dt;u.anim+=dt*8;
   if(c.s>=c.R.len){c.s=c.R.len;
     if(c.st==='go'){if(storeUp()){scDeliver(c);c.st='back';c.R=scRoute(STORE_DOOR,SC_SRC[c.src].park());c.s=0;}
-      else{c.st='wait';c.waitT=0;float(STORE_DOOR.x,STORE_DOOR.y-50,'The storehouse is wrecked! The cart waits for the masons','#ffcf80');}}
+      else{c.st='wait';c.waitT=0;}}
     else if(c.st==='back'){c.st='load';c.waitT=0;c.loadT=0;}}
   scPlace(c,dt);const L2=c.lead,qx=-Math.sin(L2.a)*9,qy=Math.cos(L2.a)*9;u.x=L2.x+qx;u.y=L2.y+qy;u.face=Math.cos(L2.a)>=0?1:-1;}
 function updSupply(dt){if(scene!=='play'&&scene!=='title')return;

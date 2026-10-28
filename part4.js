@@ -54,8 +54,8 @@ function spawnWave(L,reinf){G.waveNum++;const slow=musterSlow(),n=G.waveNum,ez=G
   else if(c.archers&&!G.seenArch){G.seenArch=true;extra='Archers can hit you even in the air!';}
   else if(c.knights&&!G.seenKn){G.seenKn=true;extra='Armoured knights on horseback join the foot soldiers: tougher and faster, but still stuck on the ground.';}
   else if(n===1)extra='Foot soldiers can only poke you on the ground. Take to the sky!';
-  if(slow>1.3)extra=(castleHealth('barracks')<=0?'Barracks in ruins: fewer, slower knights! ':'')+'Your damage to the castle has slowed them down!';
-  if(gb)extra='The gate is rubble: a smaller wave trickles out, and the next one is a long way off!'+(castleHealth('barracks')<=0?' (Barracks in ruins too!)':'');
+  if(slow>1.3)extra='Your damage to the castle has slowed them down!';
+  if(gb)extra='The gate is rubble: a smaller wave trickles out, and the next one is a long way off!';
   const who=c.knights||c.cavalry?'The knights are coming!':'The foot soldiers are coming!';
   G.banner={text:reinf?'Reinforcements! '+who:who,sub:`Wave ${n}: ${parts_.join(', ')}  ·  ${gb?'trickling out through the rubble':'riding out of the castle gate'}`,extra,t:4.5};G.shake=Math.max(G.shake,4);}
 function spawnSiege(kind,i){const g={kind,x:GATE.x+(i%2?1:-1)*(30+i*28),y:GATE.y-10,hp:kind==='scorpion'?130:170,maxHp:kind==='scorpion'?130:170,fire:0,dead:false,

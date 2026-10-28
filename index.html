@@ -7,7 +7,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dragon Rampage">
 <meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Dragon%27s%20Rampage%22%2C%22short_name%22%3A%22Dragon%20Rampage%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22landscape%22%2C%22background_color%22%3A%22%23111111%22%2C%22theme_color%22%3A%22%231a0e08%22%7D">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-startup-image" media="(orientation: landscape)" href="icons/splash-2532x1170.png">
+<link rel="apple-touch-startup-image" media="(orientation: portrait)" href="icons/splash-1170x2532.png">
 <title>Dragon's Rampage</title>
 <style>
 html,body{margin:0;height:100%;width:100%;background:#111;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;font-family:Georgia,'Times New Roman',serif}
@@ -652,10 +656,10 @@ function hurtStruct(s,d){if(s.state==='ruin')return;if(stoneish(s)&&!HEAVY)retur
     scorch(s.x,s.y+4,s.kind==='barn'?55:40);puff(s.x,s.y,20,'rgba(70,60,50,',120,14);G.shake=Math.max(G.shake,5);
     if(s.kind==='hut'){G.stats.huts++;addAlarm(7);float(s.x,s.y-40,'Hut destroyed!','#ffb050');}
     else if(s.kind==='barn'){G.stats.barns++;addAlarm(10);float(s.x,s.y-50,'Barn destroyed!','#ffb050');}
-    else if(s.kind==='logpile'){G.stats.piles++;G.yardWood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned! Rebuilding slowed','#ffb050');}
-    else if(s.kind==='stonepile'){G.stats.piles++;G.yardStone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked! Rebuilding slowed','#ffb050');}
+    else if(s.kind==='logpile'){G.stats.piles++;G.yardWood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned!','#ffb050');}
+    else if(s.kind==='stonepile'){G.stats.piles++;G.yardStone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked!','#ffb050');}
     else if(s.kind==='cabin'){G.stats.huts++;addAlarm(6);float(s.x,s.y-40,"Hunters' cabin burned!",'#ffb050');}
-    else if(s.kind==='gate'){s.ruinT=G.t;G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'The castle gate is smashed! Waves delayed','#ffb050');showToast&&showToast('Castle gate destroyed: waves delayed and smaller until it is rebuilt');}
+    else if(s.kind==='gate'){s.ruinT=G.t;G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'The castle gate is smashed! Waves delayed','#ffb050');showToast&&showToast('Castle gate destroyed: waves delayed and smaller');}
     else if(s.kind==='bridge'){G.stats.bridges++;addAlarm(6);s.upgBy=null;float(s.x,s.y-50,s.mat==='stone'?'The STONE bridge crumbles into the river!':'The bridge burns and collapses!','#ffb050');}
     else if(s.kind==='barracks'){G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'Barracks destroyed! Fewer, slower knights','#ffb050');}}}
 function wreckCart(c){if(c.wrecked)return;c.wrecked=true;c.fire=0;c.t=12;G.stats.carts++;addAlarm(3);G.cartsPool=Math.max(0,G.cartsPool);
@@ -736,7 +740,7 @@ function updVillager(u,dt){if(u.tax){updTax(u,dt);return;}if(u.carav){updCaravan
     if(u.task&&u.task.s){const s=u.task.s;if(s.state!=='ruin'&&s.state!=='building'){u.task=null;return;}
       if(u.state==='tobuild'){const bp=s.kind==='bridge'?bridgeEnd(s,u):{x:s.x+18,y:s.y+22};if(moveTo(u,bp.x,bp.y,46,dt)){u.state='build';s.state='building';}}
       else if(u.state==='build'){s.state='building';s.build+=dt/(s.kind==='bridge'?(s.nextMat==='stone'?20:12):s.kind==='gate'?GATE_BUILD_T:9);u.anim+=dt*6;if(rnd()<dt*2)puff(s.x+R(-15,15),s.y,1,'rgba(200,180,140,',30,5);
-        if(s.build>=1){if(s.kind==='bridge'){s.mat=s.nextMat||'wood';s.maxHp=s.mat==='stone'?420:120;}s.state='ok';s.hp=s.maxHp;s.build=0;s.paid=false;s.builder=null;u.task=null;u.state='idle';float(s.x,s.y-40,s.kind==='bridge'?(s.mat==='stone'?'Stone bridge rebuilt':'Wooden bridge rebuilt'):(STRUCT_NAME[s.kind]||s.kind)+' rebuilt','#b8e0ff');if(s.kind==='gate'){G.waveCD=Math.min(G.waveCD,12);G.reinforceT=Math.min(G.reinforceT,35);showToast('Castle gate rebuilt: waves back to full pace');}}}
+        if(s.build>=1){if(s.kind==='bridge'){s.mat=s.nextMat||'wood';s.maxHp=s.mat==='stone'?420:120;}s.state='ok';s.hp=s.maxHp;s.build=0;s.paid=false;s.builder=null;u.task=null;u.state='idle';if(s.kind==='gate'){G.waveCD=Math.min(G.waveCD,12);G.reinforceT=Math.min(G.reinforceT,35);}}}
       else u.state='tobuild';return;}
     if(u.state!=='walk'||!u.tgt){u.tgt={x:u.home.x+R(-140,140),y:u.home.y+R(-100,100)};u.state='walk';u.wait=R(0,3);}
     if(u.wait>0){u.wait-=dt;return;} if(moveTo(u,u.tgt.x,u.tgt.y,32,dt))u.state='idle';
@@ -834,8 +838,8 @@ function spawnWave(L,reinf){G.waveNum++;const slow=musterSlow(),n=G.waveNum,ez=G
   else if(c.archers&&!G.seenArch){G.seenArch=true;extra='Archers can hit you even in the air!';}
   else if(c.knights&&!G.seenKn){G.seenKn=true;extra='Armoured knights on horseback join the foot soldiers: tougher and faster, but still stuck on the ground.';}
   else if(n===1)extra='Foot soldiers can only poke you on the ground. Take to the sky!';
-  if(slow>1.3)extra=(castleHealth('barracks')<=0?'Barracks in ruins: fewer, slower knights! ':'')+'Your damage to the castle has slowed them down!';
-  if(gb)extra='The gate is rubble: a smaller wave trickles out, and the next one is a long way off!'+(castleHealth('barracks')<=0?' (Barracks in ruins too!)':'');
+  if(slow>1.3)extra='Your damage to the castle has slowed them down!';
+  if(gb)extra='The gate is rubble: a smaller wave trickles out, and the next one is a long way off!';
   const who=c.knights||c.cavalry?'The knights are coming!':'The foot soldiers are coming!';
   G.banner={text:reinf?'Reinforcements! '+who:who,sub:`Wave ${n}: ${parts_.join(', ')}  ·  ${gb?'trickling out through the rubble':'riding out of the castle gate'}`,extra,t:4.5};G.shake=Math.max(G.shake,4);}
 function spawnSiege(kind,i){const g={kind,x:GATE.x+(i%2?1:-1)*(30+i*28),y:GATE.y-10,hp:kind==='scorpion'?130:170,maxHp:kind==='scorpion'?130:170,fire:0,dead:false,
@@ -980,12 +984,12 @@ function drawTree(t){const s=t.s;
 function drawStruct(s){const x=s.x,y=s.y,b=s.state==='building'?s.build:1;
   if(drawStructK(s))return;
   if(GFX_HI&&s.state==='ok'&&drawStructHi(s))return;
-  if(s.kind==='gate'){if(s.state==='ruin'){rect(x-40,y-30,80,30,'#2b2018');for(let i=0;i<6;i++)line(x-34+i*13,y,x-30+i*13+(i%2?8:-6),y-14-(i%3)*5,'#1a120c',3);if(s.paid){ctx.fillStyle='#fff';ctx.font='10px Georgia';ctx.textAlign='center';ctx.fillText('awaiting builder',x,y-40);}return;}
+  if(s.kind==='gate'){if(s.state==='ruin'){rect(x-40,y-30,80,30,'#2b2018');for(let i=0;i<6;i++)line(x-34+i*13,y,x-30+i*13+(i%2?8:-6),y-14-(i%3)*5,'#1a120c',3);return;}
     const open=clamp(G.gateOpenT,0,1);rect(x-44,y-58,10,60,'#7d7d83');rect(x+34,y-58,10,60,'#7d7d83');rect(x-46,y-64,92,10,'#8d8d92');
     rect(x-34,y-54,68,56,'#2b2018');const ph=56*(1-open*.85);for(let i=-3;i<=3;i++)line(x+i*10,y-54,x+i*10,y-54+ph,'#7a7a7a',2.5);for(let j=0;j<ph;j+=11)line(x-34,y-54+j,x+34,y-54+j,'#6a6a6a',2);
     if(s.state==='building'){rect(x-25,y-72,50*s.build,4,'#7fd07f');}if(s.hp<s.maxHp){rect(x-30,y+6,60,4,'#400');rect(x-30,y+6,60*s.hp/s.maxHp,4,'#f80');}return;}
   if(s.state==='ruin'){ell(x,y,s.kind==='barn'||s.kind==='barracks'?42:30,16,'#2b211a');for(let i=0;i<5;i++)line(x-20+i*10,y,x-22+i*10+(i%2?6:-4),y-10-(i%3)*4,'#1a120c',3);
-    if(s.paid){ctx.fillStyle='#fff';ctx.font='10px Georgia';ctx.textAlign='center';ctx.fillText('awaiting builder',x,y-22);} return;}
+    return;}
   if(s.kind==='hut'){const H=30*b;rect(x-26,y-H+4,52,H,s.fire?'#8a6a40':'#cfae72');rect(x-26,y+2,52,3,'#9a7a48');
     if(b>=1){poly([x-34,y-24,x,y-54,x+34,y-24],s.fire?'#5a3a1a':'#93622d');for(let i=-2;i<=2;i++)line(x+i*10,y-24,x+i*5,y-48,'rgba(70,40,15,.5)',1);rect(x-6,y-14,12,18,'#5a3a1c');rect(x+12,y-18,8,7,'#3a2a1a');}
   } else if(s.kind==='barn'){const H=46*b;rect(x-40,y-H+4,80,H,s.fire?'#6a2a20':'#a8322a');
@@ -1177,7 +1181,7 @@ function updGoal(dt){
     for(let i=0;i<nT;i++)if(!units.some(u=>!u.dead&&u.post==='tower'&&u.slot===i))spawnPost('tower',i);
     for(let i=0;i<nG;i++)if(!units.some(u=>!u.dead&&u.post==='guard'&&u.slot===i))spawnPost('guard',i);}}
   // hunter respawns from his cabin
-  if(!units.some(u=>!u.dead&&(u.type==='hunter'||(u.wk&&u.wk.id==='cabin'&&!u.wk.back)))){const cab=structures.find(s=>s.kind==='cabin');if(cab&&cab.state==='ok'){G.hunterT-=dt;if(G.hunterT<=0){G.hunterT=20;spawnHunter();float(CABIN.x,CABIN.y-60,'The hunter is back!','#cde');}}}
+  if(!units.some(u=>!u.dead&&(u.type==='hunter'||(u.wk&&u.wk.id==='cabin'&&!u.wk.back)))){const cab=structures.find(s=>s.kind==='cabin');if(cab&&cab.state==='ok'){G.hunterT-=dt;if(G.hunterT<=0){G.hunterT=20;spawnHunter();}}}
   else G.hunterT=20;
   // wild & farmyard animals wander back in
   // (wild animals respawn per region in updFauna)
@@ -1360,7 +1364,7 @@ function drawBridge(s){ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.ang);const
       for(let i=-2;i<=2;i++){rect(i*L/5-3,-21,6,6,'#5a3a1a');rect(i*L/5-3,15,6,6,'#5a3a1a');}if(b>=1){line(-h,-18,h,-18,'#6a4422',3);line(-h,18,h,18,'#6a4422',3);}}}
   ctx.restore();
   if(s.fire&&s.state!=='ruin')for(let i=0;i<4;i++){const t=G.t*7+i*2;ell(s.x+Math.cos(s.ang)*(i-1.5)*28,s.y-8-Math.abs(Math.sin(t))*8,8,12+Math.sin(t)*4,i%2?'rgba(255,150,30,.8)':'rgba(255,220,80,.75)');}
-  if(s.state==='building'){rect(s.x-26,s.y-44,52,5,'#222');rect(s.x-26,s.y-44,52*s.build,5,s.nextMat==='stone'?'#cfd8e0':'#7fd07f');txt(s.nextMat==='stone'?'Stone bridge':'Rebuilding bridge',s.x,s.y-50,10,'#fff','center',false);}
+  if(s.state==='building'){rect(s.x-26,s.y-44,52,5,'#222');rect(s.x-26,s.y-44,52*s.build,5,s.nextMat==='stone'?'#cfd8e0':'#7fd07f');}
   if(s.upgBy){rect(s.x-26,s.y-44,52,5,'#222');rect(s.x-26,s.y-44,52*(s.upg||0),5,'#cfd8e0');txt('Upgrading to stone',s.x,s.y-50,10,'#fff','center',false);}
   if(s.state==='ok'&&s.hp<s.maxHp){rect(s.x-30,s.y+26,60,4,'#400');rect(s.x-30,s.y+26,60*s.hp/s.maxHp,4,'#f80');}}
 // dive slam: dropping out of the sky with F/Y next to things smashes them (the way to crack stone bridges)
@@ -2196,7 +2200,7 @@ function updK(dt){
     const K=KDEF[s.kind];if(!K||!K.self)continue;
     if(s.state==='ruin'&&!s.builder&&G.t-(s.ruinT||0)>35&&dist(s,D)>500){s.state='building';s.build=0;s.selfB=true;}
     if(s.state==='building'&&s.selfB){if(dist(s,D)<260)continue;s.build+=dt/30*treasRepair();if(Math.random()<dt*2)puff(s.x+R(-20,20),s.y,1,'rgba(200,200,200,',30,5);
-      if(s.build>=1){s.state='ok';s.hp=s.maxHp;s.build=0;s.selfB=false;s.paid=false;if(dist(s,D)<1400)float(s.x,s.y-50,`${K.name} repaired by ${CASTLE_KINDS.has(s.kind)?'the castle masons':'the keeper'}`,'#b8e0ff');}}}}
+      if(s.build>=1){s.state='ok';s.hp=s.maxHp;s.build=0;s.selfB=false;s.paid=false;}}}}
 function kUp(kind,pred){const s=structures.find(s=>s.kind===kind&&(!pred||pred(s)));return !s||s.state==='ok';}
 function kS(kind,pred){return structures.find(s=>s.kind===kind&&(!pred||pred(s)));}
 function drawCoins(){for(const c of coins){const sp=Math.cos(G.t*6+c.ph);ell(c.x,c.y+1,5,2,'rgba(0,0,0,.25)');ell(c.x,c.y-3-c.z,4.5*Math.abs(sp)+1,4.5,sp>0?'#ffd84a':'#e0a820');if(Math.sin(G.t*4+c.ph)>.9)ell(c.x+1,c.y-5-c.z,1.4,1.4,'#fff');}}
@@ -3193,10 +3197,10 @@ function updKeepRoof(dt){const r=kroof();if(!r)return;const st=roofStage();
       if(PR.state==='tower'){G.banner={text:'The keep roof crumbles!',sub:'Princess Elizabeth is revealed inside. Grab her (E / X / BITE)!',t:3.5};float(PR.x,PR.y-90,'Eek! My ceiling!','#ff9ad0');}}
     r.stg=st;}
   // rebuild: only while the princess is still inside
-  if(r.state==='ruin'&&PR.state==='tower'&&G.t-(r.ruinT||0)>KROOF.wait&&dist(r,D)>500){r.state='building';r.build=0;r.selfB=true;if(dist(r,D)<1600)float(KEEP_POS.x,KEEP_POS.y-110,'The castle masons start rebuilding the keep roof…','#b8e0ff');}
+  if(r.state==='ruin'&&PR.state==='tower'&&G.t-(r.ruinT||0)>KROOF.wait&&dist(r,D)>500){r.state='building';r.build=0;r.selfB=true;}
   if(r.state==='building'&&r.selfB){if(PR.state!=='tower'){r.state='ruin';r.selfB=false;r.build=0;return;}if(dist(r,D)<260)return;
     r.build+=dt/KROOF.build*(typeof treasRepair==='function'?treasRepair():1);if(Math.random()<dt*2)puff(KEEP_POS.x+R(-40,40),KEEP_POS.y-60,1,'rgba(200,200,200,',30,5);
-    if(r.build>=1){r.state='ok';r.hp=r.maxHp;r.build=0;r.selfB=false;r.stg=0;r.hasGold=true;if(dist(r,D)<1600)float(KEEP_POS.x,KEEP_POS.y-110,'The masons rebuilt the keep\'s stone roof!','#b8e0ff');}}}
+    if(r.build>=1){r.state='ok';r.hp=r.maxHp;r.build=0;r.selfB=false;r.stg=0;r.hasGold=true;}}}
 // --- drawing ---
 const RCR=[[-.8,.2,-.3,.9],[.1,.1,.6,.8],[-.4,.5,.2,.95],[.5,.3,.9,.6],[-.9,.6,-.6,.3],[0,.3,-.2,.7]];
 function roofCracks(pt,stg){if(stg<1)return;ctx.strokeStyle='rgba(25,22,20,.85)';ctx.lineWidth=stg>2?2.2:1.6;const n=stg===1?2:stg===2?4:6;
@@ -3207,7 +3211,7 @@ function drawInsidePrincess(x,y){drawPrincess(x,y,true);if(Math.sin(G.t*1.3)>.3)
 function roofBar(x,y){const r=kroof();if(!r||PR.state!=='tower')return;
   if(r.state==='ok'&&(r.hp<r.maxHp||dist(D,KEEP_POS)<1100)){const w=110,f=r.hp/r.maxHp;rect(x-w/2-2,y-2,w+4,11,'rgba(0,0,0,.6)');rect(x-w/2,y,w*f,7,f>.5?'#b8b8c4':f>.25?'#e0a050':'#e05040');
     txt('Stone roof',x,y-4,10,'#eee','center');if(dist(D,KEEP_POS)<1300&&Math.sin(G.t*1.6)>-.4)txt(KROOF.hint,x,y-18,12,'#ffb0dc','center');}
-  else if(r.state==='building'){const w=110;rect(x-w/2-2,y-2,w+4,11,'rgba(0,0,0,.6)');rect(x-w/2,y,w*(r.build||0),7,'#7ab8ff');txt('Masons rebuilding the roof',x,y-4,10,'#b8e0ff','center');}}
+  else if(r.state==='building'){const w=110;rect(x-w/2-2,y-2,w+4,11,'rgba(0,0,0,.6)');rect(x-w/2,y,w*(r.build||0),7,'#7ab8ff');}}
 // low graphics keep roof
 function drawKeepRoofLo(kx,ky){const r=kroof(),open=roofOpen(),stg=roofStage();
   if(!open){poly([kx-80,ky-68,kx,ky-112,kx+80,ky-68],'#7e8290');line(kx-80,ky-68,kx+80,ky-68,'#5a5e68',3);
@@ -3327,6 +3331,8 @@ function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;
   const aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,PM.scr==='tally'?680:600),x0=S.l+(aw-W)/2,cx=x0+W/2;
   if(PM.scr==='main'){const rh=touch?46:38,H=86+PM_MAIN.length*(rh+8)+96,y0=S.t+Math.max(8,(ah-H)/2);panel(x0,y0,W,H);
     txt('PAUSED',cx,y0+44,36,'#ffd24a','center');
+    if(scene==='play'&&G){const fs=touch?13:14;txt(`Score ${G.over?G.score:calcScore()}`,x0+18,y0+30,fs+2,'#ffe08a','left');txt(`Wave ${G.waveNum}`,x0+18,y0+50,fs-2,'#ddd','left',false);
+      const sw=uiStockW(fs);uiStock(x0+W-18-sw,y0+26,fs);if(typeof pauseExtraLine==='function'){const l=pauseExtraLine();if(l)txt(l,x0+W-18,y0+50,fs-2,'#ddd','right',false);}}
     PM_MAIN.forEach(([l,a],i)=>pmBtn(x0+30,y0+70+i*(rh+8),W-60,rh,l,()=>{PM.sel=i;pmAct(a);},PM.sel===i));
     if(typeof raidCdLine==='function'){const l=raidCdLine();if(l)txt(l,cx,y0+H-64,touch?12:12,'#ffd8a0','center',false);}
     if(typeof drawGlutBar==='function')drawGlutBar(x0+30,y0+H-52,W-60,18);
@@ -3403,7 +3409,7 @@ function wkSpawn(site){const vi=wkHome(site),V0=VILLAGES[vi];if(!V0)return null;
 function wkAbort(u,site){const w=u.wk;if(!w||w.back)return;w.back=true;const k=Math.min(w.i,w.P.length-1);w.P=w.P.slice(0,k).reverse();const V0=VILLAGES[w.vi];w.P.push({x:V0.x+R(-30,30),y:V0.y+R(-20,20)});w.i=0;
   if(dist(u,D)<1600)float(u.x,u.y-26,`The ${site.name} is wrecked! Back home!`,'#ffd0a0');}
 function wkArrive(u,site){u.wk=null;u.state='idle';u.tgt=null;
-  if(site.job==='hunter'){u.dead=true;u.gone=true;const h=spawnHunter();h.x=u.x;h.y=u.y;if(dist(h,D)<1600)float(h.x,h.y-30,'A new hunter takes up the bow and dagger!','#cde');return;}
+  if(site.job==='hunter'){u.dead=true;u.gone=true;const h=spawnHunter();h.x=u.x;h.y=u.y;return;}
   if(site.job==='shopper'){u.shopper=true;u.home={x:site.mkt.x,y:site.mkt.y+20};u.v=site.v;}
   else{u.job=site.job;if(site.v>=0){u.v=site.v;u.home=VILLAGES[site.v]||u.home;}if(site.job==='farmer')u.farm=site.farm;}
   if(dist(u,D)<1600)float(u.x,u.y-26,`New ${site.jobName} at work!`,'#d8f0c0');}
@@ -3554,13 +3560,13 @@ function scStep(c,dt){if(c.wrecked)return;
   if(c.st==='wait'){c.halt=true;const s=storeS();
     if(s&&s.state==='ok'){scDeliver(c);c.st='back';c.R=scRoute(STORE_DOOR,SC_SRC[c.src].park());c.s=0;scPlace(c,0,true);return;}
     // the kingdom cannot afford the rebuild: tip the cargo onto the rubble so masons can pay for it
-    const [w,st]=COST.storehouse;if(s&&!s.paid&&(G.wood<w||G.stone<st)&&c.load>0){c.waitT+=dt;if(c.waitT>4){scDeliver(c);float(STORE_DOOR.x,STORE_DOOR.y-64,'Cargo tipped out to rebuild the storehouse','#b8e0ff');c.st='back';c.R=scRoute(STORE_DOOR,SC_SRC[c.src].park());c.s=0;scPlace(c,0,true);}}
+    const [w,st]=COST.storehouse;if(s&&!s.paid&&(G.wood<w||G.stone<st)&&c.load>0){c.waitT+=dt;if(c.waitT>4){scDeliver(c);c.st='back';c.R=scRoute(STORE_DOOR,SC_SRC[c.src].park());c.s=0;scPlace(c,0,true);}}
     return;}
   // on the road
   c.s+=SC.speed*dt;u.anim+=dt*8;
   if(c.s>=c.R.len){c.s=c.R.len;
     if(c.st==='go'){if(storeUp()){scDeliver(c);c.st='back';c.R=scRoute(STORE_DOOR,SC_SRC[c.src].park());c.s=0;}
-      else{c.st='wait';c.waitT=0;float(STORE_DOOR.x,STORE_DOOR.y-50,'The storehouse is wrecked! The cart waits for the masons','#ffcf80');}}
+      else{c.st='wait';c.waitT=0;}}
     else if(c.st==='back'){c.st='load';c.waitT=0;c.loadT=0;}}
   scPlace(c,dt);const L2=c.lead,qx=-Math.sin(L2.a)*9,qy=Math.cos(L2.a)*9;u.x=L2.x+qx;u.y=L2.y+qy;u.face=Math.cos(L2.a)>=0?1:-1;}
 function updSupply(dt){if(scene!=='play'&&scene!=='title')return;
@@ -5444,7 +5450,7 @@ function huUpd(dt){G.hunterT=1e9;if(G.over||G.won)return;if(!Array.isArray(G.huT
   const live=huLive(),used=new Set(live.map(u=>u.hs));let room=HU_N-live.length-huWalkers(),k=0;
   for(let i=0;i<HU_N;i++){if(used.has(i)){G.huT[i]=HU_RESP+HU_STAG*i;continue;}
     if(!cab||cab.state!=='ok'||(site&&(site.down||site.refill))||room<=0){G.huT[i]=Math.max(G.huT[i],HU_RESP+HU_STAG*k);k++;continue;}
-    G.huT[i]-=dt;k++;if(G.huT[i]<=0){G.huT[i]=HU_RESP;spawnHunter(i);room--;float(CABIN.x,CABIN.y-60,'A hunter is back!','#cde');}}}
+    G.huT[i]-=dt;k++;if(G.huT[i]<=0){G.huT[i]=HU_RESP;spawnHunter(i);room--;}}}
 {const _up=update;update=function(dt){if(G&&scene==='play')G.hunterT=1e9;const r=_up.apply(this,arguments);if(G&&scene==='play')huUpd(dt);return r;};}
 // fairness wrapper around the hunter AI (outermost: also wraps the militia version)
 {const _h=updHunter;updHunter=function(u,dt){if(u.hs===undefined)u.hs=huFreeSlot();const s=u.hs%HU_N,dd=dist(u,D),ground=D.alt<0.35;
@@ -5656,7 +5662,7 @@ tallyAddSect('coast','Animals · Coast & sea','🦈','#6fb8e8',[['dolphin','Dolp
     if(u.male)tfMakeLeader(u);u.hp=Math.min(u.maxHp,L[i+3]||u.maxHp);units.push(u);}
   if(mp>packId)packId=mp;NW.grp=Math.max(G.nwG||0,NW.grp);return r;};}
 // ================= partLA: LAIR GUIDE ARROW =================
-// A gold arrow that circles the dragon and points home to the LAIR, with the distance. It hides
+// A small gold arrow pinned to the screen edge that points home to the LAIR, with the distance. It hides
 // while the lair is on screen. It glows and pulses bright gold while you carry Princess Elizabeth or loot.
 // The hunter edge arrows stay small blue (knights) and green (archers) at the screen edges.
 // It is drawn after every HUD layer and kept clear of the HUD panels and the touch buttons.
@@ -5665,21 +5671,51 @@ function laHide(){return scene!=='play'||!G||!D||G.over||G.won||paused||G.bigMap
 function laDragonScreen(){const h=typeof heightOf==='function'?heightOf():0;return{x:(D.x-cam.x)*cam.z+VW/2,y:(D.y-h*.5-cam.y)*cam.z+VH/2};}
 function laLairOnScreen(){const sx=(LAIR.x-cam.x)*cam.z+VW/2,sy=(LAIR.y-cam.y)*cam.z+VH/2,m=30;return sx>m&&sx<VW-m&&sy>m&&sy<VH-m;}
 function laBlocked(x,y,pad){if(typeof TOUCH!=='undefined'&&TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(Math.hypot(x-b.x,y-b.y)<b.r+pad)return true;return false;}
-function laSpot(){const sm=VW<760,S=typeof SAFE!=='undefined'?SAFE:{l:0,r:0,t:0,b:0},d=laDragonScreen(),a=Math.atan2(LAIR.y-D.y,LAIR.x-D.x);
-  const top=(TOUCH&&TOUCH.on?118:sm?96:140)+S.t+(typeof princeHudOn==='function'&&princeHudOn()?(sm?36:30):0),bot=VH-S.b-(TOUCH&&TOUCH.on?24:30),lft=S.l+44,rgt=VW-S.r-44;
-  for(let r=Math.max(110,175*cam.z);r>=70;r-=6){const x=clamp(d.x+Math.cos(a)*r,lft,rgt),y=clamp(d.y+Math.sin(a)*r,top,bot),lx=x+Math.cos(a)*48,ly=y+Math.sin(a)*40;
-    if(!laBlocked(x,y,26)&&!laBlocked(lx,ly,30))return{x,y,a,lx:clamp(lx,lft+10,rgt-10),ly:clamp(ly+4,top+10,bot)};}
-  const x=clamp(d.x+Math.cos(a)*56,lft,rgt),y=clamp(d.y+Math.sin(a)*56,top,bot);return{x,y,a,lx:x,ly:y-26};}
+function laSpot(){const sm=VW<760,S=typeof SAFE!=='undefined'?SAFE:{l:0,r:0,t:0,b:0},M=sm?20:24;
+  // pinned to the screen border in the lair's direction (from screen centre), small margin, clear of HUD + touch buttons
+  const top=(TOUCH&&TOUCH.on?118:sm?96:140)+S.t+(typeof princeHudOn==='function'&&princeHudOn()?(sm?36:30):0),bot=VH-S.b-M-(TOUCH&&TOUCH.on?0:14),lft=S.l+M,rgt=VW-S.r-M;
+  const lx0=(LAIR.x-cam.x)*cam.z+VW/2,ly0=(LAIR.y-cam.y)*cam.z+VH/2,cx=(lft+rgt)/2,cy=(top+bot)/2,dx=lx0-cx,dy=ly0-cy;let a=Math.atan2(dy,dx);
+  const tx=dx>0?(rgt-cx)/dx:dx<0?(lft-cx)/dx:1e9,ty=dy>0?(bot-cy)/dy:dy<0?(top-cy)/dy:1e9,t=Math.min(tx,ty),side=tx<ty?'v':'h';
+  let x=clamp(cx+dx*t,lft,rgt),y=clamp(cy+dy*t,top,bot);
+  const ok=(x,y)=>!laBlocked(x,y,14);
+  if(!ok(x,y)){let best=null;for(let k=1;k<60&&!best;k++)for(const sg of [1,-1]){const o=k*10*sg,nx=side==='v'?x:clamp(x+o,lft,rgt),ny=side==='v'?clamp(y+o,top,bot):y;if(ok(nx,ny)){best={x:nx,y:ny};break;}}
+    if(!best)for(let k=1;k<60&&!best;k++){const nx=clamp(x-Math.cos(a)*k*8,lft,rgt),ny=clamp(y-Math.sin(a)*k*8,top,bot);if(ok(nx,ny))best={x:nx,y:ny};}
+    if(best){x=best.x;y=best.y;}}
+  {const na=Math.atan2(ly0-y,lx0-x);if(isFinite(na))a=na;}
+  // distance readout sits just inside the arrow (toward screen centre)
+  let lx=x-Math.cos(a)*30,ly=y-Math.sin(a)*16+4;lx=clamp(lx,lft+24,rgt-24);ly=clamp(ly,top+8,bot-2);
+  if(laBlocked(lx,ly,10)){lx=clamp(x-Math.cos(a)*30,lft+24,rgt-24);ly=clamp(y+(y>VH/2?-16:16),top+8,bot-2);}
+  return{x,y,a,lx,ly};}
 function drawLairArrow(){LA.last=null;if(laHide()||laLairOnScreen())return;
   ctx.setTransform(DPR,0,0,DPR,0,0);const p=laSpot(),dist=Math.round(Math.hypot(LAIR.x-D.x,LAIR.y-D.y)/10),glow=!!(D.princess||D.gold>0),pl=.5+.5*Math.sin(G.t*6);
   LA.last={x:p.x,y:p.y,ang:p.a,dist,glow,lx:p.lx,ly:p.ly};
-  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);const k=glow?1.35+.12*pl:1;ctx.scale(k,k);
-  if(glow){ctx.shadowColor='rgba(255,200,40,1)';ctx.shadowBlur=16+14*pl;}
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);const k=glow?.68+.06*pl:.5;ctx.scale(k,k);
+  if(glow){ctx.shadowColor='rgba(255,200,40,1)';ctx.shadowBlur=10+8*pl;}
   ctx.globalAlpha=glow?1:.8;poly([24,0,-10,-14,-3,0,-10,14],glow?'#ffd21e':'#d8b060');
   ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle=glow?'#fff6c0':'rgba(60,40,10,.8)';ctx.stroke();ctx.restore();ctx.globalAlpha=1;
-  const lab=`LAIR ${dist} m`;txt(lab,p.lx,p.ly+(glow&&Math.sin(p.a)<-.3?4:0),glow?14:12,glow?'#fff0a0':'#ffe2a0','center');
-  if(glow)txt(D.princess?'♛ take her home!':`💰 ${D.gold} gold`,p.lx,p.ly+(Math.sin(p.a)<-.3?-15:15),11,D.princess?'#ffc0e0':'#ffd84a','center',false);}
+  const lab=`LAIR ${dist} m`;txt(lab,p.lx,p.ly,glow?11:10,glow?'#fff0a0':'#ffe2a0','center');
+  if(glow)txt(D.princess?'♛ take her home!':`💰 ${D.gold} gold`,p.lx,p.ly+(p.ly>VH/2?-12:12),9,D.princess?'#ffc0e0':'#ffd84a','center',false);}
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);drawLairArrow();};}
+// ================= partUI: compact stockpile icons (wood log + stone rock) =================
+// The kingdom's DELIVERED stockpile (G.wood / G.stone) as two tiny icons with amounts. Used on the HUD (top right)
+// and in the pause menu. The score is shown only in the pause menu (it is still tracked and saved as before).
+function uiLog(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#8a5a2b';ctx.strokeStyle='#3a220e';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-8,-4);ctx.lineTo(6,-4);ctx.lineTo(6,4);ctx.lineTo(-8,4);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.strokeStyle='#5e3a18';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-6,-1);ctx.lineTo(3,-1);ctx.moveTo(-5,2);ctx.lineTo(2,2);ctx.stroke();
+  ctx.fillStyle='#e6c48a';ctx.strokeStyle='#3a220e';ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(6,0,3.2,4,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.strokeStyle='#a67c44';ctx.lineWidth=.8;ctx.beginPath();ctx.ellipse(6,0,1.4,2,0,0,Math.PI*2);ctx.stroke();ctx.restore();}
+function uiRock(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#9aa0a8';ctx.strokeStyle='#33363c';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-8,4);ctx.lineTo(-6,-2);ctx.lineTo(-2,-5);ctx.lineTo(4,-4);ctx.lineTo(8,1);ctx.lineTo(6,4);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#c4c9d0';ctx.beginPath();ctx.moveTo(-4,-2);ctx.lineTo(-1,-4);ctx.lineTo(3,-3);ctx.lineTo(0,-1);ctx.closePath();ctx.fill();ctx.restore();}
+// draws "[log] 12  [rock] 4" starting at x (left) on baseline-centre y; returns the width used
+function uiStock(x,y,fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;const w1=ctx.measureText(String(G.wood|0)).width,w2=ctx.measureText(String(G.stone|0)).width;
+  let cx=x+9*s;uiLog(cx,y,s);cx+=13*s;txt(String(G.wood|0),cx,y+fs*.38,fs,'#f0d6a8','left');cx+=w1+12*s;
+  uiRock(cx,y,s);cx+=12*s;txt(String(G.stone|0),cx,y+fs*.38,fs,'#e4e8ee','left');cx+=w2;return cx-x;}
+function uiStockW(fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;return 9*s+13*s+ctx.measureText(String(G.wood|0)).width+12*s+12*s+ctx.measureText(String(G.stone|0)).width;}
+// HUD: compact pill, top right (replaces the old score / hunters / ruins / rebuilding panel)
+function drawStockPill(){const S=typeof SAFE!=='undefined'?SAFE:{r:0,t:0},fs=TOUCH&&TOUCH.on?12:13,w=Math.ceil(uiStockW(fs))+18,h=24,x=VW-S.r-10-w,y=10+(TOUCH&&TOUCH.on?S.t:0);
+  panel(x,y,w,h);UI.pill={x,y,w,h};uiStock(x+8,y+h/2,fs);}
+const UI={pill:null};
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
@@ -5774,7 +5810,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   {const c=concern();panel(VW/2-130,my+74,260,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}   ·   Treasury ${treasury()}g`,VW/2,my+86,10,c.col,'center',false);}
   if(gateBroken()){const s=gateStruct(),[cw,cs]=COST.gate,st=s.state==='building'?`rebuilding ${Math.round(s.build*100)}%`:s.paid||s.builder?'engineers on the way':G.t-(s.ruinT||0)<GATE_REBUILD_WAIT?'rubble settling':(G.wood<cw||G.stone<cs)?`needs ${cw} wood + ${cs} stone`:'awaiting engineers';
     const pl=.75+.25*Math.sin(G.t*4);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(VW/2-190,my+94,380,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(VW/2-189.5,my+94.5,379,19);
-    txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller  ·  ${st}`,VW/2,my+108,11,'#ffd8b0','center');}
+    txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller`,VW/2,my+108,11,'#ffd8b0','center');}
   if(G.level>0&&Math.floor(G.t*2)%2)txt('⚠',mx+mw*f,my+41,13,'#fff','center');}
   else{panel(10,186+hy,250,26);rect(16,192+hy,238*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,204+hy,11);}
   // right panel: score + stockpiles
@@ -5782,14 +5818,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   panel(10,118+hy,250,64);txt(`CASTLE LV ${G.lvl}  ·  Gold carried ${D.gold}`,20,136+hy,12,'#ffd84a');txt(`Stashed in lair: ${G.stash}  (+${G.stash*5} pts)`,20,153+hy,11,'#ffe8a0','left',false);
   txt(D.princess?'Princess Elizabeth: in your claws! Fly to the LAIR':PR.state==='lair'?'Princess Elizabeth: in your lair':(roofOpen()?'Princess Elizabeth: the keep roof is broken: grab her!':'Princess Elizabeth: inside the keep (break its stone roof)'),20,171+hy,11,D.princess?'#ff9ad0':'#f8c8e0','left',false);
   const cs=musterSlow();if(cs>1.05)txt(`Castle damaged: waves ${Math.round((cs-1)*100)}% slower`,20,196+hy,11,'#ffc080','left');
-  const rx=VW-210;panel(rx,10,200,112);txt(`Score ${G.over?G.score:calcScore()}`,rx+10,30,15,'#ffe08a');
-  const foes=units.filter(u=>!u.dead&&!u.post&&(u.type==='knight'||u.type==='archer'||u.type==='hunter')).length+siege.filter(g=>!g.dead).length;
-  txt(`Wave ${G.waveNum}  ·  Hunters ${foes}`,rx+10,48,12,'#fbb',false,false);
-  txt(`Kingdom stockpiles (rebuilding)`,rx+10,66,10,'#ccc','left',false);
-  txt(`Storehouse: wood ${G.wood} stone ${G.stone}   Supply carts ${carts.filter(c=>c.supply&&!c.wrecked).length}`,rx+10,82,12,'#e8d0a0','left');
-  const ruins=structures.filter(s=>s.state==='ruin').length,bld=structures.filter(s=>s.state==='building').length;
-  txt(`Ruins ${ruins}  ·  Rebuilding ${bld}`,rx+10,98,11,'#bbb','left',false);
-  txt(`Eaten ${G.stats.eaten+G.stats.animals} · Huts ${G.stats.huts+G.stats.barns} · Foes ${G.stats.knights+G.stats.siege}`,rx+10,114,10,'#bbb','left',false);
+  drawStockPill(); // score, hunter counts, ruins/rebuilding live in the pause menu / nowhere now: HUD shows only the stockpile icons
   // minimap
   const mmw=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000));drawMap(VW-mmw-10,TOUCH.on?132:VH-mmw*(WY1-WY0)/(WX1-WX0)-10,mmw,false);
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);

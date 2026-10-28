@@ -57,7 +57,7 @@ function drawBridge(s){ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.ang);const
       for(let i=-2;i<=2;i++){rect(i*L/5-3,-21,6,6,'#5a3a1a');rect(i*L/5-3,15,6,6,'#5a3a1a');}if(b>=1){line(-h,-18,h,-18,'#6a4422',3);line(-h,18,h,18,'#6a4422',3);}}}
   ctx.restore();
   if(s.fire&&s.state!=='ruin')for(let i=0;i<4;i++){const t=G.t*7+i*2;ell(s.x+Math.cos(s.ang)*(i-1.5)*28,s.y-8-Math.abs(Math.sin(t))*8,8,12+Math.sin(t)*4,i%2?'rgba(255,150,30,.8)':'rgba(255,220,80,.75)');}
-  if(s.state==='building'){rect(s.x-26,s.y-44,52,5,'#222');rect(s.x-26,s.y-44,52*s.build,5,s.nextMat==='stone'?'#cfd8e0':'#7fd07f');txt(s.nextMat==='stone'?'Stone bridge':'Rebuilding bridge',s.x,s.y-50,10,'#fff','center',false);}
+  if(s.state==='building'){rect(s.x-26,s.y-44,52,5,'#222');rect(s.x-26,s.y-44,52*s.build,5,s.nextMat==='stone'?'#cfd8e0':'#7fd07f');}
   if(s.upgBy){rect(s.x-26,s.y-44,52,5,'#222');rect(s.x-26,s.y-44,52*(s.upg||0),5,'#cfd8e0');txt('Upgrading to stone',s.x,s.y-50,10,'#fff','center',false);}
   if(s.state==='ok'&&s.hp<s.maxHp){rect(s.x-30,s.y+26,60,4,'#400');rect(s.x-30,s.y+26,60*s.hp/s.maxHp,4,'#f80');}}
 // dive slam: dropping out of the sky with F/Y next to things smashes them (the way to crack stone bridges)
