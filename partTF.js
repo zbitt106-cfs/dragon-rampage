@@ -3,9 +3,9 @@
 // every packmate drops whatever it is hunting and runs in to fight. Once the dragon has been away from the turf for a while they calm down.
 // Cartoony only: nips, swipes and bonks, no gore.
 const TF_L={
-  lion:{flag:'male',hp:40,bite:5,cd:1.3,R:520,scale:1.22,call:'ROOOAAAR!',sfx:'roar',col:'#ffb060',ring:'255,190,90',key:'lionm',label:'Male lions',food:40,heal:40,
+  lion:{flag:'male',hp:54,bite:6,cd:1.3,R:520,scale:1.22,call:'ROOOAAAR!',sfx:'roar',col:'#ffb060',ring:'255,190,90',key:'lionm',label:'Male lions',food:40,heal:40,
     who:'The male lion',say:'Big lion swipe!',calm:'The male lion shakes his mane and settles down',fresh:'A new male lion takes over the pride!'},
-  wolf:{flag:'alpha',hp:30,bite:4,cd:1.2,R:480,scale:1.3,call:'AWOOOOOOO!',sfx:'howl',col:'#e8f4ff',ring:'220,235,255',key:'wolfa',label:'White alpha wolves',food:20,heal:20,
+  wolf:{flag:'alpha',hp:40,bite:5,cd:1.2,R:480,scale:1.3,call:'AWOOOOOOO!',sfx:'howl',col:'#e8f4ff',ring:'220,235,255',key:'wolfa',label:'White alpha wolves',food:20,heal:20,
     who:'The white alpha',say:'Alpha bite!',calm:'The white alpha huffs and leads the pack back into the woods',fresh:'A new white alpha leads the pack!'}};
 const TF_NEAR=180,TF_CALM=6,TF_LEASH=450,TF_NEWLEADER=60;
 const TF={packs:{},t:0};
@@ -23,6 +23,10 @@ function tfMakeLeader(u){const L=TF_L[u.species];if(!L)return u;u[L.flag]=1;u.hp
     const a=mkUnit('animal',o.x+R(-20,20),o.y+R(-15,15),{species:'wolf',wild:true,zone:o.zone,home:o.home,strict:o.strict,hp:TF_L.wolf.hp,maxHp:TF_L.wolf.hp,free:true,pack:o.pack,t:R(0,3),jt:0});units.push(tfMakeLeader(a));}}
   return r;};}
 // ---- the leader watches the turf ----
+// ---- rally: an alpha's call gives itself and every responder a small boost while the turf fight lasts (fades ~10 s after the dragon leaves or the alpha is gone) ----
+const RALLY={dmg:1.12,spd:1.08,def:.90,fade:10};
+function tfRallied(u){return !!(u&&!u.dead&&u.rallyT>G.t);}
+function tfRally(pk){let n=0;for(const m of tfMembers(pk)){if(!tfRallied(m))G.tfRallied=(G.tfRallied||0)+1;m.rallyT=G.t+RALLY.fade;n++;}return n;}
 function tfCall(u,P){const L=TF_L[u.species];P.roarT=G.t;u.roarFx=1.6;
   float(u.x,u.y-48,L.call,L.col);if(typeof SFX!=='undefined')SFX.play(L.sfx,u.x,u.y,1);if(dist(u,D)<900)G.shake=Math.max(G.shake||0,4);
   if(u.species==='lion')G.tfRoars=(G.tfRoars||0)+1;else if(u.species==='wolf')G.tfHowls=(G.tfHowls||0)+1;else G.tfBeats=(G.tfBeats||0)+1;}
@@ -30,21 +34,21 @@ function tfAlarm(u,P){P.alert=true;P.calm=0;P.seenT=G.t;tfCall(u,P);
   for(const m of tfMembers(u.pack)){if(m===u)continue;
     if(m.hPrey){hnDrop(m);m.hRest=0;G.tfStopped=(G.tfStopped||0)+1;if(dist(m,D)<1100)float(m.x,m.y-30,'Hunt dropped!','#ffe0a0');}
     m.drink=null;m.full=0;m.tfCalled=G.t;m.state='hunt';G.tfCalled=(G.tfCalled||0)+1;}
-  if(dist(u,D)<1100)float(u.x,u.y-66,`${TF_L[u.species].who} calls the ${TF_L[u.species].grp||(u.species==='lion'?'pride':'pack')} to fight!`,'#fff2c0');}
+  tfRally(u.pack);if(dist(u,D)<1100)float(u.x,u.y-66,`${TF_L[u.species].who} calls the ${TF_L[u.species].grp||(u.species==='lion'?'pride':'pack')} to fight!`,'#fff2c0');}
 function tfSpot(P,L){return !G.over&&!G.won&&D.alt<.6&&d2(D.x,D.y,P.cx,P.cy)<L.R+TF_NEAR;}
 function tfLeaderTick(u,dt){const L=TF_L[u.species],P=tfPack(u);if(u.roarFx>0)u.roarFx-=dt;
-  if(tfSpot(P,L)&&dist(u,D)<1100){P.seenT=G.t;P.calm=0;if(!P.alert)tfAlarm(u,P);else if(G.t-P.roarT>7)tfCall(u,P);}
+  if(tfSpot(P,L)&&dist(u,D)<1100){P.seenT=G.t;P.calm=0;if(P.alert)tfRally(u.pack);if(!P.alert)tfAlarm(u,P);else if(G.t-P.roarT>7)tfCall(u,P);}
   else if(P.alert){P.calm=G.t-(P.seenT===undefined?G.t:P.seenT);if(P.calm>=TF_CALM)tfStandDown(u.pack,u);}}
 function tfStandDown(pk,ld){const P=TF.packs[pk];if(!P)return;P.alert=false;P.calm=0;
   for(const m of tfMembers(pk)){m.state='idle';m.tfBack=0;m.tgt=null;}if(ld&&dist(ld,D)<1300)float(ld.x,ld.y-40,TF_L[ld.species].calm,'#e0ffe0');}
 // ---- called packmates (and the leader) fight the dragon inside the turf ----
-function tfFight(u,dt,P){if(u.hPrey)hnDrop(u);if(u.burn>0||u.bolted>0)return false;const F=FAUNA[u.species],ld=tfIsLeader(u),L=TF_L[u.species],Z=ZONES[u.zone],ox=u.x,oy=u.y;
+function tfFight(u,dt,P){if(u.hPrey)hnDrop(u);if(u.burn>0||u.bolted>0)return false;const F=FAUNA[u.species],ld=tfIsLeader(u),rb=tfRallied(u),L=TF_L[u.species],Z=ZONES[u.zone],ox=u.x,oy=u.y;
   u.cd=(u.cd||0)-dt;u.state='hunt';if(u.hPrey)hnDrop(u);
-  if(u.tfBack>0){u.tfBack-=dt;const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp*.8,dt);}
+  if(u.tfBack>0){u.tfBack-=dt;const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp*.8*(rb?RALLY.spd:1),dt);}
   else{let tx=D.x,ty=D.y;const lim=L.R+TF_LEASH,dc=Math.hypot(tx-P.cx,ty-P.cy);if(dc>lim){tx=P.cx+(tx-P.cx)/dc*lim;ty=P.cy+(ty-P.cy)/dc*lim;}
     if(D.alt>=.5){const a=u.id*2.4+G.t*.6;tx+=Math.cos(a)*60;ty+=Math.sin(a)*40;}
-    const dd=dist(u,D);if(dd>(ld?40:34)||D.alt>=.5)moveTo(u,tx,ty,F.sp*(ld?1.05:1.15),dt);
-    else if(u.cd<=0&&D.alt<.5){const dmg=ld?L.bite:F.bite;u.cd=ld?L.cd:F.cd;hurtDragon(dmg,u.species);float(D.x+R(-20,20),D.y-90,`${ld?L.say:F.say.replace(/ -\d+$/,'')} -${Math.round(dmg*G.dmgMul)}`,'#ffb0a0');u.tfBack=ld?.6:.9;
+    const dd=dist(u,D);if(dd>(ld?40:34)||D.alt>=.5)moveTo(u,tx,ty,F.sp*(ld?1.05:1.15)*(rb?RALLY.spd:1),dt);
+    else if(u.cd<=0&&D.alt<.5){const dmg=(ld?L.bite:F.bite)*(rb?RALLY.dmg:1);u.cd=ld?L.cd:F.cd;hurtDragon(dmg,u.species);if(ld&&D.alt<.5){const ka=Math.atan2(D.y-u.y,D.x-u.x),kb=L.kb||70;D.vx+=Math.cos(ka)*kb;D.vy+=Math.sin(ka)*kb;G.tfShoves=(G.tfShoves||0)+1;}float(D.x+R(-20,20),D.y-90,`${ld?L.say:F.say.replace(/ -\d+$/,'')} -${Math.round(dmg*G.dmgMul)}`,'#ffb0a0');u.tfBack=ld?.6:.9;
       G.tfBites=(G.tfBites||0)+1;}}
   if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}return true;}
 // the turf check runs once per frame per pack, before any packmate moves (so the call beats a packmate's own hunting logic)

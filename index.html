@@ -491,7 +491,7 @@ function spawnPatrol(){const lvl=G.lvl,mix=[...PATROL_MIX[RI(0,PATROL_MIX.length
   units.push(...p.members);patrols.push(p);G.gateOpenT=Math.max(G.gateOpenT,2);return p;}
 function engagePatrol(p){if(p.engaged)return;p.engaged=true;p.engT=G.t;const L=p.members.find(u=>!u.dead);if(L)float(L.x,L.y-50,'Patrol: "There\'s the dragon!"','#ffe0a0');}
 function updPatrols(dt){G.patrolT-=dt;const cap=(G.easy?2:3)+Math.min(2,G.lvl-1)+treasPatrols();
-  if(G.patrolT<=0){G.patrolT=G.easy?70:45;if(patrols.length<cap&&units.length<420)spawnPatrol();}
+  if(G.patrolT<=0){G.patrolT=G.easy?70:45;if(patrols.filter(p=>!p.site).length<cap&&units.length<420)spawnPatrol();}
   const P=patrolPoints();
   for(const p of patrols){p.members=p.members.filter(u=>!u.dead);if(!p.members.length){p.dead=true;continue;}const L=p.members[0],dl=dist(L,D);
     if(!p.engaged){if(dl<340&&!G.over&&!G.won)engagePatrol(p);}
@@ -792,7 +792,7 @@ function updAlarm(dt){
   if(L<G.lastLevel)G.lastLevel=L;
   G.level=L;
   // enemies give up and ride home if the meter cools to Calm
-  {const gu=giveUpT();for(const u of units)if(!u.dead&&!u.post&&!u.patrol&&!u.escort&&!u.raid&&!u.prince&&(u.type==='knight'||u.type==='archer')&&G.t-(u.born||0)>10&&((L===0&&G.sinceDmg>gu)||(G.sinceDmg>gu&&kingdomMul(D.x,D.y)<.6&&dist(u,D)>1300)))u.retreat=true;}
+  {const gu=giveUpT();for(const u of units)if(!u.dead&&!u.post&&!u.dguard&&!u.patrol&&!u.escort&&!u.raid&&!u.prince&&(u.type==='knight'||u.type==='archer')&&G.t-(u.born||0)>10&&((L===0&&G.sinceDmg>gu)||(G.sinceDmg>gu&&kingdomMul(D.x,D.y)<.6&&dist(u,D)>1300)))u.retreat=true;}
   // troops muster at the barracks and ride out of the gate one by one
   G.gateOpenT=Math.max(0,G.gateOpenT-dt);
   if(G.spawnQ.length){G.spawnQT-=dt;if(G.spawnQT<=0){G.spawnQT=0.28*musterSlow()*musterNear()*(gateBroken()?2:1);const q=G.spawnQ.shift();G.gateOpenT=Math.max(G.gateOpenT,1.6);const nb=units.length;
@@ -850,7 +850,7 @@ function updKnight(u,dt){if(u.mounted&&!u.retreat){updCavalry(u,dt);return;}cons
   if(u.post==='guard'&&(dd>380||d2(u.x,u.y,u.px,u.py)>520)){moveTo(u,u.px,u.py,80,dt);u.face=D.x>u.x?1:-1;u.swing=Math.max(0,(u.swing||0)-dt);return;}
   const ground=D.alt<DR.hitAltSword;
   const fs=u.foot?.7:1;
-  if(ground){if(dd>(u.foot?58:72))moveTo(u,D.x,D.y,130*fs,dt);else{u.anim+=dt*4;if(u.atk<=0){u.atk=u.foot?1.35:1.1;u.swing=.25;hurtDragon(u.foot?4:7,u.foot?'spear':'sword');}}}
+  if(ground){if(dd>(u.foot?58:72))moveTo(u,D.x,D.y,130*fs,dt);else{u.anim+=dt*4;if(u.atk<=0){u.atk=u.foot?1.35:1.1;u.swing=.25;hurtDragon((u.foot?4:7)*(u.dmgMul||1),u.foot?'spear':'sword');}}}
   else{const a=G.t*.8+u.id*TAU,tx=D.x+Math.cos(a)*120,ty=D.y+Math.sin(a)*80;moveTo(u,tx,ty,(dd>200?130:70)*fs,dt);}
   u.swing=Math.max(0,(u.swing||0)-dt);}
 function updArcher(u,dt){const dd=dist(u,D);u.shootT-=dt;
@@ -859,7 +859,7 @@ function updArcher(u,dt){const dd=dist(u,D);u.shootT-=dt;
   else if(dd>330)moveTo(u,D.x,D.y,72,dt);else if(dd<180){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*30,u.y+Math.sin(a)*30,70,dt);}
   u.face=D.x>u.x?1:-1;
   if(dd<(u.post?440:420)&&u.shootT<=0){u.shootT=R(1.8,2.6)-G.level*.15;u.draw=.3;const T=dd/430,px=D.x+D.vx*T*.6,py=D.y+D.vy*T*.6,a=Math.atan2(py-u.y,px-u.x);
-    projs.push({kind:'arrow',x:u.x,y:u.y,z:10,vx:Math.cos(a)*430,vy:Math.sin(a)*430,tz:heightOf()+15,life:1.4,dmg:4,z0:u.post?40:10});}
+    projs.push({kind:'arrow',x:u.x,y:u.y,z:10,vx:Math.cos(a)*430,vy:Math.sin(a)*430,tz:heightOf()+15,life:1.4,dmg:4*(u.dmgMul||1),z0:u.post?40:10});}
   u.draw=Math.max(0,(u.draw||0)-dt);}
 function updCrew(u,dt){const g=u.siege;if(!g||g.dead){u.job='peasant';u.type='villager';u.home=VILLAGES[RI(0,4)];u.v=0;u.shirt='#8a6a3a';u.state='idle';return;}
   const a=g.ang+Math.PI+(u.slot-(g.kind==='scorpion'?.5:1))*0.7,tx=g.x+Math.cos(a)*30,ty=g.y+Math.sin(a)*22;moveTo(u,tx,ty,60,dt);
@@ -5343,9 +5343,9 @@ tallyAddSect('water','Animals · Lake & rivers','🐟','#8fd3ff',[['pturtle','Po
 // every packmate drops whatever it is hunting and runs in to fight. Once the dragon has been away from the turf for a while they calm down.
 // Cartoony only: nips, swipes and bonks, no gore.
 const TF_L={
-  lion:{flag:'male',hp:40,bite:5,cd:1.3,R:520,scale:1.22,call:'ROOOAAAR!',sfx:'roar',col:'#ffb060',ring:'255,190,90',key:'lionm',label:'Male lions',food:40,heal:40,
+  lion:{flag:'male',hp:54,bite:6,cd:1.3,R:520,scale:1.22,call:'ROOOAAAR!',sfx:'roar',col:'#ffb060',ring:'255,190,90',key:'lionm',label:'Male lions',food:40,heal:40,
     who:'The male lion',say:'Big lion swipe!',calm:'The male lion shakes his mane and settles down',fresh:'A new male lion takes over the pride!'},
-  wolf:{flag:'alpha',hp:30,bite:4,cd:1.2,R:480,scale:1.3,call:'AWOOOOOOO!',sfx:'howl',col:'#e8f4ff',ring:'220,235,255',key:'wolfa',label:'White alpha wolves',food:20,heal:20,
+  wolf:{flag:'alpha',hp:40,bite:5,cd:1.2,R:480,scale:1.3,call:'AWOOOOOOO!',sfx:'howl',col:'#e8f4ff',ring:'220,235,255',key:'wolfa',label:'White alpha wolves',food:20,heal:20,
     who:'The white alpha',say:'Alpha bite!',calm:'The white alpha huffs and leads the pack back into the woods',fresh:'A new white alpha leads the pack!'}};
 const TF_NEAR=180,TF_CALM=6,TF_LEASH=450,TF_NEWLEADER=60;
 const TF={packs:{},t:0};
@@ -5363,6 +5363,10 @@ function tfMakeLeader(u){const L=TF_L[u.species];if(!L)return u;u[L.flag]=1;u.hp
     const a=mkUnit('animal',o.x+R(-20,20),o.y+R(-15,15),{species:'wolf',wild:true,zone:o.zone,home:o.home,strict:o.strict,hp:TF_L.wolf.hp,maxHp:TF_L.wolf.hp,free:true,pack:o.pack,t:R(0,3),jt:0});units.push(tfMakeLeader(a));}}
   return r;};}
 // ---- the leader watches the turf ----
+// ---- rally: an alpha's call gives itself and every responder a small boost while the turf fight lasts (fades ~10 s after the dragon leaves or the alpha is gone) ----
+const RALLY={dmg:1.12,spd:1.08,def:.90,fade:10};
+function tfRallied(u){return !!(u&&!u.dead&&u.rallyT>G.t);}
+function tfRally(pk){let n=0;for(const m of tfMembers(pk)){if(!tfRallied(m))G.tfRallied=(G.tfRallied||0)+1;m.rallyT=G.t+RALLY.fade;n++;}return n;}
 function tfCall(u,P){const L=TF_L[u.species];P.roarT=G.t;u.roarFx=1.6;
   float(u.x,u.y-48,L.call,L.col);if(typeof SFX!=='undefined')SFX.play(L.sfx,u.x,u.y,1);if(dist(u,D)<900)G.shake=Math.max(G.shake||0,4);
   if(u.species==='lion')G.tfRoars=(G.tfRoars||0)+1;else if(u.species==='wolf')G.tfHowls=(G.tfHowls||0)+1;else G.tfBeats=(G.tfBeats||0)+1;}
@@ -5370,21 +5374,21 @@ function tfAlarm(u,P){P.alert=true;P.calm=0;P.seenT=G.t;tfCall(u,P);
   for(const m of tfMembers(u.pack)){if(m===u)continue;
     if(m.hPrey){hnDrop(m);m.hRest=0;G.tfStopped=(G.tfStopped||0)+1;if(dist(m,D)<1100)float(m.x,m.y-30,'Hunt dropped!','#ffe0a0');}
     m.drink=null;m.full=0;m.tfCalled=G.t;m.state='hunt';G.tfCalled=(G.tfCalled||0)+1;}
-  if(dist(u,D)<1100)float(u.x,u.y-66,`${TF_L[u.species].who} calls the ${TF_L[u.species].grp||(u.species==='lion'?'pride':'pack')} to fight!`,'#fff2c0');}
+  tfRally(u.pack);if(dist(u,D)<1100)float(u.x,u.y-66,`${TF_L[u.species].who} calls the ${TF_L[u.species].grp||(u.species==='lion'?'pride':'pack')} to fight!`,'#fff2c0');}
 function tfSpot(P,L){return !G.over&&!G.won&&D.alt<.6&&d2(D.x,D.y,P.cx,P.cy)<L.R+TF_NEAR;}
 function tfLeaderTick(u,dt){const L=TF_L[u.species],P=tfPack(u);if(u.roarFx>0)u.roarFx-=dt;
-  if(tfSpot(P,L)&&dist(u,D)<1100){P.seenT=G.t;P.calm=0;if(!P.alert)tfAlarm(u,P);else if(G.t-P.roarT>7)tfCall(u,P);}
+  if(tfSpot(P,L)&&dist(u,D)<1100){P.seenT=G.t;P.calm=0;if(P.alert)tfRally(u.pack);if(!P.alert)tfAlarm(u,P);else if(G.t-P.roarT>7)tfCall(u,P);}
   else if(P.alert){P.calm=G.t-(P.seenT===undefined?G.t:P.seenT);if(P.calm>=TF_CALM)tfStandDown(u.pack,u);}}
 function tfStandDown(pk,ld){const P=TF.packs[pk];if(!P)return;P.alert=false;P.calm=0;
   for(const m of tfMembers(pk)){m.state='idle';m.tfBack=0;m.tgt=null;}if(ld&&dist(ld,D)<1300)float(ld.x,ld.y-40,TF_L[ld.species].calm,'#e0ffe0');}
 // ---- called packmates (and the leader) fight the dragon inside the turf ----
-function tfFight(u,dt,P){if(u.hPrey)hnDrop(u);if(u.burn>0||u.bolted>0)return false;const F=FAUNA[u.species],ld=tfIsLeader(u),L=TF_L[u.species],Z=ZONES[u.zone],ox=u.x,oy=u.y;
+function tfFight(u,dt,P){if(u.hPrey)hnDrop(u);if(u.burn>0||u.bolted>0)return false;const F=FAUNA[u.species],ld=tfIsLeader(u),rb=tfRallied(u),L=TF_L[u.species],Z=ZONES[u.zone],ox=u.x,oy=u.y;
   u.cd=(u.cd||0)-dt;u.state='hunt';if(u.hPrey)hnDrop(u);
-  if(u.tfBack>0){u.tfBack-=dt;const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp*.8,dt);}
+  if(u.tfBack>0){u.tfBack-=dt;const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp*.8*(rb?RALLY.spd:1),dt);}
   else{let tx=D.x,ty=D.y;const lim=L.R+TF_LEASH,dc=Math.hypot(tx-P.cx,ty-P.cy);if(dc>lim){tx=P.cx+(tx-P.cx)/dc*lim;ty=P.cy+(ty-P.cy)/dc*lim;}
     if(D.alt>=.5){const a=u.id*2.4+G.t*.6;tx+=Math.cos(a)*60;ty+=Math.sin(a)*40;}
-    const dd=dist(u,D);if(dd>(ld?40:34)||D.alt>=.5)moveTo(u,tx,ty,F.sp*(ld?1.05:1.15),dt);
-    else if(u.cd<=0&&D.alt<.5){const dmg=ld?L.bite:F.bite;u.cd=ld?L.cd:F.cd;hurtDragon(dmg,u.species);float(D.x+R(-20,20),D.y-90,`${ld?L.say:F.say.replace(/ -\d+$/,'')} -${Math.round(dmg*G.dmgMul)}`,'#ffb0a0');u.tfBack=ld?.6:.9;
+    const dd=dist(u,D);if(dd>(ld?40:34)||D.alt>=.5)moveTo(u,tx,ty,F.sp*(ld?1.05:1.15)*(rb?RALLY.spd:1),dt);
+    else if(u.cd<=0&&D.alt<.5){const dmg=(ld?L.bite:F.bite)*(rb?RALLY.dmg:1);u.cd=ld?L.cd:F.cd;hurtDragon(dmg,u.species);if(ld&&D.alt<.5){const ka=Math.atan2(D.y-u.y,D.x-u.x),kb=L.kb||70;D.vx+=Math.cos(ka)*kb;D.vy+=Math.sin(ka)*kb;G.tfShoves=(G.tfShoves||0)+1;}float(D.x+R(-20,20),D.y-90,`${ld?L.say:F.say.replace(/ -\d+$/,'')} -${Math.round(dmg*G.dmgMul)}`,'#ffb0a0');u.tfBack=ld?.6:.9;
       G.tfBites=(G.tfBites||0)+1;}}
   if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}return true;}
 // the turf check runs once per frame per pack, before any packmate moves (so the call beats a packmate's own hunting logic)
@@ -5539,7 +5543,7 @@ Object.assign(FAUNA,{gorilla:{hp:34,sp:68,bite:3,aggro:60,cd:1.6,say:'Gorilla bo
   gotter:{hp:8,sp:84,bite:1,aggro:80,cd:1.3,say:'Otter nip! -1',growl:'EEE-EEE-EEE!',zone:'jotter'}});
 Object.assign(HEAL,{gorilla:30,gotter:8,silverback:50});Object.assign(FOOD,{gorilla:30,gotter:8,silverback:50});
 ['gorilla','gotter'].forEach(s=>FAUNA_ART.add(s));
-TF_L.gorilla={flag:'male',hp:70,bite:5,cd:1.5,R:480,scale:1.25,call:'*THUMP THUMP* HOO-HOO-HOO!',sfx:'roar',col:'#e8e8f0',ring:'210,215,230',key:'silverback',label:'Silverback gorillas',food:50,heal:50,grp:'troop',
+TF_L.gorilla={flag:'male',hp:92,bite:6,cd:1.5,R:480,scale:1.25,call:'*THUMP THUMP* HOO-HOO-HOO!',sfx:'roar',col:'#e8e8f0',ring:'210,215,230',key:'silverback',label:'Silverback gorillas',food:50,heal:50,grp:'troop',
   who:'The silverback',say:'Silverback bonk!',calm:'The silverback grunts and the troop goes back to munching leaves',fresh:'A new silverback leads the troop!'};
 Object.assign(PRIDES,{gorilla:{n:2,size:5},gotter:{n:3,size:4}});
 // the jungle river: giant otters live on both banks and in the water; jungle fish swim in it
@@ -5723,9 +5727,9 @@ tallyAddSect('coast','Animals · Coast & sea','🦈','#6fb8e8',[['dolphin','Dolp
 
 // ===================== partAL: turf guardians (male lion, white alpha wolf, silverback, any partTF leader) =====================
 // A full-health leader can't be swallowed on the first bite: the bite is shrugged off (and stings him).
-// One or two hits of any kind (bite, claw, stomp, fire burst, lava) bring him under AL_TH of his max HP,
+// One or two hits of any kind (bite, claw, stomp, fire burst, lava) bring him under AL_TH (80%) of his max HP,
 // then he is dizzy (little orbiting stars) and can be gulped like any other animal.
-const AL_TH=.78,AL_REBUFF=.24;
+const AL_TH=.80,AL_REBUFF=.24;
 const alWeak=u=>u.hp<=u.maxHp*AL_TH;
 function alTough(u){return tfIsLeader(u)&&!alWeak(u);}
 function alRebuff(u){const L=TF_L[u.species];hurtUnit(u,Math.ceil(u.maxHp*AL_REBUFF),'bite');u.roarFx=1.2;G.alRebuffs=(G.alRebuffs||0)+1;
@@ -5738,6 +5742,13 @@ for(const sp in TF_L){const prev=TOUGH[sp];
     const L=TF_L[u.species],sc=L.scale||1.2,hy=u.y-38*sc,t=G.t*3.2;
     for(let i=0;i<3;i++){const a=t+i*TAU/3;hnStar(u.x+Math.cos(a)*14*sc,hy+Math.sin(a)*4,3.2,i%2?'#ffe35a':'#fff7c0');}}
   else if(u.alDz&&!alWeak(u))u.alDz=0;};}
+
+// ---- rallied responders shrug off a little damage (the alpha itself does not, so its wear-down stays the same); a soft glow and a few orange sparkles show the rally ----
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){if(u&&!u.dead&&typeof d==='number'&&tfRallied(u)&&!tfIsLeader(u)){d*=RALLY.def;G.tfRallyBlocks=(G.tfRallyBlocks||0)+1;}return _hu.call(this,u,d,src);};}
+{const _df=drawFauna;drawFauna=function(u){if(!tfRallied(u))return _df(u);const k=Math.min(1,(u.rallyT-G.t)/3),ld=tfIsLeader(u),sc=ld?(TF_L[u.species].scale||1):1;
+  ctx.save();ctx.globalAlpha=.28*k;ell(u.x,u.y-8*sc,16*sc,9*sc,'#ffb347');ctx.restore();_df(u);
+  ctx.save();ctx.globalAlpha=.9*k;for(let i=0;i<3;i++){const a=G.t*2.2+i*2.09+(u.id||0),r=7*sc;const px=u.x+Math.cos(a)*r,py=u.y-24*sc-Math.abs(Math.sin(G.t*3+i))*5;
+    ell(px,py,2.3,2.3,i%2?'#ffd27a':'#ff9a3c');ell(px,py,.8,.8,'#fff4d0');}ctx.restore();};}
 
 // ===================== partWF: Dragon Peaks extras =====================
 // 1) wild dragons are IMMUNE to the player's fire breath (no damage, no burning; a little "shrug" puff). Bites, claws, stomps, lava still hurt.
@@ -6497,12 +6508,14 @@ const r_loot=u=>(u.raid&&u.raid.loot)||0;
 // It walks the roads from Sandhaven to the castle gate and back, guarded by desert soldiers (scimitar + round shield) and desert archers.
 // Kill the lead trader or the treasure camel and the 20 gold goes straight to your lair (via the auto-deposit). It comes back from Sandhaven
 // after a while, and fresh every level. Surviving guards stay on as Sandhaven's town guard; during a kingdom-wide muster the town is guarded too.
-const RCV={cur:null,gold:20,respawn:75,first:6,sol:2,arc:2,solHp:28,arcHp:22,arcRange:420,wait:6,townCap:4,milN:[2,1],milCd:30};
+// desert troops are tougher than regular ones (regular foot soldier 24 HP / 4 dmg, archer 22 HP / 4 dmg): ~1.45x HP, 1.25x damage.
+// The rich caravan walks at 67% of its old pace with 10 desert soldiers + 6 desert archers in formation; Sandhaven keeps its own garrison (3 + 2).
+const RCV={cur:null,gold:20,respawn:75,first:6,sol:10,arc:6,solHp:35,arcHp:32,dmgMul:1.25,spd:.67,arcRange:420,wait:6,townCap:4,milN:[2,1],milCd:30,garSol:3,garArc:2,guardR:240,predDmg:5,predCd:1.35,arcCd:2};
 function rcEnds(){return{a:{x:DTOWN.x+40,y:DTOWN.y+60},b:{x:GATE.x+60,y:GATE.y+70}};}
 function rcPath(){const e=rcEnds();let P=null;try{const q=scRoute(e.a,e.b);P=q&&q.P;}catch(_){P=null;}if(!P||P.length<2)P=[e.a,e.b];return P.map(p=>({x:p.x,y:p.y}));}
 function rcAlive(){const c=RCV.cur;return !!(c&&!c.done);}
-function mkDSol(x,y,o){return mkUnit('knight',x,y,Object.assign({foot:true,dsol:true,hp:RCV.solHp,maxHp:RCV.solHp,atk:0,colr:'#d8b878',born:G.t},o||{}));}
-function mkDArc(x,y,o){return mkUnit('archer',x,y,Object.assign({darch:true,hp:RCV.arcHp,maxHp:RCV.arcHp,shootT:R(1,3),born:G.t},o||{}));}
+function mkDSol(x,y,o){return mkUnit('knight',x,y,Object.assign({foot:true,dsol:true,hp:RCV.solHp,maxHp:RCV.solHp,atk:0,colr:'#d8b878',dmgMul:RCV.dmgMul,born:G.t},o||{}));}
+function mkDArc(x,y,o){return mkUnit('archer',x,y,Object.assign({darch:true,hp:RCV.arcHp,maxHp:RCV.arcHp,dmgMul:RCV.dmgMul,shootT:R(1,3),born:G.t},o||{}));}
 function spawnRich(o){o=o||{};const P=o.path||rcPath(),ri=Math.max(0,Math.min(P.length-1,o.ri==null?0:o.ri)),dir=o.dir||1,p=o.x!=null?{x:o.x,y:o.y}:P[0];
   // keep the desert at two caravans: retire a plain one that is out of sight
   const plain=units.filter(u=>u.carav&&u.type==='villager'&&!u.dead&&!u.rc);if(plain.length>=2){const v=plain.sort((a,b)=>dist(b,D)-dist(a,D))[0];if(dist(v,D)>900){for(const c of units)if(c.carav&&c.type==='animal'){let L=c;while(L&&L.type==='animal')L=L.leader;if(L===v){c.dead=c.gone=true;}}v.dead=v.gone=true;}}
@@ -6512,17 +6525,17 @@ function spawnRich(o){o=o||{};const P=o.path||rcPath(),ri=Math.max(0,Math.min(P.
   const pal=[['#c0392b','#f1c40f','#2e86c1'],['#8e44ad','#f39c12','#16a085'],['#d35400','#27ae60','#f1c40f']],camels=[];let prev=lead;
   const nc=o.camels==null?3:o.camels;for(let k=0;k<nc;k++){const c=mkUnit('animal',p.x-(k+1)*34,p.y,{species:'camel',carav:true,rc:1,rcPal:pal[k%3],leader:prev,hp:34,maxHp:34,face:1});if(k===0&&o.chest!==false)c.rcChest=true;units.push(c);camels.push(c);prev=c;}
   const guards=[];const gl=o.guards||[...Array(RCV.sol)].map(()=>({k:'dsoldier'})).concat([...Array(RCV.arc)].map(()=>({k:'darcher'})));
-  gl.forEach((g,i)=>{const x=g.x!=null?g.x:p.x+R(-30,30),y=g.y!=null?g.y:p.y+R(-20,30);const u=g.k==='darcher'?mkDArc(x,y):mkDSol(x,y);if(g.hp)u.hp=g.hp;u.escort=lead;u.eo=[-1.6,1.6,-.6,.6][i%4];u.rcG=true;units.push(u);guards.push(u);});
+  gl.forEach((g,i)=>{const x=g.x!=null?g.x:p.x+R(-30,30),y=g.y!=null?g.y:p.y+R(-20,30);const u=g.k==='darcher'?mkDArc(x,y):mkDSol(x,y);if(g.hp)u.hp=g.hp;u.escort=lead;u.eo=[-1.6,1.6,-.6,.6][i%4];u.rcG=true;u.rcSlot=u.darch?gl.slice(0,i).filter(q=>q.k==='darcher').length:gl.slice(0,i).filter(q=>q.k!=='darcher').length;units.push(u);guards.push(u);});
   RCV.cur={lead,t2,camels,guards,done:false};G.rcSpawned=(G.rcSpawned||0)+1;return RCV.cur;}
 // the lead trader walks the road there and back again (rests at each end); the second trader follows him
 {const _c=updCaravan;updCaravan=function(u,dt){if(!u.rcLead||u.type!=='villager')return _c.apply(this,arguments);u.anim=(u.anim||0)+dt*4;
   const dd=dist(u,D);if(dd<200&&!G.over){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,75,dt);if(!u.yelp||G.t-u.yelp>6){u.yelp=G.t;float(u.x,u.y-30,['Guards! Protect the treasure!','Dragon! Hold the line!'][RI(0,1)],'#ffe0a0');}return true;}
   if(u.rcWait>0){u.rcWait-=dt;return true;}
-  const P=u.route,t=P[u.ri];if(!t)return true;if(moveTo(u,t.x,t.y,38,dt)||dist(u,t)<16){const n=u.ri+u.rcDir;if(n<0||n>=P.length){u.rcDir=-u.rcDir;u.rcWait=RCV.wait;u.rcTrips=(u.rcTrips||0)+1;}else u.ri=n;}
+  const P=u.route,t=P[u.ri];if(!t)return true;u.rcHd=Math.atan2(t.y-u.y,t.x-u.x);if(moveTo(u,t.x,t.y,38*RCV.spd,dt)||dist(u,t)<16){const n=u.ri+u.rcDir;if(n<0||n>=P.length){u.rcDir=-u.rcDir;u.rcWait=RCV.wait;u.rcTrips=(u.rcTrips||0)+1;}else u.ri=n;}
   return true;};}
 {const _v=updVillager;updVillager=function(u,dt){if(u.rcF){const L=u.rcF;if(!L.dead){u.anim=(u.anim||0)+dt*4;const dd=dist(u,D);
     if(dd<200&&!G.over){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,75,dt);return;}
-    if(dist(u,L)>28)moveTo(u,L.x-14*(L.face||1),L.y+14,dist(u,L)>100?80:42,dt);u.face=L.x>u.x?1:-1;return;}
+    if(dist(u,L)>28)moveTo(u,L.x-14*(L.face||1),L.y+14,dist(u,L)>100?80:42*RCV.spd,dt);u.face=L.x>u.x?1:-1;return;}
     u.rcF=null;u.home=DTOWN;}return _v.apply(this,arguments);};}
 // desert archers shoot from further out while escorting
 {const _e=escortStep;escortStep=function(k,dt){if(k.darch&&k.escort&&!k.escort.dead&&dist(k,D)<RCV.arcRange&&!G.over)return false;return _e.apply(this,arguments);};}
@@ -6544,14 +6557,14 @@ function rcCheck(){const c=RCV.cur;if(!c||c.done)return;const chest=c.camels.fin
 function rcUpd(dt){if(G.over)return;rcCheck();
   if(!RCV.cur){G.rcT=(G.rcT==null?RCV.first:G.rcT)-dt;if(G.rcT<=0){G.rcT=0;spawnRich();}}
   // too many town guards: send the extras home (out of sight)
-  const tg=rcTownGuards(),cap=RCV.townCap+(G.milOn?3:0);if(tg.length>cap)for(const u of tg.slice(0,tg.length-cap))if(dist(u,D)>900){u.dead=u.gone=true;}
+  rcGarrison();const tg=rcTownGuards(),tx=tg.filter(u=>!u.garr),cap=RCV.townCap+(G.milOn?3:0);if(tx.length>cap)for(const u of tx.slice(0,tx.length-cap))if(dist(u,D)>900){u.dead=u.gone=true;}
   // kingdom muster: Sandhaven's desert troops turn out to guard the town
   G.rcMilT=(G.rcMilT||0)-dt;if(G.milOn&&G.rcMilT<=0){G.rcMilT=RCV.milCd;const s=tg.filter(u=>u.dsol).length,a=tg.filter(u=>u.darch).length;let i=tg.length;
     for(let k=s;k<RCV.milN[0];k++){const P=rcTownPost(i);const u=mkDSol(P.x,P.y,{milG:true});rcMakeGuard(u,i++);units.push(u);}
     for(let k=a;k<RCV.milN[1];k++){const P=rcTownPost(i);const u=mkDArc(P.x,P.y,{milG:true});rcMakeGuard(u,i++);units.push(u);}}
   if(!G.milOn)for(const u of tg)if(u.milG&&dist(u,D)>900){u.dead=u.gone=true;}}
 {const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&!paused&&G&&D&&typeof DTOWN!=='undefined')rcUpd(dt);return r;};}
-{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);RCV.cur=null;G.rcT=RCV.first;G.rcMilT=0;return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);RCV.cur=null;G.rcT=RCV.first;G.rcMilT=0;G.rcGar=false;return r;};}
 // ---- tally: desert soldiers / archers get their own lines, plus raided rich caravans ----
 {const _k=tallyKeyU;tallyKeyU=function(u){if(u&&u.dsol)return'dsoldier';if(u&&u.darch)return'darcher';return _k.apply(this,arguments);};}
 TALLY_SECT.splice(2,0,{id:'desert',name:'Sandhaven (desert)',icon:'🐫',col:'#f0c878',keys:[['dsoldier','Desert soldiers'],['darcher','Desert archers'],['richcaravan','Rich caravans raided']]});
@@ -6583,14 +6596,95 @@ function drawDesertArcher(u){const x=u.x,y=u.y,f=u.face||1,bob=Math.sin(u.anim||
     if(u.rcChest){rect(x-8,y-45-b,16,10,'#7a4a1a');rect(x-8,y-45-b,16,3,'#a0662a');rect(x-8.5,y-41.5-b,17,1.4,'#e8c050');rect(x-1.5,y-42-b,3,4,'#e8c050');
       ell(x-4,y-46-b,2,1.4,'#ffd84a');ell(x+3,y-46.5-b,2,1.4,'#ffd84a');if(Math.sin(G.t*5)>.6)ell(x+R(-6,6),y-48-b,1.2,1.2,'#fff4b0');}}return r;};}
 // ---- save / load (units are not saved: snapshot the rich caravan and Sandhaven's town guard) ----
-{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);const c=RCV.cur,g=u=>({k:u.dsol?'dsoldier':'darcher',hp:Math.round(u.hp),x:Math.round(u.x),y:Math.round(u.y)});
+{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);const c=RCV.cur,g=u=>({k:u.dsol?'dsoldier':'darcher',hp:Math.round(u.hp),x:Math.round(u.x),y:Math.round(u.y),garr:!!u.garr});
   d.RCV={cur:c&&!c.done&&!c.lead.dead?{x:Math.round(c.lead.x),y:Math.round(c.lead.y),ri:c.lead.ri|0,dir:c.lead.rcDir||1,wait:+(c.lead.rcWait||0).toFixed(1),t2:!!(c.t2&&!c.t2.dead),
-    camels:c.camels.filter(k=>!k.dead).length,chest:c.camels.some(k=>k.rcChest&&!k.dead),guards:c.guards.filter(u=>!u.dead).map(g)}:null,town:rcTownGuards().map(u=>Object.assign(g(u),{mil:!!u.milG}))};return d;};}
+    camels:c.camels.filter(k=>!k.dead).length,chest:c.camels.some(k=>k.rcChest&&!k.dead),guards:c.guards.filter(u=>!u.dead).map(g)}:null,town:rcTownGuards().map(u=>Object.assign(g(u),{mil:!!u.milG})),garDone:!!G.rcGar};return d;};}
 {const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);if(!d||!d.RCV)return r;
   for(let i=units.length-1;i>=0;i--){const u=units[i];if(u.rc||u.dsol||u.darch)units.splice(i,1);}RCV.cur=null;
   if(d.RCV.cur){const c=d.RCV.cur;spawnRich({x:c.x,y:c.y,ri:c.ri,dir:c.dir,wait:c.wait,t2:c.t2,camels:c.camels,chest:c.chest,guards:c.guards});G.rcSpawned=Math.max(0,(G.rcSpawned||1)-1);}
-  (d.RCV.town||[]).forEach((t,i)=>{const u=t.k==='darcher'?mkDArc(t.x,t.y):mkDSol(t.x,t.y);u.hp=t.hp||u.hp;if(t.mil)u.milG=true;rcMakeGuard(u,i);units.push(u);});
+  (d.RCV.town||[]).forEach((t,i)=>{const u=t.k==='darcher'?mkDArc(t.x,t.y):mkDSol(t.x,t.y);u.hp=t.hp||u.hp;if(t.mil)u.milG=true;if(t.garr)u.garr=true;rcMakeGuard(u,i);units.push(u);});G.rcGar=(d.RCV.town||[]).some(t=>t.garr)||!!d.RCV.garDone;
   return r;};}
+
+// ---- Sandhaven's standing garrison: 3 desert soldiers + 2 desert archers guard the town every level (separate from the caravan escort) ----
+function rcGarrison(){if(G.rcGar||typeof DTOWN==='undefined')return;G.rcGar=true;let i=0;
+  for(let k=0;k<RCV.garSol;k++){const P=rcTownPost(i);const u=mkDSol(P.x,P.y,{garr:true});rcMakeGuard(u,i++);units.push(u);}
+  for(let k=0;k<RCV.garArc;k++){const P=rcTownPost(i);const u=mkDArc(P.x,P.y,{garr:true});rcMakeGuard(u,i++);units.push(u);}G.rcGarN=(G.rcGarN||0)+1;}
+// ---- the escort marches in formation: soldiers in two files of five down the flanks, archers paired at the front, rear and outer flanks ----
+const RC_FORM={sol:[[10,-30],[-20,-30],[-50,-30],[-80,-30],[-110,-30],[10,30],[-20,30],[-50,30],[-80,30],[-110,30]],arc:[[42,-16],[42,16],[-150,-16],[-150,16],[-50,-64],[-50,64]]};
+function rcSlotPos(k,L){const F=k.darch?RC_FORM.arc:RC_FORM.sol,s=F[(k.rcSlot||0)%F.length],a=L.rcHd||0,f=s[0],l=s[1];return{x:L.x+Math.cos(a)*f-Math.sin(a)*l,y:L.y+Math.sin(a)*f*.8+Math.cos(a)*l*.8};}
+{const _e=escortStep;escortStep=function(k,dt){const c=RCV.cur;if(!(k.rcG&&c&&!c.done&&k.escort===c.lead&&!c.lead.dead))return _e.apply(this,arguments);
+  if(typeof gpGuardStep==='function'&&gpGuardStep(k,dt))return true;
+  const dd=dist(k,D);if(dd<260&&D.alt<.6)return false;if(k.darch&&dd<RCV.arcRange&&!G.over)return false;
+  const L=c.lead,T=rcSlotPos(k,L),dt2=dist(k,T);if(dt2>4)moveTo(k,T.x,T.y,dt2>120?80:Math.max(30,Math.min(60,dt2*2)),dt);k.face=L.face||1;k.born=G.t;k.retreat=false;return true;};}
+// ================= partGP: guards keep travellers safe from predators =================
+// The rich caravan's desert escort and the kingdom's road patrols take on predators (lions, wolves, bears, big cats, scorpions, snakes,
+// crocs, wild dragons...) that come near the caravan or a patrol on the road; the predator fights back, and once worn down it simply
+// runs off (family-friendly: nobody is defeated for good; guards and camels are never knocked below a sliver of health by animals).
+// The dragon always comes first: a caravan the dragon is attacking, or an engaged patrol, ignores the animals.
+function gpQ(ax,ay,bx,by){const x=ax-bx,y=ay-by;return x*x+y*y;}
+const GP={pred:new Set(['lion','hyena','jaguar','tiger','cheetah','cougar','wolf','bear','dscorp','snake','python','croc','wdragon']),
+  carR:240,patR:300,travR:450,tick:.25,t:0,list:[],runAt:.3,flee:12,bite:1.35};
+function gpOk(T){return !!(T&&!T.dead&&!T.gone&&T.type==='animal'&&!(T.gpFlee>G.t));}
+function gpScan(){GP.list=[];for(const u of units)if(gpOk(u)&&GP.pred.has(u.species)&&!u.carav&&!u.tame&&!u.pet)GP.list.push(u);}
+function gpNear(x,y,r){let b=null,bd=r*r;for(const t of GP.list){if(!gpOk(t))continue;const d=gpQ(t.x,t.y,x,y);if(d<bd){bd=d;b=t;}}return b;}
+function gpDragonFirst(x,y,r){return !G.over&&D.alt<.6&&gpQ(D.x,D.y,x,y)<r*r;}
+function gpRunOff(T,from){T.gpFlee=G.t+GP.flee;T.gpAgg=null;T.gpFrom={x:from.x,y:from.y};if(typeof hnDrop==='function'&&T.hPrey)hnDrop(T);T.state='idle';
+  G.gpRouted=(G.gpRouted||0)+1;if(dist(T,D)<1300){const n=(typeof HN_WHO!=='undefined'&&HN_WHO[T.species])||('The '+T.species);float(T.x,T.y-34,`${n} runs off!`,'#e0ffe0');puff(T.x,T.y-8,8,'rgba(230,220,190,',70,4);}}
+function gpHit(T,d,by){if(!gpOk(T))return;T.hp=Math.max(1,T.hp-d);G.gpHits=(G.gpHits||0)+1;if(!T.gpAgg||T.gpAgg.dead)T.gpAgg=by;
+  if(T.species==='wdragon')T.angry=G.t;if(T.hp<=T.maxHp*GP.runAt)gpRunOff(T,by);}
+// one guard fights one predator: soldiers close in and strike, archers keep their distance and shoot
+function gpFight(u,T,dt){u.anim=(u.anim||0)+dt*6;u.face=T.x>u.x?1:-1;const dd=dist(u,T),m=u.dmgMul||1;u.gpCd=(u.gpCd||0)-dt;
+  if(u.type==='archer'){if(dd>300)moveTo(u,T.x,T.y,72,dt);else if(dd<130){const a=Math.atan2(u.y-T.y,u.x-T.x);moveTo(u,u.x+Math.cos(a)*30,u.y+Math.sin(a)*30,70,dt);}
+    if(dd<340&&u.gpCd<=0){u.gpCd=2;u.draw=.3;u.gpShot={x0:u.x,y0:u.y-10,x:T.x,y:T.y-8,t:.18};gpHit(T,4*m,u);G.gpArrows=(G.gpArrows||0)+1;}}
+  else{if(dd>26)moveTo(u,T.x,T.y,u.mounted?130:90,dt);else if(u.gpCd<=0){u.gpCd=u.foot?1.35:1.1;u.swing=.25;gpHit(T,(u.foot?4:7)*m,u);}}
+  u.swing=Math.max(0,(u.swing||0)-dt);u.born=G.t;}
+// caravan guards (called from partRC's formation step); returns true while busy with a predator
+function gpGuardStep(k,dt){const c=RCV.cur,L=c&&c.lead;if(!L||L.dead)return false;if(gpDragonFirst(L.x,L.y,320)){k.gpT=null;return false;}
+  const T=k.gpT;if(!gpOk(T)||dist(T,L)>GP.carR+260){k.gpT=null;return false;}gpFight(k,T,dt);return true;}
+function gpCaravanTick(){const c=RCV.cur;if(!c||c.done||!c.lead||c.lead.dead)return;const L=c.lead;if(gpDragonFirst(L.x,L.y,320))return;
+  const near=[L,...c.camels.filter(k=>!k.dead)];let T=null;for(const p of near){T=gpNear(p.x,p.y,GP.carR);if(T)break;}
+  if(!T){for(const g of c.guards)if(!g.dead&&!gpOk(g.gpT))g.gpT=null;return;}
+  for(const g of c.guards)if(!g.dead&&!gpOk(g.gpT))g.gpT=gpNear(g.x,g.y,GP.carR+200)||T;
+  for(const t of GP.list)if(gpOk(t)&&!gpOk(t.gpAgg)&&gpQ(t.x,t.y,L.x,L.y)<(GP.carR+120)**2){let b=null,bd=1e12;for(const v of [...c.guards,...c.camels])if(!v.dead){const d=gpQ(v.x,v.y,t.x,t.y);if(d<bd){bd=d;b=v;}}t.gpAgg=b;}
+  G.gpCarEngaged=(G.gpCarEngaged||0)+1;}
+// road patrols: a predator near the patrol (or bothering a traveller the patrol is passing) gets chased off, then the patrol carries on
+function gpPatrolTick(){if(typeof patrols==='undefined')return;for(const p of patrols){if(p.dead||p.engaged){p.gpT=null;continue;}const L=p.members.find(u=>!u.dead);if(!L)continue;
+  if(gpOk(p.gpT)&&dist(p.gpT,L)<GP.patR+300)continue;p.gpT=gpNear(L.x,L.y,GP.patR);
+  if(!p.gpT)for(const t of GP.list){if(!gpOk(t)||gpQ(t.x,t.y,L.x,L.y)>GP.travR**2)continue;if(units.some(v=>!v.dead&&(v.type==='villager'||v.carav)&&gpQ(v.x,v.y,t.x,t.y)<140*140)){p.gpT=t;break;}}
+  if(p.gpT){p.wp=null;G.gpPatEngaged=(G.gpPatEngaged||0)+1;if(!p.gpSaid||G.t-p.gpSaid>8){p.gpSaid=G.t;if(dist(L,D)<1300)float(L.x,L.y-50,'Patrol: "Keep the road safe!"','#ffe0a0');}
+    if(!gpOk(p.gpT.gpAgg))p.gpT.gpAgg=L;}}}
+{const _up=updPatrols;updPatrols=function(dt){const busy=patrols.filter(p=>!p.engaged&&gpOk(p.gpT));const saved=busy.map(p=>p.members.map(u=>[u.x,u.y]));
+  const r=_up.apply(this,arguments);busy.forEach((p,i)=>{if(p.engaged)return;p.members.forEach((u,j)=>{if(saved[i][j]&&!u.dead){u.x=saved[i][j][0];u.y=saved[i][j][1];}if(!u.dead&&gpOk(p.gpT))gpFight(u,p.gpT,dt);});});return r;};}
+// predators that are being fought (or that came for the caravan) fight back, and run off when worn down
+{const _w=updWild;updWild=function(u,dt){if(u&&!u.dead){
+    if(u.gpFlee>G.t&&u.gpFrom){const F=FAUNA[u.species]||{sp:80},a=Math.atan2(u.y-u.gpFrom.y,u.x-u.gpFrom.x),ox=u.x,oy=u.y;moveTo(u,u.x+Math.cos(a)*60,u.y+Math.sin(a)*60,(F.sp||80)*1.1,dt);u.state='idle';
+      const Z=ZONES&&ZONES[u.zone];if(Z&&Z.ok&&Z.ok(ox,oy)&&!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}return;}
+    const A=u.gpAgg;if(A&&GP.pred.has(u.species)&&u.species!=='wdragon'){if(A.dead||dist(u,A)>700||gpDragonFirst(u.x,u.y,150)){u.gpAgg=null;}
+      else{const F=FAUNA[u.species]||{sp:80,bite:2,cd:1.5};u.state='hunt';u.gpBcd=(u.gpBcd||0)-dt;if(u.hPrey&&typeof hnDrop==='function')hnDrop(u);
+        if(dist(u,A)>24)moveTo(u,A.x,A.y,(F.sp||80),dt);else if(u.gpBcd<=0){u.gpBcd=F.cd||GP.bite;const b=F.bite||2,floor=A.type==='animal'?A.maxHp*.5:Math.max(1,A.maxHp*.15);
+          A.hp=Math.max(Math.min(A.hp,floor),A.hp-b);G.gpBites=(G.gpBites||0)+1;if(dist(u,D)<1100)float(A.x,A.y-30,(F.say||'Grr!').replace(/ -\d+$/,''),'#ffd0a0');}
+        u.face=A.x>u.x?1:-1;return;}}}
+  return _w.apply(this,arguments);};updWild._base=_w._base;}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&!paused&&G&&D&&!G.over){GP.t-=dt;if(GP.t<=0){GP.t=GP.tick;gpScan();gpCaravanTick();gpPatrolTick();}}return r;};}
+{const _ng=newGame;newGame=function(){GP.list=[];GP.t=0;return _ng.apply(this,arguments);};}
+// archers' arrows at predators: a quick streak
+{const _dp=drawPerson;drawPerson=function(u){const r=_dp.apply(this,arguments);const s=u.gpShot;if(s&&s.t>0){s.t-=1/60;ctx.save();ctx.globalAlpha=Math.min(1,s.t*8);line(s.x0,s.y0,s.x,s.y,'#f4ecd8',1.3);ctx.restore();}return r;};}
+// ---- worksite patrols: a small squad (3 foot soldiers + 1 archer) loops around the lumber camp and another around the mine ----
+// They guard the workers and carts from the dragon (normal patrol engagement) and from predators (same chase-off as road patrols).
+// Fresh every level; a lost squad is replaced after a while.
+const WS={first:3,respawn:60,sites:()=>[{key:'camp',name:'lumber camp',x:(CAMP.x+LOGPILE_POS.x)/2,y:(CAMP.y+LOGPILE_POS.y)/2,rx:190,ry:140},
+  {key:'mine',name:'mine',x:(MINE.x+STONEPILE_POS.x)/2,y:(MINE.y+STONEPILE_POS.y)/2,rx:200,ry:140}]};
+function wsLoop(S){return[0,1,2,3,4,5].map(i=>{const a=i/6*TAU;return{x:S.x+Math.cos(a)*S.rx,y:S.y+Math.sin(a)*S.ry};});}
+function wsSpawn(S){const lvl=G.lvl||1,hpM=1+.2*(lvl-1),colr='#6a5a2a',P=wsLoop(S),st=P[RI(0,P.length-1)];
+  const p={id:++patrolId,members:[],engaged:false,wp:null,site:S.key,siteS:S,li:RI(0,5)};
+  ['foot','foot','foot','archer'].forEach((k,i)=>{const x=st.x+R(-14,14),y=st.y+i*8;const u=k==='archer'?mkUnit('archer',x,y,{hp:22,maxHp:22,shootT:R(1,3)}):mkUnit('knight',x,y,{hp:24,maxHp:24,atk:0,foot:true,colr});
+    u.hp=u.maxHp=Math.round(u.maxHp*hpM);u.patrol=p;u.wsP=S.key;u.born=G.t;p.members.push(u);});
+  p.members[0].banner=true;units.push(...p.members);patrols.push(p);G.wsSpawned=(G.wsSpawned||0)+1;return p;}
+function wsTick(dt){if(!G.ws)G.ws={};for(const S of WS.sites()){const live=patrols.some(p=>p.site===S.key&&!p.dead&&p.members.some(u=>!u.dead));
+  if(live){G.ws[S.key]=WS.respawn;continue;}G.ws[S.key]=(G.ws[S.key]==null?WS.first:G.ws[S.key])-dt;if(G.ws[S.key]<=0){wsSpawn(S);G.ws[S.key]=WS.respawn;}}}
+{const _up=updPatrols;updPatrols=function(dt){wsTick(dt);for(const p of patrols)if(p.site&&!p.engaged&&!p.wp&&p.siteS){const P=wsLoop(p.siteS);p.li=((p.li||0)+1)%P.length;p.wp=P[p.li];}return _up.apply(this,arguments);};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);if(G)G.ws={};return r;};}
+if(typeof svApply==='function'){const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);if(G)G.ws={};return r;};}
 // ======================= partBT: EVERY BITE HURTS =======================
 // A bite that can't swallow its target (too big, an alpha or champion not yet worn down, the prince, bosses, bulls, wild dragons, a whale...)
 // still deals bite damage, with a jaw-snap impact cue and a red "-N". Edible targets are eaten exactly as before.

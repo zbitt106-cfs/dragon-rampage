@@ -8,7 +8,7 @@ function updAlarm(dt){
   if(L<G.lastLevel)G.lastLevel=L;
   G.level=L;
   // enemies give up and ride home if the meter cools to Calm
-  {const gu=giveUpT();for(const u of units)if(!u.dead&&!u.post&&!u.patrol&&!u.escort&&!u.raid&&!u.prince&&(u.type==='knight'||u.type==='archer')&&G.t-(u.born||0)>10&&((L===0&&G.sinceDmg>gu)||(G.sinceDmg>gu&&kingdomMul(D.x,D.y)<.6&&dist(u,D)>1300)))u.retreat=true;}
+  {const gu=giveUpT();for(const u of units)if(!u.dead&&!u.post&&!u.dguard&&!u.patrol&&!u.escort&&!u.raid&&!u.prince&&(u.type==='knight'||u.type==='archer')&&G.t-(u.born||0)>10&&((L===0&&G.sinceDmg>gu)||(G.sinceDmg>gu&&kingdomMul(D.x,D.y)<.6&&dist(u,D)>1300)))u.retreat=true;}
   // troops muster at the barracks and ride out of the gate one by one
   G.gateOpenT=Math.max(0,G.gateOpenT-dt);
   if(G.spawnQ.length){G.spawnQT-=dt;if(G.spawnQT<=0){G.spawnQT=0.28*musterSlow()*musterNear()*(gateBroken()?2:1);const q=G.spawnQ.shift();G.gateOpenT=Math.max(G.gateOpenT,1.6);const nb=units.length;
@@ -66,7 +66,7 @@ function updKnight(u,dt){if(u.mounted&&!u.retreat){updCavalry(u,dt);return;}cons
   if(u.post==='guard'&&(dd>380||d2(u.x,u.y,u.px,u.py)>520)){moveTo(u,u.px,u.py,80,dt);u.face=D.x>u.x?1:-1;u.swing=Math.max(0,(u.swing||0)-dt);return;}
   const ground=D.alt<DR.hitAltSword;
   const fs=u.foot?.7:1;
-  if(ground){if(dd>(u.foot?58:72))moveTo(u,D.x,D.y,130*fs,dt);else{u.anim+=dt*4;if(u.atk<=0){u.atk=u.foot?1.35:1.1;u.swing=.25;hurtDragon(u.foot?4:7,u.foot?'spear':'sword');}}}
+  if(ground){if(dd>(u.foot?58:72))moveTo(u,D.x,D.y,130*fs,dt);else{u.anim+=dt*4;if(u.atk<=0){u.atk=u.foot?1.35:1.1;u.swing=.25;hurtDragon((u.foot?4:7)*(u.dmgMul||1),u.foot?'spear':'sword');}}}
   else{const a=G.t*.8+u.id*TAU,tx=D.x+Math.cos(a)*120,ty=D.y+Math.sin(a)*80;moveTo(u,tx,ty,(dd>200?130:70)*fs,dt);}
   u.swing=Math.max(0,(u.swing||0)-dt);}
 function updArcher(u,dt){const dd=dist(u,D);u.shootT-=dt;
@@ -75,7 +75,7 @@ function updArcher(u,dt){const dd=dist(u,D);u.shootT-=dt;
   else if(dd>330)moveTo(u,D.x,D.y,72,dt);else if(dd<180){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*30,u.y+Math.sin(a)*30,70,dt);}
   u.face=D.x>u.x?1:-1;
   if(dd<(u.post?440:420)&&u.shootT<=0){u.shootT=R(1.8,2.6)-G.level*.15;u.draw=.3;const T=dd/430,px=D.x+D.vx*T*.6,py=D.y+D.vy*T*.6,a=Math.atan2(py-u.y,px-u.x);
-    projs.push({kind:'arrow',x:u.x,y:u.y,z:10,vx:Math.cos(a)*430,vy:Math.sin(a)*430,tz:heightOf()+15,life:1.4,dmg:4,z0:u.post?40:10});}
+    projs.push({kind:'arrow',x:u.x,y:u.y,z:10,vx:Math.cos(a)*430,vy:Math.sin(a)*430,tz:heightOf()+15,life:1.4,dmg:4*(u.dmgMul||1),z0:u.post?40:10});}
   u.draw=Math.max(0,(u.draw||0)-dt);}
 function updCrew(u,dt){const g=u.siege;if(!g||g.dead){u.job='peasant';u.type='villager';u.home=VILLAGES[RI(0,4)];u.v=0;u.shirt='#8a6a3a';u.state='idle';return;}
   const a=g.ang+Math.PI+(u.slot-(g.kind==='scorpion'?.5:1))*0.7,tx=g.x+Math.cos(a)*30,ty=g.y+Math.sin(a)*22;moveTo(u,tx,ty,60,dt);

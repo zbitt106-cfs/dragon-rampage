@@ -6,7 +6,7 @@ Object.assign(FAUNA,{gorilla:{hp:34,sp:68,bite:3,aggro:60,cd:1.6,say:'Gorilla bo
   gotter:{hp:8,sp:84,bite:1,aggro:80,cd:1.3,say:'Otter nip! -1',growl:'EEE-EEE-EEE!',zone:'jotter'}});
 Object.assign(HEAL,{gorilla:30,gotter:8,silverback:50});Object.assign(FOOD,{gorilla:30,gotter:8,silverback:50});
 ['gorilla','gotter'].forEach(s=>FAUNA_ART.add(s));
-TF_L.gorilla={flag:'male',hp:70,bite:5,cd:1.5,R:480,scale:1.25,call:'*THUMP THUMP* HOO-HOO-HOO!',sfx:'roar',col:'#e8e8f0',ring:'210,215,230',key:'silverback',label:'Silverback gorillas',food:50,heal:50,grp:'troop',
+TF_L.gorilla={flag:'male',hp:92,bite:6,cd:1.5,R:480,scale:1.25,call:'*THUMP THUMP* HOO-HOO-HOO!',sfx:'roar',col:'#e8e8f0',ring:'210,215,230',key:'silverback',label:'Silverback gorillas',food:50,heal:50,grp:'troop',
   who:'The silverback',say:'Silverback bonk!',calm:'The silverback grunts and the troop goes back to munching leaves',fresh:'A new silverback leads the troop!'};
 Object.assign(PRIDES,{gorilla:{n:2,size:5},gotter:{n:3,size:4}});
 // the jungle river: giant otters live on both banks and in the water; jungle fish swim in it

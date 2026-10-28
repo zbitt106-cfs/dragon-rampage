@@ -1,9 +1,9 @@
 
 // ===================== partAL: turf guardians (male lion, white alpha wolf, silverback, any partTF leader) =====================
 // A full-health leader can't be swallowed on the first bite: the bite is shrugged off (and stings him).
-// One or two hits of any kind (bite, claw, stomp, fire burst, lava) bring him under AL_TH of his max HP,
+// One or two hits of any kind (bite, claw, stomp, fire burst, lava) bring him under AL_TH (80%) of his max HP,
 // then he is dizzy (little orbiting stars) and can be gulped like any other animal.
-const AL_TH=.78,AL_REBUFF=.24;
+const AL_TH=.80,AL_REBUFF=.24;
 const alWeak=u=>u.hp<=u.maxHp*AL_TH;
 function alTough(u){return tfIsLeader(u)&&!alWeak(u);}
 function alRebuff(u){const L=TF_L[u.species];hurtUnit(u,Math.ceil(u.maxHp*AL_REBUFF),'bite');u.roarFx=1.2;G.alRebuffs=(G.alRebuffs||0)+1;
@@ -16,3 +16,10 @@ for(const sp in TF_L){const prev=TOUGH[sp];
     const L=TF_L[u.species],sc=L.scale||1.2,hy=u.y-38*sc,t=G.t*3.2;
     for(let i=0;i<3;i++){const a=t+i*TAU/3;hnStar(u.x+Math.cos(a)*14*sc,hy+Math.sin(a)*4,3.2,i%2?'#ffe35a':'#fff7c0');}}
   else if(u.alDz&&!alWeak(u))u.alDz=0;};}
+
+// ---- rallied responders shrug off a little damage (the alpha itself does not, so its wear-down stays the same); a soft glow and a few orange sparkles show the rally ----
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){if(u&&!u.dead&&typeof d==='number'&&tfRallied(u)&&!tfIsLeader(u)){d*=RALLY.def;G.tfRallyBlocks=(G.tfRallyBlocks||0)+1;}return _hu.call(this,u,d,src);};}
+{const _df=drawFauna;drawFauna=function(u){if(!tfRallied(u))return _df(u);const k=Math.min(1,(u.rallyT-G.t)/3),ld=tfIsLeader(u),sc=ld?(TF_L[u.species].scale||1):1;
+  ctx.save();ctx.globalAlpha=.28*k;ell(u.x,u.y-8*sc,16*sc,9*sc,'#ffb347');ctx.restore();_df(u);
+  ctx.save();ctx.globalAlpha=.9*k;for(let i=0;i<3;i++){const a=G.t*2.2+i*2.09+(u.id||0),r=7*sc;const px=u.x+Math.cos(a)*r,py=u.y-24*sc-Math.abs(Math.sin(G.t*3+i))*5;
+    ell(px,py,2.3,2.3,i%2?'#ffd27a':'#ff9a3c');ell(px,py,.8,.8,'#fff4d0');}ctx.restore();};}

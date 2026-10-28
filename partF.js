@@ -126,7 +126,7 @@ function spawnPatrol(){const lvl=G.lvl,mix=[...PATROL_MIX[RI(0,PATROL_MIX.length
   units.push(...p.members);patrols.push(p);G.gateOpenT=Math.max(G.gateOpenT,2);return p;}
 function engagePatrol(p){if(p.engaged)return;p.engaged=true;p.engT=G.t;const L=p.members.find(u=>!u.dead);if(L)float(L.x,L.y-50,'Patrol: "There\'s the dragon!"','#ffe0a0');}
 function updPatrols(dt){G.patrolT-=dt;const cap=(G.easy?2:3)+Math.min(2,G.lvl-1)+treasPatrols();
-  if(G.patrolT<=0){G.patrolT=G.easy?70:45;if(patrols.length<cap&&units.length<420)spawnPatrol();}
+  if(G.patrolT<=0){G.patrolT=G.easy?70:45;if(patrols.filter(p=>!p.site).length<cap&&units.length<420)spawnPatrol();}
   const P=patrolPoints();
   for(const p of patrols){p.members=p.members.filter(u=>!u.dead);if(!p.members.length){p.dead=true;continue;}const L=p.members[0],dl=dist(L,D);
     if(!p.engaged){if(dl<340&&!G.over&&!G.won)engagePatrol(p);}
