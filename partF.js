@@ -53,7 +53,7 @@ function updWild(u,dt){const F=FAUNA[u.species],Z=ZONES[u.zone],dd=dist(u,D),ox=
     if(moveTo(u,u.tgt.x,u.tgt.y,F.sp*(u.species==='crab'?.6:.22),dt))u.tgt=null;}
   if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;u.tgt=null;}
   const H=u.home,m=u.strict?8:-220;u.x=clamp(u.x,H.x+m,H.x+H.w-m);u.y=clamp(u.y,H.y+m,H.y+H.h-m);}
-function updFish(u,dt,dd){const Z=ZONES.water,ox=u.x,oy=u.y;
+function updFish(u,dt,dd){const Z=ZONES[u.zone]||ZONES.water,ox=u.x,oy=u.y;
   if(u.jt>0){u.jt-=dt;u.x+=u.vx*dt;u.y+=u.vy*dt;if(u.jt<=0){u.jt=0;if(dd<900)puff(u.x,u.y,4,'rgba(200,230,255,',40,3);}}
   else{u.x+=Math.sin(G.t*.5+u.id*9)*12*dt;u.y+=Math.cos(G.t*.4+u.id*7)*6*dt;if(u.t<=0){u.t=R(1.5,4.5);u.jt=.9;u.vx=R(-45,45);u.vy=R(-12,12);u.face=u.vx>0?1:-1;if(dd<450&&rnd()<.3)float(u.x,u.y-34,'Splash!','#bfe6ff');}}
   if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;u.vx*=-1;}}

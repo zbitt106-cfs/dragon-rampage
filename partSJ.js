@@ -99,7 +99,7 @@ function spawnSJ(sp,far,at){const F=FAUNA[sp],Z=ZONES[F.zone];let p=at||null,hom
 {const _sw=spawnWild;spawnWild=function(sp,far,at){if(SJ_SP.has(sp))return spawnSJ(sp,far,at);return _sw(sp,far,at);};}
 function spawnPride(sp,far){const F=FAUNA[sp],Z=ZONES[F.zone],P=PRIDES[sp];let p=null;for(let t=0;!p&&t<80;t++){const q=Z.s();if(Z.ok(q.x,q.y)&&sjFar(q,far))p=q;}if(!p)return;
   const pk=++packId,home={x:p.x-380,y:p.y-280,w:760,h:560};
-  for(let i=0;i<P.size;i++){const q=sjNear(Z,p,40,30);units.push(mkUnit('animal',q.x,q.y,{species:sp,wild:true,zone:F.zone,home,hp:F.hp,maxHp:F.hp,free:true,pack:pk,male:sp==='lion'&&i===0?1:0,t:R(0,3),jt:0,face:rnd()<.5?1:-1}));}}
+  for(let i=0;i<P.size;i++){const q=sjNear(Z,p,40,30);units.push(mkUnit('animal',q.x,q.y,{species:sp,wild:true,zone:F.zone,home,hp:F.hp,maxHp:F.hp,free:true,pack:pk,male:(sp==='lion'||sp==='gorilla')&&i===0?1:0,t:R(0,3),jt:0,face:rnd()<.5?1:-1}));}}
 function sjNear(Z,p,ax,ay){for(let t=0;t<12;t++){const x=p.x+R(-ax,ax),y=p.y+R(-ay,ay);if(Z.ok(x,y))return{x,y};}return{x:p.x,y:p.y};}
 function prideGroups(sp){const g={};for(const u of units)if(!u.dead&&u.species===sp&&u.pack)(g[u.pack]||(g[u.pack]=[])).push(u);return g;}
 function updPrides(dt){G.prideT=(G.prideT||0)-dt;if(G.prideT>0)return;G.prideT=8;G.prideGrow=(G.prideGrow||0)+8;

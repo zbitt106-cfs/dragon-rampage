@@ -17,7 +17,7 @@ function tfPack(u){let P=TF.packs[u.pack];const H=u.home;if(!P){P=TF.packs[u.pac
   if(H){P.cx=H.x+H.w/2;P.cy=H.y+H.h/2;}else if(P.cx===undefined){P.cx=u.x;P.cy=u.y;}return P;}
 function tfMakeLeader(u){const L=TF_L[u.species];if(!L)return u;u[L.flag]=1;u.hp=u.maxHp=L.hp;return u;}
 // ---- spawning: the lion pride's first lion is already the male (partSJ); every wolf pack gets an extra white alpha ----
-{const _sp=spawnPride;spawnPride=function(sp,far){const n0=packId;const r=_sp.apply(this,arguments);if(sp==='lion'&&packId>n0)for(const u of units)if(u.pack===packId&&u.male)tfMakeLeader(u);return r;};}
+{const _sp=spawnPride;spawnPride=function(sp,far){const n0=packId;const r=_sp.apply(this,arguments);if(TF_L[sp]&&sp!=='wolf'&&packId>n0)for(const u of units)if(u.pack===packId&&u.male)tfMakeLeader(u);return r;};}
 {const _sw=spawnWild;spawnWild=function(sp,far,at){const n0=packId;const r=_sw.apply(this,arguments);
   if(sp==='wolf'&&packId>n0){const m=units.filter(u=>!u.dead&&u.pack===packId&&u.species==='wolf');if(m.length&&!m.some(u=>u.alpha)){const o=m[0];
     const a=mkUnit('animal',o.x+R(-20,20),o.y+R(-15,15),{species:'wolf',wild:true,zone:o.zone,home:o.home,strict:o.strict,hp:TF_L.wolf.hp,maxHp:TF_L.wolf.hp,free:true,pack:o.pack,t:R(0,3),jt:0});units.push(tfMakeLeader(a));}}
@@ -25,12 +25,12 @@ function tfMakeLeader(u){const L=TF_L[u.species];if(!L)return u;u[L.flag]=1;u.hp
 // ---- the leader watches the turf ----
 function tfCall(u,P){const L=TF_L[u.species];P.roarT=G.t;u.roarFx=1.6;
   float(u.x,u.y-48,L.call,L.col);if(typeof SFX!=='undefined')SFX.play(L.sfx,u.x,u.y,1);if(dist(u,D)<900)G.shake=Math.max(G.shake||0,4);
-  if(u.species==='lion')G.tfRoars=(G.tfRoars||0)+1;else G.tfHowls=(G.tfHowls||0)+1;}
+  if(u.species==='lion')G.tfRoars=(G.tfRoars||0)+1;else if(u.species==='wolf')G.tfHowls=(G.tfHowls||0)+1;else G.tfBeats=(G.tfBeats||0)+1;}
 function tfAlarm(u,P){P.alert=true;P.calm=0;P.seenT=G.t;tfCall(u,P);
   for(const m of tfMembers(u.pack)){if(m===u)continue;
     if(m.hPrey){hnDrop(m);m.hRest=0;G.tfStopped=(G.tfStopped||0)+1;if(dist(m,D)<1100)float(m.x,m.y-30,'Hunt dropped!','#ffe0a0');}
     m.drink=null;m.full=0;m.tfCalled=G.t;m.state='hunt';G.tfCalled=(G.tfCalled||0)+1;}
-  if(dist(u,D)<1100)float(u.x,u.y-66,`${TF_L[u.species].who} calls the ${u.species==='lion'?'pride':'pack'} to fight!`,'#fff2c0');}
+  if(dist(u,D)<1100)float(u.x,u.y-66,`${TF_L[u.species].who} calls the ${TF_L[u.species].grp||(u.species==='lion'?'pride':'pack')} to fight!`,'#fff2c0');}
 function tfSpot(P,L){return !G.over&&!G.won&&D.alt<.6&&d2(D.x,D.y,P.cx,P.cy)<L.R+TF_NEAR;}
 function tfLeaderTick(u,dt){const L=TF_L[u.species],P=tfPack(u);if(u.roarFx>0)u.roarFx-=dt;
   if(tfSpot(P,L)&&dist(u,D)<1100){P.seenT=G.t;P.calm=0;if(!P.alert)tfAlarm(u,P);else if(G.t-P.roarT>7)tfCall(u,P);}
