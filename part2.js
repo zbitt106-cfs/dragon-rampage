@@ -76,8 +76,8 @@ function doStomp(){G.shake=Math.max(G.shake,14);rumble(.9,.6,260);puff(D.x,D.y,4
   const r=DR.stompR;let hit=false;HEAVY=true;
   for(const t of trees)if(t.state==='ok'&&dist(t,D)<r*.8){t.state='stump';t.fire=0;t.regrow=90;G.stats.trees++;addAlarm(1.2);hit=true;puff(t.x,t.y,8,'rgba(60,110,40,',90,8);}
   for(const s of structures)if(s.state!=='ruin'&&dist(s,D)<r+18){if(isWood(s))splinters(s.x,s.y,4);hurtStruct(s,DR.stompDmg*1.6*(isWood(s)?1.25:1));hit=true;
-    if(s.kind==='stonepile'){const l=Math.min(G.yardStone||0,4);G.yardStone-=l;if(l)float(s.x,s.y-40,`-${l} stone`,'#ddd');}
-    if(s.kind==='logpile'){const l=Math.min(G.yardWood||0,3);G.yardWood-=l;if(l)float(s.x,s.y-40,`-${l} wood`,'#e8c090');}}
+    if(s.kind==='stonepile'){const yS=yk(s,'Stone'),l=Math.min(G[yS]||0,4);G[yS]-=l;if(l)float(s.x,s.y-40,`-${l} stone`,'#ddd');}
+    if(s.kind==='logpile'){const yW=yk(s,'Wood'),l=Math.min(G[yW]||0,3);G[yW]-=l;if(l)float(s.x,s.y-40,`-${l} wood`,'#e8c090');}}
   HEAVY=false;
   for(const c of cells)if(!c.burnt&&dist(c,D)<r*.8){c.burnt=true;c.flat=true;c.growth=0;G.stats.crops++;addAlarm(.15);}
   for(const c of carts)if(!c.wrecked&&dist(c,D)<r)wreckCart(c);
@@ -149,8 +149,8 @@ function hurtStruct(s,d){if(s.state==='ruin')return;if(stoneish(s)&&!HEAVY)retur
     scorch(s.x,s.y+4,s.kind==='barn'?55:40);puff(s.x,s.y,20,'rgba(70,60,50,',120,14);G.shake=Math.max(G.shake,5);
     if(s.kind==='hut'){G.stats.huts++;addAlarm(7);float(s.x,s.y-40,'Hut destroyed!','#ffb050');}
     else if(s.kind==='barn'){G.stats.barns++;addAlarm(10);float(s.x,s.y-50,'Barn destroyed!','#ffb050');}
-    else if(s.kind==='logpile'){G.stats.piles++;G.yardWood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned!','#ffb050');}
-    else if(s.kind==='stonepile'){G.stats.piles++;G.yardStone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked!','#ffb050');}
+    else if(s.kind==='logpile'){G.stats.piles++;G[yk(s,'Wood')]=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned!','#ffb050');}
+    else if(s.kind==='stonepile'){G.stats.piles++;G[yk(s,'Stone')]=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked!','#ffb050');}
     else if(s.kind==='cabin'){G.stats.huts++;addAlarm(6);float(s.x,s.y-40,"Hunters' cabin burned!",'#ffb050');}
     else if(s.kind==='gate'){s.ruinT=G.t;G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'The castle gate is smashed! Waves delayed','#ffb050');showToast&&showToast('Castle gate destroyed: waves delayed and smaller');}
     else if(s.kind==='bridge'){G.stats.bridges++;addAlarm(6);s.upgBy=null;float(s.x,s.y-50,s.mat==='stone'?'The STONE bridge crumbles into the river!':'The bridge burns and collapses!','#ffb050');}

@@ -8,7 +8,7 @@ function updFire(dt){
     if(t.fire){t.hp-=6*dt;burning.push(t);if(rnd()<dt*6)flame(t.x,t.y-20*t.s,R(10,40));if(rnd()<dt*3)smoke(t.x,t.y-30);
       if(t.hp<=0){t.fire=0;t.state='burnt';t.regrow=70;G.stats.trees++;addAlarm(1.5);scorch(t.x,t.y,16);if(t.claimed){t.claimed.tree=null;t.claimed=null;}}}}
   for(const s of structures)if(s.fire&&s.state!=='ruin'){hurtStruct(s,(s.kind==='stonepile'?5:9)*dt);burning.push(s);
-    if(s.kind==='logpile'&&G.yardWood>0&&rnd()<dt*.8){G.yardWood--;float(s.x,s.y-40,'-1 wood','#e8c090');}
+    if(s.kind==='logpile'&&G[yk(s,'Wood')]>0&&rnd()<dt*.8){G[yk(s,'Wood')]--;float(s.x,s.y-40,'-1 wood','#e8c090');}
     for(let i=0;i<2;i++)if(rnd()<dt*8)flame(s.x+R(-22,22),s.y+R(-10,10),R(10,46));if(rnd()<dt*4)smoke(s.x,s.y-40);}
   for(const c of cells){if(c.fire){c.fire+=dt;burning.push(c);if(rnd()<dt*4)flame(c.x,c.y,R(2,14));if(c.fire>2.5){c.fire=0;c.burnt=true;c.growth=0;G.stats.crops++;addAlarm(.25);}}
     else if(!c.burnt&&c.growth<1)c.growth=Math.min(1,c.growth+dt/45);}

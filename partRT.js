@@ -11,7 +11,7 @@ KDEF.wtower={name:'Archer tower',hp:170,cost:[18,4],gold:[1,3],pts:120,alarm:6,s
 for(const k of['wtower','stower']){COST[k]=KDEF[k].cost;STRUCT_NAME[k]=KDEF[k].name;}
 // unlock: total wood+stone delivered by the carts this level before the first tower (undisturbed carts bring ~4-5 a minute -> ~8 minutes in)
 const RT={unlock:36,buildT:{wtower:14,stower:22},T:{wtower:{cost:[18,4],lvl:1,name:'Archer Tower'},stower:{cost:[6,22],lvl:3,unlock:50,name:'Scorpion Tower'}},
-  check:3,space:650,archerWait:25,bolt:{range:720,cd:4.6,speed:560,life:1.45},regions:new Set(['farm','castle','south','lake','hills','coast'])};
+  check:3,space:650,archerWait:25,bolt:{range:720,cd:4.6,speed:560,life:1.45},regions:new Set(['farm','castle','south','lake','hills','coast','march','crags'])};
 const RT_KINDS=new Set(['wtower','stower']);const isRT=s=>!!s&&RT_KINDS.has(s.kind);
 let RT_SPOTS=null;
 const rtMax=()=>Math.min((RT_SPOTS||rtSpots()).length,2+(G.lvl||1));

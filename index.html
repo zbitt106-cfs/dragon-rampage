@@ -140,6 +140,7 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
   tries=0;let nt=trees.length;while(trees.length<nt+900&&tries<9000){tries++;const x=SR(-2900,-250),y=SR(-150,4300);if(regionKey(x,y)==='forest'&&!blocked(x,y))addTree(x,y);}
   tries=0;nt=trees.length;while(trees.length<nt+160&&tries<4000){tries++;const x=SR(-200,5200),y=SR(2250,4300);const k=regionKey(x,y);if((k==='south'||k==='farm')&&!blocked(x,y)&&(x<0||x>WW||y>WH))addTree(x,y);}
   tries=0;nt=trees.length;while(trees.length<nt+50&&tries<2000){tries++;const x=SR(3250,5200),y=SR(-100,3000);if(regionKey(x,y)==='hills'&&!blocked(x,y)&&d2(x,y,LAIR.x,LAIR.y)>420)addTree(x,y);}
+  if(typeof esWorld==='function')esWorld(blocked); // the East March: 2nd lumber camp + 2nd mine (partES)
   addBridges();
   // people
   structures.filter(s=>s.kind==='hut').forEach(s=>spawnVillager(s.x,s.y+20,'peasant',s.v));
@@ -217,13 +218,14 @@ function jriverD(x,y){if(x>-13700||x<-15500)return 1e9;let m=1e9;for(let i=0;i<J
   const t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy),0,1);const d=Math.hypot(x-ax-dx*t,y-ay-dy*t);if(d<m)m=d;}return m;}
 const RUINS=[{x:-15650,y:900,w:300},{x:-13500,y:2950,w:240},{x:-15950,y:3250,w:200}]; // overgrown jungle ruins
 // ======================= the big explorable world: regions, terrain, decor, fog of war =======================
-const WX0=-17400,WY0=-2600,WX1=9800,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
-const coastX=y=>5500+140*Math.sin(y/530)+60*Math.sin(y/190+1);
+const SEA_DX=3000,MAP_V=2; // v2 map: the Sapphire Coast moved 3000 east to make room for the East March (2nd lumber camp + 2nd mine)
+const WX0=-17400,WY0=-2600,WX1=9800+SEA_DX,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
+const coastX=y=>5500+SEA_DX+140*Math.sin(y/530)+60*Math.sin(y/190+1);
 const coastY=x=>4450+110*Math.sin(x/470)+50*Math.sin(x/170+2);
 const frostY=x=>-260+90*Math.sin(x/420)+40*Math.sin(x/150);
 const forestX=y=>-180+70*Math.sin(y/310)+30*Math.sin(y/97);
 const LAKE={x:1500,y:3300,rx:520,ry:300};
-const RIVER=[[1980,3330],[2500,3520],[3000,3470],[3500,3700],[4100,3640],[4700,3880],[5250,3820],[5900,3900]],RIVW=48;
+const RIVER=[[1980,3330],[2500,3520],[3000,3470],[3500,3700],[4100,3640],[4700,3880],[5250,3820],[5900,3900],[6550,3970],[7250,3900],[7950,3985],[8800,3950]],RIVW=48;
 function hsh(i,j){let h=Math.imul(i,374761393)+Math.imul(j,668265263)|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967296;}
 function vnoise(x,y){const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
   const a=hsh(i,j),b=hsh(i+1,j),c=hsh(i,j+1),d=hsh(i+1,j+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
@@ -232,10 +234,10 @@ function riverD(x,y){let m=1e9;for(let i=0;i<RIVER.length-1;i++){const[ax,ay]=RI
   const t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy),0,1);const d=Math.hypot(x-ax-dx*t,y-ay-dy*t);if(d<m)m=d;}return m;}
 const inLake=(x,y)=>inOasis(x,y)||inLake0(x,y)||(x<-9800&&x>-11400&&inWHole(x,y));
 const inLake0=(x,y)=>{const dx=(x-LAKE.x)/LAKE.rx,dy=(y-LAKE.y)/LAKE.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<1+.07*Math.sin(a*5)+.04*Math.sin(a*9);};
-const LH={x:7350,y:2100,r:290}; // the Lonely Lighthouse island, just before the deep water
+const LH={x:7350+SEA_DX,y:2100,r:290}; // the Lonely Lighthouse island, just before the deep water
 const onIsle=(x,y)=>{const dx=x-LH.x,dy=(y-LH.y)*1.25,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(LH.r*(1+.1*Math.sin(a*5)+.06*Math.sin(a*3+1)))**2;};
 const seaD=(x,y)=>Math.max(x-coastX(y),y-coastY(x));
-const DEEPX=y=>7900+120*Math.sin(y/600); // east of this the Kraken Deep begins
+const DEEPX=y=>7900+SEA_DX+120*Math.sin(y/600); // east of this the Kraken Deep begins
 const inSea=(x,y)=>(x>coastX(y)||y>coastY(x))&&!onIsle(x,y);
 const inDeep=(x,y)=>x>DEEPX(y)&&inSea(x,y);
 const inWater=(x,y)=>inSea(x,y)||inLake(x,y)||riverD(x,y)<RIVW||jriverD(x,y)<JRW;
@@ -252,11 +254,12 @@ function fixShoreFootprints(){
 fixShoreFootprints();
 const onBeach=(x,y)=>!inSea(x,y)&&!onIsle(x,y)&&(x>coastX(y)-170||y>coastY(x)-150);
 const REGION_NAMES={farm:'The Kingdom Farmlands',castle:'Castle Aldric',forest:'The Deepwood',hills:'The Rocky Hills',lake:'Mirror Lake & the Silver River',
-  mountain:'The Frostpeak Mountains',coast:'The Sapphire Coast',south:'The Southern Farmlands',lair:"Dragon's Roost (home)",sea:'The Sapphire Sea',isle:'The Lonely Lighthouse',deep:'The Kraken Deep',desert:'The Scorching Sands'};
+  mountain:'The Frostpeak Mountains',coast:'The Sapphire Coast',south:'The Southern Farmlands',lair:"Dragon's Roost (home)",sea:'The Sapphire Sea',isle:'The Lonely Lighthouse',deep:'The Kraken Deep',desert:'The Scorching Sands',eastwood:'The Eastwood',crags:'The Iron Crags',march:'The East March'};
 const REGION_SUB={farm:'Villages, farms and fat, tasty livestock',castle:'Gold, guards and Princess Elizabeth locked inside the keep: break its stone roof!',forest:"Deer, boars, wolves, bears and the hunter's cabin",
   hills:'The mine, goats and rocky crags',lake:'Ducks, geese, jumping fish and busy beavers',mountain:'Snowy cliffs, mountain goats, eagles and hawks',
-  coast:'Seagulls, crabs and lazy seals',south:'More villages and farms to explore',lair:'Your home base: land here to rest and heal',sea:'Swim or soar: fish, sharks, whales, boats and pirates!',isle:'A quiet rest stop: catch your breath and heal',deep:'Something huge stirs below... the GIANT SQUID',desert:'Dunes, cacti, camels, scorpions… and something under the sand'};
-const REGION_LABEL={farm:[1000,1500],castle:[CASTLE.x,CWALL.y0-80],forest:[-1700,1700],hills:[4300,1300],lake:[1250,2960],mountain:[1500,-1500],coast:[5650,2400],south:[700,3500],lair:[LAIR.x,LAIR.y-260],sea:[6500,4900],isle:[7350,2480],deep:[8850,900],desert:[-6600,1150]};
+  coast:'Seagulls, crabs and lazy seals',south:'More villages and farms to explore',lair:'Your home base: land here to rest and heal',sea:'Swim or soar: fish, sharks, whales, boats and pirates!',isle:'A quiet rest stop: catch your breath and heal',deep:'Something huge stirs below... the GIANT SQUID',desert:'Dunes, cacti, camels, scorpions… and something under the sand',
+  eastwood:'The kingdom\'s second lumber camp, deer, boars and wolves',crags:'The new iron mine, goats and rocky crags',march:'New kingdom land: roads, carts and grazing'};
+const REGION_LABEL={farm:[1000,1500],castle:[CASTLE.x,CWALL.y0-80],forest:[-1700,1700],hills:[4300,1300],lake:[1250,2960],mountain:[1500,-1500],coast:[8650,2400],south:[700,3500],lair:[LAIR.x,LAIR.y-260],sea:[6500,4900],isle:[7350+SEA_DX,2480],deep:[8850+SEA_DX,900],desert:[-6600,1150],eastwood:[7300,500],crags:[7600,2750],march:[6300,3350]};
 function regionKey(x,y){
   if(d2(x,y,LAIR.x,LAIR.y)<420)return'lair';
   {const dx=x-LH.x,dy=y-LH.y;if(dx*dx+dy*dy<470*470)return'isle';}
@@ -268,10 +271,21 @@ function regionKey(x,y){
   if(x>CWALL.x0-100&&x<CWALL.x1+100&&y>CWALL.y0-70&&y<CWALL.y1+190)return'castle';
   if(x<forestX(y))return'forest';
   {const dx=(x-LAKE.x)/(LAKE.rx+260),dy=(y-LAKE.y)/(LAKE.ry+220);if(dx*dx+dy*dy<1||riverD(x,y)<230)return'lake';}
+  if(x>EM_X0){const e=emKey(x,y);if(e)return e;}
   if((x>3250&&y<3000)||(x>2650&&y>900&&y<1700))return'hills';
   if(y>2250)return'south';
   return'farm';}
 
+// ---------- the East March (v2 map): the Eastwood forest (2nd lumber camp) and the Iron Crags (2nd mine) ----------
+const EM_X0=5750,CAMP2={x:6250,y:1250},MINE2={x:7450,y:2300},LOGPILE2={x:6345,y:1335},STONEPILE2={x:7270,y:2420};
+const ewX=y=>5950+90*Math.sin(y/280)+40*Math.sin(y/90); // west edge of the Eastwood
+const ewY=x=>1750+80*Math.sin(x/330)+40*Math.sin(x/120); // south edge of the Eastwood
+const ES2={on:false}; // true while a 2nd-site worker is being updated/drawn (CAMP/MINE/yards swapped to the East March site)
+const yk=(s,k)=>s&&s.s2?'yard2'+k:'yard'+k; // which yard counter a log/stone pile uses ('yardWood' or 'yard2Wood')
+function emKey(x,y){if(d2(x,y,CAMP2.x+40,CAMP2.y+30)<230)return'march';
+  if(x>ewX(y)&&y<ewY(x))return'eastwood';
+  {const dx=(x-7550)/1050,dy=(y-2550)/700;if(dx*dx+dy*dy<1+.1*Math.sin(Math.atan2(dy,dx)*5))return'crags';}
+  if(x>5900)return'march';return null;}
 // ---------- low-res terrain for the whole world (built once) ----------
 let TERR=null,DECOR=[],FARSCORCH=[];
 function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;TERR=document.createElement('canvas');TERR.width=W;TERR.height=H;const g=TERR.getContext('2d');
@@ -285,6 +299,7 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
     else if(wy<frostY(wx)||inRange(wx,wy)||wx<WX0+650){const t=clamp((frostY(wx)-wy)/500,0,1)+(inRange(wx,wy)?clamp(Math.min(wx-RANGE0,RANGE1-wx,passEdge(wx,wy))/260,0,1):0)+(wx<WX0+650?clamp((WX0+650-wx)/300,0,1):0);c=mix([118,132,100],[238,242,250],clamp(t,0,1));if(n>.6)c=mix(c,[130,130,140],.7);}
     else if(wx<RANGE0){c=westCol(x,y,wx,wy,n);}
     else if(wx<forestX(wy)){c=mix([40,76,36],[58,96,44],n);}
+    else if(wx>EM_X0&&emKey(wx,wy)){const e=emKey(wx,wy);c=e==='eastwood'?mix([36,80,40],[54,100,46],n):e==='crags'?mix([118,120,104],[150,138,116],clamp(n*1.6-.3,0,1)):mix([92,138,60],[118,160,72],n);}
     else if((wx>3250&&wy<3000)||(wx>2650&&wy>900&&wy<1700&&x>2600)){c=mix([112,132,82],[146,130,106],clamp(n*1.6-.3,0,1));}
     else{c=mix([86,134,56],[112,158,70],n);if(fbm(x/900+7,y/900)>.66)c=mix(c,[132,160,74],.5);}
     // muddy shores
@@ -301,6 +316,7 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   FARMS.forEach(f=>{const F=f.field;g.fillStyle='#7a5a32';g.fillRect(F.x-4,F.y-4,F.w+8,F.h+8);const P=f.pen;g.fillStyle='#7fa84a';g.fillRect(P.x,P.y,P.w,P.h);});
   PADDOCKS.forEach(P=>{g.fillStyle='#86ad52';g.fillRect(P.x,P.y,P.w,P.h);});
   g.fillStyle='rgba(30,60,26,.6)';g.beginPath();g.ellipse(CABIN.x,CABIN.y,110,80,0,0,TAU);g.fill();g.fillStyle='#8a7a62';g.beginPath();g.ellipse(CABIN.x+10,CABIN.y+20,70,45,0,0,TAU);g.fill();
+  g.fillStyle='#9a8256';g.beginPath();g.ellipse(CAMP2.x+30,CAMP2.y+30,135,115,0,0,TAU);g.fill();g.beginPath();g.ellipse(MINE2.x-60,MINE2.y+60,170,105,0,0,TAU);g.fill();
   g.fillStyle='#8c8e98';g.beginPath();g.ellipse(LAIR.x,LAIR.y+40,330,250,0,0,TAU);g.fill();g.fillStyle='#e8eef6';g.beginPath();g.ellipse(LAIR.x,LAIR.y+40,260,190,0,0,TAU);g.fill();g.fillStyle='#6e6a66';g.beginPath();g.ellipse(LAIR.x,LAIR.y,150,100,0,0,TAU);g.fill();
   g.restore();
   // decor (purely visual, never blocks movement)
@@ -309,12 +325,12 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   for(let y=-1000;y<WY1-300;y+=210)for(let x=WX0+40;x<WX0+640;x+=200)DECOR.push({k:'peak',x:x+Rr(-50,50),y:y+Rr(-50,50),w:Rr(180,300),h:Rr(.6,.9)});
   for(let y=-1000;y<coastY(-3300)-150;y+=190)for(let x=RANGE0+90;x<RANGE1-60;x+=190){const xx=x+Rr(-40,40),yy=y+Rr(-40,40);if(inRange(xx,yy)&&passEdge(xx,yy)>90)DECOR.push({k:'peak',x:xx,y:yy,w:Rr(170,280),h:Rr(.6,.9)});}
   addDesertDecor(r,Rr);
-  for(let i=0;i<90;i++){const x=Rr(-2800,5200),y=Rr(-1000,-320);if(y<frostY(x)-60)DECOR.push({k:'cliff',x,y,r:Rr(30,55)});}
-  for(let i=0;i<220;i++){const x=Rr(-2900,5300),y=Rr(-1050,-150);if(y<frostY(x)+20)DECOR.push({k:'pine',x,y,s:Rr(.8,1.3)});}
+  for(let i=0;i<125;i++){const x=Rr(-2800,5200+SEA_DX),y=Rr(-1000,-320);if(y<frostY(x)-60)DECOR.push({k:'cliff',x,y,r:Rr(30,55)});}
+  for(let i=0;i<300;i++){const x=Rr(-2900,5300+SEA_DX),y=Rr(-1050,-150);if(y<frostY(x)+20)DECOR.push({k:'pine',x,y,s:Rr(.8,1.3)});}
   for(let i=0;i<70;i++){const a=Rr(0,TAU),x=LAKE.x+Math.cos(a)*LAKE.rx*Rr(1.02,1.12),y=LAKE.y+Math.sin(a)*LAKE.ry*Rr(1.02,1.12);DECOR.push({k:'reed',x,y});}
   for(let i=0;i<40;i++){const p=RIVER[RI(0,RIVER.length-2)],q=RIVER[RIVER.indexOf(p)+1],t=r();const x=p[0]+(q[0]-p[0])*t,y=p[1]+(q[1]-p[1])*t+(r()<.5?-1:1)*(RIVW+10);DECOR.push({k:'reed',x,y});}
   for(let i=0;i<14;i++){const y=Rr(0,4200);DECOR.push({k:'searock',x:coastX(y)-Rr(10,90),y,r:Rr(18,32)});}
-  for(let i=0;i<6;i++){const x=Rr(500,5000);DECOR.push({k:'searock',x,y:coastY(x)-Rr(10,80),r:Rr(18,30)});}
+  for(let i=0;i<9;i++){const x=Rr(500,5000+SEA_DX);DECOR.push({k:'searock',x,y:coastY(x)-Rr(10,80),r:Rr(18,30)});}
   DECOR.push({k:'lodge',x:LAKE.x-LAKE.rx*.9,y:LAKE.y+LAKE.ry*.45},{k:'lodge',x:3300,y:3600-RIVW});
   DECOR.push({k:'sign',x:LAIR.x-170,y:LAIR.y+150});addIsleDecor();}
 function drawDecor(o){const x=o.x,y=o.y;if((o.k==='cactus'||o.k==='palm'||o.k==='mesa'||o.k==='bones')&&drawDesertDecor(o))return;if(GFX_HI&&drawDecorHi(o)!==false)return;if(o.k==='lighthouse'){drawLighthouse(o);return;}if(o.k==='dock'){drawDock(o);return;}if(o.k==='isrock'){drawSeaRock(o);return;}
@@ -375,20 +391,20 @@ const FAUNA={
   horse:{hp:18,sp:120,flee:240,zone:'paddock'},fish:{hp:2,zone:'water'},beaver:{hp:7,sp:50,flee:160,zone:'shore'},
   mgoat:{hp:12,sp:105,flee:260,zone:'mountain'},cougar:{hp:30,sp:100,bite:4,aggro:210,cd:1.8,say:'Rrrowr! Claw swipe! -4',zone:'peaks'},goat:{hp:10,sp:80,flee:210,zone:'hills'},
   crab:{hp:3,sp:40,flee:120,zone:'beach'},seal:{hp:18,sp:35,flee:150,zone:'beach'}};
-const FAUNA_PLAN=[['deer',12],['rabbit',12],['fox',6],['boar',6],['wolf',3],['bear',3],['horse',9],['fish',14],['beaver',6],['mgoat',22],['cougar',3],['goat',10],['crab',12],['seal',6]]; // wolf counts packs of 3
+const FAUNA_PLAN=[['deer',15],['rabbit',14],['fox',7],['boar',8],['wolf',4],['bear',3],['horse',9],['fish',14],['beaver',6],['mgoat',22],['cougar',3],['goat',13],['crab',14],['seal',6]]; // wolf counts packs of 3
 const ZONES={
-  forest:{ok:(x,y)=>regionKey(x,y)==='forest',s:()=>({x:R(-2900,-300),y:R(-100,4200)})},
+  forest:{ok:(x,y)=>{const k=regionKey(x,y);return k==='forest'||k==='eastwood';},s:()=>rnd()<.72?{x:R(-2900,-300),y:R(-100,4200)}:{x:R(6000,8200),y:R(-150,1700)}},
   water:{ok:(x,y)=>!inSea(x,y)&&(inLake(x,y)||riverD(x,y)<RIVW-8),s:()=>{if(rnd()<.6){const a=R(0,TAU),r=R(0,.8);return{x:LAKE.x+Math.cos(a)*LAKE.rx*r,y:LAKE.y+Math.sin(a)*LAKE.ry*r};}
     const i=RI(0,RIVER.length-2),t=rnd();return{x:RIVER[i][0]+(RIVER[i+1][0]-RIVER[i][0])*t,y:RIVER[i][1]+(RIVER[i+1][1]-RIVER[i][1])*t};}},
   shore:{ok:(x,y)=>true,s:()=>{const a=R(0,TAU);return{x:LAKE.x+Math.cos(a)*LAKE.rx*1.06,y:LAKE.y+Math.sin(a)*LAKE.ry*1.06};}},
-  mountain:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+500&&x>WX0+300&&!inSea(x,y),s:()=>({x:R(-2700,5000),y:R(-1700,-450)})},
-  hills:{ok:(x,y)=>regionKey(x,y)==='hills',s:()=>rnd()<.25?{x:R(2700,3150),y:R(950,1650)}:{x:R(3300,5000),y:R(-50,2950)}},
-  beach:{ok:onBeach,s:()=>{if(rnd()<.75){const y=R(-50,4300);return{x:coastX(y)-R(20,150),y};}const x=R(400,5300);return{x,y:coastY(x)-R(20,130)};}},
+  mountain:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+500&&x>WX0+300&&!inSea(x,y),s:()=>({x:R(-2700,5000+SEA_DX),y:R(-1700,-450)})},
+  hills:{ok:(x,y)=>{const k=regionKey(x,y);return k==='hills'||k==='crags';},s:()=>{const q=rnd();return q<.2?{x:R(2700,3150),y:R(950,1650)}:q<.7?{x:R(3300,5600),y:R(-50,2950)}:{x:R(6600,8400),y:R(1950,3150)};}},
+  beach:{ok:onBeach,s:()=>{if(rnd()<.75){const y=R(-50,4300);return{x:coastX(y)-R(20,150),y};}const x=R(400,5300+SEA_DX);return{x,y:coastY(x)-R(20,130)};}},
   paddock:{ok:()=>true,s:()=>{const P=PADDOCKS[RI(0,PADDOCKS.length-1)];return{x:P.x+R(15,P.w-15),y:P.y+R(15,P.h-15),P};}},
   // the slopes around Dragon Peak: a healthy mountain-goat herd lives here
   summit:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+420&&!inSea(x,y)&&d2(x,y,LAIR.x,LAIR.y)>230&&d2(x,y,LAIR.x,LAIR.y)<1300,s:()=>{const a=R(0,TAU),r=R(300,1150);return{x:LAIR.x+Math.cos(a)*r,y:LAIR.y+Math.sin(a)*r*.75};}},
   // mountain lions prowl the snowy mountains and the eastern hills
-  peaks:{ok:(x,y)=>(y<frostY(x)-120&&y>WY0+420&&x>WX0+300&&!inSea(x,y))||regionKey(x,y)==='hills',s:()=>rnd()<.6?{x:R(-2000,5000),y:R(-1900,-500)}:{x:R(3300,5000),y:R(-50,2950)}},
+  peaks:{ok:(x,y)=>(y<frostY(x)-120&&y>WY0+420&&x>WX0+300&&!inSea(x,y))||regionKey(x,y)==='hills'||regionKey(x,y)==='crags',s:()=>{const q=rnd();return q<.6?{x:R(-2000,5000+SEA_DX),y:R(-1900,-500)}:q<.8?{x:R(3300,5600),y:R(-50,2950)}:{x:R(6600,8400),y:R(1950,3150)};}},
   any:{ok:(x,y)=>!inSea(x,y),s:()=>({x:D.x,y:D.y})}};
 let packId=0;
 function spawnWild(sp,far,at){const F=FAUNA[sp],zk=sp==='mgoat'&&rnd()<.7?'summit':F.zone,Z=ZONES[zk];let p=at||null;
@@ -466,7 +482,7 @@ function drawFlag(x,y,u){line(x,y,x,y-30,'#5a3a1a',2);const w=Math.sin(G.t*6+u.i
 function updCavalry(u,dt){const dd=dist(u,D),ground=D.alt<DR.hitAltSword;u.anim+=dt*(u.cs==='charge'?14:8);const ox=u.x,oy=u.y,bl=uBlocked(u);
   if(u.ha===undefined)u.ha=Math.atan2(D.y-u.y,D.x-u.x);if(!u.cs){u.cs='wheel';u.t=.6;}
   if(u.cs==='charge'){u.t-=dt;u.x+=Math.cos(u.ha)*270*dt;u.y+=Math.sin(u.ha)*270*dt;u.face=Math.cos(u.ha)>0?1:-1;
-    if(ground&&!u.hitThis&&dd<46){u.hitThis=true;hurtDragon(11,'lance');float(D.x,D.y-90,'Lance hit! -11','#ffb0a0');D.vx+=Math.cos(u.ha)*120;D.vy+=Math.sin(u.ha)*120;}
+    if(ground&&!u.hitThis&&dd<46){u.hitThis=true;const ld=u.prince&&typeof PRT!=='undefined'?(u.isPrince?(u.prince.charge||PRT.charge0+PRT.chargeStep*((u.prince.k||1)-1)):(u.prince.cavCharge||PRT.cav0+PRT.cavStep*((u.prince.k||1)-1))):11;hurtDragon(ld,'lance');float(D.x,D.y-90,'Lance hit! -'+ld,'#ffb0a0');D.vx+=Math.cos(u.ha)*120;D.vy+=Math.sin(u.ha)*120;}
     const along=(D.x-u.x)*Math.cos(u.ha)+(D.y-u.y)*Math.sin(u.ha);if(u.t<=0||along<-170){u.cs='wheel';u.t=R(.9,1.5);}}
   else{u.t-=dt;const wp=riverRoute(u,D.x,D.y),want=wp?Math.atan2(wp.y-u.y,wp.x-u.x):Math.atan2(D.y-u.y,D.x-u.x);u.ha+=clamp(angDiff(want,u.ha),-2.4*dt,2.4*dt);const sp=dd<160&&!ground?90:160;u.x+=Math.cos(u.ha)*sp*dt;u.y+=Math.sin(u.ha)*sp*dt;u.face=Math.cos(u.ha)>0?1:-1;
     if(u.t<=0&&ground&&!wp&&Math.abs(angDiff(want,u.ha))<.3&&dd>130&&dd<650){u.cs='charge';u.t=2.6;u.hitThis=false;u.ha=want;if(rnd()<.5)float(u.x,u.y-44,'Charge!','#ffe0a0');}}
@@ -479,7 +495,7 @@ function mkCavalry(x,y,o){return mkUnit('knight',x,y,Object.assign({mounted:true
 // ---------- roaming patrols (independent of the wanted meter) ----------
 let patrols=[],patrolId=0;
 const PATROL_MIX=[['knight','knight','archer'],['cavalry','cavalry','cavalry'],['archer','archer','archer','archer','knight','knight'],['knight','knight','knight'],['cavalry','knight','archer'],['cavalry','cavalry','archer','archer']];
-function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},{x:CABIN.x+110,y:CABIN.y+70},{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60}];}
+function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},{x:CABIN.x+110,y:CABIN.y+70},{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60},{x:CAMP2.x+130,y:CAMP2.y+20},{x:MINE2.x-120,y:MINE2.y+80},{x:LOGPILE2.x+60,y:LOGPILE2.y+60}];}
 function spawnPatrol(){const lvl=G.lvl,mix=[...PATROL_MIX[RI(0,PATROL_MIX.length-1)]];for(let i=1;i<lvl;i++)mix.push(['knight','archer','cavalry'][RI(0,2)]);if(G.easy&&mix.length>2)mix.pop();
   const p={id:++patrolId,members:[],engaged:false,wp:null},hpM=1+.2*(lvl-1),colr=['#c33','#33c','#cc3','#3a3'][RI(0,3)];
   const wg=waveGates();mix.forEach((k,i)=>{const x=GATE.x+R(-20,20),y=GATE.y+10+i*6;let u;
@@ -591,8 +607,8 @@ function doStomp(){G.shake=Math.max(G.shake,14);rumble(.9,.6,260);puff(D.x,D.y,4
   const r=DR.stompR;let hit=false;HEAVY=true;
   for(const t of trees)if(t.state==='ok'&&dist(t,D)<r*.8){t.state='stump';t.fire=0;t.regrow=90;G.stats.trees++;addAlarm(1.2);hit=true;puff(t.x,t.y,8,'rgba(60,110,40,',90,8);}
   for(const s of structures)if(s.state!=='ruin'&&dist(s,D)<r+18){if(isWood(s))splinters(s.x,s.y,4);hurtStruct(s,DR.stompDmg*1.6*(isWood(s)?1.25:1));hit=true;
-    if(s.kind==='stonepile'){const l=Math.min(G.yardStone||0,4);G.yardStone-=l;if(l)float(s.x,s.y-40,`-${l} stone`,'#ddd');}
-    if(s.kind==='logpile'){const l=Math.min(G.yardWood||0,3);G.yardWood-=l;if(l)float(s.x,s.y-40,`-${l} wood`,'#e8c090');}}
+    if(s.kind==='stonepile'){const yS=yk(s,'Stone'),l=Math.min(G[yS]||0,4);G[yS]-=l;if(l)float(s.x,s.y-40,`-${l} stone`,'#ddd');}
+    if(s.kind==='logpile'){const yW=yk(s,'Wood'),l=Math.min(G[yW]||0,3);G[yW]-=l;if(l)float(s.x,s.y-40,`-${l} wood`,'#e8c090');}}
   HEAVY=false;
   for(const c of cells)if(!c.burnt&&dist(c,D)<r*.8){c.burnt=true;c.flat=true;c.growth=0;G.stats.crops++;addAlarm(.15);}
   for(const c of carts)if(!c.wrecked&&dist(c,D)<r)wreckCart(c);
@@ -664,8 +680,8 @@ function hurtStruct(s,d){if(s.state==='ruin')return;if(stoneish(s)&&!HEAVY)retur
     scorch(s.x,s.y+4,s.kind==='barn'?55:40);puff(s.x,s.y,20,'rgba(70,60,50,',120,14);G.shake=Math.max(G.shake,5);
     if(s.kind==='hut'){G.stats.huts++;addAlarm(7);float(s.x,s.y-40,'Hut destroyed!','#ffb050');}
     else if(s.kind==='barn'){G.stats.barns++;addAlarm(10);float(s.x,s.y-50,'Barn destroyed!','#ffb050');}
-    else if(s.kind==='logpile'){G.stats.piles++;G.yardWood=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned!','#ffb050');}
-    else if(s.kind==='stonepile'){G.stats.piles++;G.yardStone=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked!','#ffb050');}
+    else if(s.kind==='logpile'){G.stats.piles++;G[yk(s,'Wood')]=0;addAlarm(8);float(s.x,s.y-40,'Log pile burned!','#ffb050');}
+    else if(s.kind==='stonepile'){G.stats.piles++;G[yk(s,'Stone')]=0;addAlarm(8);float(s.x,s.y-40,'Stone pile wrecked!','#ffb050');}
     else if(s.kind==='cabin'){G.stats.huts++;addAlarm(6);float(s.x,s.y-40,"Hunters' cabin burned!",'#ffb050');}
     else if(s.kind==='gate'){s.ruinT=G.t;G.stats.castle=(G.stats.castle||0)+1;addAlarm(10);float(s.x,s.y-50,'The castle gate is smashed! Waves delayed','#ffb050');showToast&&showToast('Castle gate destroyed: waves delayed and smaller');}
     else if(s.kind==='bridge'){G.stats.bridges++;addAlarm(6);s.upgBy=null;float(s.x,s.y-50,s.mat==='stone'?'The STONE bridge crumbles into the river!':'The bridge burns and collapses!','#ffb050');}
@@ -687,7 +703,7 @@ function updFire(dt){
     if(t.fire){t.hp-=6*dt;burning.push(t);if(rnd()<dt*6)flame(t.x,t.y-20*t.s,R(10,40));if(rnd()<dt*3)smoke(t.x,t.y-30);
       if(t.hp<=0){t.fire=0;t.state='burnt';t.regrow=70;G.stats.trees++;addAlarm(1.5);scorch(t.x,t.y,16);if(t.claimed){t.claimed.tree=null;t.claimed=null;}}}}
   for(const s of structures)if(s.fire&&s.state!=='ruin'){hurtStruct(s,(s.kind==='stonepile'?5:9)*dt);burning.push(s);
-    if(s.kind==='logpile'&&G.yardWood>0&&rnd()<dt*.8){G.yardWood--;float(s.x,s.y-40,'-1 wood','#e8c090');}
+    if(s.kind==='logpile'&&G[yk(s,'Wood')]>0&&rnd()<dt*.8){G[yk(s,'Wood')]--;float(s.x,s.y-40,'-1 wood','#e8c090');}
     for(let i=0;i<2;i++)if(rnd()<dt*8)flame(s.x+R(-22,22),s.y+R(-10,10),R(10,46));if(rnd()<dt*4)smoke(s.x,s.y-40);}
   for(const c of cells){if(c.fire){c.fire+=dt;burning.push(c);if(rnd()<dt*4)flame(c.x,c.y,R(2,14));if(c.fire>2.5){c.fire=0;c.burnt=true;c.growth=0;G.stats.crops++;addAlarm(.25);}}
     else if(!c.burnt&&c.growth<1)c.growth=Math.min(1,c.growth+dt/45);}
@@ -964,10 +980,10 @@ function drawMine(){const x=MINE.x,y=MINE.y;ell(x,y-20,110,70,'#7d6f5b');ell(x-1
   ctx.fillStyle='#1a1410';ctx.beginPath();ctx.moveTo(x-26,y+14);ctx.lineTo(x-26,y-12);ctx.arc(x,y-12,26,Math.PI,0);ctx.lineTo(x+26,y+14);ctx.fill();
   if(kUp('minehead')){rect(x-30,y-40,6,54,'#6b4a26');rect(x+24,y-40,6,54,'#6b4a26');rect(x-34,y-44,68,8,'#7a5530');}
   line(x-20,y+30,x+60,y+120,'#555',3);line(x-6,y+26,x+74,y+116,'#555',3);
-  ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText('Stone Mine',x,y-90);}
+  ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText(ES2.on?'Iron Crags Mine':'Stone Mine',x,y-90);}
 function drawCamp(){const x=CAMP.x,y=CAMP.y;if(kUp('camptent'))poly([x-30,y+10,x,y-34,x+30,y+10],'#c2ab7a','#7a6440');line(x,y-34,x,y+10,'#7a6440',1);
   ell(x+50,y+30,12,8,'#8a6236');ell(x+50,y+27,10,6,'#b38a55');
-  ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText('Logging Camp',x+20,y-50);}
+  ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText(ES2.on?'Eastwood Logging Camp':'Logging Camp',x+20,y-50);}
 function drawWells(){} // wells are real structures now (partR)
 function drawPen(P){ctx.strokeStyle='#7a5a30';ctx.lineWidth=2;ctx.strokeRect(P.x,P.y,P.w,P.h);ctx.lineWidth=1;
   for(let x=P.x;x<=P.x+P.w;x+=18){rect(x-1.5,P.y-5,3,8,'#6a4a22');rect(x-1.5,P.y+P.h-5,3,8,'#6a4a22');}
@@ -1008,13 +1024,13 @@ function drawStruct(s){const x=s.x,y=s.y,b=s.state==='building'?s.build:1;
   } else if(s.kind==='cabin'){const H=28*b;rect(x-30,y-H+4,60,H,s.fire?'#5a3a1a':'#7a5230');for(let j=0;j<H;j+=6)line(x-30,y-H+4+j,x+30,y-H+4+j,'rgba(40,25,10,.5)',1);
     if(b>=1){poly([x-36,y-22,x,y-46,x+36,y-22],s.fire?'#3a2a1a':'#4a6a32');rect(x-6,y-14,12,18,'#3a2410');rect(x+14,y-36,6,14,'#666');
       line(x-28,y-6,x-40,y-20,'#6b4a26',2);ell(x-42,y-22,6,4,'#a07a50');ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText("Hunters' Cabin",x,y-56);}
-  } else if(s.kind==='logpile'){const n=Math.min(18,G.yardWood||0);rect(x-34,y-4,68,6,'#5a3a1c');
+  } else if(s.kind==='logpile'){const n=Math.min(18,G[yk(s,'Wood')]||0);rect(x-34,y-4,68,6,'#5a3a1c');
     for(let i=0;i<n;i++){const row=Math.floor(i/6),col=i%6,lx=x-27+col*11+row*5,ly=y-6-row*9;ell(lx,ly,5.5,5,'#8a5a2a');ell(lx,ly,3.5,3.3,'#d2a868');}
     if(n===0){ctx.fillStyle='#fdd';ctx.font='10px Georgia';ctx.textAlign='center';ctx.fillText('(empty)',x,y-12);}
-    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`Camp log yard: ${G.yardWood||0}`,x,y-46);
-  } else if(s.kind==='stonepile'){const n=Math.min(20,G.yardStone||0);ell(x,y,40,12,'#6a6258');
+    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`${s.s2?'Eastwood log yard':'Camp log yard'}: ${G[yk(s,'Wood')]||0}`,x,y-46);
+  } else if(s.kind==='stonepile'){const n=Math.min(20,G[yk(s,'Stone')]||0);ell(x,y,40,12,'#6a6258');
     for(let i=0;i<n;i++){const a=i*2.4,r=(i%5)*6,sx=x+Math.cos(a)*r*1.6,sy=y-4-Math.floor(i/5)*7+Math.sin(a)*r*.5;ell(sx,sy,7,5,i%2?'#a39d94':'#8d877e');}
-    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`Mine stone yard: ${G.yardStone||0}`,x,y-40);}
+    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`${s.s2?'Crags stone yard':'Mine stone yard'}: ${G[yk(s,'Stone')]||0}`,x,y-40);}
   if(s.state==='building'){ctx.strokeStyle='#d8b880';ctx.lineWidth=2;ctx.strokeRect(x-28,y-40,56,44);line(x-28,y-40,x+28,y+4,'#d8b880',2);
     rect(x-25,y-50,50*b,4,'#7fd07f');ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(x-25,y-50,50,4);}
   if(s.fire&&s.hp<s.maxHp){rect(x-20,y+8,40,3,'#400');rect(x-20,y+8,40*s.hp/s.maxHp,3,'#f80');}}
@@ -1391,7 +1407,7 @@ const ISEAL_ROCKS=[[-1,-.1],[.95,.25],[.2,1.0],[-.6,.85]].map(([a,b])=>({x:LH.x+
 const DOCK={x:LH.x-LH.r-40,y:LH.y+40};
 const isLand=(x,y)=>!inWater(x,y);
 function seaPoint(minD,maxD,opt){opt=opt||{};for(let t=0;t<120;t++){let x,y;
-    if(opt.deep){x=R(8150,WX1-300);y=R(WY0+500,WY1-400);}else if(rnd()<.72){x=R(5600,opt.noDeep?7800:WX1-300);y=R(WY0+500,WY1-400);}else{x=R(-9600,7600);y=R(4500,WY1-300);}
+    if(opt.deep){x=R(8150+SEA_DX,WX1-300);y=R(WY0+500,WY1-400);}else if(rnd()<.72){x=R(5600+SEA_DX,opt.noDeep?7800+SEA_DX:WX1-300);y=R(WY0+500,WY1-400);}else{x=R(-9600,7600+SEA_DX);y=R(4500,WY1-300);}
     if(!inSea(x,y))continue;const dd=seaD(x,y);if(dd<minD||dd>maxD)continue;if(opt.noDeep&&inDeep(x,y))continue;if(opt.deep&&!inDeep(x,y))continue;
     if(opt.avoidIsle&&d2(x,y,LH.x,LH.y)<900&&rnd()>.08)continue;if(d2(x,y,LH.x,LH.y)<LH.r+90)continue;if(opt.far&&d2(x,y,D.x,D.y)<1300)continue;return{x,y};}return null;}
 function lakePoint(r){const a=R(0,TAU),k=R(0,r||.75);return{x:LAKE.x+Math.cos(a)*LAKE.rx*k,y:LAKE.y+Math.sin(a)*LAKE.ry*k};}
@@ -2429,6 +2445,7 @@ function buildRoads(){if(ROADS)return ROADS;const t0=performance.now(),Gd=roadGr
   // the main tree: everything converges on the castle gate in the south (west road via Southwold, east road via Haybury and the Riverbend bridge)
   [[N.GATE,V[7]],[N.GATE,V[8]],[V[8],V[11]],[V[2],V[0]],[V[2],V[1]],[V[2],V[3]],[V[2],V[4]],[V[3],V[5]],[V[5],V[7]],[V[4],V[6]],[V[1],V[9]],[V[9],V[10]],[V[0],N.CAMP],[V[1],N.MINE]].forEach(([a,b])=>add(a,b));
   add(V[4],N.STONE,20);add(N.CAMP,N.CABIN,16,'path');
+  if(typeof esRoads==='function')esRoads(add,V); // the East March roads (partES)
   // river crossings go over the bridges
   for(const[i,j]of BRIDGE_ROADS){const B=bridgeSpot(i,j);add(V[i],B.a);add(B.b,V[j]);R0.push({pts:[B.a,B.b],w:26,kind:'bridge',bx:B.x,by:B.y});}
   // the long caravan road west through the Sandgate Pass to Sandhaven and the oasis
@@ -2779,6 +2796,15 @@ function volBar(v){const n=Math.round(v*10);return '▮'.repeat(n)+'▯'.repeat(
 // Land beside the crater and drink (E / pad X / touch BITE) to swap fire breath for 20 lava globs.
 // Each fire press lobs a glob that arcs, splashes, burns harder, cracks stone and wells, and leaves a puddle.
 const VOLC={x:LAIR.x+560,y:LAIR.y+260,r:96,drinkR:165},LAVA_MAX=20,LAVA_CD=8,LAVA_REPEAT=.42;
+// Lava tuning: shorter lob (old speed 520, up 230), wider splash (old 80), and a cooling puddle that keeps hurting enemies.
+const LAVA_CFG={sp:380,vz:180,splashR:130,scorchR:70,puddleR:[62,74],puddleT:5.5,crustAt:.12,tick:.25,unitDmg:2,structDmg:1.5,maxPuddles:24};
+// the puddle never hurts the dragon (not a unit), King William or Princess Elizabeth
+function lavaSafe(u){return !u||u.dead||u.inside||u.princess||u.isPrincess||u.type==='princess';}
+// King William CAN be hurt by a puddle: in armour through his armour's fire multiplier (partKA), unarmoured (courtyard) straight off his HP.
+// His HP floor still holds either way, so he is never knocked out of the game.
+function lavaKing(p,d){if(typeof KA==='undefined'||typeof KING==='undefined'||KA.u)return;if(!(KA.phase==='home'||KA.phase==='toArmory'||KA.phase==='toHome'||KA.phase==='suit'))return;
+  if(Math.hypot(KING.x-p.x,KING.y-p.y)>=p.r+6)return;const mx=KA.maxHp||kaStats().hp;KA.maxHp=mx;if(!(KA.hp>0))KA.hp=mx;KA.hp=Math.max(mx*KA_CFG.floor,KA.hp-d);KA.lavaHp=KA.hp;
+  if(G.t-(KA.hopT||-9)>1.5){KA.hopT=G.t;float(KING.x,KING.y-50,'King William: "Hot! Hot! HOT!"','#ffb070');}}
 let LGLOBS=[],LPUDDLES=[],LEMBERS=[],VOLC_T={erupt:6,smoke:0,warn:0};
 function clearVolcanoSite(){const far=o=>Math.hypot(o.x-VOLC.x,(o.y-VOLC.y)*1.25)>300;
   DECOR=DECOR.filter(o=>o.k!=='peak'||!(Math.abs(o.x-VOLC.x)<o.w*.5+300&&o.y>VOLC.y-260&&o.y<VOLC.y+560));
@@ -2799,17 +2825,17 @@ function mouthPos(){const ca=Math.cos(D.ang),sa=Math.sin(D.ang);return{x:D.x+ca*
 // called every frame from the fire code while the dragon has lava
 function lavaFire(dt){const held=!!(keys[' ']||GPAD.fire);D.lavaRep-=dt;
   const go=held&&(!D.lavaHeld||D.lavaRep<=0);D.lavaHeld=held;if(!go)return;D.lavaRep=LAVA_REPEAT;
-  const m=mouthPos(),ca=Math.cos(D.ang),sa=Math.sin(D.ang),sp=520;
-  LGLOBS.push({x:m.x,y:m.y,z:m.z,vx:ca*sp+D.vx*.6,vy:sa*sp+D.vy*.6,vz:230,t:0,rot:R(0,TAU)});
+  const m=mouthPos(),ca=Math.cos(D.ang),sa=Math.sin(D.ang),sp=LAVA_CFG.sp;
+  LGLOBS.push({x:m.x,y:m.y,z:m.z,vx:ca*sp+D.vx*.6,vy:sa*sp+D.vy*.6,vz:LAVA_CFG.vz,t:0,rot:R(0,TAU)});
   D.lava--;SFX.play('lavaSpit',m.x,m.y,.9);puff(m.x,m.y,4,'rgba(90,60,50,',60,7);
   if(D.lava<=0){D.lava=0;float(D.x,D.y-90,'Out of lava: back to fire breath','#ffd8a0');}}
-function lavaSplash(x,y){const wet=inWater(x,y)&&!onBridge(x,y),r=80;G.shake=Math.max(G.shake,5);
+function lavaSplash(x,y){const wet=inWater(x,y)&&!onBridge(x,y),r=LAVA_CFG.splashR;G.shake=Math.max(G.shake,5);
   if(wet){SFX.play('lavaHiss',x,y,1);puff(x,y,14,'rgba(230,230,240,',110,14);
     for(const s of ships)if(s.state!=='sink'&&Math.hypot(s.x-x,s.y-y)<r+40){s.fire=1;s.fireT=s.fireT||0;hurtShip(s,70,'fire');}
     for(const u of units)if(!u.dead&&Math.hypot(u.x-x,u.y-y)<r)hurtUnit(u,25,'fire');addAlarm(.3,x,y);return;}
-  SFX.play('lavaSplash',x,y,1);scorch(x,y,46);puff(x,y,10,'rgba(80,60,50,',120,12);
+  SFX.play('lavaSplash',x,y,1);scorch(x,y,LAVA_CFG.scorchR);puff(x,y,10,'rgba(80,60,50,',120,12);
   for(let i=0;i<14;i++)LEMBERS.push({x,y,z:4,vx:R(-160,160),vy:R(-110,110),vz:R(80,240),t:R(.4,.8)});
-  LPUDDLES.push({x,y,r:R(38,48),t:5,max:5,tick:0,seed:Math.random()*99});if(LPUDDLES.length>40)LPUDDLES.shift();
+  LPUDDLES.push({x,y,r:R(LAVA_CFG.puddleR[0],LAVA_CFG.puddleR[1]),t:LAVA_CFG.puddleT,max:LAVA_CFG.puddleT,tick:0,seed:Math.random()*99,lava:1});if(LPUDDLES.length>LAVA_CFG.maxPuddles)LPUDDLES.splice(0,LPUDDLES.length-LAVA_CFG.maxPuddles);
   fireFlora(x,y);
   for(const t of trees)if(t.state==='ok'&&Math.hypot(t.x-x,t.y-y)<r){t.fire=1;t.hp-=30;}
   HEAVY=true;
@@ -2825,9 +2851,12 @@ function lavaSplash(x,y){const wet=inWater(x,y)&&!onBridge(x,y),r=80;G.shake=Mat
 function updVolcano(dt){if(!G||!D)return;D.lavaCD=Math.max(0,(D.lavaCD||0)-dt);
   for(const g of LGLOBS){g.t+=dt;g.x+=g.vx*dt;g.y+=g.vy*dt;g.vz-=900*dt;g.z+=g.vz*dt;g.rot+=dt*8;if(g.z<=0){g.dead=true;lavaSplash(g.x,g.y);}}
   LGLOBS=LGLOBS.filter(g=>!g.dead&&g.t<4);
-  for(const p of LPUDDLES){p.t-=dt;p.tick-=dt;if(p.tick<=0&&p.t>.6){p.tick=.25;
-    for(const u of units)if(!u.dead&&!u.inside&&Math.hypot(u.x-p.x,u.y-p.y)<p.r+6){u.burn=Math.max(u.burn||0,1.2);hurtUnit(u,5,'fire');}
-    for(const s of structures)if(s.state!=='ruin'&&!stoneish(s)&&Math.hypot(s.x-p.x,s.y-p.y)<p.r+16)s.fire=1;
+  if(LPUDDLES.length>LAVA_CFG.maxPuddles)LPUDDLES.splice(0,LPUDDLES.length-LAVA_CFG.maxPuddles);
+  for(const p of LPUDDLES){p.t-=dt;p.tick-=dt;if(p.tick<=0&&p.t>p.max*LAVA_CFG.crustAt){p.tick=LAVA_CFG.tick;const tk=LAVA_CFG.tick;
+    // hot lava: small steady damage per second to enemies standing in it, until it crusts over
+    for(const u of units)if(!lavaSafe(u)&&Math.hypot(u.x-p.x,u.y-p.y)<p.r+6){if(!p.lava)u.burn=Math.max(u.burn||0,1.2);else if(rnd()<.3)flame(u.x,u.y,6);hurtUnit(u,(p.lava?LAVA_CFG.unitDmg:5),u.isKingArmor?'lava':'fire');}
+    if(p.lava)lavaKing(p,LAVA_CFG.unitDmg);
+    for(const s of structures)if(s.state!=='ruin'&&Math.hypot(s.x-p.x,s.y-p.y)<p.r+16){if(!stoneish(s))s.fire=1;if(p.lava)hurtStruct(s,LAVA_CFG.structDmg);}
     for(const t of trees)if(t.state==='ok'&&!t.fire&&Math.hypot(t.x-p.x,t.y-p.y)<p.r+8)t.fire=1;}}
   LPUDDLES=LPUDDLES.filter(p=>p.t>0);
   for(const e of LEMBERS){e.t-=dt;e.x+=e.vx*dt;e.y+=e.vy*dt;e.vz-=520*dt;e.z=Math.max(0,e.z+e.vz*dt);if(e.z<=0){e.vx*=.6;e.vy*=.6;}}
@@ -2858,9 +2887,18 @@ function drawVolcano(){if(Math.abs(cam.x-VOLC.x)>1900||Math.abs(cam.y-VOLC.y)>14
   ctx.globalCompositeOperation='lighter';const g2=ctx.createRadialGradient(x,y,10,x,y,190);g2.addColorStop(0,`rgba(255,120,30,${.32+.2*pl+.4*VOLC_T.warn})`);g2.addColorStop(1,'rgba(255,60,0,0)');ctx.fillStyle=g2;ctx.beginPath();ctx.arc(x,y,190,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';
   if(D&&D.lava<LAVA_MAX&&Math.hypot(D.x-x,D.y-y)<500){ctx.globalAlpha=.6+.3*pl;ctx.strokeStyle='#ffe08a';ctx.setLineDash([10,8]);ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,VOLC.drinkR,VOLC.drinkR*.5,0,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}
   txt('Mount Cinder',x,y+205,13,'#ffcf9a','center');}
-function drawLavaGround(){for(const p of LPUDDLES){const k=p.t/p.max,hot=clamp(k*1.6,0,1);
-    ctx.globalAlpha=Math.min(1,p.t*1.5);ell(p.x,p.y,p.r,p.r*.55,`rgb(${60+180*hot|0},${30+60*hot|0},20)`);
-    ell(p.x-p.r*.15,p.y-2,p.r*.65,p.r*.32,`rgba(255,${140+80*hot|0},40,${hot})`);ell(p.x+p.r*.2,p.y-4,p.r*.18,p.r*.1,`rgba(255,250,180,${hot})`);ctx.globalAlpha=1;}}
+function drawLavaGround(){
+  for(const p of LPUDDLES){if(Math.abs(p.x-cam.x)>1700||Math.abs(p.y-cam.y)>1300)continue;
+    const k=clamp(p.t/p.max,0,1),hot=clamp((k-LAVA_CFG.crustAt)/(1-LAVA_CFG.crustAt),0,1),a=Math.min(1,p.t*1.2),r=p.r;
+    // cools from bright orange to a dark crust: glow fades, the crust darkens and cracks close up
+    ctx.globalAlpha=a;ell(p.x,p.y+2,r*1.05,r*.58,'rgba(30,18,14,.55)');
+    ell(p.x,p.y,r,r*.55,`rgb(${50+190*hot|0},${28+70*hot|0},${18+6*hot|0})`);
+    if(hot>0){ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,r*1.3);g.addColorStop(0,`rgba(255,150,40,${.45*hot})`);g.addColorStop(1,'rgba(255,60,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,p.y,r*1.3,r*.75,0,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';
+      ell(p.x-r*.12,p.y-2,r*.66,r*.33,`rgba(255,${140+90*hot|0},40,${hot})`);ell(p.x+r*.2,p.y-4,r*.2,r*.1,`rgba(255,250,180,${hot})`);}
+    // crust plates spreading as it cools
+    const cr=1-hot,sd=p.seed||0;ctx.strokeStyle=`rgba(${20+60*hot|0},${12+20*hot|0},10,${.3+.6*cr})`;ctx.lineWidth=2;ctx.beginPath();
+    for(let i=0;i<6;i++){const an=sd+i*1.05,l=r*(.35+.5*cr);ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+Math.cos(an)*l,p.y+Math.sin(an)*l*.55);}ctx.stroke();
+    ctx.globalAlpha=1;}}
 function drawLavaAir(){ctx.globalCompositeOperation='lighter';
   for(const e of LEMBERS){const a=clamp(e.t*1.4,0,1);ctx.fillStyle=`rgba(255,${120+Math.random()*100|0},30,${a})`;ctx.beginPath();ctx.arc(e.x,e.y-e.z,3.2,0,TAU);ctx.fill();}
   ctx.globalCompositeOperation='source-over';
@@ -4031,12 +4069,20 @@ const PRN_WARN=10,PRN_DELAY=20;
 let PRN={cur:null,seed:Math.floor(Math.random()*PRINCE_NAMES.length),swim:[],land:null,noBite:null};
 SHIPK.warship={hp:240,sp:72,crew:0,r:66};
 function princeLevel(l){return l>=5&&l%5===0;}
-function princeK(l){return Math.max(1,Math.floor(l/5));}
+function princeK(l){return princeTier(l);}
+// difficulty tiers: flat within a tier, a clear step up every 5 castle levels (5 = tier 1, 10 = tier 2, 15 = tier 3, ...)
+// tier 1 is deliberately gentle; later tiers climb faster than before
+const PRT={hp0:600,hpStep:650,thrust0:8,thrustStep:6,charge0:8,chargeStep:3,cav0:8,cavStep:2,army0:6,armyStep:6,armyMax:40,
+  sol:{foot:[26,6],knight:[48,8],archer:[20,4],cavalry:[85,10]}};
+function princeTier(l){return Math.max(1,Math.floor(l/5));}
+function princeSolHp(kind,k){const a=PRT.sol[kind];return a?a[0]+a[1]*(k-1):30;}
 function princeInfo(l){const k=princeK(l),ez=!!G.easy,name=PRINCE_NAMES[(PRN.seed+k-1)%PRINCE_NAMES.length],c=PRINCE_COLS[(PRN.seed*3+k-1)%PRINCE_COLS.length];
-  const total=Math.min(40,Math.round(9+4.5*(k-1))-(ez?2:0));
-  const archer=Math.round(total*Math.min(.32,.2+.04*(k-1))),cavalry=Math.round(total*Math.min(.3,.12+.05*(k-1))),knight=Math.round(total*.25),foot=Math.max(1,total-archer-cavalry-knight);
-  return{k,lvl:l,name,short:name.split(' ').slice(0,2).join(' '),col:c[0],trim:c[1],crest:c[2],ships:2+(k-1),army:{foot,knight,archer,cavalry},total,siege:k>=3?Math.min(4,k-2):0,
-    hp:Math.round((900+400*(k-1))*(ez?.75:1)),shipHp:Math.round((240+40*(k-1))*(ez?.8:1)),gold:250+150*(k-1),pts:1500*k};}
+  const total=Math.max(4,Math.min(PRT.armyMax,PRT.army0+PRT.armyStep*(k-1))-(ez?2:0));
+  const archer=k===1?1:Math.round(total*Math.min(.32,.2+.04*(k-1))),cavalry=k===1?0:Math.round(total*Math.min(.3,.12+.05*(k-1))),knight=k===1?2:Math.round(total*.25),foot=Math.max(1,total-archer-cavalry-knight);
+  return{k,tier:k,lvl:l,name,short:name.split(' ').slice(0,2).join(' '),col:c[0],trim:c[1],crest:c[2],ships:2+(k-1),army:{foot,knight,archer,cavalry},total,siege:k>=3?Math.min(4,k-2):0,
+    hp:Math.round((PRT.hp0+PRT.hpStep*(k-1))*(ez?.75:1)),thrust:PRT.thrust0+PRT.thrustStep*(k-1),charge:PRT.charge0+PRT.chargeStep*(k-1),cavCharge:PRT.cav0+PRT.cavStep*(k-1),
+    solHp:{foot:princeSolHp('foot',k),knight:princeSolHp('knight',k),archer:princeSolHp('archer',k),cavalry:princeSolHp('cavalry',k)},
+    shipHp:Math.round((240+40*(k-1))*(ez?.8:1)),gold:250+150*(k-1),pts:1500*k};}
 function princeActive(){return !!PRN.cur&&!PRN.cur.done;}
 function princeHudOn(){return scene==='play'&&princeActive()&&PRN.cur.phase!=='pre';}
 // ---- where the fleet lands: the southern shore below Haybury, a short march from King William's roads ----
@@ -4068,10 +4114,10 @@ function launchFleet(){const c=PRN.cur,L=c.land;c.phase='sail';c.path=princeRout
 function princeDisembark(s,k){const c=s.war,p=s.drop,x=p.x+R(-16,16),y=p.y+R(-10,10),K=c.k;let u=null;
   if(k==='prince'){u=mkUnit('knight',x,y,{mounted:true,hp:c.hp,maxHp:c.hp,atk:0,colr:c.col,isPrince:true,cs:'wheel'});c.boss=u;
     float(x,y-80,`${c.short}: "Forward, for glory! Slay the beast!"`,'#ffe08a');G.banner={text:`${c.name} has landed!`,sub:`He and his whole army are hunting you down, wherever you go! Wear him down below 30% to gobble him!`,t:4.5};if(typeof SFX!=='undefined')SFX.play('princeHorn');}
-  else if(k==='foot')u=mkUnit('knight',x,y,{hp:30+4*K,maxHp:30+4*K,atk:0,foot:true,colr:c.col});
-  else if(k==='knight')u=mkUnit('knight',x,y,{hp:55+6*K,maxHp:55+6*K,atk:0,colr:c.col});
-  else if(k==='cavalry')u=mkCavalry(x,y,{colr:c.col,hp:95+8*K,maxHp:95+8*K,cs:'wheel'});
-  else if(k==='archer')u=mkUnit('archer',x,y,{hp:24+3*K,maxHp:24+3*K,shootT:R(1,3)});
+  else if(k==='foot')u=mkUnit('knight',x,y,{hp:princeSolHp('foot',K),maxHp:princeSolHp('foot',K),atk:0,foot:true,colr:c.col});
+  else if(k==='knight')u=mkUnit('knight',x,y,{hp:princeSolHp('knight',K),maxHp:princeSolHp('knight',K),atk:0,colr:c.col});
+  else if(k==='cavalry')u=mkCavalry(x,y,{colr:c.col,hp:princeSolHp('cavalry',K),maxHp:princeSolHp('cavalry',K),cs:'wheel'});
+  else if(k==='archer')u=mkUnit('archer',x,y,{hp:princeSolHp('archer',K),maxHp:princeSolHp('archer',K),shootT:R(1,3)});
   else{const n0=units.length;spawnSiege(k,siege.length);const g=siege[siege.length-1];g.x=x;g.y=y;g.prince=c;for(let i=n0;i<units.length;i++){units[i].x=x+R(-12,12);units[i].y=y+R(-8,8);}puff(x,y,8,'rgba(220,240,255,',60,5);return;}
   u.prince=c;u.born=G.t;if(u.mounted||(!u.isPrince&&u.type==='knight'&&c.members.filter(m=>m.prFlag&&!m.mounted).length<2))u.prFlag=!u.isPrince;
   c.members.push(u);units.push(u);puff(x,y,6,'rgba(220,240,255,',60,5);}
@@ -4134,7 +4180,7 @@ function princeBoss(u,dt){const c=u.prince;u.retreat=false;u.shieldT=Math.max(0,
   const dd=dist(u,D),low=D.alt<DR.hitAltSword;
   if(dd<560&&(low||dd<300)){
     if(!u.engaged){u.engaged=true;float(u.x,u.y-80,`${c.short}: "Have at thee, dragon!"`,'#ffe08a');}
-    if(low&&dd<74&&u.cs!=='charge'){u.face=D.x>u.x?1:-1;u.anim+=dt*4;if(u.atk<=0){u.atk=1.25;u.thrust=.32;const dm=10+3*c.k;hurtDragon(dm,'lance');float(D.x,D.y-95,`Royal lance! -${dm}`,'#ffb0a0');}return true;}
+    if(low&&dd<74&&u.cs!=='charge'){u.face=D.x>u.x?1:-1;u.anim+=dt*4;if(u.atk<=0){u.atk=1.25;u.thrust=.32;const dm=c.thrust||(PRT.thrust0+PRT.thrustStep*(c.k-1));hurtDragon(dm,'lance');float(D.x,D.y-95,`Royal lance! -${dm}`,'#ffb0a0');}return true;}
     updCavalry(u,dt);return true;}
   u.engaged=false;const p=c.path&&c.path[0];
   if(!p){u.face=D.x>u.x?1:-1;if(!c.tauntT||G.t-c.tauntT>9){c.tauntT=G.t;float(u.x,u.y-80,`${c.short}: "Come out and face me, dragon!"`,'#ffe08a');}return true;}
@@ -5094,10 +5140,10 @@ if(HN_DIET.gull&&!HN_DIET.gull.prey.includes('starfish'))HN_DIET.gull.prey.push(
 const ocNorth=(x,y)=>inSea(x,y)&&y<-350;
 const ocShallow=(x,y)=>inSea(x,y)&&seaD(x,y)<640&&d2(x,y,LH.x,LH.y)>LH.r+60;
 function ocBeachOK(x,y){return onBeach(x,y)&&!inWater(x,y)&&!onIsle(x,y)&&x>RANGE1+200&&y>-150&&!(typeof inDesert==='function'&&inDesert(x,y))&&!(typeof inLake==='function'&&inLake(x,y));}
-function ocBeachPt(far){for(let t=0;t<200;t++){let x,y;if(rnd()<.6){y=R(150,4300);x=coastX(y)-R(25,140);}else{x=R(-2600,5300);y=coastY(x)-R(25,130);}
+function ocBeachPt(far){for(let t=0;t<200;t++){let x,y;if(rnd()<.6){y=R(150,4300);x=coastX(y)-R(25,140);}else{x=R(-2600,5300+SEA_DX);y=coastY(x)-R(25,130);}
     if(!ocBeachOK(x,y))continue;if(far&&d2(x,y,D.x,D.y)<1100)continue;return{x,y};}return null;}
 function ocIcyShore(){for(let t=0;t<200;t++){const y=R(-2000,-750),x=coastX(y)-R(40,150);if(!inWater(x,y)&&!inSea(x,y))return{x,y};}return{x:coastX(-1200)-90,y:-1200};}
-function ocNorthPt(far){for(let t=0;t<200;t++){const x=R(5800,9500),y=R(-2300,-500);if(!ocNorth(x,y)||seaD(x,y)<160)continue;if(far&&d2(x,y,D.x,D.y)<1300)continue;return{x,y};}return null;}
+function ocNorthPt(far){for(let t=0;t<200;t++){const x=R(5800+SEA_DX,9500+SEA_DX),y=R(-2300,-500);if(!ocNorth(x,y)||seaD(x,y)<160)continue;if(far&&d2(x,y,D.x,D.y)<1300)continue;return{x,y};}return null;}
 function ocOnFloe(x,y){for(const f of OC.floes){const dx=(x-f.x)/f.rx,dy=(y-f.y)/f.ry;if(dx*dx+dy*dy<1)return f;}return null;}
 function ocShallowPt(far){for(let t=0;t<200;t++){const p=seaPoint(60,460,{noDeep:true,far});if(p&&ocShallow(p.x,p.y)&&p.y>-200)return p;}return null;}
 function ocHsh(i){const s=Math.sin(i*12.9898+78.233)*43758.5453;return s-Math.floor(s);}
@@ -5136,7 +5182,7 @@ function ocInit(){OC.reefs=[];OC.floes=[];OC.nests=[];OC.shells=[];OC.cols=[];OC
   for(let i=0;i<OC_PLAN.narwhalPods;i++){const p=ocNorthPt(false);if(p)ocPod(p,RI(3,5));}
   for(let i=0;i<OC_PLAN.northSchools;i++){const p=ocNorthPt(false);if(p)mkSea('school',p.x,p.y,{n:RI(6,9),hp:999,maxHp:999,north:1});}
   for(let i=0;i<OC_PLAN.rayGroups;i++){const r=OC.reefs[i];const p=r&&rnd()<.5?{x:r.x+R(-120,120),y:r.y+R(-80,80)}:ocShallowPt(false);const q=p&&ocShallow(p.x,p.y)?p:ocShallowPt(false);if(q)ocRays(q,RI(2,5));}
-  ocAngler({x:R(8300,9300),y:R(600,2800)});const pa={x:R(8300,9300),y:R(3200,5400)};ocAngler(pa);ocAngler({x:pa.x+60,y:pa.y+40});
+  ocAngler({x:R(8300+SEA_DX,9300+SEA_DX),y:R(600,2800)});const pa={x:R(8300+SEA_DX,9300+SEA_DX),y:R(3200,5400)};ocAngler(pa);ocAngler({x:pa.x+60,y:pa.y+40});
   for(let i=0;i<OC_PLAN.seaturtle;i++){const p=seaPoint(120,1400,{noDeep:true,avoidIsle:true});if(p&&p.y>-200)ocTurtle(p);}
   for(let i=0;i<3;i++){const p=ocBeachPt(false);if(p)OC.nests.push({x:p.x,y:p.y,eggs:0,t:0});}
   ocMakeLogs(OC_PLAN.logs);for(let li=0;li<OC.logs.length;li++)for(let i=0;i<OC.logs[li].cap;i++)ocPTurtle(li);
@@ -5146,7 +5192,7 @@ function ocInit(){OC.reefs=[];OC.floes=[];OC.nests=[];OC.shells=[];OC.cols=[];OC
 {const _ng=newGame;newGame=function(o){const r=_ng.apply(this,arguments);ocInit();return r;};}
 // ---------- movement ----------
 const OC_OK={
-  moray:(u,x,y)=>inSea(x,y),narwhal:(u,x,y)=>ocNorth(x,y)&&seaD(x,y)>80,stingray:(u,x,y)=>u.st==='flee'?inSea(x,y)&&seaD(x,y)<1000:ocShallow(x,y),angler:(u,x,y)=>inDeep(x,y)&&x>8150,
+  moray:(u,x,y)=>inSea(x,y),narwhal:(u,x,y)=>ocNorth(x,y)&&seaD(x,y)>80,stingray:(u,x,y)=>u.st==='flee'?inSea(x,y)&&seaD(x,y)<1000:ocShallow(x,y),angler:(u,x,y)=>inDeep(x,y)&&x>8150+SEA_DX,
   seaturtle:(u,x,y)=>inSea(x,y)&&!inDeep(x,y)&&d2(x,y,LH.x,LH.y)>LH.r+40||u.st==='nest'||u.st==='lay'||u.st==='home'&&d2(x,y,u.nx,u.ny)<300,
   hatchling:(u,x,y)=>true,pturtle:(u,x,y)=>true,penguin:(u,x,y)=>d2(x,y,u.hx,u.hy)<480,octopus:(u,x,y)=>inSea(x,y)&&d2(x,y,u.hx,u.hy)<400,starfish:(u,x,y)=>ocBeachOK(x,y)};
 {const _ok=seaOK;seaOK=function(u,x,y){if(u&&OC_OK[u.kind])return OC_OK[u.kind](u,x,y);return _ok.apply(this,arguments);};}
@@ -5291,7 +5337,7 @@ function ocRespawn(){const far=(x,y)=>d2(x,y,D.x,D.y)>1100;
   for(let ri=0;ri<OC.reefs.length;ri++){const r=OC.reefs[ri];const n=units.filter(u=>!u.dead&&u.kind==='moray'&&u.reef===ri).length;if(n<r.cap&&far(r.x,r.y)&&rnd()<.4)ocMoray(r,n);}
   if(OC.units('narwhal').length<6&&rnd()<.4){const p=ocNorthPt(true);if(p)ocPod(p,RI(3,5));}
   if(OC.units('stingray').length<8&&rnd()<.5){const p=ocShallowPt(true);if(p)ocRays(p,RI(2,3));}
-  if(OC.units('angler').length<3&&rnd()<.4){const p=seaPoint(0,1e9,{deep:true,far:true});if(p&&p.x>8150)ocAngler(p);}
+  if(OC.units('angler').length<3&&rnd()<.4){const p=seaPoint(0,1e9,{deep:true,far:true});if(p&&p.x>8150+SEA_DX)ocAngler(p);}
   if(OC.units('seaturtle').length<OC_PLAN.seaturtle&&rnd()<.4){const p=seaPoint(120,1400,{noDeep:true,far:true,avoidIsle:true});if(p&&p.y>-200)ocTurtle(p);}
   for(let li=0;li<OC.logs.length;li++){const l=OC.logs[li];if(units.filter(u=>!u.dead&&u.kind==='pturtle'&&u.log===li).length<l.cap&&far(l.x,l.y)&&rnd()<.4)ocPTurtle(li);}
   for(let ci=0;ci<OC.cols.length;ci++){const c=OC.cols[ci];if(units.filter(u=>!u.dead&&u.kind==='penguin'&&u.col===ci).length<c.cap&&far(c.x,c.y))ocPenguin(ci);}
@@ -5949,7 +5995,7 @@ KDEF.wtower={name:'Archer tower',hp:170,cost:[18,4],gold:[1,3],pts:120,alarm:6,s
 for(const k of['wtower','stower']){COST[k]=KDEF[k].cost;STRUCT_NAME[k]=KDEF[k].name;}
 // unlock: total wood+stone delivered by the carts this level before the first tower (undisturbed carts bring ~4-5 a minute -> ~8 minutes in)
 const RT={unlock:36,buildT:{wtower:14,stower:22},T:{wtower:{cost:[18,4],lvl:1,name:'Archer Tower'},stower:{cost:[6,22],lvl:3,unlock:50,name:'Scorpion Tower'}},
-  check:3,space:650,archerWait:25,bolt:{range:720,cd:4.6,speed:560,life:1.45},regions:new Set(['farm','castle','south','lake','hills','coast'])};
+  check:3,space:650,archerWait:25,bolt:{range:720,cd:4.6,speed:560,life:1.45},regions:new Set(['farm','castle','south','lake','hills','coast','march','crags'])};
 const RT_KINDS=new Set(['wtower','stower']);const isRT=s=>!!s&&RT_KINDS.has(s.kind);
 let RT_SPOTS=null;
 const rtMax=()=>Math.min((RT_SPOTS||rtSpots()).length,2+(G.lvl||1));
@@ -6068,7 +6114,7 @@ function drawSTower(s){const x=s.x,y=s.y;
 // Kingdom/farms cheerful (pastoral), castle regal (fanfare), forest mysterious, desert Arabian (existing 'desert' scale),
 // savanna drums, jungle marimba + percussion, Dragon Peaks / mountains epic low horns, ocean airy, lair dark rumble.
 const MU={fade:2,themes:{farm:'pastoral',south:'pastoral',lake:'pastoral',hills:'pastoral',castle:'fanfare',forest:'forest',desert:'desert',
-  savanna:'savanna',jungle:'jungle',mountain:'peaks',drpeaks:'peaks',sea:'ocean',deep:'ocean',coast:'ocean',isle:'ocean',lair:'lair'},hitT:-99};
+  savanna:'savanna',jungle:'jungle',mountain:'peaks',drpeaks:'peaks',sea:'ocean',deep:'ocean',coast:'ocean',isle:'ocean',lair:'lair',eastwood:'forest',crags:'pastoral',march:'pastoral'},hitT:-99};
 Object.assign(MOODS,{
   forest:{bpm:70,root:57,scale:[0,2,3,5,7,9,10],prog:[0,6,5,6,0,3,4,0],lead:'flute',bass:'harp',arp:true,drum:0,beats:4,dens:.35,vol:.85},
   savanna:{bpm:108,root:55,scale:[0,2,4,7,9,12,14],prog:[0,0,3,3,4,4,0,0],lead:'recorder',bass:'drone',arp:false,drum:5,beats:4,dens:.3,vol:.8},
@@ -6774,8 +6820,8 @@ function btCue(u,n){const x=u.x,y=u.y-(u.type==='sea'?10:22);BT.cues.push({x,y,t
 // Princess Elizabeth is kept: there he is safe (not targetable) and slowly heals, and after a cooldown he can come out again.
 // Family-friendly: the king can NEVER be eaten or killed. His HP never drops below a floor, whatever hits him.
 const KA_CFG={trigR:520,castleR:700,suit:3.5,walk:70,fleeSp:120,leash:360,reach:70,flee:.3,floor:.12,heal:.03,cd:35,backAt:.9,
-  calm:30,biteDmg:40,armFire:.55,armHit:.8,bashCd:6,bashPush:40};
-const KA={phase:'home',t:0,u:null,hp:0,maxHp:0,inT:-99,calmT:0,flees:0,outs:0,hx:KING.x,hy:KING.y,clangT:-9,peek:false};
+  calm:30,dizzy:30,chargeT:90,chargeSp:115,rallyR:950,rallyK:500,lairR:300,wakeHp:.6,rescue:6,rescueEasy:7,leaveR:700,biteDmg:40,armFire:.55,armHit:.8,bashCd:6,bashPush:40};
+const KA={rsT:-1,rsDone:0,rsDz:0,rescue:0,wind:0,dzT:0,chT:0,charged:0,phase:'home',t:0,u:null,hp:0,maxHp:0,inT:-99,calmT:0,flees:0,outs:0,hx:KING.x,hy:KING.y,clangT:-9,peek:false};
 function kaStats(){const l=Math.max(1,G.lvl||1),ez=!!G.easy;
   return{hp:Math.round(Math.min(1600,600+100*(l-1))*(ez?.75:1)),dmg:Math.round(Math.min(22,10+1.5*(l-1))*(ez?.7:1)),atkCd:1.1,
     bash:Math.round((8+l)*(ez?.7:1)),bashCd:KA_CFG.bashCd};}
@@ -6784,42 +6830,88 @@ function kaOut(){return KA.phase==='fight'||KA.phase==='flee';}
 function kaThreat(){if(G.over||G.won)return false;
   return(d2(D.x,D.y,KA.hx,KA.hy)<KA_CFG.trigR&&D.alt<.6)||(d2(D.x,D.y,CASTLE.x,CASTLE.y)<KA_CFG.castleR&&(G.sinceDmg==null?99:G.sinceDmg)<2);}
 function kaReset(){if(KA.u){const i=units.indexOf(KA.u);if(i>=0)units.splice(i,1);}
-  Object.assign(KA,{phase:'home',t:0,u:null,hp:0,maxHp:0,inT:-99,calmT:0,flees:0,outs:0,clangT:-9});KING.x=KA.hx;KING.y=KA.hy;}
+  kaUnrally(false);Object.assign(KA,{rsT:-1,rsDone:0,rsDz:0,rsGrab:0,rescue:0,wind:0,dzT:0,chT:0,charged:0,phase:'home',t:0,u:null,hp:0,maxHp:0,inT:-99,calmT:0,flees:0,outs:0,clangT:-9});KING.x=KA.hx;KING.y=KA.hy;}
 function kaSpawn(msg){const S=kaStats(),p=kaDoor();KA.maxHp=S.hp;if(!(KA.hp>0))KA.hp=S.hp;
   const u=mkUnit('knight',p.x,p.y+6,{hp:KA.hp,maxHp:S.hp,atk:.6,colr:'#ffd23a',isKingArmor:true,isKing:true,born:G.t,bashT:2,anim:0});
   KA.u=u;units.push(u);KA.phase='fight';KA.calmT=0;KA.outs++;sparkle(p.x,p.y-20,16);
   float(p.x,p.y-90,msg,'#ffe08a');if(typeof SFX!=='undefined'&&SFX.play)SFX.play('fanfare');}
 function kaInside(){const u=KA.u;if(u){KA.hp=u.hp;const i=units.indexOf(u);if(i>=0)units.splice(i,1);}KA.u=null;}
-function updKA(dt){if(scene!=='play'||!G||G.over||G.won)return;KA.t+=dt;const thr=kaThreat(),p=kaDoor();
+// ---- second wind, knocked out dizzy, and the royal charge ----
+function kaAtLair(){return d2(D.x,D.y,LAIR.x,LAIR.y)<KA_CFG.lairR;}
+// the charge party: every surviving foot soldier, knight (mounted or not) and archer still around the castle or the king. No new spawns:
+// if nobody is left he charges alone. Tower archers stay on the walls; patrol squads, raiders, escorts and the prince keep their own jobs.
+function kaParty(){const k=KA.u||KING;return units.filter(u=>!u.dead&&!u.gone&&!u.inside&&!u.isKingArmor&&!u.retreat&&!u.kaCh&&(u.type==='knight'||u.type==='archer')&&u.post!=='tower'&&!u.siege&&!u.patrol&&!u.raid&&!u.escort&&!u.prince&&
+    (d2(u.x,u.y,CASTLE.x,CASTLE.y)<KA_CFG.rallyR||d2(u.x,u.y,k.x,k.y)<KA_CFG.rallyK));}
+function kaRally(){const L=kaParty().sort((a,b)=>d2(a.x,a.y,KA.u.x,KA.u.y)-d2(b.x,b.y,KA.u.x,KA.u.y));let n=0;
+  for(const u of L){u.kaCh=1;u.kaSlot=n++;u.kaPost=u.post||null;u.post=null;}KA.rallied=n;return n;}
+// loose formation behind the king (rows of four, a little jitter) until the dragon is close, then their usual fighting
+function kaFollow(u,dt){if(!u.kaCh||KA.phase!=='charge'||!KA.u)return false;const k=KA.u;if(dist(u,D)<230&&dist(k,D)<320)return false;
+  const a=Math.atan2(D.y-k.y,D.x-k.x),row=1+(u.kaSlot>>2),col=(u.kaSlot&3)-1.5,j=Math.sin(G.t*1.3+u.kaSlot)*6,
+    bx=k.x-Math.cos(a)*(46*row)-Math.sin(a)*(col*38+j),by=k.y-Math.sin(a)*(46*row)+Math.cos(a)*(col*38+j);
+  const far=d2(u.x,u.y,bx,by);moveTo(u,bx,by,KA_CFG.chargeSp*(far>160?1.25:1.05),dt);u.face=D.x>u.x?1:-1;u.anim=(u.anim||0)+dt*4;return true;}
+function kaUnrally(home){for(const u of units)if(u.kaCh){u.kaCh=0;if(u.kaPost){u.post=u.kaPost;}else if(home)u.retreat=true;u.kaPost=null;}}
+function kaCharge(resc){KA.phase='charge';KA.chT=0;KA.charged=1;KA.rescue=resc?1:0;const n=kaRally();
+  KA.chMsg=n?'party':'alone';
+  G.banner={text:resc?'King William rallies his soldiers to rescue the princess!':'King William leads the charge!',sub:`He rides out after the dragon with ${n?n+' of his surviving guards':'no guards left: alone'}. Get back to your lair to shake them off!`,t:3.5};
+  float(KA.u.x,KA.u.y-90,'King William: "Charge! After that dragon!"','#ffe08a');if(typeof SFX!=='undefined'&&SFX.play)SFX.play('fanfare');}
+// princess rescue: once the dragon carries Princess Elizabeth out of the castle area, and the king is NOT knocked out dizzy,
+// he gathers his surviving nearby soldiers after 6 s (7 s on easy) and leads the charge after the dragon. Same lair rule.
+// If he was knocked out dizzy when she was grabbed there is no immediate chase (the normal post-dizzy charge still happens).
+function kaRescueDelay(){return G.easy?KA_CFG.rescueEasy:KA_CFG.rescue;}
+function kaRescue(dt){if(PR.state!=='carried'||!D.princess){KA.rsT=-1;KA.rsDone=0;KA.rsDz=0;KA.rsGrab=0;return;}
+  if(!KA.rsGrab){KA.rsGrab=1;KA.rsDz=KA.phase==='dizzy'?1:0;}
+  if(KA.rsDone||KA.rsDz)return;
+  if(KA.phase==='dizzy'){KA.rsT=-1;return;}
+  if(KA.rsT<0){if(d2(D.x,D.y,CASTLE.x,CASTLE.y)>KA_CFG.leaveR){KA.rsT=kaRescueDelay();KA.rsT0=G.t;}return;}
+  KA.rsT-=dt;if(KA.rsT>0)return;KA.rsT=-1;KA.rsDone=1;KA.rsFireT=G.t;
+  if(kaAtLair()||KA.phase==='charge')return;
+  if(!KA.u){if(KA.phase==='shelter'||KA.phase==='flee')KA.hp=Math.max(KA.hp,KA.maxHp*KA_CFG.wakeHp);else if(KA.phase!=='suit'||!(KA.hp>0))KA.hp=KA.lavaHp||0;KA.lavaHp=0;
+    const S=kaStats(),pd=kaDoor();KING.x=pd.x;KING.y=pd.y;kaSpawn('King William: "Unhand my daughter, beast!"');KA.hp=KA.u.hp;}
+  KA.wind=1;kaCharge(true);}
+function kaGoHome(msg){KA.phase='return';kaUnrally(true);if(msg&&KA.u)float(KA.u.x,KA.u.y-90,msg,'#ffe08a');}
+function updKA(dt){if(scene!=='play'||!G||G.over||G.won)return;KA.t+=dt;kaRescue(dt);const thr=kaThreat(),p=kaDoor();
+  if(KA.phase==='home'&&KA.lavaHp>0){KA.hp=Math.min(KA.maxHp,KA.hp+KA.maxHp*KA_CFG.heal*dt);KA.lavaHp=KA.hp;if(KA.hp>=KA.maxHp){KA.hp=0;KA.lavaHp=0;}}
   if(KA.phase==='home'){if(thr&&G.t-KA.inT>KA_CFG.cd){KA.phase='toArmory';kingSay('To the armoury! Fetch my golden armour!');}}
   else if(KA.phase==='toArmory'){const dx=p.x-KING.x,dy=p.y-KING.y,dd=Math.hypot(dx,dy),s=Math.min(dd,KA_CFG.walk*dt);
     if(dd>3){KING.x+=dx/dd*s;KING.y+=dy/dd*s;}else{KA.phase='suit';KA.t=0;
       G.banner={text:'King William dons his golden armor!',sub:'Suiting up in the keep\'s armoury… he will come out fighting!',t:3};
       if(typeof SFX!=='undefined'&&SFX.play)SFX.play('crashStone',p.x,p.y,.25);}}
-  else if(KA.phase==='suit'){if(KA.t>=KA_CFG.suit){KA.hp=0;kaSpawn('King William: "Have at thee, foul beast!"');}}
-  else if(KA.phase==='fight'||KA.phase==='flee'){const u=KA.u;
+  else if(KA.phase==='suit'){if(KA.t>=KA_CFG.suit){KA.hp=KA.lavaHp||0;KA.lavaHp=0;kaSpawn('King William: "Have at thee, foul beast!"');}}
+  else if(KA.u&&(kaOut()||KA.phase==='dizzy'||KA.phase==='charge'||KA.phase==='return')){const u=KA.u;
     // guard: nothing may take the king away (lava, water, predators, anything that sets .dead directly)
     if(u&&(u.dead||u.gone||u.eaten||!(u.hp>0)||!isFinite(u.x)||!isFinite(u.y))){u.dead=false;u.gone=false;u.eaten=false;u.hp=Math.max(u.hp>0?u.hp:0,u.maxHp*KA_CFG.floor);
       if(!isFinite(u.x)||!isFinite(u.y)){u.x=p.x;u.y=p.y+6;}}
     if(u&&units.indexOf(u)<0)units.push(u);
     if(u){KING.x=u.x;KING.y=u.y;KA.hp=u.hp;}
     if(KA.phase==='fight'){if(thr)KA.calmT=0;else KA.calmT+=dt;
-      if(u&&u.hp<=u.maxHp*KA_CFG.flee){KA.phase='flee';KA.flees++;
+      if(u&&KA.wind&&u.hp<=u.maxHp*KA_CFG.floor+.5)kaDizzy(u);
+      else if(u&&!KA.wind&&u.hp<=u.maxHp*KA_CFG.flee){KA.phase='flee';KA.flees++;
         G.banner={text:'King William retreats to safety!',sub:'He hurries into the keep to Princess Elizabeth, safe under its stone roof, to rest and heal',t:3.2};
         float(u.x,u.y-90,'King William: "Fall back! To the keep!"','#ffe08a');}
-      else if(KA.calmT>KA_CFG.calm){KA.phase='flee';KA.disarm=true;}}}
+      else if(KA.calmT>KA_CFG.calm){KA.phase='flee';KA.disarm=true;}}
+    else if(KA.phase==='dizzy'){KA.dzT-=dt;if(KA.dzT<=0&&u){u.dizzy=0;u.hp=Math.max(u.hp,u.maxHp*KA_CFG.wakeHp);KA.hp=u.hp;
+        if(KA.charged||kaAtLair())kaGoHome('King William: "Bah! Back to the castle!"');else kaCharge();}}
+    else if(KA.phase==='charge'){KA.chT+=dt;if(kaAtLair())kaGoHome('King William: "It hides in its lair! Fall back!"');else if(KA.chT>KA_CFG.chargeT)kaGoHome('King William: "Enough! Home, men!"');
+      else if(u&&u.hp<=u.maxHp*KA_CFG.floor+.5)kaDizzy(u);}}
   else if(KA.phase==='shelter'){KA.hp=Math.min(KA.maxHp,KA.hp+KA.maxHp*KA_CFG.heal*dt);
-    if(thr&&KA.hp>=KA.maxHp*KA_CFG.backAt&&G.t-KA.inT>=KA_CFG.cd)kaSpawn('King William returns, armour polished! "Again, beast!"');
+    if(thr&&KA.hp>=KA.maxHp*KA_CFG.backAt&&G.t-KA.inT>=KA_CFG.cd){kaSpawn('King William returns, armour polished! "Again, beast!"');KA.wind=1;
+      G.banner={text:"King William's second wind!",sub:'Rested and furious: this time he will not retreat. Knock him out to stop him!',t:3.5};}
     else if(!thr&&KA.hp>=KA.maxHp&&G.t-KA.inT>=KA_CFG.cd){KA.phase='toHome';KING.x=p.x;KING.y=p.y;KA.hp=0;}}
   else if(KA.phase==='toHome'){const dx=KA.hx-KING.x,dy=KA.hy-KING.y,dd=Math.hypot(dx,dy),s=Math.min(dd,KA_CFG.walk*dt);if(dd>3){KING.x+=dx/dd*s;KING.y+=dy/dd*s;}else{KING.x=KA.hx;KING.y=KA.hy;KA.phase='home';}}
+  if(KA.phase!=='charge'&&units.some(u=>u.kaCh))kaUnrally(true);
   // save-friendly mirror (plain values on G): only 'home' or 'shelter' survive a reload
   G.kaPh=KA.phase==='shelter'||KA.phase==='flee'?'shelter':'home';G.kaHpF=KA.maxHp?+(KA.hp/KA.maxHp).toFixed(3):1;G.kaIn=Math.max(0,KA_CFG.cd-(G.t-KA.inT));}
 // the armoured king's own fighting brain (replaces the normal knight AI for him)
+function kaDizzy(u){KA.phase='dizzy';KA.dzT=KA_CFG.dizzy;u.dizzy=1;u.swing=0;u.bashFx=0;if(KA.charged)kaUnrally(true);
+  G.banner={text:'King William is knocked out dizzy!',sub:`Seeing stars for ${KA_CFG.dizzy} seconds: he can't be hurt or eaten while he cools off`,t:3.2};float(u.x,u.y-90,'King William: "Ooh... the stars..."','#ffe08a');}
 function kaStep(u,dt){const S=kaStats(),p=kaDoor();u.retreat=false;u.burn=0;u.post=null;u.atk-=dt;u.bashT=(u.bashT||0)-dt;u.swing=Math.max(0,(u.swing||0)-dt);u.bashFx=Math.max(0,(u.bashFx||0)-dt);
   if(KA.phase==='flee'){if(moveTo(u,p.x,p.y+4,KA_CFG.fleeSp,dt)||dist(u,p)<14){kaInside();
-      if(KA.disarm){KA.disarm=false;KA.phase='toHome';KING.x=p.x;KING.y=p.y;KA.hp=0;KA.inT=G.t-KA_CFG.cd+10;}
+      if(KA.disarm){KA.disarm=false;KA.wind=0;KA.phase='toHome';KING.x=p.x;KING.y=p.y;KA.hp=0;KA.inT=G.t-KA_CFG.cd+10;}
       else{KA.phase='shelter';KA.inT=G.t;float(p.x,p.y-110,'King William is safe inside the keep with Princess Elizabeth','#ffe08a');}}return;}
-  const dd=dist(u,D),low=D.alt<DR.hitAltSword,inLeash=d2(D.x,D.y,KA.hx,KA.hy)<KA_CFG.leash+80;
+  if(KA.phase==='dizzy'){u.anim=(u.anim||0)+dt;return;}
+  if(KA.phase==='return'){if(moveTo(u,p.x,p.y+4,KA_CFG.chargeSp,dt)||dist(u,p)<14){kaInside();KA.phase='toHome';KING.x=p.x;KING.y=p.y;KA.hp=0;KA.wind=0;KA.charged=0;KA.inT=G.t;}u.anim+=dt*4;return;}
+  const chg=KA.phase==='charge',dd=dist(u,D),low=D.alt<DR.hitAltSword,inLeash=chg||d2(D.x,D.y,KA.hx,KA.hy)<KA_CFG.leash+80;
+  if(chg&&(dd>KA_CFG.reach||!low)){moveTo(u,D.x,D.y,KA_CFG.chargeSp,dt);u.face=D.x>u.x?1:-1;u.anim+=dt*5;return;}
   if(inLeash&&low){
     if(dd>KA_CFG.reach)moveTo(u,D.x,D.y,95,dt);
     else{u.face=D.x>u.x?1:-1;u.anim+=dt*4;
@@ -6830,26 +6922,28 @@ function kaStep(u,dt){const S=kaStats(),p=kaDoor();u.retreat=false;u.burn=0;u.po
   else{// the dragon is up in the air or beyond his leash: hold the line between the keep and the dragon
     const a=Math.atan2(D.y-KA.hy,D.x-KA.hx),r=Math.min(KA_CFG.leash*.6,dist(D,{x:KA.hx,y:KA.hy})),tx=KA.hx+Math.cos(a)*r,ty=KA.hy+Math.sin(a)*r;
     if(d2(u.x,u.y,tx,ty)>8)moveTo(u,tx,ty,80,dt);u.face=D.x>u.x?1:-1;}
-  // never stray far from the castle
+  // never stray far from the castle (except while leading the charge or marching home)
+  if(KA.phase==='charge'||KA.phase==='return')return;
   const lx=u.x-KA.hx,ly=u.y-KA.hy,ld=Math.hypot(lx,ly);if(ld>KA_CFG.leash){u.x=KA.hx+lx/ld*KA_CFG.leash;u.y=KA.hy+ly/ld*KA_CFG.leash;}}
 // a bite on the golden armour: CLANG, a dent and a shove, never a gulp
 function kaBitten(u){const S=u.maxHp;hurtUnit(u,KA_CFG.biteDmg,'bite');const a=Math.atan2(u.y-D.y,u.x-D.x);u.x+=Math.cos(a)*30;u.y+=Math.sin(a)*30;
   D.eatCD=.7;D.eatT=.3;D.hp-=3*G.dmgMul;D.hurt=.3;float(u.x,u.y-90,'CLANG! Golden armour! King William can\'t be eaten','#ffd27a');sparkle(u.x,u.y-30,6);}
 // ---- hooks ----
-const _updKnightKA=updKnight;updKnight=function(u,dt){if(u&&u.isKingArmor){if(u===KA.u)kaStep(u,dt);else{u.dead=true;u.gone=true;}return;}return _updKnightKA.apply(this,arguments);};
-const _hurtUnitKA=hurtUnit;hurtUnit=function(u,d,src){if(u&&u.isKingArmor){if(!kaOut()||!(d>0))return;
+const _updKnightKA=updKnight;updKnight=function(u,dt){if(u&&!u.isKingArmor&&kaFollow(u,dt))return;if(u&&u.isKingArmor){if(u===KA.u)kaStep(u,dt);else{u.dead=true;u.gone=true;}return;}return _updKnightKA.apply(this,arguments);};
+const _hurtUnitKA=hurtUnit;hurtUnit=function(u,d,src){if(u&&u.isKingArmor){if(!(kaOut()||KA.phase==='charge')||u.dizzy||!(d>0))return;
     d*=(src==='fire'||src==='lava'||src==='burn')?KA_CFG.armFire:KA_CFG.armHit;u.hp=Math.max(u.maxHp*KA_CFG.floor,u.hp-d);u.burn=0;
     if(G.t-KA.clangT>.8){KA.clangT=G.t;float(u.x+R(-10,10),u.y-70,src==='fire'?'The golden armour glows hot!':'CLANG!','#ffe08a');}return;}
   return _hurtUnitKA.apply(this,arguments);};
 const _eatUnitKA=eatUnit;eatUnit=function(u){if(u&&u.isKingArmor){kaBitten(u);return;}return _eatUnitKA.apply(this,arguments);};
-const _biteTargetsKA=biteTargets;biteTargets=function(){const T=_biteTargetsKA.apply(this,arguments);return KA.peek?T:T.filter(u=>!u.isKingArmor);};
-const _tryEatKA=tryEat;tryEat=function(){if(KA.u&&kaOut()){KA.peek=true;let T;try{T=biteTargets();}finally{KA.peek=false;}
+const _biteTargetsKA=biteTargets;biteTargets=function(){const T=_biteTargetsKA.apply(this,arguments);return KA.peek&&!(KA.u&&KA.u.dizzy)?T:T.filter(u=>!u.isKingArmor);};
+const _tryEatKA=tryEat;tryEat=function(){if(KA.u&&(kaOut()||KA.phase==='charge')){KA.peek=true;let T;try{T=biteTargets();}finally{KA.peek=false;}
     if(T.length&&T[0].isKingArmor){kaBitten(T[0]);return;}}return _tryEatKA.apply(this,arguments);};
 const _updateKA=update;update=function(dt){const r=_updateKA.apply(this,arguments);updKA(dt);return r;};
 const _newGameKA=newGame;newGame=function(){const r=_newGameKA.apply(this,arguments);KA.u=null;kaReset();return r;};
-{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);kaReset();units=units.filter(u=>!u.isKingArmor);
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);for(const u of units)if(u.kaCh){u.kaCh=0;if(u.kaPost)u.post=u.kaPost;u.kaPost=null;}kaReset();units=units.filter(u=>!u.isKingArmor);
   if(G.kaPh==='shelter'){KA.phase='shelter';KA.maxHp=kaStats().hp;KA.hp=KA.maxHp*Math.max(KA_CFG.floor,Math.min(1,+G.kaHpF||KA_CFG.flee));KA.inT=G.t-(KA_CFG.cd-Math.max(0,Math.min(KA_CFG.cd,+G.kaIn||0)));}
   return r;};}
+{const _ua=updArcher;updArcher=function(u,dt){if(kaFollow(u,dt))return;return _ua.apply(this,arguments);};}
 // ---- drawing ----
 // the plain robed king is only drawn while he is unarmoured in the courtyard (or walking to/from the keep door)
 const _drawKingKA=drawKing;drawKing=function(){if(KA.phase==='home'||KA.phase==='toArmory'||KA.phase==='toHome')return _drawKingKA.apply(this,arguments);};
@@ -6868,11 +6962,17 @@ function kaFig(x,y,f,s,an,sw,bash){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
   else{line(f*7,-15,f*11,-38,'#f4f6ff',2.4);line(f*4.5,-17.5,f*10.5,-16,'#ffd23a',1.8);ell(f*7,-14,1.4,1.4,'#ffd23a');}
   ctx.restore();
   if(((t*6)|0)%5===0){const a=t*2.3,sx=x+Math.cos(a*3)*9*s,sy=y-(18+Math.sin(a*5)*10)*s;line(sx-4,sy,sx+4,sy,'#fff',1.2);line(sx,sy-4,sx,sy+4,'#fff',1.2);}} // golden glint
-function drawArmoredKing(u){const s=1.45;kaFig(u.x,u.y,u.face||1,s,u.anim||0,u.swing>0,u.bashFx>0);
+function drawArmoredKing(u){const s=1.45;
+  if(u.dizzy){ctx.save();ctx.translate(u.x,u.y);ctx.rotate(Math.sin(G.t*2.2)*.12);kaFig(0,8,u.face||1,s*.9,0,false,false);ctx.restore(); // sitting down, swaying
+    for(let i=0;i<5;i++){const a=G.t*3+i*TAU/5,sx=u.x+Math.cos(a)*22,sy=u.y-58+Math.sin(a)*7;kaStar(sx,sy,5,i%2?'#fff3a0':'#ffd23a');}
+    txt(`💫 Knocked out dizzy: ${Math.ceil(KA.dzT)}s`,u.x,u.y-80,10,'#ffe08a','center');return;}
+  kaFig(u.x,u.y,u.face||1,s,u.anim||0,u.swing>0,u.bashFx>0);
+  if(KA.phase==='charge'){const pl=.5+.5*Math.sin(G.t*6);line(u.x-10,u.y-40,u.x-10,u.y-86,'#6a4a20',2.2);poly([u.x-10,u.y-86,u.x+16,u.y-80+3*pl,u.x-10,u.y-72],'#a8142a');ell(u.x-1,u.y-79,2.4,2.4,'#ffd23a');}
   if(u.bashFx>0){ctx.strokeStyle=`rgba(255,230,140,${u.bashFx*2})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(u.x,u.y-20,40*(1.4-u.bashFx),18*(1.4-u.bashFx),0,0,TAU);ctx.stroke();}
   const w=52,f=Math.max(0,Math.min(1,u.hp/u.maxHp)),by=u.y-66;rect(u.x-w/2-2,by-2,w+4,8,'rgba(0,0,0,.65)');rect(u.x-w/2,by,w*f,4,f>KA_CFG.flee+.2?'#ffd23a':f>KA_CFG.flee?'#f0a040':'#e05040');
   txt('👑 King William',u.x,by-5,10,'#ffe08a','center');}
 const _drawKnightKA=drawKnight;drawKnight=function(u){if(u&&u.isKingArmor){drawArmoredKing(u);return;}return _drawKnightKA.apply(this,arguments);};
+function kaStar(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q);}ctx.closePath();ctx.fill();}
 // when the keep roof is broken you can see him inside, guarding Princess Elizabeth
 const _drawInsidePrincessKA=drawInsidePrincess;drawInsidePrincess=function(x,y){_drawInsidePrincessKA.apply(this,arguments);if(KA.phase==='shelter')kaFig(x+24,y+6,-1,1.05,0,false,false);};
 // overlays drawn above the castle: suiting up at the keep door, and the sheltering king's healing bar over the keep
@@ -6882,6 +6982,113 @@ const _drawCrashFxKA=drawCrashFx;drawCrashFx=function(){_drawCrashFxKA.apply(thi
     rect(p.x-36,p.y-70,72,8,'rgba(0,0,0,.65)');rect(p.x-34,p.y-68,68*k,4,'#ffd23a');txt('Suiting up!',p.x,p.y-76,11,'#ffe08a','center');}
   if(KA.phase==='shelter'&&d2(D.x,D.y,KEEP_POS.x,KEEP_POS.y)<1400){const f=KA.maxHp?KA.hp/KA.maxHp:1,y=KEEP_POS.y-170,w=120;
     txt('🛡 King William is resting in the keep',KEEP_POS.x,y-6,11,'#ffe08a','center');rect(KEEP_POS.x-w/2-2,y-2,w+4,9,'rgba(0,0,0,.65)');rect(KEEP_POS.x-w/2,y,w*f,5,'#7ad070');}};
+// ======================= partES: THE EAST MARCH (map v2) — a 2nd lumber camp (the Eastwood) and a 2nd mine (the Iron Crags) =======================
+// The Sapphire Coast moved SEA_DX east (partW), opening new kingdom land between Saltmere and the sea. Each new site has its own yard
+// (G.yard2Wood / G.yard2Stone), 3 workers, mine carts (G.cartsPool2), supply carts to the Castle Storehouse along new roads from Saltmere,
+// a worksite guard squad, patrol points, tower guard spots and predators around it. Site-2 workers run the SAME villager / fight-back /
+// militia code as the first site: while one is updated (or the site is drawn) CAMP, MINE, the pile spots, the yards and the cart pool are
+// swapped to the East March versions (ES2.on), and pile()/kUp() pick the site-2 structures (s.s2).
+const ES={workers:3,carts:3,trees:520,ring:50,rocks:90,cartCd:20};
+const ES_BLD=new Set(['camptent','sawmill','minehead','minehut']);
+let _esC=null;
+function esIn(){if(ES2.on||!G)return false;ES2.on=true;
+  _esC=[CAMP.x,CAMP.y,MINE.x,MINE.y,LOGPILE_POS.x,LOGPILE_POS.y,STONEPILE_POS.x,STONEPILE_POS.y];
+  CAMP.x=CAMP2.x;CAMP.y=CAMP2.y;MINE.x=MINE2.x;MINE.y=MINE2.y;LOGPILE_POS.x=LOGPILE2.x;LOGPILE_POS.y=LOGPILE2.y;STONEPILE_POS.x=STONEPILE2.x;STONEPILE_POS.y=STONEPILE2.y;
+  esSwapG();return true;}
+function esOut(){const c=_esC;CAMP.x=c[0];CAMP.y=c[1];MINE.x=c[2];MINE.y=c[3];LOGPILE_POS.x=c[4];LOGPILE_POS.y=c[5];STONEPILE_POS.x=c[6];STONEPILE_POS.y=c[7];esSwapG();ES2.on=false;}
+function esSwapG(){let t=G.yardWood;G.yardWood=G.yard2Wood||0;G.yard2Wood=t||0;t=G.yardStone;G.yardStone=G.yard2Stone||0;G.yard2Stone=t||0;
+  t=G.cartsPool;G.cartsPool=G.cartsPool2||0;G.cartsPool2=t||0;}
+function esRun(fn){const ok=esIn();try{return fn();}finally{if(ok)esOut();}}
+// site-aware lookups
+{const _p=pile;pile=function(kind){if(kind==='logpile2'||kind==='stonepile2'){const k=kind.slice(0,-1);return structures.find(s=>s.kind===k&&s.s2);}
+  if(kind==='logpile'||kind==='stonepile'){const on=ES2.on;return structures.find(s=>s.kind===kind&&!!s.s2===on);}return _p.apply(this,arguments);};}
+{const _k=kUp;kUp=function(kind,pred){if(ES_BLD.has(kind)){const on=ES2.on;return _k(kind,s=>!!s.s2===on&&(!pred||pred(s)));}return _k.apply(this,arguments);};}
+// ---------- world: yards, crag rocks, Eastwood trees (called from newGame in part1, before the bridges) ----------
+function esWorld(blocked){
+  const a=addStruct('logpile',LOGPILE2.x,LOGPILE2.y,-1);a.s2=1;const b=addStruct('stonepile',STONEPILE2.x,STONEPILE2.y,-1);b.s2=1;
+  const clear=(x,y)=>d2(x,y,MINE2.x,MINE2.y)<150||d2(x,y,STONEPILE2.x,STONEPILE2.y)<100||d2(x,y,MINE2.x-120,MINE2.y+60)<90||d2(x,y,MINE2.x-60,MINE2.y+110)<80;
+  for(let i=0;i<ES.rocks;i++){const x=SR(6450,8550),y=SR(1800,3300);if(regionKey(x,y)!=='crags'||clear(x,y))continue;ROCKS.push({x,y,r:SR(14,44),c:SR(0,1)});}
+  // part1's blocked() keeps the whole 920..1680 band east of the first mine clear; out here only water, river, beach and Saltmere matter
+  const blk=(x,y)=>x>5800?(inWater(x,y)||riverD(x,y)<RIVW+40||onBeach(x,y)||d2(x,y,VILLAGES[10].x,VILLAGES[10].y)<210):blocked(x,y);
+  const bad=(x,y)=>blk(x,y)||d2(x,y,CAMP2.x,CAMP2.y)<110||d2(x,y,LOGPILE2.x,LOGPILE2.y)<85||d2(x,y,CAMP2.x-100,CAMP2.y+60)<85||d2(x,y,CAMP2.x+30,CAMP2.y+40)<100;
+  let tries=0,nt=trees.length;while(trees.length<nt+ES.trees&&tries<8000){tries++;const x=SR(5850,8300),y=SR(-220,1850);if(regionKey(x,y)==='eastwood'&&!bad(x,y))addTree(x,y);}
+  // a ring of good timber in easy reach of the camp (woodcutters fell trees within 480 of their camp)
+  tries=0;nt=trees.length;while(trees.length<nt+ES.ring&&tries<1500){tries++;const t=SR(-2.6,.9),r=SR(200,440),x=CAMP2.x+Math.cos(t)*r,y=CAMP2.y+Math.sin(t)*r;if(!bad(x,y)&&!inWater(x,y))addTree(x,y);}
+  // a few pines on the crags
+  tries=0;nt=trees.length;while(trees.length<nt+24&&tries<600){tries++;const x=SR(6500,8500),y=SR(1850,3250);if(regionKey(x,y)==='crags'&&!clear(x,y)&&!bad(x,y))addTree(x,y);}}
+// roads: Saltmere -> Eastwood camp, Saltmere -> Iron Crags mine, and a track between the two sites (called from buildRoads)
+function esRoads(add,V){const C={x:CAMP2.x+30,y:CAMP2.y+40},M={x:MINE2.x-40,y:MINE2.y+70},S={x:STONEPILE2.x,y:STONEPILE2.y+30};
+  add(V[10],C);add(V[10],S);add(S,M,20);add(C,{x:MINE2.x-90,y:MINE2.y+20},16,'path');}
+// structures: the site-2 tent, sawmill, mine head and mine hut
+{const _i=initStructsK;initStructsK=function(){const r=_i.apply(this,arguments);
+  kAdd('minehead',MINE2.x,MINE2.y+14,-1,{s2:1});kAdd('minehut',MINE2.x-120,MINE2.y+60,-1,{s2:1});kAdd('camptent',CAMP2.x,CAMP2.y+10,-1,{s2:1});kAdd('sawmill',CAMP2.x-100,CAMP2.y+60,-1,{s2:1});return r;};}
+// ---------- workers ----------
+const esWorker=u=>u.type==='villager'&&!u.dead&&u.site===2&&(u.job==='woodcutter'||u.job==='miner');
+{const _v=updVillager;updVillager=function(u,dt){if(u.site!==2)return _v.apply(this,arguments);const ok=esIn();
+  try{const r=_v.apply(this,arguments);if(u.cart&&!u.cart.supply)u.cart.s2=1;return r;}finally{if(ok)esOut();}};}
+// the base economy staffs 3 woodcutters / 3 miners and rebuilds mine carts for site 1; site 2 does the same separately
+{const _e=updEconomy;updEconomy=function(dt){const ren=[],sc=[];
+  for(const u of units){if(u.site!==2)continue;if(u.dead)continue;if(!esWorker(u)){delete u.site;continue;}ren.push([u,u.job]);u.job+='2';}
+  for(const c of carts)if(c.s2&&!c.supply){c.supply=true;sc.push(c);}
+  let r;try{r=_e.apply(this,arguments);}finally{for(const[u,j]of ren)u.job=j;for(const c of sc)c.supply=false;}
+  esEconomy(dt);return r;};}
+function esNeed(job,pos){if(units.filter(u=>esWorker(u)&&u.job===job).length>=ES.workers)return;let b=null,bd=1e18;
+  for(const u of units)if(u.type==='villager'&&!u.dead&&u.job==='peasant'&&!u.task&&!u.wk&&!u.scart){const q=d2(u.x,u.y,pos.x,pos.y);if(q<bd){bd=q;b=u;}}
+  if(b){b.job=job;b.site=2;b.state='idle';b.tgt=null;}}
+// mine carts for the Crags are built from Eastwood logs (the east yard), so they never compete with castle rebuilds for storehouse wood
+function esEconomy(dt){G.cartBuildT2=(G.cartBuildT2||0)-dt;
+  const active=carts.filter(c=>c.s2&&!c.supply&&!c.wrecked).length+units.filter(u=>esWorker(u)&&u.job==='miner'&&(u.inside||u.state==='cart')).length;
+  if((G.cartsPool2||0)+active<ES.carts&&G.cartBuildT2<=0&&(G.yard2Wood||0)>=2){G.yard2Wood-=2;G.cartsPool2=(G.cartsPool2||0)+1;G.cartBuildT2=ES.cartCd;float(MINE2.x-40,MINE2.y-40,'New cart built (-2 Eastwood logs)','#e8c090');}
+  if(rnd()<dt*.3){esNeed('woodcutter',CAMP2);esNeed('miner',MINE2);}}
+function esSpawnWorkers(){for(let i=0;i<ES.workers;i++){const u=spawnVillager(CAMP2.x+R(-20,20),CAMP2.y+R(-20,20),'woodcutter',10);u.site=2;}
+  for(let i=0;i<ES.workers;i++){const u=spawnVillager(MINE2.x-60+R(-20,20),MINE2.y+40,'miner',10);u.site=2;}}
+// walking replacement workers (partWK): the East March sites, and keep each site's workers apart
+{const _s=wkSites;wkSites=function(){const L=_s.apply(this,arguments);
+  for(const s of L)if(s.id==='camp'||s.id==='mine'){const bk=s.bk;s.bp=b=>bk.includes(b.kind)&&!b.s2;}
+  const add=[{id:'camp2',name:'Eastwood logging camp',job:'woodcutter',jobName:'lumberjack',need:ES.workers,bk:['camptent','sawmill'],x:CAMP2.x,y:CAMP2.y+30,v:10,s2:1},
+    {id:'mine2',name:'Iron Crags mine',job:'miner',jobName:'miner',need:ES.workers,bk:['minehead','minehut'],x:MINE2.x-60,y:MINE2.y+40,v:10,s2:1}];
+  for(const s of add){const bk=s.bk;s.bp=b=>bk.includes(b.kind)&&!!b.s2;s.down=false;s.refill=false;s.cd=0;}
+  const i=L.findIndex(s=>s.id==='mine')+1;L.splice(i>0?i:L.length,0,...add);return L;};}
+{const _w=wkIsWorker;wkIsWorker=function(u,site){const r=_w.apply(this,arguments);if(r&&(site.job==='woodcutter'||site.job==='miner'))return !!site.s2===(u.site===2);return r;};}
+{const _a=wkArrive;wkArrive=function(u,site){const r=_a.apply(this,arguments);if(site.s2)u.site=2;else if(site.job==='woodcutter'||site.job==='miner')delete u.site;return r;};}
+// ---------- supply carts (partSC): two more yards haul to the Castle Storehouse ----------
+SC_SRC.camp2={kind:'wood',yard:'logpile2',park:()=>({x:LOGPILE2.x+64,y:LOGPILE2.y+26}),job:'woodcutter',name:'Eastwood logging camp',s2:1};
+SC_SRC.mine2={kind:'stone',yard:'stonepile2',park:()=>({x:STONEPILE2.x-60,y:STONEPILE2.y+30}),job:'miner',name:'Iron Crags mine',s2:1};
+scWorkers=function(src){const S=SC_SRC[src];if(!S)return 0;const two=!!S.s2;return units.filter(u=>u.type==='villager'&&!u.dead&&u.job===S.job&&(u.site===2)===two&&!(u.wk&&!u.wk.done)).length;};
+{const _st=scStep;scStep=function(c){const S=SC_SRC[c.src];if(!S||!S.s2)return _st.apply(this,arguments);
+  let t=G.yardWood;G.yardWood=G.yard2Wood||0;G.yard2Wood=t;t=G.yardStone;G.yardStone=G.yard2Stone||0;G.yard2Stone=t;
+  try{return _st.apply(this,arguments);}finally{t=G.yardWood;G.yardWood=G.yard2Wood;G.yard2Wood=t;t=G.yardStone;G.yardStone=G.yard2Stone;G.yard2Stone=t;}};}
+// ---------- worksite guard squads (partGP) and road-patrol stops (partF) ----------
+{const _s=WS.sites;WS.sites=()=>[..._s(),{key:'camp2',name:'Eastwood lumber camp',x:(CAMP2.x+LOGPILE2.x)/2,y:(CAMP2.y+LOGPILE2.y)/2,rx:190,ry:140},
+  {key:'mine2',name:'Iron Crags mine',x:(MINE2.x+STONEPILE2.x)/2,y:(MINE2.y+STONEPILE2.y)/2,rx:200,ry:140}];}
+// ---------- new game ----------
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);
+  G.yard2Wood=4;G.yard2Stone=4;G.cartsPool2=3;G.cartBuildT2=0;G.mapV=MAP_V;if(!G.scT)G.scT={};G.scT.camp2=16;G.scT.mine2=24;
+  esSpawnWorkers();scSpawn('camp2',{load:3,st:'go',s:120});scSpawn('mine2',{load:3,st:'go',s:120});return r;};}
+// ---------- drawing: the second camp and mine use the same art, in the swapped context ----------
+
+{const _m=drawMine;drawMine=function(){const r=_m.apply(this,arguments);esRun(()=>_m.apply(this,arguments));return r;};}
+{const _c=drawCamp;drawCamp=function(){const r=_c.apply(this,arguments);esRun(()=>_c.apply(this,arguments));return r;};}
+// ---------- saves: v1 saves were made on the old map (the coast 3000 further west) ----------
+{const _ss=svSnapshot;svSnapshot=function(){const o=_ss.apply(this,arguments);if(o)o.mapV=MAP_V;return o;};
+ const _sa=svApply;svApply=function(d){if(d&&!(d.mapV>=2))d=esMigrate(d);return _sa.call(this,d);};}
+const ES_OLDX=5250; // everything east of here on the old map was coast / sea / the lighthouse isle: it moves east with the sea
+function esMigrate(d0){const d=Object.assign({},d0),sh=x=>x>ES_OLDX?x+SEA_DX:x;
+  if(d.D&&typeof d.D.x==='number'){d.D=Object.assign({},d.D,{x:sh(d.D.x)});}
+  if(d.PR&&typeof d.PR.x==='number')d.PR=Object.assign({},d.PR,{x:sh(d.PR.x)});
+  if(Array.isArray(d.S))d.S=d.S.map(r=>r&&r.x>ES_OLDX?Object.assign({},r,{x:r.x+SEA_DX}):r);
+  // fog: shift the explored columns east of the old coastline (the East March itself starts unexplored)
+  // (saves from before the west expansion have no FW: 100 columns starting at x=-10200, as partSJ assumes)
+  if(d.FOG){const oW=d.FW||100,ox=d.FW?WX0:-10200,bits=[];for(let i=0;i<d.FOG.length;i++){const n=parseInt(d.FOG[i],16);for(let b=0;b<4;b++)bits.push((n>>b)&1);}
+    const cut=Math.floor((ES_OLDX-ox)/FG),off=Math.round((ox-WX0)/FG),dc=Math.round(SEA_DX/FG),nb=new Uint8Array(FW*FH);
+    for(let k=0;k<bits.length;k++)if(bits[k]){const i=k%oW,j=k/oW|0;const ni=i+off+(i>cut?dc:0);if(ni>=0&&ni<FW&&j<FH)nb[j*FW+ni]=1;}
+    let s='';for(let i=0;i<nb.length;i+=4)s+=((nb[i]?1:0)|(nb[i+1]?2:0)|(nb[i+2]?4:0)|(nb[i+3]?8:0)).toString(16);d.FOG=s;d.FW=FW;}
+  if(d.G){d.G=Object.assign({},d.G);delete d.G.mapV;}
+  return d;}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);G.mapV=MAP_V;if(G.yard2Wood==null)G.yard2Wood=4;if(G.yard2Stone==null)G.yard2Stone=4;if(G.cartsPool2==null)G.cartsPool2=3;
+  if(!G.scT)G.scT={};for(const k of['camp2','mine2'])if(G.scT[k]==null)G.scT[k]=SC.respawn;
+  // old saves have no East March carts: start one from each new yard
+  for(const k of['camp2','mine2'])if(!carts.some(c=>c.supply&&c.src===k&&!c.wrecked))scSpawn(k);return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}

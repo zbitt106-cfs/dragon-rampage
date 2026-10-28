@@ -59,10 +59,10 @@ function drawMine(){const x=MINE.x,y=MINE.y;ell(x,y-20,110,70,'#7d6f5b');ell(x-1
   ctx.fillStyle='#1a1410';ctx.beginPath();ctx.moveTo(x-26,y+14);ctx.lineTo(x-26,y-12);ctx.arc(x,y-12,26,Math.PI,0);ctx.lineTo(x+26,y+14);ctx.fill();
   if(kUp('minehead')){rect(x-30,y-40,6,54,'#6b4a26');rect(x+24,y-40,6,54,'#6b4a26');rect(x-34,y-44,68,8,'#7a5530');}
   line(x-20,y+30,x+60,y+120,'#555',3);line(x-6,y+26,x+74,y+116,'#555',3);
-  ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText('Stone Mine',x,y-90);}
+  ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText(ES2.on?'Iron Crags Mine':'Stone Mine',x,y-90);}
 function drawCamp(){const x=CAMP.x,y=CAMP.y;if(kUp('camptent'))poly([x-30,y+10,x,y-34,x+30,y+10],'#c2ab7a','#7a6440');line(x,y-34,x,y+10,'#7a6440',1);
   ell(x+50,y+30,12,8,'#8a6236');ell(x+50,y+27,10,6,'#b38a55');
-  ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText('Logging Camp',x+20,y-50);}
+  ctx.fillStyle='#ffe';ctx.font='bold 13px Georgia';ctx.textAlign='center';ctx.fillText(ES2.on?'Eastwood Logging Camp':'Logging Camp',x+20,y-50);}
 function drawWells(){} // wells are real structures now (partR)
 function drawPen(P){ctx.strokeStyle='#7a5a30';ctx.lineWidth=2;ctx.strokeRect(P.x,P.y,P.w,P.h);ctx.lineWidth=1;
   for(let x=P.x;x<=P.x+P.w;x+=18){rect(x-1.5,P.y-5,3,8,'#6a4a22');rect(x-1.5,P.y+P.h-5,3,8,'#6a4a22');}
@@ -103,13 +103,13 @@ function drawStruct(s){const x=s.x,y=s.y,b=s.state==='building'?s.build:1;
   } else if(s.kind==='cabin'){const H=28*b;rect(x-30,y-H+4,60,H,s.fire?'#5a3a1a':'#7a5230');for(let j=0;j<H;j+=6)line(x-30,y-H+4+j,x+30,y-H+4+j,'rgba(40,25,10,.5)',1);
     if(b>=1){poly([x-36,y-22,x,y-46,x+36,y-22],s.fire?'#3a2a1a':'#4a6a32');rect(x-6,y-14,12,18,'#3a2410');rect(x+14,y-36,6,14,'#666');
       line(x-28,y-6,x-40,y-20,'#6b4a26',2);ell(x-42,y-22,6,4,'#a07a50');ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText("Hunters' Cabin",x,y-56);}
-  } else if(s.kind==='logpile'){const n=Math.min(18,G.yardWood||0);rect(x-34,y-4,68,6,'#5a3a1c');
+  } else if(s.kind==='logpile'){const n=Math.min(18,G[yk(s,'Wood')]||0);rect(x-34,y-4,68,6,'#5a3a1c');
     for(let i=0;i<n;i++){const row=Math.floor(i/6),col=i%6,lx=x-27+col*11+row*5,ly=y-6-row*9;ell(lx,ly,5.5,5,'#8a5a2a');ell(lx,ly,3.5,3.3,'#d2a868');}
     if(n===0){ctx.fillStyle='#fdd';ctx.font='10px Georgia';ctx.textAlign='center';ctx.fillText('(empty)',x,y-12);}
-    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`Camp log yard: ${G.yardWood||0}`,x,y-46);
-  } else if(s.kind==='stonepile'){const n=Math.min(20,G.yardStone||0);ell(x,y,40,12,'#6a6258');
+    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`${s.s2?'Eastwood log yard':'Camp log yard'}: ${G[yk(s,'Wood')]||0}`,x,y-46);
+  } else if(s.kind==='stonepile'){const n=Math.min(20,G[yk(s,'Stone')]||0);ell(x,y,40,12,'#6a6258');
     for(let i=0;i<n;i++){const a=i*2.4,r=(i%5)*6,sx=x+Math.cos(a)*r*1.6,sy=y-4-Math.floor(i/5)*7+Math.sin(a)*r*.5;ell(sx,sy,7,5,i%2?'#a39d94':'#8d877e');}
-    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`Mine stone yard: ${G.yardStone||0}`,x,y-40);}
+    ctx.fillStyle='#ffe';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(`${s.s2?'Crags stone yard':'Mine stone yard'}: ${G[yk(s,'Stone')]||0}`,x,y-40);}
   if(s.state==='building'){ctx.strokeStyle='#d8b880';ctx.lineWidth=2;ctx.strokeRect(x-28,y-40,56,44);line(x-28,y-40,x+28,y+4,'#d8b880',2);
     rect(x-25,y-50,50*b,4,'#7fd07f');ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(x-25,y-50,50,4);}
   if(s.fire&&s.hp<s.maxHp){rect(x-20,y+8,40,3,'#400');rect(x-20,y+8,40*s.hp/s.maxHp,3,'#f80');}}

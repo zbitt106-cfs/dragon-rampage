@@ -1,11 +1,12 @@
 // ======================= the big explorable world: regions, terrain, decor, fog of war =======================
-const WX0=-17400,WY0=-2600,WX1=9800,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
-const coastX=y=>5500+140*Math.sin(y/530)+60*Math.sin(y/190+1);
+const SEA_DX=3000,MAP_V=2; // v2 map: the Sapphire Coast moved 3000 east to make room for the East March (2nd lumber camp + 2nd mine)
+const WX0=-17400,WY0=-2600,WX1=9800+SEA_DX,WY1=6200,TS=8; // world bounds (the old kingdom map is the 0..3200 x 0..2200 core)
+const coastX=y=>5500+SEA_DX+140*Math.sin(y/530)+60*Math.sin(y/190+1);
 const coastY=x=>4450+110*Math.sin(x/470)+50*Math.sin(x/170+2);
 const frostY=x=>-260+90*Math.sin(x/420)+40*Math.sin(x/150);
 const forestX=y=>-180+70*Math.sin(y/310)+30*Math.sin(y/97);
 const LAKE={x:1500,y:3300,rx:520,ry:300};
-const RIVER=[[1980,3330],[2500,3520],[3000,3470],[3500,3700],[4100,3640],[4700,3880],[5250,3820],[5900,3900]],RIVW=48;
+const RIVER=[[1980,3330],[2500,3520],[3000,3470],[3500,3700],[4100,3640],[4700,3880],[5250,3820],[5900,3900],[6550,3970],[7250,3900],[7950,3985],[8800,3950]],RIVW=48;
 function hsh(i,j){let h=Math.imul(i,374761393)+Math.imul(j,668265263)|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967296;}
 function vnoise(x,y){const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
   const a=hsh(i,j),b=hsh(i+1,j),c=hsh(i,j+1),d=hsh(i+1,j+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
@@ -14,10 +15,10 @@ function riverD(x,y){let m=1e9;for(let i=0;i<RIVER.length-1;i++){const[ax,ay]=RI
   const t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy),0,1);const d=Math.hypot(x-ax-dx*t,y-ay-dy*t);if(d<m)m=d;}return m;}
 const inLake=(x,y)=>inOasis(x,y)||inLake0(x,y)||(x<-9800&&x>-11400&&inWHole(x,y));
 const inLake0=(x,y)=>{const dx=(x-LAKE.x)/LAKE.rx,dy=(y-LAKE.y)/LAKE.ry,a=Math.atan2(dy,dx);return dx*dx+dy*dy<1+.07*Math.sin(a*5)+.04*Math.sin(a*9);};
-const LH={x:7350,y:2100,r:290}; // the Lonely Lighthouse island, just before the deep water
+const LH={x:7350+SEA_DX,y:2100,r:290}; // the Lonely Lighthouse island, just before the deep water
 const onIsle=(x,y)=>{const dx=x-LH.x,dy=(y-LH.y)*1.25,a=Math.atan2(dy,dx);return dx*dx+dy*dy<(LH.r*(1+.1*Math.sin(a*5)+.06*Math.sin(a*3+1)))**2;};
 const seaD=(x,y)=>Math.max(x-coastX(y),y-coastY(x));
-const DEEPX=y=>7900+120*Math.sin(y/600); // east of this the Kraken Deep begins
+const DEEPX=y=>7900+SEA_DX+120*Math.sin(y/600); // east of this the Kraken Deep begins
 const inSea=(x,y)=>(x>coastX(y)||y>coastY(x))&&!onIsle(x,y);
 const inDeep=(x,y)=>x>DEEPX(y)&&inSea(x,y);
 const inWater=(x,y)=>inSea(x,y)||inLake(x,y)||riverD(x,y)<RIVW||jriverD(x,y)<JRW;
@@ -34,11 +35,12 @@ function fixShoreFootprints(){
 fixShoreFootprints();
 const onBeach=(x,y)=>!inSea(x,y)&&!onIsle(x,y)&&(x>coastX(y)-170||y>coastY(x)-150);
 const REGION_NAMES={farm:'The Kingdom Farmlands',castle:'Castle Aldric',forest:'The Deepwood',hills:'The Rocky Hills',lake:'Mirror Lake & the Silver River',
-  mountain:'The Frostpeak Mountains',coast:'The Sapphire Coast',south:'The Southern Farmlands',lair:"Dragon's Roost (home)",sea:'The Sapphire Sea',isle:'The Lonely Lighthouse',deep:'The Kraken Deep',desert:'The Scorching Sands'};
+  mountain:'The Frostpeak Mountains',coast:'The Sapphire Coast',south:'The Southern Farmlands',lair:"Dragon's Roost (home)",sea:'The Sapphire Sea',isle:'The Lonely Lighthouse',deep:'The Kraken Deep',desert:'The Scorching Sands',eastwood:'The Eastwood',crags:'The Iron Crags',march:'The East March'};
 const REGION_SUB={farm:'Villages, farms and fat, tasty livestock',castle:'Gold, guards and Princess Elizabeth locked inside the keep: break its stone roof!',forest:"Deer, boars, wolves, bears and the hunter's cabin",
   hills:'The mine, goats and rocky crags',lake:'Ducks, geese, jumping fish and busy beavers',mountain:'Snowy cliffs, mountain goats, eagles and hawks',
-  coast:'Seagulls, crabs and lazy seals',south:'More villages and farms to explore',lair:'Your home base: land here to rest and heal',sea:'Swim or soar: fish, sharks, whales, boats and pirates!',isle:'A quiet rest stop: catch your breath and heal',deep:'Something huge stirs below... the GIANT SQUID',desert:'Dunes, cacti, camels, scorpions… and something under the sand'};
-const REGION_LABEL={farm:[1000,1500],castle:[CASTLE.x,CWALL.y0-80],forest:[-1700,1700],hills:[4300,1300],lake:[1250,2960],mountain:[1500,-1500],coast:[5650,2400],south:[700,3500],lair:[LAIR.x,LAIR.y-260],sea:[6500,4900],isle:[7350,2480],deep:[8850,900],desert:[-6600,1150]};
+  coast:'Seagulls, crabs and lazy seals',south:'More villages and farms to explore',lair:'Your home base: land here to rest and heal',sea:'Swim or soar: fish, sharks, whales, boats and pirates!',isle:'A quiet rest stop: catch your breath and heal',deep:'Something huge stirs below... the GIANT SQUID',desert:'Dunes, cacti, camels, scorpions… and something under the sand',
+  eastwood:'The kingdom\'s second lumber camp, deer, boars and wolves',crags:'The new iron mine, goats and rocky crags',march:'New kingdom land: roads, carts and grazing'};
+const REGION_LABEL={farm:[1000,1500],castle:[CASTLE.x,CWALL.y0-80],forest:[-1700,1700],hills:[4300,1300],lake:[1250,2960],mountain:[1500,-1500],coast:[8650,2400],south:[700,3500],lair:[LAIR.x,LAIR.y-260],sea:[6500,4900],isle:[7350+SEA_DX,2480],deep:[8850+SEA_DX,900],desert:[-6600,1150],eastwood:[7300,500],crags:[7600,2750],march:[6300,3350]};
 function regionKey(x,y){
   if(d2(x,y,LAIR.x,LAIR.y)<420)return'lair';
   {const dx=x-LH.x,dy=y-LH.y;if(dx*dx+dy*dy<470*470)return'isle';}
@@ -50,10 +52,21 @@ function regionKey(x,y){
   if(x>CWALL.x0-100&&x<CWALL.x1+100&&y>CWALL.y0-70&&y<CWALL.y1+190)return'castle';
   if(x<forestX(y))return'forest';
   {const dx=(x-LAKE.x)/(LAKE.rx+260),dy=(y-LAKE.y)/(LAKE.ry+220);if(dx*dx+dy*dy<1||riverD(x,y)<230)return'lake';}
+  if(x>EM_X0){const e=emKey(x,y);if(e)return e;}
   if((x>3250&&y<3000)||(x>2650&&y>900&&y<1700))return'hills';
   if(y>2250)return'south';
   return'farm';}
 
+// ---------- the East March (v2 map): the Eastwood forest (2nd lumber camp) and the Iron Crags (2nd mine) ----------
+const EM_X0=5750,CAMP2={x:6250,y:1250},MINE2={x:7450,y:2300},LOGPILE2={x:6345,y:1335},STONEPILE2={x:7270,y:2420};
+const ewX=y=>5950+90*Math.sin(y/280)+40*Math.sin(y/90); // west edge of the Eastwood
+const ewY=x=>1750+80*Math.sin(x/330)+40*Math.sin(x/120); // south edge of the Eastwood
+const ES2={on:false}; // true while a 2nd-site worker is being updated/drawn (CAMP/MINE/yards swapped to the East March site)
+const yk=(s,k)=>s&&s.s2?'yard2'+k:'yard'+k; // which yard counter a log/stone pile uses ('yardWood' or 'yard2Wood')
+function emKey(x,y){if(d2(x,y,CAMP2.x+40,CAMP2.y+30)<230)return'march';
+  if(x>ewX(y)&&y<ewY(x))return'eastwood';
+  {const dx=(x-7550)/1050,dy=(y-2550)/700;if(dx*dx+dy*dy<1+.1*Math.sin(Math.atan2(dy,dx)*5))return'crags';}
+  if(x>5900)return'march';return null;}
 // ---------- low-res terrain for the whole world (built once) ----------
 let TERR=null,DECOR=[],FARSCORCH=[];
 function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;TERR=document.createElement('canvas');TERR.width=W;TERR.height=H;const g=TERR.getContext('2d');
@@ -67,6 +80,7 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
     else if(wy<frostY(wx)||inRange(wx,wy)||wx<WX0+650){const t=clamp((frostY(wx)-wy)/500,0,1)+(inRange(wx,wy)?clamp(Math.min(wx-RANGE0,RANGE1-wx,passEdge(wx,wy))/260,0,1):0)+(wx<WX0+650?clamp((WX0+650-wx)/300,0,1):0);c=mix([118,132,100],[238,242,250],clamp(t,0,1));if(n>.6)c=mix(c,[130,130,140],.7);}
     else if(wx<RANGE0){c=westCol(x,y,wx,wy,n);}
     else if(wx<forestX(wy)){c=mix([40,76,36],[58,96,44],n);}
+    else if(wx>EM_X0&&emKey(wx,wy)){const e=emKey(wx,wy);c=e==='eastwood'?mix([36,80,40],[54,100,46],n):e==='crags'?mix([118,120,104],[150,138,116],clamp(n*1.6-.3,0,1)):mix([92,138,60],[118,160,72],n);}
     else if((wx>3250&&wy<3000)||(wx>2650&&wy>900&&wy<1700&&x>2600)){c=mix([112,132,82],[146,130,106],clamp(n*1.6-.3,0,1));}
     else{c=mix([86,134,56],[112,158,70],n);if(fbm(x/900+7,y/900)>.66)c=mix(c,[132,160,74],.5);}
     // muddy shores
@@ -83,6 +97,7 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   FARMS.forEach(f=>{const F=f.field;g.fillStyle='#7a5a32';g.fillRect(F.x-4,F.y-4,F.w+8,F.h+8);const P=f.pen;g.fillStyle='#7fa84a';g.fillRect(P.x,P.y,P.w,P.h);});
   PADDOCKS.forEach(P=>{g.fillStyle='#86ad52';g.fillRect(P.x,P.y,P.w,P.h);});
   g.fillStyle='rgba(30,60,26,.6)';g.beginPath();g.ellipse(CABIN.x,CABIN.y,110,80,0,0,TAU);g.fill();g.fillStyle='#8a7a62';g.beginPath();g.ellipse(CABIN.x+10,CABIN.y+20,70,45,0,0,TAU);g.fill();
+  g.fillStyle='#9a8256';g.beginPath();g.ellipse(CAMP2.x+30,CAMP2.y+30,135,115,0,0,TAU);g.fill();g.beginPath();g.ellipse(MINE2.x-60,MINE2.y+60,170,105,0,0,TAU);g.fill();
   g.fillStyle='#8c8e98';g.beginPath();g.ellipse(LAIR.x,LAIR.y+40,330,250,0,0,TAU);g.fill();g.fillStyle='#e8eef6';g.beginPath();g.ellipse(LAIR.x,LAIR.y+40,260,190,0,0,TAU);g.fill();g.fillStyle='#6e6a66';g.beginPath();g.ellipse(LAIR.x,LAIR.y,150,100,0,0,TAU);g.fill();
   g.restore();
   // decor (purely visual, never blocks movement)
@@ -91,12 +106,12 @@ function buildTerrain(){if(TERR)return;const W=(WX1-WX0)/TS|0,H=(WY1-WY0)/TS|0;T
   for(let y=-1000;y<WY1-300;y+=210)for(let x=WX0+40;x<WX0+640;x+=200)DECOR.push({k:'peak',x:x+Rr(-50,50),y:y+Rr(-50,50),w:Rr(180,300),h:Rr(.6,.9)});
   for(let y=-1000;y<coastY(-3300)-150;y+=190)for(let x=RANGE0+90;x<RANGE1-60;x+=190){const xx=x+Rr(-40,40),yy=y+Rr(-40,40);if(inRange(xx,yy)&&passEdge(xx,yy)>90)DECOR.push({k:'peak',x:xx,y:yy,w:Rr(170,280),h:Rr(.6,.9)});}
   addDesertDecor(r,Rr);
-  for(let i=0;i<90;i++){const x=Rr(-2800,5200),y=Rr(-1000,-320);if(y<frostY(x)-60)DECOR.push({k:'cliff',x,y,r:Rr(30,55)});}
-  for(let i=0;i<220;i++){const x=Rr(-2900,5300),y=Rr(-1050,-150);if(y<frostY(x)+20)DECOR.push({k:'pine',x,y,s:Rr(.8,1.3)});}
+  for(let i=0;i<125;i++){const x=Rr(-2800,5200+SEA_DX),y=Rr(-1000,-320);if(y<frostY(x)-60)DECOR.push({k:'cliff',x,y,r:Rr(30,55)});}
+  for(let i=0;i<300;i++){const x=Rr(-2900,5300+SEA_DX),y=Rr(-1050,-150);if(y<frostY(x)+20)DECOR.push({k:'pine',x,y,s:Rr(.8,1.3)});}
   for(let i=0;i<70;i++){const a=Rr(0,TAU),x=LAKE.x+Math.cos(a)*LAKE.rx*Rr(1.02,1.12),y=LAKE.y+Math.sin(a)*LAKE.ry*Rr(1.02,1.12);DECOR.push({k:'reed',x,y});}
   for(let i=0;i<40;i++){const p=RIVER[RI(0,RIVER.length-2)],q=RIVER[RIVER.indexOf(p)+1],t=r();const x=p[0]+(q[0]-p[0])*t,y=p[1]+(q[1]-p[1])*t+(r()<.5?-1:1)*(RIVW+10);DECOR.push({k:'reed',x,y});}
   for(let i=0;i<14;i++){const y=Rr(0,4200);DECOR.push({k:'searock',x:coastX(y)-Rr(10,90),y,r:Rr(18,32)});}
-  for(let i=0;i<6;i++){const x=Rr(500,5000);DECOR.push({k:'searock',x,y:coastY(x)-Rr(10,80),r:Rr(18,30)});}
+  for(let i=0;i<9;i++){const x=Rr(500,5000+SEA_DX);DECOR.push({k:'searock',x,y:coastY(x)-Rr(10,80),r:Rr(18,30)});}
   DECOR.push({k:'lodge',x:LAKE.x-LAKE.rx*.9,y:LAKE.y+LAKE.ry*.45},{k:'lodge',x:3300,y:3600-RIVW});
   DECOR.push({k:'sign',x:LAIR.x-170,y:LAIR.y+150});addIsleDecor();}
 function drawDecor(o){const x=o.x,y=o.y;if((o.k==='cactus'||o.k==='palm'||o.k==='mesa'||o.k==='bones')&&drawDesertDecor(o))return;if(GFX_HI&&drawDecorHi(o)!==false)return;if(o.k==='lighthouse'){drawLighthouse(o);return;}if(o.k==='dock'){drawDock(o);return;}if(o.k==='isrock'){drawSeaRock(o);return;}

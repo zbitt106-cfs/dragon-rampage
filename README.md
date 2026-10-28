@@ -21,7 +21,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partK.js / partD.js / partR.js / partT.js: destruction and repair, crash dive stomp, desert life, roads, wells and town fountains, any-water bucket brigades, wanted tiers and militia
 - partFL.js: wildflowers and village/castle gardens
 - partA.js: procedural music and sound effects (Web Audio, no audio files)
-- partV.js: the volcano (Mount Cinder) beside Dragon Peak and lava shots
+- partV.js: the volcano (Mount Cinder) beside Dragon Peak and lava shots (short heavy lob, wide splash, cooling lava puddles)
 - partH.js: the gold hoard in the lair (grows with your stash, coin-clink drop-offs, map marker)
 - partRD.js: hoard raids (named champions with escorts march on the lair to steal gold)
 - partTR.js: trophy banners of beaten champions, planted around the hoard
@@ -62,9 +62,10 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partEC.js: town economy (hidden building gold, taxes collected from it) and the tax collector's patrol escort
 - partRK.js: hoard-raid tiers by hoard size, the stolen share per tier, and loaded raiders walking home slower with gold sacks
 - partRC.js: the rich desert caravan (slower, 10 + 6 escort in formation), Sandhaven's desert soldiers and archers, and the town garrison
-- partGP.js: caravan guards and road patrols chase predators off travellers (non-lethal), plus the worksite patrols at the lumber camp and the mine
+- partGP.js: caravan guards and road patrols chase predators off travellers (non-lethal), plus the worksite patrols at the lumber camps and the mines
+- partES.js: the East March (map v2): a second lumber camp in the Eastwood and a second mine in the Iron Crags, with their own workers, yards, mine carts, supply carts, roads, guard squads and tower spots, and loading of saves made on the old, smaller map
 - partBT.js: every bite hurts: targets too tough to swallow yet still take bite damage, with a jaw-snap impact cue and a red -N
-- partKA.js: King William's golden armour: he suits up in the keep, fights as a mini-boss, retreats to the keep with Princess Elizabeth at low health, heals and returns
+- partKA.js: King William's golden armour: he suits up in the keep, fights as a mini-boss, retreats to the keep with Princess Elizabeth at low health, heals and returns; on his second wind he fights until knocked out dizzy (30 s), then leads a charge of his surviving nearby guards after the dragon unless it has reached the lair
 - partGA.js: instant gold deposits: every coin you pick up flies straight into the lair hoard, with a coin '+N' pop by the HUD dragon icon
 - partUI.js: the compact wood/stone stockpile icons plus the gold icons (castle + coin = the kingdom's gold, dragon + coin = your lair hoard) on the HUD and in the pause menu; the score shows only in the pause menu
 - part6.js: main loop, HUD, minimap and world map, title screen
@@ -100,7 +101,7 @@ The title screen also has **Music volume** and **Sound effects** rows (←/→ i
 - The first visit on a touch device defaults to Low graphics. It can be added to the home screen and runs full screen (PWA meta tags).
 
 ## The world
-- The map is a large explorable kingdom with 16 regions: Kingdom Farmlands, Castle Aldric (King William's castle), The Deepwood (with the hunters' cabin), Mirror Lake & the Silver River, Frostpeak Mountains, the hills and Stone Mine, the Southern Farmlands, the Sapphire Coast, Dragon's Roost (your lair, on the peak), the Scorching Sands desert (west), the Golden Savanna and the Emerald Jungle (far west, past the desert), the Dragon Peaks (far north-west) and, out east, three sea regions: The Sapphire Sea, The Lonely Lighthouse and The Kraken Deep.
+- The map is a large explorable kingdom (30,200 × 8,800) with 19 regions: Kingdom Farmlands, Castle Aldric (King William's castle), The Deepwood (with the hunters' cabin), Mirror Lake & the Silver River, Frostpeak Mountains, the hills and Stone Mine, the Southern Farmlands, the East March with the Eastwood and the Iron Crags (east, between Saltmere and the sea), the Sapphire Coast, Dragon's Roost (your lair, on the peak), the Scorching Sands desert (west), the Golden Savanna and the Emerald Jungle (far west, past the desert), the Dragon Peaks (far north-west) and, out east, three sea regions: The Sapphire Sea, The Lonely Lighthouse and The Kraken Deep.
 - Entering a region shows its banner, and finding a new region is worth +100.
 - Unexplored land is hidden under fog. The minimap shows explored terrain, structures, units, patrols (shield icons, red when engaged), siege engines, gold, Princess Elizabeth and your lair. M / LB opens a full world map with region and village names and the explored %.
 - Goal: raid the castle for gold (it goes straight to your lair hoard) and fly Princess Elizabeth home (follow the gold arrow). The kingdom fights back with waves, the wanted meter, the hunter and bucket brigades, and it rebuilds.
@@ -139,6 +140,16 @@ They **defend their own post only**: they engage the dragon when it comes within
 - **Plain unarmed villagers still run away** until the Militia tier.
 - **Soldiers stay far stronger:** a foot soldier hits for 4 every 1.35 s, and knights hit harder still.
 
+## The East March: a second lumber camp and a second mine
+The kingdom has grown east. The Sapphire Coast, the sea, the Lonely Lighthouse and the Kraken Deep moved 3,000 px further east (the world is now 30,200 px wide instead of 27,200), and the new land between Saltmere and the coast is **the East March**:
+
+- **The Eastwood Logging Camp** (around x 6250, y 1250): a tent, a sawmill and the *Eastwood log yard*, in a clearing at the south edge of the Eastwood, a big new pine-and-oak forest. 3 lumberjacks fell its trees.
+- **The Iron Crags Mine** (around x 7450, y 2300): a mine head, a miner's hut, mine carts and the *Crags stone yard*, in the rocky Iron Crags. 3 miners dig there.
+- Both have their own yards, workers and mine carts. Their supply carts haul the wood and stone along new roads through Saltmere to the **Castle Storehouse**. A road runs from Saltmere to each site, and a track joins the two sites.
+- Each site has its own **worksite guard squad**, road-patrol stops and **watchtower spots**. Their workers fight back with their tools like the first camp's, and lost workers are replaced by villagers walking in from Saltmere. Predators (wolves, foxes and boars in the Eastwood, and goats in the Crags) roam nearby.
+- The minimap, world map (3 new region names), lair arrow and fog all cover the new land.
+- **Old saves** made on the smaller map still load. Anything that was on the old coast or at sea, including the dragon and the fog you had explored there, is moved 3,000 px east with the coast. The East March starts unexplored with fresh workers and yards.
+
 ## Kingdom life
 - **Castle Aldric** sits in the south-central kingdom, well away from your lair on Dragon's Roost. Roads, waves, patrols, raids, tax collectors and the map markers all start from there.
 - **Supply carts and the Castle Storehouse:** lumberjacks and miners pile wood and stone in their yards. Horse carts, each led by a driver, haul it along the roads to the storehouse beside the castle. Only delivered cargo pays for rebuilding, so wrecking a cart costs the kingdom its load.
@@ -155,8 +166,9 @@ They **defend their own post only**: they engage the dragon when it comes within
 ## The volcano and LAVA SHOTS
 **Mount Cinder** smokes and glows just south-east of your lair on Dragon Peak (a volcano marker shows on the minimap and world map). Every 10–18 s it puffs out a harmless shower of embers. Land beside the crater and press **E / X / BITE** (the touch button reads **DRINK**) to gulp **20 LAVA SHOTS**. They replace fire breath until they run out:
 - Each fire press (Space, A/RT or the touch **FIRE** button, which reads **LAVA n**) lobs one lava glob. Holding it repeats about twice a second.
-- The glob arcs about 400 px and splashes. It sets wood, trees, fields and carts ablaze, hurts and burns soldiers, and, unlike fire, **cracks stone walls, towers and wells**.
-- It leaves a lava puddle that burns for about 5 s. Over water it fizzles into steam (ships still catch fire).
+- The glob is a short, heavy lob: it lands about **290 px** from the dragon (≈185 px past the mouth, about 62% of the old ~400 px) and splashes over a **130 px** radius (was 80 px, about 1.6×). It sets wood, trees, fields and carts ablaze, hurts and burns soldiers, and, unlike fire, **cracks stone walls, towers and wells**.
+- It leaves a **glowing lava puddle** (62–74 px across the middle) that cools over **5.5 s**: bright orange and glowing at first, then deep red, then a dark cracked crust. While it is still hot (about the first 4.8 s) it does a small **8 damage per second** to soldiers, animals and anyone else standing in it (no extra burning) and slowly damages wooden buildings it touches. Once it crusts over it is harmless, then fades. At most **24** puddles glow at once (the oldest cools away first). Over water it fizzles into steam (ships still catch fire).
+- The puddles **never hurt the dragon or Princess Elizabeth**. They *can* hurt **King William**: in his golden armour he takes the usual ×0.55 fire damage, and even out of armour he hops and shouts *"Hot! Hot! HOT!"*. As always he can never drop below 12% health.
 - While you carry lava, your mouth glows and drips embers, and the HUD shows **Lava: N**.
 - At 0 you are back to normal fire. You can refill at the crater 8 s after your last drink.
 
@@ -277,7 +289,18 @@ Crocodiles live only in **fresh water**: the Silver River, Mirror Lake, the pond
 When you deliver Princess Elizabeth to your lair (a level win), **King William pays a ransom** at the start of the next level: **100 gold + 50 per castle level beyond the first + 10% of the gold still in the castle treasury**. A banner reads *"King William pays a ransom for Princess Elizabeth: +X gold!"* and coins fly into your hoard, on top of the gold you carried over. The ransom counts toward raid thresholds, but a raid can't start in the first 45 seconds of a level.
 
 ## Prince boss armies (every 5th castle level)
-At castle level 5, 10, 15 and so on, a named **prince** comes for the dragon. A herald announces *"Hear ye! Prince … vows before King William to slay the dragon!"*, then after a horn call and war drums his **royal war fleet** sails in from the southern sea edge: 2 warships at level 5 and one more for each later prince. While at sea, the ships can be burned, hit with lava shots or raked with a claw scratch. Sinking a ship dumps its soldiers into the sea; they can't swim in armour, so they cling to barrels and are fished out (no drowning). The ships that make it beach at the landing spot (⚓ on the map), and from then on **the prince and his whole army hunt the dragon down together as one group**, wherever you are on the map. The prince rides his white warhorse at the head and his soldiers march in formation (rows of four) behind him. About every 1.2 seconds he re-targets your current position. Long distances follow King William's roads, short ones go straight across dry land, and they never wade into water: if you hover over the sea or a lake, they head for the nearest dry ground. His army is **separate from the regular soldier waves**. It doesn't count toward wave reinforcements, and defeating his soldiers doesn't raise the WANTED meter, so regular waves still come only from the WANTED level. The empty ships stay on the beach and can be burned. The prince has a boss health bar (900 HP, +400 per later prince) and can only be eaten below 30% health. Beating him gives 250 gold (+150 per later prince), 1,500 points per prince level and his royal banner as a trophy. There are no hoard raids during a prince attack.
+At castle level 5, 10, 15 and so on, a named **prince** comes for the dragon. A herald announces *"Hear ye! Prince … vows before King William to slay the dragon!"*, then after a horn call and war drums his **royal war fleet** sails in from the southern sea edge: 2 warships at level 5 and one more for each later prince. While at sea, the ships can be burned, hit with lava shots or raked with a claw scratch. Sinking a ship dumps its soldiers into the sea; they can't swim in armour, so they cling to barrels and are fished out (no drowning). The ships that make it beach at the landing spot (⚓ on the map), and from then on **the prince and his whole army hunt the dragon down together as one group**, wherever you are on the map. The prince rides his white warhorse at the head and his soldiers march in formation (rows of four) behind him. About every 1.2 seconds he re-targets your current position. Long distances follow King William's roads, short ones go straight across dry land, and they never wade into water: if you hover over the sea or a lake, they head for the nearest dry ground. His army is **separate from the regular soldier waves**. It doesn't count toward wave reinforcements, and defeating his soldiers doesn't raise the WANTED meter, so regular waves still come only from the WANTED level. The empty ships stay on the beach and can be burned. The prince has a boss health bar (600 HP at level 5, +650 per later prince) and can only be eaten below 30% health. Beating him gives 250 gold (+150 per later prince), 1,500 points per prince level and his royal banner as a trophy. There are no hoard raids during a prince attack.
+
+**Prince tiers.** The first prince (level 5) is a gentle warm-up, and each later prince (levels 10, 15, 20 …) is a clear step harder:
+
+| Prince (castle level) | Health | Lance thrust | Charge | Cavalry charge | Army |
+|---|---|---|---|---|---|
+| 1st (5) | 600 | 8 | 8 | 8 | 6 |
+| 2nd (10) | 1,250 | 14 | 11 | 10 | 12 |
+| 3rd (15) | 1,900 | 20 | 14 | 12 | 18 |
+| each later | +650 | +6 | +3 | +2 | +6 (max 40) |
+
+His soldiers get tougher per tier too (foot 26 HP +6, knights 48 +8, archers 20 +4, cavalry 85 +10). Easy mode gives the prince 25% less health and 2 fewer soldiers.
 
 ## King William's trade ships
 When something is wrecked and the stockpile can't cover the rebuild, **King William buys exactly the shortfall** of wood and/or stone from castle gold at a fair rate (4 gold per wood, 6 per stone). He never buys for watchtowers or to stockpile, and never twice at once.
@@ -304,6 +327,16 @@ When the dragon threatens Castle Aldric (comes low within about 520 px of the ki
 - **Calm:** after 30 s with no threat, he takes the armour off and returns to his post.
 - **He can never be eaten or killed.** His health can't drop below 12%, and nothing can flag him as dead.
 - The armour resets every level. A save made while he's resting in the keep loads with him still resting there.
+
+### Second wind, knocked out dizzy and the king's charge
+- **Round 1** is as above: at 30% health he retreats to the keep.
+- When he comes back out, a banner announces **"King William's second wind!"**. This time he **doesn't retreat**: he fights until his health hits the 12% floor.
+- Then he is **knocked out dizzy for 30 s** (banner **"King William is knocked out dizzy!"**). He sits on the ground swaying, with stars circling his crown and a *Knocked out dizzy: N s* countdown. While dizzy he can't be hurt, bitten, eaten or targeted, and he doesn't fight back.
+- When he cools off, if you **haven't reached your lair**, he gets up and **leads a charge after you** (banner **"King William leads the charge!"**). He takes **every surviving knight, archer and soldier still around him** (guards near the castle; tower archers stay on the walls, and patrol squads, raiders, escorts and the prince keep their own jobs). Nobody new is spawned; if nobody is left, he charges **alone**. They follow behind him in a loose formation, carrying a red war banner, and chase you anywhere on the map, well past his usual courtyard leash.
+- The charge turns back for the castle when you reach your lair, after about 90 s, or if he gets knocked out dizzy a second time. The guards then return to their posts.
+- If you are already at your lair when he wakes up, he just walks home.
+- **Princess rescue:** if you grab Princess Elizabeth and fly her out of the castle area while King William is **not** knocked out dizzy, he gathers his soldiers: **6 s** after you leave the castle with her (**7 s** on Easy), a banner reads **"King William rallies his soldiers to rescue the princess!"**. He comes out in his armour (wherever he was) with every surviving knight, archer and soldier near the castle (no new spawns; alone if none are left) and leads the charge after you. Reach your lair and they turn back; delivering her still wins the level and the ransom works as before. If he is knocked out dizzy when you grab her, there's no immediate chase, but he still leads the usual charge when he cools off (unless you've reached the lair).
+- All of this resets each level. A save made during the charge loads with the king safely back home and his guards back at their posts.
 ## Every bite hurts
 Your bite **always deals damage**. If the target can be eaten, it is swallowed as before. If it can't be swallowed yet (a bear, elephant or bull at high health, a pack leader or silverback, a wild dragon, a whale, a raid champion, a prince, the sandworm and so on), it still takes bite damage: a jaw-snap ring flashes on it and a red **-N** shows the damage. The bite never takes a tough target below 1 HP, so you wear it down and then swallow it. King William and Princess Elizabeth can't be bitten.
 
@@ -313,7 +346,7 @@ The kingdom builds two kinds of tower, but only after its worker carts have deli
 - **Wooden archer tower**: 18 wood + 4 stone, about 14 s to build. An archer stands on top. It has medium health (170) and is **burnable**.
 - **Stone scorpion tower**: unlocks from **castle level 3** and needs 50 delivered in total. It costs 6 wood + 22 stone and takes about 22 s to build. A ballista on top turns toward the dragon and fires **big, slow bolts** (one about every 4.6 s, range about 720 px, aimed ahead of you) that hit much harder than arrows. It has high health (560) and is **fireproof stone**: fire does nothing, so you need stomps, dive slams, bites, claw rakes or lava shots.
 
-Placement starts beside the roads near the castle and moves outward (spaced about 650 px apart). The kingdom also builds guard posts at the edges of villages and **beside its worker buildings**: the lumber camp, the stone pile and mine, and the farm barns. Hunters' cabins only count when they are inside the kingdom. Towers are only built in the kingdom's own lands (farmlands, castle, south, lake, hills and coast). The maximum is 2 + the castle level.
+Placement starts beside the roads near the castle and moves outward (spaced about 650 px apart). The kingdom also builds guard posts at the edges of villages and **beside its worker buildings**: the lumber camp, the stone pile and mine, and the farm barns. Hunters' cabins only count when they are inside the kingdom. Towers are only built in the kingdom's own lands (farmlands, castle, south, lake, hills, coast, the East March and the Iron Crags). The maximum is 2 + the castle level.
 
 When a tower is finished, a banner says **"The kingdom builds an Archer Tower!"** or **"The kingdom builds a Scorpion Tower!"**. The pause menu shows `Towers n/max (a archer · b scorpion)`. The tally counts **Archer towers** and **Scorpion towers** separately. A destroyed tower leaves rubble that still counts toward the maximum, and it is rebuilt as the same type once the stock is there again. Towers, with their type, are saved with the game.
 
@@ -356,12 +389,12 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 
 ## Wildlife (spawns and respawns only in its home region; bigger animals heal more)
 - **Farmland:** cows, pigs, sheep, chickens, horses (in paddocks), crows
-- **Forest:** deer, rabbits, boars, foxes, wolves (packs that nip back), bears (fight back harder, big heal)
+- **Forest (the Deepwood and the Eastwood):** deer, rabbits, boars, foxes, wolves (packs that nip back), bears (fight back harder, big heal)
 - **White alpha wolves:** every wolf pack has a bigger, white-furred alpha (40 HP and a 5-point bite with a small shove, against a wolf's 14 HP and 2). Like the male lion, he guards the pack's woods turf: when he spots the dragon he HOWLS (visible rings and a howl sound) and every wolf that is hunting stops and joins the fight. They calm down after the dragon leaves. A pack that loses its leader gets a new one after a while. He has his own Tally line ("White alpha wolves") and is saved and loaded.
 - **Lake/river:** ducks, geese, jumping fish, beavers
 - **Mountains/cliffs:** mountain goats, eagles, hawks
 - **Coast:** seagulls, crabs, seals
-- **Hills/mine:** goats
+- **Hills/mines (and the Iron Crags):** goats
 - **Snowy slopes north of the desert:** three herds of mountain goats that hop over rocks, and the mountain lions that hunt them
 
 ## The dragon's body
@@ -389,7 +422,7 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 - The only limit is the number of soldiers on the map (170). Animals and villagers don't count, so a busy map full of wildlife still gets its patrols. Wanted-level waves are separate and unchanged.
 - They attack if you come close, and attacking them raises the wanted meter.
 - **Keeping the roads safe:** a patrol that meets a predator on the road, or sees one bothering a traveller nearby, shouts "Keep the road safe!" and chases it off (the animal fights back, then runs off), then carries on along its route. The dragon always comes first.
-- **Worksite patrols:** a small squad (3 foot soldiers + 1 archer, with a banner) loops around the **lumber camp** and another around the **mine**. They defend against you and against predators, are fresh every level, and a lost squad is replaced about 60 s later. They don't count toward the road patrol cap.
+- **Worksite patrols:** a small squad (3 foot soldiers + 1 archer, with a banner) loops around each **lumber camp** and each **mine** (the Deepwood camp, the Stone Mine, the Eastwood camp and the Iron Crags mine). They defend against you and against predators, are fresh every level, and a lost squad is replaced about 60 s later. They don't count toward the road patrol cap.
 
 ## Bridges
 - Wooden bridges carry the roads over the Silver River. Burn one and it collapses into charred posts.

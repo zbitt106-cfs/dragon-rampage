@@ -4,8 +4,8 @@
 // Princess Elizabeth is kept: there he is safe (not targetable) and slowly heals, and after a cooldown he can come out again.
 // Family-friendly: the king can NEVER be eaten or killed. His HP never drops below a floor, whatever hits him.
 const KA_CFG={trigR:520,castleR:700,suit:3.5,walk:70,fleeSp:120,leash:360,reach:70,flee:.3,floor:.12,heal:.03,cd:35,backAt:.9,
-  calm:30,biteDmg:40,armFire:.55,armHit:.8,bashCd:6,bashPush:40};
-const KA={phase:'home',t:0,u:null,hp:0,maxHp:0,inT:-99,calmT:0,flees:0,outs:0,hx:KING.x,hy:KING.y,clangT:-9,peek:false};
+  calm:30,dizzy:30,chargeT:90,chargeSp:115,rallyR:950,rallyK:500,lairR:300,wakeHp:.6,rescue:6,rescueEasy:7,leaveR:700,biteDmg:40,armFire:.55,armHit:.8,bashCd:6,bashPush:40};
+const KA={rsT:-1,rsDone:0,rsDz:0,rescue:0,wind:0,dzT:0,chT:0,charged:0,phase:'home',t:0,u:null,hp:0,maxHp:0,inT:-99,calmT:0,flees:0,outs:0,hx:KING.x,hy:KING.y,clangT:-9,peek:false};
 function kaStats(){const l=Math.max(1,G.lvl||1),ez=!!G.easy;
   return{hp:Math.round(Math.min(1600,600+100*(l-1))*(ez?.75:1)),dmg:Math.round(Math.min(22,10+1.5*(l-1))*(ez?.7:1)),atkCd:1.1,
     bash:Math.round((8+l)*(ez?.7:1)),bashCd:KA_CFG.bashCd};}
@@ -14,42 +14,88 @@ function kaOut(){return KA.phase==='fight'||KA.phase==='flee';}
 function kaThreat(){if(G.over||G.won)return false;
   return(d2(D.x,D.y,KA.hx,KA.hy)<KA_CFG.trigR&&D.alt<.6)||(d2(D.x,D.y,CASTLE.x,CASTLE.y)<KA_CFG.castleR&&(G.sinceDmg==null?99:G.sinceDmg)<2);}
 function kaReset(){if(KA.u){const i=units.indexOf(KA.u);if(i>=0)units.splice(i,1);}
-  Object.assign(KA,{phase:'home',t:0,u:null,hp:0,maxHp:0,inT:-99,calmT:0,flees:0,outs:0,clangT:-9});KING.x=KA.hx;KING.y=KA.hy;}
+  kaUnrally(false);Object.assign(KA,{rsT:-1,rsDone:0,rsDz:0,rsGrab:0,rescue:0,wind:0,dzT:0,chT:0,charged:0,phase:'home',t:0,u:null,hp:0,maxHp:0,inT:-99,calmT:0,flees:0,outs:0,clangT:-9});KING.x=KA.hx;KING.y=KA.hy;}
 function kaSpawn(msg){const S=kaStats(),p=kaDoor();KA.maxHp=S.hp;if(!(KA.hp>0))KA.hp=S.hp;
   const u=mkUnit('knight',p.x,p.y+6,{hp:KA.hp,maxHp:S.hp,atk:.6,colr:'#ffd23a',isKingArmor:true,isKing:true,born:G.t,bashT:2,anim:0});
   KA.u=u;units.push(u);KA.phase='fight';KA.calmT=0;KA.outs++;sparkle(p.x,p.y-20,16);
   float(p.x,p.y-90,msg,'#ffe08a');if(typeof SFX!=='undefined'&&SFX.play)SFX.play('fanfare');}
 function kaInside(){const u=KA.u;if(u){KA.hp=u.hp;const i=units.indexOf(u);if(i>=0)units.splice(i,1);}KA.u=null;}
-function updKA(dt){if(scene!=='play'||!G||G.over||G.won)return;KA.t+=dt;const thr=kaThreat(),p=kaDoor();
+// ---- second wind, knocked out dizzy, and the royal charge ----
+function kaAtLair(){return d2(D.x,D.y,LAIR.x,LAIR.y)<KA_CFG.lairR;}
+// the charge party: every surviving foot soldier, knight (mounted or not) and archer still around the castle or the king. No new spawns:
+// if nobody is left he charges alone. Tower archers stay on the walls; patrol squads, raiders, escorts and the prince keep their own jobs.
+function kaParty(){const k=KA.u||KING;return units.filter(u=>!u.dead&&!u.gone&&!u.inside&&!u.isKingArmor&&!u.retreat&&!u.kaCh&&(u.type==='knight'||u.type==='archer')&&u.post!=='tower'&&!u.siege&&!u.patrol&&!u.raid&&!u.escort&&!u.prince&&
+    (d2(u.x,u.y,CASTLE.x,CASTLE.y)<KA_CFG.rallyR||d2(u.x,u.y,k.x,k.y)<KA_CFG.rallyK));}
+function kaRally(){const L=kaParty().sort((a,b)=>d2(a.x,a.y,KA.u.x,KA.u.y)-d2(b.x,b.y,KA.u.x,KA.u.y));let n=0;
+  for(const u of L){u.kaCh=1;u.kaSlot=n++;u.kaPost=u.post||null;u.post=null;}KA.rallied=n;return n;}
+// loose formation behind the king (rows of four, a little jitter) until the dragon is close, then their usual fighting
+function kaFollow(u,dt){if(!u.kaCh||KA.phase!=='charge'||!KA.u)return false;const k=KA.u;if(dist(u,D)<230&&dist(k,D)<320)return false;
+  const a=Math.atan2(D.y-k.y,D.x-k.x),row=1+(u.kaSlot>>2),col=(u.kaSlot&3)-1.5,j=Math.sin(G.t*1.3+u.kaSlot)*6,
+    bx=k.x-Math.cos(a)*(46*row)-Math.sin(a)*(col*38+j),by=k.y-Math.sin(a)*(46*row)+Math.cos(a)*(col*38+j);
+  const far=d2(u.x,u.y,bx,by);moveTo(u,bx,by,KA_CFG.chargeSp*(far>160?1.25:1.05),dt);u.face=D.x>u.x?1:-1;u.anim=(u.anim||0)+dt*4;return true;}
+function kaUnrally(home){for(const u of units)if(u.kaCh){u.kaCh=0;if(u.kaPost){u.post=u.kaPost;}else if(home)u.retreat=true;u.kaPost=null;}}
+function kaCharge(resc){KA.phase='charge';KA.chT=0;KA.charged=1;KA.rescue=resc?1:0;const n=kaRally();
+  KA.chMsg=n?'party':'alone';
+  G.banner={text:resc?'King William rallies his soldiers to rescue the princess!':'King William leads the charge!',sub:`He rides out after the dragon with ${n?n+' of his surviving guards':'no guards left: alone'}. Get back to your lair to shake them off!`,t:3.5};
+  float(KA.u.x,KA.u.y-90,'King William: "Charge! After that dragon!"','#ffe08a');if(typeof SFX!=='undefined'&&SFX.play)SFX.play('fanfare');}
+// princess rescue: once the dragon carries Princess Elizabeth out of the castle area, and the king is NOT knocked out dizzy,
+// he gathers his surviving nearby soldiers after 6 s (7 s on easy) and leads the charge after the dragon. Same lair rule.
+// If he was knocked out dizzy when she was grabbed there is no immediate chase (the normal post-dizzy charge still happens).
+function kaRescueDelay(){return G.easy?KA_CFG.rescueEasy:KA_CFG.rescue;}
+function kaRescue(dt){if(PR.state!=='carried'||!D.princess){KA.rsT=-1;KA.rsDone=0;KA.rsDz=0;KA.rsGrab=0;return;}
+  if(!KA.rsGrab){KA.rsGrab=1;KA.rsDz=KA.phase==='dizzy'?1:0;}
+  if(KA.rsDone||KA.rsDz)return;
+  if(KA.phase==='dizzy'){KA.rsT=-1;return;}
+  if(KA.rsT<0){if(d2(D.x,D.y,CASTLE.x,CASTLE.y)>KA_CFG.leaveR){KA.rsT=kaRescueDelay();KA.rsT0=G.t;}return;}
+  KA.rsT-=dt;if(KA.rsT>0)return;KA.rsT=-1;KA.rsDone=1;KA.rsFireT=G.t;
+  if(kaAtLair()||KA.phase==='charge')return;
+  if(!KA.u){if(KA.phase==='shelter'||KA.phase==='flee')KA.hp=Math.max(KA.hp,KA.maxHp*KA_CFG.wakeHp);else if(KA.phase!=='suit'||!(KA.hp>0))KA.hp=KA.lavaHp||0;KA.lavaHp=0;
+    const S=kaStats(),pd=kaDoor();KING.x=pd.x;KING.y=pd.y;kaSpawn('King William: "Unhand my daughter, beast!"');KA.hp=KA.u.hp;}
+  KA.wind=1;kaCharge(true);}
+function kaGoHome(msg){KA.phase='return';kaUnrally(true);if(msg&&KA.u)float(KA.u.x,KA.u.y-90,msg,'#ffe08a');}
+function updKA(dt){if(scene!=='play'||!G||G.over||G.won)return;KA.t+=dt;kaRescue(dt);const thr=kaThreat(),p=kaDoor();
+  if(KA.phase==='home'&&KA.lavaHp>0){KA.hp=Math.min(KA.maxHp,KA.hp+KA.maxHp*KA_CFG.heal*dt);KA.lavaHp=KA.hp;if(KA.hp>=KA.maxHp){KA.hp=0;KA.lavaHp=0;}}
   if(KA.phase==='home'){if(thr&&G.t-KA.inT>KA_CFG.cd){KA.phase='toArmory';kingSay('To the armoury! Fetch my golden armour!');}}
   else if(KA.phase==='toArmory'){const dx=p.x-KING.x,dy=p.y-KING.y,dd=Math.hypot(dx,dy),s=Math.min(dd,KA_CFG.walk*dt);
     if(dd>3){KING.x+=dx/dd*s;KING.y+=dy/dd*s;}else{KA.phase='suit';KA.t=0;
       G.banner={text:'King William dons his golden armor!',sub:'Suiting up in the keep\'s armoury… he will come out fighting!',t:3};
       if(typeof SFX!=='undefined'&&SFX.play)SFX.play('crashStone',p.x,p.y,.25);}}
-  else if(KA.phase==='suit'){if(KA.t>=KA_CFG.suit){KA.hp=0;kaSpawn('King William: "Have at thee, foul beast!"');}}
-  else if(KA.phase==='fight'||KA.phase==='flee'){const u=KA.u;
+  else if(KA.phase==='suit'){if(KA.t>=KA_CFG.suit){KA.hp=KA.lavaHp||0;KA.lavaHp=0;kaSpawn('King William: "Have at thee, foul beast!"');}}
+  else if(KA.u&&(kaOut()||KA.phase==='dizzy'||KA.phase==='charge'||KA.phase==='return')){const u=KA.u;
     // guard: nothing may take the king away (lava, water, predators, anything that sets .dead directly)
     if(u&&(u.dead||u.gone||u.eaten||!(u.hp>0)||!isFinite(u.x)||!isFinite(u.y))){u.dead=false;u.gone=false;u.eaten=false;u.hp=Math.max(u.hp>0?u.hp:0,u.maxHp*KA_CFG.floor);
       if(!isFinite(u.x)||!isFinite(u.y)){u.x=p.x;u.y=p.y+6;}}
     if(u&&units.indexOf(u)<0)units.push(u);
     if(u){KING.x=u.x;KING.y=u.y;KA.hp=u.hp;}
     if(KA.phase==='fight'){if(thr)KA.calmT=0;else KA.calmT+=dt;
-      if(u&&u.hp<=u.maxHp*KA_CFG.flee){KA.phase='flee';KA.flees++;
+      if(u&&KA.wind&&u.hp<=u.maxHp*KA_CFG.floor+.5)kaDizzy(u);
+      else if(u&&!KA.wind&&u.hp<=u.maxHp*KA_CFG.flee){KA.phase='flee';KA.flees++;
         G.banner={text:'King William retreats to safety!',sub:'He hurries into the keep to Princess Elizabeth, safe under its stone roof, to rest and heal',t:3.2};
         float(u.x,u.y-90,'King William: "Fall back! To the keep!"','#ffe08a');}
-      else if(KA.calmT>KA_CFG.calm){KA.phase='flee';KA.disarm=true;}}}
+      else if(KA.calmT>KA_CFG.calm){KA.phase='flee';KA.disarm=true;}}
+    else if(KA.phase==='dizzy'){KA.dzT-=dt;if(KA.dzT<=0&&u){u.dizzy=0;u.hp=Math.max(u.hp,u.maxHp*KA_CFG.wakeHp);KA.hp=u.hp;
+        if(KA.charged||kaAtLair())kaGoHome('King William: "Bah! Back to the castle!"');else kaCharge();}}
+    else if(KA.phase==='charge'){KA.chT+=dt;if(kaAtLair())kaGoHome('King William: "It hides in its lair! Fall back!"');else if(KA.chT>KA_CFG.chargeT)kaGoHome('King William: "Enough! Home, men!"');
+      else if(u&&u.hp<=u.maxHp*KA_CFG.floor+.5)kaDizzy(u);}}
   else if(KA.phase==='shelter'){KA.hp=Math.min(KA.maxHp,KA.hp+KA.maxHp*KA_CFG.heal*dt);
-    if(thr&&KA.hp>=KA.maxHp*KA_CFG.backAt&&G.t-KA.inT>=KA_CFG.cd)kaSpawn('King William returns, armour polished! "Again, beast!"');
+    if(thr&&KA.hp>=KA.maxHp*KA_CFG.backAt&&G.t-KA.inT>=KA_CFG.cd){kaSpawn('King William returns, armour polished! "Again, beast!"');KA.wind=1;
+      G.banner={text:"King William's second wind!",sub:'Rested and furious: this time he will not retreat. Knock him out to stop him!',t:3.5};}
     else if(!thr&&KA.hp>=KA.maxHp&&G.t-KA.inT>=KA_CFG.cd){KA.phase='toHome';KING.x=p.x;KING.y=p.y;KA.hp=0;}}
   else if(KA.phase==='toHome'){const dx=KA.hx-KING.x,dy=KA.hy-KING.y,dd=Math.hypot(dx,dy),s=Math.min(dd,KA_CFG.walk*dt);if(dd>3){KING.x+=dx/dd*s;KING.y+=dy/dd*s;}else{KING.x=KA.hx;KING.y=KA.hy;KA.phase='home';}}
+  if(KA.phase!=='charge'&&units.some(u=>u.kaCh))kaUnrally(true);
   // save-friendly mirror (plain values on G): only 'home' or 'shelter' survive a reload
   G.kaPh=KA.phase==='shelter'||KA.phase==='flee'?'shelter':'home';G.kaHpF=KA.maxHp?+(KA.hp/KA.maxHp).toFixed(3):1;G.kaIn=Math.max(0,KA_CFG.cd-(G.t-KA.inT));}
 // the armoured king's own fighting brain (replaces the normal knight AI for him)
+function kaDizzy(u){KA.phase='dizzy';KA.dzT=KA_CFG.dizzy;u.dizzy=1;u.swing=0;u.bashFx=0;if(KA.charged)kaUnrally(true);
+  G.banner={text:'King William is knocked out dizzy!',sub:`Seeing stars for ${KA_CFG.dizzy} seconds: he can't be hurt or eaten while he cools off`,t:3.2};float(u.x,u.y-90,'King William: "Ooh... the stars..."','#ffe08a');}
 function kaStep(u,dt){const S=kaStats(),p=kaDoor();u.retreat=false;u.burn=0;u.post=null;u.atk-=dt;u.bashT=(u.bashT||0)-dt;u.swing=Math.max(0,(u.swing||0)-dt);u.bashFx=Math.max(0,(u.bashFx||0)-dt);
   if(KA.phase==='flee'){if(moveTo(u,p.x,p.y+4,KA_CFG.fleeSp,dt)||dist(u,p)<14){kaInside();
-      if(KA.disarm){KA.disarm=false;KA.phase='toHome';KING.x=p.x;KING.y=p.y;KA.hp=0;KA.inT=G.t-KA_CFG.cd+10;}
+      if(KA.disarm){KA.disarm=false;KA.wind=0;KA.phase='toHome';KING.x=p.x;KING.y=p.y;KA.hp=0;KA.inT=G.t-KA_CFG.cd+10;}
       else{KA.phase='shelter';KA.inT=G.t;float(p.x,p.y-110,'King William is safe inside the keep with Princess Elizabeth','#ffe08a');}}return;}
-  const dd=dist(u,D),low=D.alt<DR.hitAltSword,inLeash=d2(D.x,D.y,KA.hx,KA.hy)<KA_CFG.leash+80;
+  if(KA.phase==='dizzy'){u.anim=(u.anim||0)+dt;return;}
+  if(KA.phase==='return'){if(moveTo(u,p.x,p.y+4,KA_CFG.chargeSp,dt)||dist(u,p)<14){kaInside();KA.phase='toHome';KING.x=p.x;KING.y=p.y;KA.hp=0;KA.wind=0;KA.charged=0;KA.inT=G.t;}u.anim+=dt*4;return;}
+  const chg=KA.phase==='charge',dd=dist(u,D),low=D.alt<DR.hitAltSword,inLeash=chg||d2(D.x,D.y,KA.hx,KA.hy)<KA_CFG.leash+80;
+  if(chg&&(dd>KA_CFG.reach||!low)){moveTo(u,D.x,D.y,KA_CFG.chargeSp,dt);u.face=D.x>u.x?1:-1;u.anim+=dt*5;return;}
   if(inLeash&&low){
     if(dd>KA_CFG.reach)moveTo(u,D.x,D.y,95,dt);
     else{u.face=D.x>u.x?1:-1;u.anim+=dt*4;
@@ -60,26 +106,28 @@ function kaStep(u,dt){const S=kaStats(),p=kaDoor();u.retreat=false;u.burn=0;u.po
   else{// the dragon is up in the air or beyond his leash: hold the line between the keep and the dragon
     const a=Math.atan2(D.y-KA.hy,D.x-KA.hx),r=Math.min(KA_CFG.leash*.6,dist(D,{x:KA.hx,y:KA.hy})),tx=KA.hx+Math.cos(a)*r,ty=KA.hy+Math.sin(a)*r;
     if(d2(u.x,u.y,tx,ty)>8)moveTo(u,tx,ty,80,dt);u.face=D.x>u.x?1:-1;}
-  // never stray far from the castle
+  // never stray far from the castle (except while leading the charge or marching home)
+  if(KA.phase==='charge'||KA.phase==='return')return;
   const lx=u.x-KA.hx,ly=u.y-KA.hy,ld=Math.hypot(lx,ly);if(ld>KA_CFG.leash){u.x=KA.hx+lx/ld*KA_CFG.leash;u.y=KA.hy+ly/ld*KA_CFG.leash;}}
 // a bite on the golden armour: CLANG, a dent and a shove, never a gulp
 function kaBitten(u){const S=u.maxHp;hurtUnit(u,KA_CFG.biteDmg,'bite');const a=Math.atan2(u.y-D.y,u.x-D.x);u.x+=Math.cos(a)*30;u.y+=Math.sin(a)*30;
   D.eatCD=.7;D.eatT=.3;D.hp-=3*G.dmgMul;D.hurt=.3;float(u.x,u.y-90,'CLANG! Golden armour! King William can\'t be eaten','#ffd27a');sparkle(u.x,u.y-30,6);}
 // ---- hooks ----
-const _updKnightKA=updKnight;updKnight=function(u,dt){if(u&&u.isKingArmor){if(u===KA.u)kaStep(u,dt);else{u.dead=true;u.gone=true;}return;}return _updKnightKA.apply(this,arguments);};
-const _hurtUnitKA=hurtUnit;hurtUnit=function(u,d,src){if(u&&u.isKingArmor){if(!kaOut()||!(d>0))return;
+const _updKnightKA=updKnight;updKnight=function(u,dt){if(u&&!u.isKingArmor&&kaFollow(u,dt))return;if(u&&u.isKingArmor){if(u===KA.u)kaStep(u,dt);else{u.dead=true;u.gone=true;}return;}return _updKnightKA.apply(this,arguments);};
+const _hurtUnitKA=hurtUnit;hurtUnit=function(u,d,src){if(u&&u.isKingArmor){if(!(kaOut()||KA.phase==='charge')||u.dizzy||!(d>0))return;
     d*=(src==='fire'||src==='lava'||src==='burn')?KA_CFG.armFire:KA_CFG.armHit;u.hp=Math.max(u.maxHp*KA_CFG.floor,u.hp-d);u.burn=0;
     if(G.t-KA.clangT>.8){KA.clangT=G.t;float(u.x+R(-10,10),u.y-70,src==='fire'?'The golden armour glows hot!':'CLANG!','#ffe08a');}return;}
   return _hurtUnitKA.apply(this,arguments);};
 const _eatUnitKA=eatUnit;eatUnit=function(u){if(u&&u.isKingArmor){kaBitten(u);return;}return _eatUnitKA.apply(this,arguments);};
-const _biteTargetsKA=biteTargets;biteTargets=function(){const T=_biteTargetsKA.apply(this,arguments);return KA.peek?T:T.filter(u=>!u.isKingArmor);};
-const _tryEatKA=tryEat;tryEat=function(){if(KA.u&&kaOut()){KA.peek=true;let T;try{T=biteTargets();}finally{KA.peek=false;}
+const _biteTargetsKA=biteTargets;biteTargets=function(){const T=_biteTargetsKA.apply(this,arguments);return KA.peek&&!(KA.u&&KA.u.dizzy)?T:T.filter(u=>!u.isKingArmor);};
+const _tryEatKA=tryEat;tryEat=function(){if(KA.u&&(kaOut()||KA.phase==='charge')){KA.peek=true;let T;try{T=biteTargets();}finally{KA.peek=false;}
     if(T.length&&T[0].isKingArmor){kaBitten(T[0]);return;}}return _tryEatKA.apply(this,arguments);};
 const _updateKA=update;update=function(dt){const r=_updateKA.apply(this,arguments);updKA(dt);return r;};
 const _newGameKA=newGame;newGame=function(){const r=_newGameKA.apply(this,arguments);KA.u=null;kaReset();return r;};
-{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);kaReset();units=units.filter(u=>!u.isKingArmor);
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);for(const u of units)if(u.kaCh){u.kaCh=0;if(u.kaPost)u.post=u.kaPost;u.kaPost=null;}kaReset();units=units.filter(u=>!u.isKingArmor);
   if(G.kaPh==='shelter'){KA.phase='shelter';KA.maxHp=kaStats().hp;KA.hp=KA.maxHp*Math.max(KA_CFG.floor,Math.min(1,+G.kaHpF||KA_CFG.flee));KA.inT=G.t-(KA_CFG.cd-Math.max(0,Math.min(KA_CFG.cd,+G.kaIn||0)));}
   return r;};}
+{const _ua=updArcher;updArcher=function(u,dt){if(kaFollow(u,dt))return;return _ua.apply(this,arguments);};}
 // ---- drawing ----
 // the plain robed king is only drawn while he is unarmoured in the courtyard (or walking to/from the keep door)
 const _drawKingKA=drawKing;drawKing=function(){if(KA.phase==='home'||KA.phase==='toArmory'||KA.phase==='toHome')return _drawKingKA.apply(this,arguments);};
@@ -98,11 +146,17 @@ function kaFig(x,y,f,s,an,sw,bash){ctx.save();ctx.translate(x,y);ctx.scale(s,s);
   else{line(f*7,-15,f*11,-38,'#f4f6ff',2.4);line(f*4.5,-17.5,f*10.5,-16,'#ffd23a',1.8);ell(f*7,-14,1.4,1.4,'#ffd23a');}
   ctx.restore();
   if(((t*6)|0)%5===0){const a=t*2.3,sx=x+Math.cos(a*3)*9*s,sy=y-(18+Math.sin(a*5)*10)*s;line(sx-4,sy,sx+4,sy,'#fff',1.2);line(sx,sy-4,sx,sy+4,'#fff',1.2);}} // golden glint
-function drawArmoredKing(u){const s=1.45;kaFig(u.x,u.y,u.face||1,s,u.anim||0,u.swing>0,u.bashFx>0);
+function drawArmoredKing(u){const s=1.45;
+  if(u.dizzy){ctx.save();ctx.translate(u.x,u.y);ctx.rotate(Math.sin(G.t*2.2)*.12);kaFig(0,8,u.face||1,s*.9,0,false,false);ctx.restore(); // sitting down, swaying
+    for(let i=0;i<5;i++){const a=G.t*3+i*TAU/5,sx=u.x+Math.cos(a)*22,sy=u.y-58+Math.sin(a)*7;kaStar(sx,sy,5,i%2?'#fff3a0':'#ffd23a');}
+    txt(`💫 Knocked out dizzy: ${Math.ceil(KA.dzT)}s`,u.x,u.y-80,10,'#ffe08a','center');return;}
+  kaFig(u.x,u.y,u.face||1,s,u.anim||0,u.swing>0,u.bashFx>0);
+  if(KA.phase==='charge'){const pl=.5+.5*Math.sin(G.t*6);line(u.x-10,u.y-40,u.x-10,u.y-86,'#6a4a20',2.2);poly([u.x-10,u.y-86,u.x+16,u.y-80+3*pl,u.x-10,u.y-72],'#a8142a');ell(u.x-1,u.y-79,2.4,2.4,'#ffd23a');}
   if(u.bashFx>0){ctx.strokeStyle=`rgba(255,230,140,${u.bashFx*2})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(u.x,u.y-20,40*(1.4-u.bashFx),18*(1.4-u.bashFx),0,0,TAU);ctx.stroke();}
   const w=52,f=Math.max(0,Math.min(1,u.hp/u.maxHp)),by=u.y-66;rect(u.x-w/2-2,by-2,w+4,8,'rgba(0,0,0,.65)');rect(u.x-w/2,by,w*f,4,f>KA_CFG.flee+.2?'#ffd23a':f>KA_CFG.flee?'#f0a040':'#e05040');
   txt('👑 King William',u.x,by-5,10,'#ffe08a','center');}
 const _drawKnightKA=drawKnight;drawKnight=function(u){if(u&&u.isKingArmor){drawArmoredKing(u);return;}return _drawKnightKA.apply(this,arguments);};
+function kaStar(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q);}ctx.closePath();ctx.fill();}
 // when the keep roof is broken you can see him inside, guarding Princess Elizabeth
 const _drawInsidePrincessKA=drawInsidePrincess;drawInsidePrincess=function(x,y){_drawInsidePrincessKA.apply(this,arguments);if(KA.phase==='shelter')kaFig(x+24,y+6,-1,1.05,0,false,false);};
 // overlays drawn above the castle: suiting up at the keep door, and the sheltering king's healing bar over the keep

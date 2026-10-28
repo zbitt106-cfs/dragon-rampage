@@ -2,6 +2,15 @@
 // Land beside the crater and drink (E / pad X / touch BITE) to swap fire breath for 20 lava globs.
 // Each fire press lobs a glob that arcs, splashes, burns harder, cracks stone and wells, and leaves a puddle.
 const VOLC={x:LAIR.x+560,y:LAIR.y+260,r:96,drinkR:165},LAVA_MAX=20,LAVA_CD=8,LAVA_REPEAT=.42;
+// Lava tuning: shorter lob (old speed 520, up 230), wider splash (old 80), and a cooling puddle that keeps hurting enemies.
+const LAVA_CFG={sp:380,vz:180,splashR:130,scorchR:70,puddleR:[62,74],puddleT:5.5,crustAt:.12,tick:.25,unitDmg:2,structDmg:1.5,maxPuddles:24};
+// the puddle never hurts the dragon (not a unit), King William or Princess Elizabeth
+function lavaSafe(u){return !u||u.dead||u.inside||u.princess||u.isPrincess||u.type==='princess';}
+// King William CAN be hurt by a puddle: in armour through his armour's fire multiplier (partKA), unarmoured (courtyard) straight off his HP.
+// His HP floor still holds either way, so he is never knocked out of the game.
+function lavaKing(p,d){if(typeof KA==='undefined'||typeof KING==='undefined'||KA.u)return;if(!(KA.phase==='home'||KA.phase==='toArmory'||KA.phase==='toHome'||KA.phase==='suit'))return;
+  if(Math.hypot(KING.x-p.x,KING.y-p.y)>=p.r+6)return;const mx=KA.maxHp||kaStats().hp;KA.maxHp=mx;if(!(KA.hp>0))KA.hp=mx;KA.hp=Math.max(mx*KA_CFG.floor,KA.hp-d);KA.lavaHp=KA.hp;
+  if(G.t-(KA.hopT||-9)>1.5){KA.hopT=G.t;float(KING.x,KING.y-50,'King William: "Hot! Hot! HOT!"','#ffb070');}}
 let LGLOBS=[],LPUDDLES=[],LEMBERS=[],VOLC_T={erupt:6,smoke:0,warn:0};
 function clearVolcanoSite(){const far=o=>Math.hypot(o.x-VOLC.x,(o.y-VOLC.y)*1.25)>300;
   DECOR=DECOR.filter(o=>o.k!=='peak'||!(Math.abs(o.x-VOLC.x)<o.w*.5+300&&o.y>VOLC.y-260&&o.y<VOLC.y+560));
@@ -22,17 +31,17 @@ function mouthPos(){const ca=Math.cos(D.ang),sa=Math.sin(D.ang);return{x:D.x+ca*
 // called every frame from the fire code while the dragon has lava
 function lavaFire(dt){const held=!!(keys[' ']||GPAD.fire);D.lavaRep-=dt;
   const go=held&&(!D.lavaHeld||D.lavaRep<=0);D.lavaHeld=held;if(!go)return;D.lavaRep=LAVA_REPEAT;
-  const m=mouthPos(),ca=Math.cos(D.ang),sa=Math.sin(D.ang),sp=520;
-  LGLOBS.push({x:m.x,y:m.y,z:m.z,vx:ca*sp+D.vx*.6,vy:sa*sp+D.vy*.6,vz:230,t:0,rot:R(0,TAU)});
+  const m=mouthPos(),ca=Math.cos(D.ang),sa=Math.sin(D.ang),sp=LAVA_CFG.sp;
+  LGLOBS.push({x:m.x,y:m.y,z:m.z,vx:ca*sp+D.vx*.6,vy:sa*sp+D.vy*.6,vz:LAVA_CFG.vz,t:0,rot:R(0,TAU)});
   D.lava--;SFX.play('lavaSpit',m.x,m.y,.9);puff(m.x,m.y,4,'rgba(90,60,50,',60,7);
   if(D.lava<=0){D.lava=0;float(D.x,D.y-90,'Out of lava: back to fire breath','#ffd8a0');}}
-function lavaSplash(x,y){const wet=inWater(x,y)&&!onBridge(x,y),r=80;G.shake=Math.max(G.shake,5);
+function lavaSplash(x,y){const wet=inWater(x,y)&&!onBridge(x,y),r=LAVA_CFG.splashR;G.shake=Math.max(G.shake,5);
   if(wet){SFX.play('lavaHiss',x,y,1);puff(x,y,14,'rgba(230,230,240,',110,14);
     for(const s of ships)if(s.state!=='sink'&&Math.hypot(s.x-x,s.y-y)<r+40){s.fire=1;s.fireT=s.fireT||0;hurtShip(s,70,'fire');}
     for(const u of units)if(!u.dead&&Math.hypot(u.x-x,u.y-y)<r)hurtUnit(u,25,'fire');addAlarm(.3,x,y);return;}
-  SFX.play('lavaSplash',x,y,1);scorch(x,y,46);puff(x,y,10,'rgba(80,60,50,',120,12);
+  SFX.play('lavaSplash',x,y,1);scorch(x,y,LAVA_CFG.scorchR);puff(x,y,10,'rgba(80,60,50,',120,12);
   for(let i=0;i<14;i++)LEMBERS.push({x,y,z:4,vx:R(-160,160),vy:R(-110,110),vz:R(80,240),t:R(.4,.8)});
-  LPUDDLES.push({x,y,r:R(38,48),t:5,max:5,tick:0,seed:Math.random()*99});if(LPUDDLES.length>40)LPUDDLES.shift();
+  LPUDDLES.push({x,y,r:R(LAVA_CFG.puddleR[0],LAVA_CFG.puddleR[1]),t:LAVA_CFG.puddleT,max:LAVA_CFG.puddleT,tick:0,seed:Math.random()*99,lava:1});if(LPUDDLES.length>LAVA_CFG.maxPuddles)LPUDDLES.splice(0,LPUDDLES.length-LAVA_CFG.maxPuddles);
   fireFlora(x,y);
   for(const t of trees)if(t.state==='ok'&&Math.hypot(t.x-x,t.y-y)<r){t.fire=1;t.hp-=30;}
   HEAVY=true;
@@ -48,9 +57,12 @@ function lavaSplash(x,y){const wet=inWater(x,y)&&!onBridge(x,y),r=80;G.shake=Mat
 function updVolcano(dt){if(!G||!D)return;D.lavaCD=Math.max(0,(D.lavaCD||0)-dt);
   for(const g of LGLOBS){g.t+=dt;g.x+=g.vx*dt;g.y+=g.vy*dt;g.vz-=900*dt;g.z+=g.vz*dt;g.rot+=dt*8;if(g.z<=0){g.dead=true;lavaSplash(g.x,g.y);}}
   LGLOBS=LGLOBS.filter(g=>!g.dead&&g.t<4);
-  for(const p of LPUDDLES){p.t-=dt;p.tick-=dt;if(p.tick<=0&&p.t>.6){p.tick=.25;
-    for(const u of units)if(!u.dead&&!u.inside&&Math.hypot(u.x-p.x,u.y-p.y)<p.r+6){u.burn=Math.max(u.burn||0,1.2);hurtUnit(u,5,'fire');}
-    for(const s of structures)if(s.state!=='ruin'&&!stoneish(s)&&Math.hypot(s.x-p.x,s.y-p.y)<p.r+16)s.fire=1;
+  if(LPUDDLES.length>LAVA_CFG.maxPuddles)LPUDDLES.splice(0,LPUDDLES.length-LAVA_CFG.maxPuddles);
+  for(const p of LPUDDLES){p.t-=dt;p.tick-=dt;if(p.tick<=0&&p.t>p.max*LAVA_CFG.crustAt){p.tick=LAVA_CFG.tick;const tk=LAVA_CFG.tick;
+    // hot lava: small steady damage per second to enemies standing in it, until it crusts over
+    for(const u of units)if(!lavaSafe(u)&&Math.hypot(u.x-p.x,u.y-p.y)<p.r+6){if(!p.lava)u.burn=Math.max(u.burn||0,1.2);else if(rnd()<.3)flame(u.x,u.y,6);hurtUnit(u,(p.lava?LAVA_CFG.unitDmg:5),u.isKingArmor?'lava':'fire');}
+    if(p.lava)lavaKing(p,LAVA_CFG.unitDmg);
+    for(const s of structures)if(s.state!=='ruin'&&Math.hypot(s.x-p.x,s.y-p.y)<p.r+16){if(!stoneish(s))s.fire=1;if(p.lava)hurtStruct(s,LAVA_CFG.structDmg);}
     for(const t of trees)if(t.state==='ok'&&!t.fire&&Math.hypot(t.x-p.x,t.y-p.y)<p.r+8)t.fire=1;}}
   LPUDDLES=LPUDDLES.filter(p=>p.t>0);
   for(const e of LEMBERS){e.t-=dt;e.x+=e.vx*dt;e.y+=e.vy*dt;e.vz-=520*dt;e.z=Math.max(0,e.z+e.vz*dt);if(e.z<=0){e.vx*=.6;e.vy*=.6;}}
@@ -81,9 +93,18 @@ function drawVolcano(){if(Math.abs(cam.x-VOLC.x)>1900||Math.abs(cam.y-VOLC.y)>14
   ctx.globalCompositeOperation='lighter';const g2=ctx.createRadialGradient(x,y,10,x,y,190);g2.addColorStop(0,`rgba(255,120,30,${.32+.2*pl+.4*VOLC_T.warn})`);g2.addColorStop(1,'rgba(255,60,0,0)');ctx.fillStyle=g2;ctx.beginPath();ctx.arc(x,y,190,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';
   if(D&&D.lava<LAVA_MAX&&Math.hypot(D.x-x,D.y-y)<500){ctx.globalAlpha=.6+.3*pl;ctx.strokeStyle='#ffe08a';ctx.setLineDash([10,8]);ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,VOLC.drinkR,VOLC.drinkR*.5,0,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}
   txt('Mount Cinder',x,y+205,13,'#ffcf9a','center');}
-function drawLavaGround(){for(const p of LPUDDLES){const k=p.t/p.max,hot=clamp(k*1.6,0,1);
-    ctx.globalAlpha=Math.min(1,p.t*1.5);ell(p.x,p.y,p.r,p.r*.55,`rgb(${60+180*hot|0},${30+60*hot|0},20)`);
-    ell(p.x-p.r*.15,p.y-2,p.r*.65,p.r*.32,`rgba(255,${140+80*hot|0},40,${hot})`);ell(p.x+p.r*.2,p.y-4,p.r*.18,p.r*.1,`rgba(255,250,180,${hot})`);ctx.globalAlpha=1;}}
+function drawLavaGround(){
+  for(const p of LPUDDLES){if(Math.abs(p.x-cam.x)>1700||Math.abs(p.y-cam.y)>1300)continue;
+    const k=clamp(p.t/p.max,0,1),hot=clamp((k-LAVA_CFG.crustAt)/(1-LAVA_CFG.crustAt),0,1),a=Math.min(1,p.t*1.2),r=p.r;
+    // cools from bright orange to a dark crust: glow fades, the crust darkens and cracks close up
+    ctx.globalAlpha=a;ell(p.x,p.y+2,r*1.05,r*.58,'rgba(30,18,14,.55)');
+    ell(p.x,p.y,r,r*.55,`rgb(${50+190*hot|0},${28+70*hot|0},${18+6*hot|0})`);
+    if(hot>0){ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,r*1.3);g.addColorStop(0,`rgba(255,150,40,${.45*hot})`);g.addColorStop(1,'rgba(255,60,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,p.y,r*1.3,r*.75,0,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';
+      ell(p.x-r*.12,p.y-2,r*.66,r*.33,`rgba(255,${140+90*hot|0},40,${hot})`);ell(p.x+r*.2,p.y-4,r*.2,r*.1,`rgba(255,250,180,${hot})`);}
+    // crust plates spreading as it cools
+    const cr=1-hot,sd=p.seed||0;ctx.strokeStyle=`rgba(${20+60*hot|0},${12+20*hot|0},10,${.3+.6*cr})`;ctx.lineWidth=2;ctx.beginPath();
+    for(let i=0;i<6;i++){const an=sd+i*1.05,l=r*(.35+.5*cr);ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+Math.cos(an)*l,p.y+Math.sin(an)*l*.55);}ctx.stroke();
+    ctx.globalAlpha=1;}}
 function drawLavaAir(){ctx.globalCompositeOperation='lighter';
   for(const e of LEMBERS){const a=clamp(e.t*1.4,0,1);ctx.fillStyle=`rgba(255,${120+Math.random()*100|0},30,${a})`;ctx.beginPath();ctx.arc(e.x,e.y-e.z,3.2,0,TAU);ctx.fill();}
   ctx.globalCompositeOperation='source-over';

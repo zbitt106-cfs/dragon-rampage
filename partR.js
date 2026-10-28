@@ -33,6 +33,7 @@ function buildRoads(){if(ROADS)return ROADS;const t0=performance.now(),Gd=roadGr
   // the main tree: everything converges on the castle gate in the south (west road via Southwold, east road via Haybury and the Riverbend bridge)
   [[N.GATE,V[7]],[N.GATE,V[8]],[V[8],V[11]],[V[2],V[0]],[V[2],V[1]],[V[2],V[3]],[V[2],V[4]],[V[3],V[5]],[V[5],V[7]],[V[4],V[6]],[V[1],V[9]],[V[9],V[10]],[V[0],N.CAMP],[V[1],N.MINE]].forEach(([a,b])=>add(a,b));
   add(V[4],N.STONE,20);add(N.CAMP,N.CABIN,16,'path');
+  if(typeof esRoads==='function')esRoads(add,V); // the East March roads (partES)
   // river crossings go over the bridges
   for(const[i,j]of BRIDGE_ROADS){const B=bridgeSpot(i,j);add(V[i],B.a);add(B.b,V[j]);R0.push({pts:[B.a,B.b],w:26,kind:'bridge',bx:B.x,by:B.y});}
   // the long caravan road west through the Sandgate Pass to Sandhaven and the oasis

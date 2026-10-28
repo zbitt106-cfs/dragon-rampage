@@ -2,7 +2,7 @@
 // Kingdom/farms cheerful (pastoral), castle regal (fanfare), forest mysterious, desert Arabian (existing 'desert' scale),
 // savanna drums, jungle marimba + percussion, Dragon Peaks / mountains epic low horns, ocean airy, lair dark rumble.
 const MU={fade:2,themes:{farm:'pastoral',south:'pastoral',lake:'pastoral',hills:'pastoral',castle:'fanfare',forest:'forest',desert:'desert',
-  savanna:'savanna',jungle:'jungle',mountain:'peaks',drpeaks:'peaks',sea:'ocean',deep:'ocean',coast:'ocean',isle:'ocean',lair:'lair'},hitT:-99};
+  savanna:'savanna',jungle:'jungle',mountain:'peaks',drpeaks:'peaks',sea:'ocean',deep:'ocean',coast:'ocean',isle:'ocean',lair:'lair',eastwood:'forest',crags:'pastoral',march:'pastoral'},hitT:-99};
 Object.assign(MOODS,{
   forest:{bpm:70,root:57,scale:[0,2,3,5,7,9,10],prog:[0,6,5,6,0,3,4,0],lead:'flute',bass:'harp',arp:true,drum:0,beats:4,dens:.35,vol:.85},
   savanna:{bpm:108,root:55,scale:[0,2,4,7,9,12,14],prog:[0,0,3,3,4,4,0,0],lead:'recorder',bass:'drone',arp:false,drum:5,beats:4,dens:.3,vol:.8},

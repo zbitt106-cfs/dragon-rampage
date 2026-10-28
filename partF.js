@@ -10,20 +10,20 @@ const FAUNA={
   horse:{hp:18,sp:120,flee:240,zone:'paddock'},fish:{hp:2,zone:'water'},beaver:{hp:7,sp:50,flee:160,zone:'shore'},
   mgoat:{hp:12,sp:105,flee:260,zone:'mountain'},cougar:{hp:30,sp:100,bite:4,aggro:210,cd:1.8,say:'Rrrowr! Claw swipe! -4',zone:'peaks'},goat:{hp:10,sp:80,flee:210,zone:'hills'},
   crab:{hp:3,sp:40,flee:120,zone:'beach'},seal:{hp:18,sp:35,flee:150,zone:'beach'}};
-const FAUNA_PLAN=[['deer',12],['rabbit',12],['fox',6],['boar',6],['wolf',3],['bear',3],['horse',9],['fish',14],['beaver',6],['mgoat',22],['cougar',3],['goat',10],['crab',12],['seal',6]]; // wolf counts packs of 3
+const FAUNA_PLAN=[['deer',15],['rabbit',14],['fox',7],['boar',8],['wolf',4],['bear',3],['horse',9],['fish',14],['beaver',6],['mgoat',22],['cougar',3],['goat',13],['crab',14],['seal',6]]; // wolf counts packs of 3
 const ZONES={
-  forest:{ok:(x,y)=>regionKey(x,y)==='forest',s:()=>({x:R(-2900,-300),y:R(-100,4200)})},
+  forest:{ok:(x,y)=>{const k=regionKey(x,y);return k==='forest'||k==='eastwood';},s:()=>rnd()<.72?{x:R(-2900,-300),y:R(-100,4200)}:{x:R(6000,8200),y:R(-150,1700)}},
   water:{ok:(x,y)=>!inSea(x,y)&&(inLake(x,y)||riverD(x,y)<RIVW-8),s:()=>{if(rnd()<.6){const a=R(0,TAU),r=R(0,.8);return{x:LAKE.x+Math.cos(a)*LAKE.rx*r,y:LAKE.y+Math.sin(a)*LAKE.ry*r};}
     const i=RI(0,RIVER.length-2),t=rnd();return{x:RIVER[i][0]+(RIVER[i+1][0]-RIVER[i][0])*t,y:RIVER[i][1]+(RIVER[i+1][1]-RIVER[i][1])*t};}},
   shore:{ok:(x,y)=>true,s:()=>{const a=R(0,TAU);return{x:LAKE.x+Math.cos(a)*LAKE.rx*1.06,y:LAKE.y+Math.sin(a)*LAKE.ry*1.06};}},
-  mountain:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+500&&x>WX0+300&&!inSea(x,y),s:()=>({x:R(-2700,5000),y:R(-1700,-450)})},
-  hills:{ok:(x,y)=>regionKey(x,y)==='hills',s:()=>rnd()<.25?{x:R(2700,3150),y:R(950,1650)}:{x:R(3300,5000),y:R(-50,2950)}},
-  beach:{ok:onBeach,s:()=>{if(rnd()<.75){const y=R(-50,4300);return{x:coastX(y)-R(20,150),y};}const x=R(400,5300);return{x,y:coastY(x)-R(20,130)};}},
+  mountain:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+500&&x>WX0+300&&!inSea(x,y),s:()=>({x:R(-2700,5000+SEA_DX),y:R(-1700,-450)})},
+  hills:{ok:(x,y)=>{const k=regionKey(x,y);return k==='hills'||k==='crags';},s:()=>{const q=rnd();return q<.2?{x:R(2700,3150),y:R(950,1650)}:q<.7?{x:R(3300,5600),y:R(-50,2950)}:{x:R(6600,8400),y:R(1950,3150)};}},
+  beach:{ok:onBeach,s:()=>{if(rnd()<.75){const y=R(-50,4300);return{x:coastX(y)-R(20,150),y};}const x=R(400,5300+SEA_DX);return{x,y:coastY(x)-R(20,130)};}},
   paddock:{ok:()=>true,s:()=>{const P=PADDOCKS[RI(0,PADDOCKS.length-1)];return{x:P.x+R(15,P.w-15),y:P.y+R(15,P.h-15),P};}},
   // the slopes around Dragon Peak: a healthy mountain-goat herd lives here
   summit:{ok:(x,y)=>y<frostY(x)-120&&y>WY0+420&&!inSea(x,y)&&d2(x,y,LAIR.x,LAIR.y)>230&&d2(x,y,LAIR.x,LAIR.y)<1300,s:()=>{const a=R(0,TAU),r=R(300,1150);return{x:LAIR.x+Math.cos(a)*r,y:LAIR.y+Math.sin(a)*r*.75};}},
   // mountain lions prowl the snowy mountains and the eastern hills
-  peaks:{ok:(x,y)=>(y<frostY(x)-120&&y>WY0+420&&x>WX0+300&&!inSea(x,y))||regionKey(x,y)==='hills',s:()=>rnd()<.6?{x:R(-2000,5000),y:R(-1900,-500)}:{x:R(3300,5000),y:R(-50,2950)}},
+  peaks:{ok:(x,y)=>(y<frostY(x)-120&&y>WY0+420&&x>WX0+300&&!inSea(x,y))||regionKey(x,y)==='hills'||regionKey(x,y)==='crags',s:()=>{const q=rnd();return q<.6?{x:R(-2000,5000+SEA_DX),y:R(-1900,-500)}:q<.8?{x:R(3300,5600),y:R(-50,2950)}:{x:R(6600,8400),y:R(1950,3150)};}},
   any:{ok:(x,y)=>!inSea(x,y),s:()=>({x:D.x,y:D.y})}};
 let packId=0;
 function spawnWild(sp,far,at){const F=FAUNA[sp],zk=sp==='mgoat'&&rnd()<.7?'summit':F.zone,Z=ZONES[zk];let p=at||null;
@@ -101,7 +101,7 @@ function drawFlag(x,y,u){line(x,y,x,y-30,'#5a3a1a',2);const w=Math.sin(G.t*6+u.i
 function updCavalry(u,dt){const dd=dist(u,D),ground=D.alt<DR.hitAltSword;u.anim+=dt*(u.cs==='charge'?14:8);const ox=u.x,oy=u.y,bl=uBlocked(u);
   if(u.ha===undefined)u.ha=Math.atan2(D.y-u.y,D.x-u.x);if(!u.cs){u.cs='wheel';u.t=.6;}
   if(u.cs==='charge'){u.t-=dt;u.x+=Math.cos(u.ha)*270*dt;u.y+=Math.sin(u.ha)*270*dt;u.face=Math.cos(u.ha)>0?1:-1;
-    if(ground&&!u.hitThis&&dd<46){u.hitThis=true;hurtDragon(11,'lance');float(D.x,D.y-90,'Lance hit! -11','#ffb0a0');D.vx+=Math.cos(u.ha)*120;D.vy+=Math.sin(u.ha)*120;}
+    if(ground&&!u.hitThis&&dd<46){u.hitThis=true;const ld=u.prince&&typeof PRT!=='undefined'?(u.isPrince?(u.prince.charge||PRT.charge0+PRT.chargeStep*((u.prince.k||1)-1)):(u.prince.cavCharge||PRT.cav0+PRT.cavStep*((u.prince.k||1)-1))):11;hurtDragon(ld,'lance');float(D.x,D.y-90,'Lance hit! -'+ld,'#ffb0a0');D.vx+=Math.cos(u.ha)*120;D.vy+=Math.sin(u.ha)*120;}
     const along=(D.x-u.x)*Math.cos(u.ha)+(D.y-u.y)*Math.sin(u.ha);if(u.t<=0||along<-170){u.cs='wheel';u.t=R(.9,1.5);}}
   else{u.t-=dt;const wp=riverRoute(u,D.x,D.y),want=wp?Math.atan2(wp.y-u.y,wp.x-u.x):Math.atan2(D.y-u.y,D.x-u.x);u.ha+=clamp(angDiff(want,u.ha),-2.4*dt,2.4*dt);const sp=dd<160&&!ground?90:160;u.x+=Math.cos(u.ha)*sp*dt;u.y+=Math.sin(u.ha)*sp*dt;u.face=Math.cos(u.ha)>0?1:-1;
     if(u.t<=0&&ground&&!wp&&Math.abs(angDiff(want,u.ha))<.3&&dd>130&&dd<650){u.cs='charge';u.t=2.6;u.hitThis=false;u.ha=want;if(rnd()<.5)float(u.x,u.y-44,'Charge!','#ffe0a0');}}
@@ -114,7 +114,7 @@ function mkCavalry(x,y,o){return mkUnit('knight',x,y,Object.assign({mounted:true
 // ---------- roaming patrols (independent of the wanted meter) ----------
 let patrols=[],patrolId=0;
 const PATROL_MIX=[['knight','knight','archer'],['cavalry','cavalry','cavalry'],['archer','archer','archer','archer','knight','knight'],['knight','knight','knight'],['cavalry','knight','archer'],['cavalry','cavalry','archer','archer']];
-function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},{x:CABIN.x+110,y:CABIN.y+70},{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60}];}
+function patrolPoints(){return[{x:GATE.x,y:GATE.y+80},...VILLAGES.map(v=>({x:v.x,y:v.y+110})),{x:CAMP.x+120,y:CAMP.y},{x:MINE.x-110,y:MINE.y+70},{x:CABIN.x+110,y:CABIN.y+70},{x:LOGPILE_POS.x+60,y:LOGPILE_POS.y+60},{x:CAMP2.x+130,y:CAMP2.y+20},{x:MINE2.x-120,y:MINE2.y+80},{x:LOGPILE2.x+60,y:LOGPILE2.y+60}];}
 function spawnPatrol(){const lvl=G.lvl,mix=[...PATROL_MIX[RI(0,PATROL_MIX.length-1)]];for(let i=1;i<lvl;i++)mix.push(['knight','archer','cavalry'][RI(0,2)]);if(G.easy&&mix.length>2)mix.pop();
   const p={id:++patrolId,members:[],engaged:false,wp:null},hpM=1+.2*(lvl-1),colr=['#c33','#33c','#cc3','#3a3'][RI(0,3)];
   const wg=waveGates();mix.forEach((k,i)=>{const x=GATE.x+R(-20,20),y=GATE.y+10+i*6;let u;

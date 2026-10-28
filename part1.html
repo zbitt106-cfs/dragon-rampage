@@ -140,6 +140,7 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
   tries=0;let nt=trees.length;while(trees.length<nt+900&&tries<9000){tries++;const x=SR(-2900,-250),y=SR(-150,4300);if(regionKey(x,y)==='forest'&&!blocked(x,y))addTree(x,y);}
   tries=0;nt=trees.length;while(trees.length<nt+160&&tries<4000){tries++;const x=SR(-200,5200),y=SR(2250,4300);const k=regionKey(x,y);if((k==='south'||k==='farm')&&!blocked(x,y)&&(x<0||x>WW||y>WH))addTree(x,y);}
   tries=0;nt=trees.length;while(trees.length<nt+50&&tries<2000){tries++;const x=SR(3250,5200),y=SR(-100,3000);if(regionKey(x,y)==='hills'&&!blocked(x,y)&&d2(x,y,LAIR.x,LAIR.y)>420)addTree(x,y);}
+  if(typeof esWorld==='function')esWorld(blocked); // the East March: 2nd lumber camp + 2nd mine (partES)
   addBridges();
   // people
   structures.filter(s=>s.kind==='hut').forEach(s=>spawnVillager(s.x,s.y+20,'peasant',s.v));

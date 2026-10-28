@@ -8,12 +8,20 @@ const PRN_WARN=10,PRN_DELAY=20;
 let PRN={cur:null,seed:Math.floor(Math.random()*PRINCE_NAMES.length),swim:[],land:null,noBite:null};
 SHIPK.warship={hp:240,sp:72,crew:0,r:66};
 function princeLevel(l){return l>=5&&l%5===0;}
-function princeK(l){return Math.max(1,Math.floor(l/5));}
+function princeK(l){return princeTier(l);}
+// difficulty tiers: flat within a tier, a clear step up every 5 castle levels (5 = tier 1, 10 = tier 2, 15 = tier 3, ...)
+// tier 1 is deliberately gentle; later tiers climb faster than before
+const PRT={hp0:600,hpStep:650,thrust0:8,thrustStep:6,charge0:8,chargeStep:3,cav0:8,cavStep:2,army0:6,armyStep:6,armyMax:40,
+  sol:{foot:[26,6],knight:[48,8],archer:[20,4],cavalry:[85,10]}};
+function princeTier(l){return Math.max(1,Math.floor(l/5));}
+function princeSolHp(kind,k){const a=PRT.sol[kind];return a?a[0]+a[1]*(k-1):30;}
 function princeInfo(l){const k=princeK(l),ez=!!G.easy,name=PRINCE_NAMES[(PRN.seed+k-1)%PRINCE_NAMES.length],c=PRINCE_COLS[(PRN.seed*3+k-1)%PRINCE_COLS.length];
-  const total=Math.min(40,Math.round(9+4.5*(k-1))-(ez?2:0));
-  const archer=Math.round(total*Math.min(.32,.2+.04*(k-1))),cavalry=Math.round(total*Math.min(.3,.12+.05*(k-1))),knight=Math.round(total*.25),foot=Math.max(1,total-archer-cavalry-knight);
-  return{k,lvl:l,name,short:name.split(' ').slice(0,2).join(' '),col:c[0],trim:c[1],crest:c[2],ships:2+(k-1),army:{foot,knight,archer,cavalry},total,siege:k>=3?Math.min(4,k-2):0,
-    hp:Math.round((900+400*(k-1))*(ez?.75:1)),shipHp:Math.round((240+40*(k-1))*(ez?.8:1)),gold:250+150*(k-1),pts:1500*k};}
+  const total=Math.max(4,Math.min(PRT.armyMax,PRT.army0+PRT.armyStep*(k-1))-(ez?2:0));
+  const archer=k===1?1:Math.round(total*Math.min(.32,.2+.04*(k-1))),cavalry=k===1?0:Math.round(total*Math.min(.3,.12+.05*(k-1))),knight=k===1?2:Math.round(total*.25),foot=Math.max(1,total-archer-cavalry-knight);
+  return{k,tier:k,lvl:l,name,short:name.split(' ').slice(0,2).join(' '),col:c[0],trim:c[1],crest:c[2],ships:2+(k-1),army:{foot,knight,archer,cavalry},total,siege:k>=3?Math.min(4,k-2):0,
+    hp:Math.round((PRT.hp0+PRT.hpStep*(k-1))*(ez?.75:1)),thrust:PRT.thrust0+PRT.thrustStep*(k-1),charge:PRT.charge0+PRT.chargeStep*(k-1),cavCharge:PRT.cav0+PRT.cavStep*(k-1),
+    solHp:{foot:princeSolHp('foot',k),knight:princeSolHp('knight',k),archer:princeSolHp('archer',k),cavalry:princeSolHp('cavalry',k)},
+    shipHp:Math.round((240+40*(k-1))*(ez?.8:1)),gold:250+150*(k-1),pts:1500*k};}
 function princeActive(){return !!PRN.cur&&!PRN.cur.done;}
 function princeHudOn(){return scene==='play'&&princeActive()&&PRN.cur.phase!=='pre';}
 // ---- where the fleet lands: the southern shore below Haybury, a short march from King William's roads ----
@@ -45,10 +53,10 @@ function launchFleet(){const c=PRN.cur,L=c.land;c.phase='sail';c.path=princeRout
 function princeDisembark(s,k){const c=s.war,p=s.drop,x=p.x+R(-16,16),y=p.y+R(-10,10),K=c.k;let u=null;
   if(k==='prince'){u=mkUnit('knight',x,y,{mounted:true,hp:c.hp,maxHp:c.hp,atk:0,colr:c.col,isPrince:true,cs:'wheel'});c.boss=u;
     float(x,y-80,`${c.short}: "Forward, for glory! Slay the beast!"`,'#ffe08a');G.banner={text:`${c.name} has landed!`,sub:`He and his whole army are hunting you down, wherever you go! Wear him down below 30% to gobble him!`,t:4.5};if(typeof SFX!=='undefined')SFX.play('princeHorn');}
-  else if(k==='foot')u=mkUnit('knight',x,y,{hp:30+4*K,maxHp:30+4*K,atk:0,foot:true,colr:c.col});
-  else if(k==='knight')u=mkUnit('knight',x,y,{hp:55+6*K,maxHp:55+6*K,atk:0,colr:c.col});
-  else if(k==='cavalry')u=mkCavalry(x,y,{colr:c.col,hp:95+8*K,maxHp:95+8*K,cs:'wheel'});
-  else if(k==='archer')u=mkUnit('archer',x,y,{hp:24+3*K,maxHp:24+3*K,shootT:R(1,3)});
+  else if(k==='foot')u=mkUnit('knight',x,y,{hp:princeSolHp('foot',K),maxHp:princeSolHp('foot',K),atk:0,foot:true,colr:c.col});
+  else if(k==='knight')u=mkUnit('knight',x,y,{hp:princeSolHp('knight',K),maxHp:princeSolHp('knight',K),atk:0,colr:c.col});
+  else if(k==='cavalry')u=mkCavalry(x,y,{colr:c.col,hp:princeSolHp('cavalry',K),maxHp:princeSolHp('cavalry',K),cs:'wheel'});
+  else if(k==='archer')u=mkUnit('archer',x,y,{hp:princeSolHp('archer',K),maxHp:princeSolHp('archer',K),shootT:R(1,3)});
   else{const n0=units.length;spawnSiege(k,siege.length);const g=siege[siege.length-1];g.x=x;g.y=y;g.prince=c;for(let i=n0;i<units.length;i++){units[i].x=x+R(-12,12);units[i].y=y+R(-8,8);}puff(x,y,8,'rgba(220,240,255,',60,5);return;}
   u.prince=c;u.born=G.t;if(u.mounted||(!u.isPrince&&u.type==='knight'&&c.members.filter(m=>m.prFlag&&!m.mounted).length<2))u.prFlag=!u.isPrince;
   c.members.push(u);units.push(u);puff(x,y,6,'rgba(220,240,255,',60,5);}
@@ -111,7 +119,7 @@ function princeBoss(u,dt){const c=u.prince;u.retreat=false;u.shieldT=Math.max(0,
   const dd=dist(u,D),low=D.alt<DR.hitAltSword;
   if(dd<560&&(low||dd<300)){
     if(!u.engaged){u.engaged=true;float(u.x,u.y-80,`${c.short}: "Have at thee, dragon!"`,'#ffe08a');}
-    if(low&&dd<74&&u.cs!=='charge'){u.face=D.x>u.x?1:-1;u.anim+=dt*4;if(u.atk<=0){u.atk=1.25;u.thrust=.32;const dm=10+3*c.k;hurtDragon(dm,'lance');float(D.x,D.y-95,`Royal lance! -${dm}`,'#ffb0a0');}return true;}
+    if(low&&dd<74&&u.cs!=='charge'){u.face=D.x>u.x?1:-1;u.anim+=dt*4;if(u.atk<=0){u.atk=1.25;u.thrust=.32;const dm=c.thrust||(PRT.thrust0+PRT.thrustStep*(c.k-1));hurtDragon(dm,'lance');float(D.x,D.y-95,`Royal lance! -${dm}`,'#ffb0a0');}return true;}
     updCavalry(u,dt);return true;}
   u.engaged=false;const p=c.path&&c.path[0];
   if(!p){u.face=D.x>u.x?1:-1;if(!c.tauntT||G.t-c.tauntT>9){c.tauntT=G.t;float(u.x,u.y-80,`${c.short}: "Come out and face me, dragon!"`,'#ffe08a');}return true;}

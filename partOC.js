@@ -18,10 +18,10 @@ if(HN_DIET.gull&&!HN_DIET.gull.prey.includes('starfish'))HN_DIET.gull.prey.push(
 const ocNorth=(x,y)=>inSea(x,y)&&y<-350;
 const ocShallow=(x,y)=>inSea(x,y)&&seaD(x,y)<640&&d2(x,y,LH.x,LH.y)>LH.r+60;
 function ocBeachOK(x,y){return onBeach(x,y)&&!inWater(x,y)&&!onIsle(x,y)&&x>RANGE1+200&&y>-150&&!(typeof inDesert==='function'&&inDesert(x,y))&&!(typeof inLake==='function'&&inLake(x,y));}
-function ocBeachPt(far){for(let t=0;t<200;t++){let x,y;if(rnd()<.6){y=R(150,4300);x=coastX(y)-R(25,140);}else{x=R(-2600,5300);y=coastY(x)-R(25,130);}
+function ocBeachPt(far){for(let t=0;t<200;t++){let x,y;if(rnd()<.6){y=R(150,4300);x=coastX(y)-R(25,140);}else{x=R(-2600,5300+SEA_DX);y=coastY(x)-R(25,130);}
     if(!ocBeachOK(x,y))continue;if(far&&d2(x,y,D.x,D.y)<1100)continue;return{x,y};}return null;}
 function ocIcyShore(){for(let t=0;t<200;t++){const y=R(-2000,-750),x=coastX(y)-R(40,150);if(!inWater(x,y)&&!inSea(x,y))return{x,y};}return{x:coastX(-1200)-90,y:-1200};}
-function ocNorthPt(far){for(let t=0;t<200;t++){const x=R(5800,9500),y=R(-2300,-500);if(!ocNorth(x,y)||seaD(x,y)<160)continue;if(far&&d2(x,y,D.x,D.y)<1300)continue;return{x,y};}return null;}
+function ocNorthPt(far){for(let t=0;t<200;t++){const x=R(5800+SEA_DX,9500+SEA_DX),y=R(-2300,-500);if(!ocNorth(x,y)||seaD(x,y)<160)continue;if(far&&d2(x,y,D.x,D.y)<1300)continue;return{x,y};}return null;}
 function ocOnFloe(x,y){for(const f of OC.floes){const dx=(x-f.x)/f.rx,dy=(y-f.y)/f.ry;if(dx*dx+dy*dy<1)return f;}return null;}
 function ocShallowPt(far){for(let t=0;t<200;t++){const p=seaPoint(60,460,{noDeep:true,far});if(p&&ocShallow(p.x,p.y)&&p.y>-200)return p;}return null;}
 function ocHsh(i){const s=Math.sin(i*12.9898+78.233)*43758.5453;return s-Math.floor(s);}
@@ -60,7 +60,7 @@ function ocInit(){OC.reefs=[];OC.floes=[];OC.nests=[];OC.shells=[];OC.cols=[];OC
   for(let i=0;i<OC_PLAN.narwhalPods;i++){const p=ocNorthPt(false);if(p)ocPod(p,RI(3,5));}
   for(let i=0;i<OC_PLAN.northSchools;i++){const p=ocNorthPt(false);if(p)mkSea('school',p.x,p.y,{n:RI(6,9),hp:999,maxHp:999,north:1});}
   for(let i=0;i<OC_PLAN.rayGroups;i++){const r=OC.reefs[i];const p=r&&rnd()<.5?{x:r.x+R(-120,120),y:r.y+R(-80,80)}:ocShallowPt(false);const q=p&&ocShallow(p.x,p.y)?p:ocShallowPt(false);if(q)ocRays(q,RI(2,5));}
-  ocAngler({x:R(8300,9300),y:R(600,2800)});const pa={x:R(8300,9300),y:R(3200,5400)};ocAngler(pa);ocAngler({x:pa.x+60,y:pa.y+40});
+  ocAngler({x:R(8300+SEA_DX,9300+SEA_DX),y:R(600,2800)});const pa={x:R(8300+SEA_DX,9300+SEA_DX),y:R(3200,5400)};ocAngler(pa);ocAngler({x:pa.x+60,y:pa.y+40});
   for(let i=0;i<OC_PLAN.seaturtle;i++){const p=seaPoint(120,1400,{noDeep:true,avoidIsle:true});if(p&&p.y>-200)ocTurtle(p);}
   for(let i=0;i<3;i++){const p=ocBeachPt(false);if(p)OC.nests.push({x:p.x,y:p.y,eggs:0,t:0});}
   ocMakeLogs(OC_PLAN.logs);for(let li=0;li<OC.logs.length;li++)for(let i=0;i<OC.logs[li].cap;i++)ocPTurtle(li);
@@ -70,7 +70,7 @@ function ocInit(){OC.reefs=[];OC.floes=[];OC.nests=[];OC.shells=[];OC.cols=[];OC
 {const _ng=newGame;newGame=function(o){const r=_ng.apply(this,arguments);ocInit();return r;};}
 // ---------- movement ----------
 const OC_OK={
-  moray:(u,x,y)=>inSea(x,y),narwhal:(u,x,y)=>ocNorth(x,y)&&seaD(x,y)>80,stingray:(u,x,y)=>u.st==='flee'?inSea(x,y)&&seaD(x,y)<1000:ocShallow(x,y),angler:(u,x,y)=>inDeep(x,y)&&x>8150,
+  moray:(u,x,y)=>inSea(x,y),narwhal:(u,x,y)=>ocNorth(x,y)&&seaD(x,y)>80,stingray:(u,x,y)=>u.st==='flee'?inSea(x,y)&&seaD(x,y)<1000:ocShallow(x,y),angler:(u,x,y)=>inDeep(x,y)&&x>8150+SEA_DX,
   seaturtle:(u,x,y)=>inSea(x,y)&&!inDeep(x,y)&&d2(x,y,LH.x,LH.y)>LH.r+40||u.st==='nest'||u.st==='lay'||u.st==='home'&&d2(x,y,u.nx,u.ny)<300,
   hatchling:(u,x,y)=>true,pturtle:(u,x,y)=>true,penguin:(u,x,y)=>d2(x,y,u.hx,u.hy)<480,octopus:(u,x,y)=>inSea(x,y)&&d2(x,y,u.hx,u.hy)<400,starfish:(u,x,y)=>ocBeachOK(x,y)};
 {const _ok=seaOK;seaOK=function(u,x,y){if(u&&OC_OK[u.kind])return OC_OK[u.kind](u,x,y);return _ok.apply(this,arguments);};}
@@ -215,7 +215,7 @@ function ocRespawn(){const far=(x,y)=>d2(x,y,D.x,D.y)>1100;
   for(let ri=0;ri<OC.reefs.length;ri++){const r=OC.reefs[ri];const n=units.filter(u=>!u.dead&&u.kind==='moray'&&u.reef===ri).length;if(n<r.cap&&far(r.x,r.y)&&rnd()<.4)ocMoray(r,n);}
   if(OC.units('narwhal').length<6&&rnd()<.4){const p=ocNorthPt(true);if(p)ocPod(p,RI(3,5));}
   if(OC.units('stingray').length<8&&rnd()<.5){const p=ocShallowPt(true);if(p)ocRays(p,RI(2,3));}
-  if(OC.units('angler').length<3&&rnd()<.4){const p=seaPoint(0,1e9,{deep:true,far:true});if(p&&p.x>8150)ocAngler(p);}
+  if(OC.units('angler').length<3&&rnd()<.4){const p=seaPoint(0,1e9,{deep:true,far:true});if(p&&p.x>8150+SEA_DX)ocAngler(p);}
   if(OC.units('seaturtle').length<OC_PLAN.seaturtle&&rnd()<.4){const p=seaPoint(120,1400,{noDeep:true,far:true,avoidIsle:true});if(p&&p.y>-200)ocTurtle(p);}
   for(let li=0;li<OC.logs.length;li++){const l=OC.logs[li];if(units.filter(u=>!u.dead&&u.kind==='pturtle'&&u.log===li).length<l.cap&&far(l.x,l.y)&&rnd()<.4)ocPTurtle(li);}
   for(let ci=0;ci<OC.cols.length;ci++){const c=OC.cols[ci];if(units.filter(u=>!u.dead&&u.kind==='penguin'&&u.col===ci).length<c.cap&&far(c.x,c.y))ocPenguin(ci);}
