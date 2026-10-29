@@ -1587,6 +1587,121 @@ function grDraw(){const x=grDown()?G.grX:GR.x,y=grDown()?G.grY:GR.y;if(x==null||
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);GR.on=false;GR.koT=0;GR.act=null;GR.foe=null;GR.mode='walk';GR.alt=0;return r;};}
 // after a load: re-read his place/health from G
 {const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);GR.on=false;GR.act=null;GR.koT=0;HYD.on=false;HYD.P=[];return r;};}
+// ======================= queue 38-40 (batch 3): FAIRIES, VAMPIRE BATS, SEAGULL FLOCKS =======================
+// All three live in the shared `birds` list, so the breath, the lava splash and the bird bites reach them like any bird, but they are
+// owned here: spawned lazily only near the dragon (perf), kept on their homes/flocks, refilled over time (respawn), drawn with their own art.
+//  38 fairies: glowing pixies with a sparkle trail around the elven glow trees, glades and Shire meadows (light lands). They flit, dart away
+//     from the dragon (and sometimes dodge a snap); a brave one may give a tiny pixie-dust sting (-1). Gulp = a puff of sparkles, small food.
+//  39 vampire bats: cartoony, red glowing eyes, small swarms at the dark caves, burnt trees and dark towers. Erratic flight; they swoop in
+//     for a tiny nibble (-1) and the bat gets a little red-sparkle "heal". No blood, no gore.
+//  40 seagulls: flocks over every sea (south sea, east sea, the northern sea beyond the wind wall), around trade ships, the dock and the
+//     lighthouse; they glide in circles, land on beaches and the dock, scatter and squawk when the dragon comes.
+Object.assign(BIRD,{fairy:{heal:2,pts:20,sp:150,col:'#fff0ff',hp:1},vbat:{heal:2,pts:15,sp:170,col:'#3a2846',hp:1}});
+FOOD.fairy=3;FOOD.vbat=3;
+const B3={homes:null,flocks:[],t:0,ft:0,stats:{},cur:[]};
+const B3K={fairyN:4,batN:5,flockMax:3,near:1500,far:2500,refill:12,flockNear:1300,flockFar:2600};
+const B3_FC=['#ffb0e8','#b8f0a0','#a8d8ff','#ffe28a','#d8b0ff'];
+function b3Pick(list,minD,max){const out=[];for(const o of list){if(out.length>=max)break;if(out.every(p=>Math.hypot(p.x-o.x,p.y-o.y)>=minD))out.push({x:o.x,y:o.y});}return out;}
+function b3Homes(){if(B3.homes)return B3.homes;const H=[],pref=ks=>{const a=[];for(const k of ks)for(const o of DECOR)if(o.k===k)a.push(o);return a;};
+  for(const p of b3Pick(pref(['atglade','glowtree','flowerbed']).filter(o=>grLight(o.x,o.y)),1200,16))H.push({k:'fairy',x:p.x,y:p.y-20,n:0,lost:0,rt:0,on:false});
+  for(const p of b3Pick(pref(['atcave','cyccave','gobtower','dctower','deadtree']).filter(o=>{const r=nrRealm(o.x,o.y);return !!r&&NR_DARK.has(r);}),1300,14))H.push({k:'vbat',x:p.x,y:p.y-30,n:0,lost:0,rt:0,on:false});
+  return B3.homes=H;}
+function b3St(k){B3.stats[k]=(B3.stats[k]||0)+1;}
+function b3SpawnHome(h){const cap=(h.k==='fairy'?B3K.fairyN:B3K.batN)-h.lost;for(let i=h.n;i<cap;i++){const a=R(0,TAU),r=R(30,140);
+    birds.push(mkBird(h.k,h.x+Math.cos(a)*r,h.y+Math.sin(a)*r*.6,{state:'fly',z:R(35,80),b3:h.k,b3h:h,ph:R(0,TAU),cd:R(2,6),md:'home',mt:0,brave:h.k==='fairy'&&rnd()<.35,c1:B3_FC[RI(0,B3_FC.length-1)]}));h.n++;b3St(h.k+'Spawn');}}
+function b3Side(x,y){return y<nrEdge(x)?-1:1;}
+function b3KeepSide(b,side){const e=nrEdge(b.x);if(side<0&&b.y>e-30)b.y=e-30;if(side>0&&b.y<e+30)b.y=e+30;}
+// a landing spot near a sea point: the first dry ground in 8 directions
+function b3Land(x,y){for(let r=120;r<=480;r+=120)for(let i=0;i<8;i++){const a=i*TAU/8,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(!inWater(px,py)&&px>WX0+200&&px<WX1-200&&py>WY0+200&&py<WY1-200)return{x:px,y:py};}return null;}
+function b3NewFlock(c){const f={cx:c.x,cy:c.y,ship:c.ship||null,tag:c.tag,side:b3Side(c.x,c.y),land:c.land||null,md:'circle',mt:R(14,24),sq:0,n:0,want:RI(4,6),rt:0};
+  for(let i=0;i<f.want;i++)b3AddGull(f);B3.flocks.push(f);b3St('flocks');return f;}
+function b3AddGull(f){const a=R(0,TAU),r=R(90,190);birds.push(mkBird('gull',f.cx+Math.cos(a)*r,f.cy+Math.sin(a)*r*.6,{state:'fly',z:R(45,85),b3:'gull',fl:f,ph:a,rr:r,lx:R(-60,60),ly:R(-30,30),flap:R(0,6)}));f.n++;b3St('gullSpawn');}
+function b3FlockSpots(){const out=[];const near=(x,y)=>Math.abs(x-D.x)<B3K.flockNear&&Math.abs(y-D.y)<B3K.flockNear;
+  for(const s of ships)if(s.state!=='sink'&&near(s.x,s.y))out.push({x:s.x,y:s.y,ship:s,tag:'ship'});
+  if(typeof DOCK!=='undefined'&&near(DOCK.x,DOCK.y))out.push({x:DOCK.x,y:DOCK.y,land:{x:DOCK.x,y:DOCK.y},tag:'dock'});
+  if(typeof LH!=='undefined'&&near(LH.x,LH.y))out.push({x:LH.x+R(-120,120),y:LH.y+R(-80,80),land:{x:LH.x,y:LH.y},tag:'lighthouse'});
+  for(let i=0;i<6;i++){const a=R(0,TAU),r=R(450,1150),x=D.x+Math.cos(a)*r,y=D.y+Math.sin(a)*r;if(x<WX0+300||x>WX1-300||y<WY0+300||y>WY1-300||!inSea(x,y))continue;const l=b3Land(x,y);out.push({x,y,land:l,tag:l?'coast':'sea'});}
+  return out;}
+function b3Spawner(dt){B3.ft-=dt;if(B3.ft>0)return;B3.ft=.5;const H=b3Homes();
+  for(const h of H){const d=Math.hypot(h.x-D.x,h.y-D.y);
+    if(!h.on&&d<B3K.near){h.on=true;h.n=0;b3SpawnHome(h);}
+    else if(h.on&&d>B3K.far){h.on=false;for(const b of B3.cur)if(b.b3h===h){b.dead=true;b.gone=1;}h.n=0;}
+    if(h.lost>0){h.rt+=.5;if(h.rt>=B3K.refill&&d>700){h.rt=0;h.lost--;b3St(h.k+'Respawn');if(h.on)b3SpawnHome(h);}}}
+  for(let i=B3.flocks.length-1;i>=0;i--){const f=B3.flocks[i];if(f.ship&&(f.ship.state==='sink'||!ships.includes(f.ship)))f.ship=null;
+    if(Math.hypot(f.cx-D.x,f.cy-D.y)>B3K.flockFar||f.n<=0&&f.want<=0){for(const b of B3.cur)if(b.fl===f){b.dead=true;b.gone=1;}B3.flocks.splice(i,1);continue;}
+    if(f.n<f.want){f.rt+=.5;if(f.rt>15&&Math.hypot(f.cx-D.x,f.cy-D.y)>700){f.rt=0;b3AddGull(f);b3St('gullRespawn');}}}
+  B3.gt=(B3.gt||0)-.5;if(B3.gt<=0&&B3.flocks.length<B3K.flockMax){B3.gt=2;const sp=b3FlockSpots();sp.sort((p,q)=>(q.ship?1:0)-(p.ship?1:0));if(!B3.flocks.some(f=>f.land)){const i=sp.findIndex(c=>c.land);if(i>0)sp.unshift(sp.splice(i,1)[0]);}
+    for(const c of sp){if(B3.flocks.length>=B3K.flockMax)break;if(B3.flocks.some(f=>(c.ship&&f.ship===c.ship)||Math.hypot(f.cx-c.x,f.cy-c.y)<700))continue;b3NewFlock(c);}}}
+function b3Move(b,tx,ty,sp,dt,k){const dx=tx-b.x,dy=ty-b.y,d=Math.hypot(dx,dy)||1,v=Math.min(sp,d/Math.max(dt,.001));b.vx+=((dx/d)*v-b.vx)*Math.min(1,dt*(k||4));b.vy+=((dy/d)*v-b.vy)*Math.min(1,dt*(k||4));b.x+=b.vx*dt;b.y+=b.vy*dt;}
+function b3Fairy(b,dt){const h=b.b3h,dx=b.x-D.x,dy=b.y-D.y,dd=Math.hypot(dx,dy);b.cd-=dt;b.mt-=dt;b.flap+=dt*34;
+  if(b.md==='home'&&dd<230&&!G.over){if(b.brave&&b.cd<=0){b.md='sting';b.mt=1.3;}else{b.md='flee';b.mt=R(1.1,2);b.da=Math.atan2(dy,dx)+R(-.8,.8);b.dt2=.3;}}
+  if(b.md==='flee'){b.dt2-=dt;if(b.dt2<=0){b.dt2=R(.2,.4);b.da=Math.atan2(dy,dx)+R(-.9,.9);}b3Move(b,b.x+Math.cos(b.da)*200,b.y+Math.sin(b.da)*200,BIRD.fairy.sp*1.5,dt,7);b.z+=(R(60,110)-b.z)*Math.min(1,dt*3);if(b.mt<=0)b.md='home';}
+  else if(b.md==='sting'){b3Move(b,D.x,D.y-10,BIRD.fairy.sp*1.7,dt,8);b.z+=(Math.min(110,heightOf()+20)-b.z)*Math.min(1,dt*4);
+    if(dd<46&&!G.over){hurtDragon(1,'fairy');sparkle(D.x,D.y-heightOf()-30,8);float(D.x+R(-15,15),D.y-heightOf()-80,'Pixie-dust sting! -1','#ffd8ff');b.cd=R(8,12);b.md='flee';b.mt=1.5;b.da=Math.atan2(dy,dx);b.dt2=.3;b3St('fairyStings');}
+    else if(b.mt<=0){b.md='flee';b.mt=1;b.cd=R(4,6);b.da=Math.atan2(dy,dx);b.dt2=.3;}}
+  else{b.ph+=dt*(1.2+(b.id%3)*.3);const r=70+40*Math.sin(b.ph*.7+b.id),tx=h.x+Math.cos(b.ph)*r,ty=h.y+Math.sin(b.ph*1.3)*r*.6;b3Move(b,tx,ty,BIRD.fairy.sp*.6,dt,3);b.z+=(45+20*Math.sin(G.t*2+b.id)-b.z)*Math.min(1,dt*2);}
+  if(Math.hypot(b.x-h.x,b.y-h.y)>650){b.md='home';}}
+function b3Bat(b,dt,swoopers){const h=b.b3h,dx=D.x-b.x,dy=D.y-b.y,dd=Math.hypot(dx,dy);b.cd-=dt;b.mt-=dt;b.flap+=dt*26;if(b.full>0)b.full-=dt;
+  if(b.md==='home'&&dd<520&&b.cd<=0&&swoopers.n<2&&!G.over&&Math.hypot(D.x-h.x,D.y-h.y)<900){b.md='swoop';b.mt=2.6;swoopers.n++;}
+  if(b.md==='swoop'){const j=Math.sin(G.t*13+b.id)*60*Math.min(1,Math.max(0,dd-60)/240);b3Move(b,D.x-dy/(dd||1)*j,D.y+dx/(dd||1)*j,BIRD.vbat.sp*1.6,dt,6);b.z+=(heightOf()+18-b.z)*Math.min(1,dt*4);
+    if(dd<44&&!G.over){hurtDragon(1,'bat');float(D.x+R(-15,15),D.y-heightOf()-80,'Nibble! -1','#ff9aa8');b.full=1.4;puff(b.x,b.y-b.z,5,'rgba(255,70,100,',40,3);float(b.x,b.y-b.z-14,'+♥','#ff5a7a');b.cd=R(4,7);b.md='back';b.mt=2;b3St('batNibbles');}
+    else if(b.mt<=0){b.md='back';b.mt=2;b.cd=R(2,4);}}
+  else{if(b.md==='back'&&b.mt<=0)b.md='home';b.ph+=dt*(1.6+(b.id%4)*.25);const tx=h.x+Math.cos(b.ph)*130+Math.sin(G.t*4.3+b.id)*45,ty=h.y+Math.sin(b.ph*1.4)*80+Math.cos(G.t*3.7+b.id)*35;
+    b3Move(b,tx+R(-40,40),ty+R(-40,40),BIRD.vbat.sp*(b.md==='back'?1.2:.8),dt,5);b.z+=(80+35*Math.sin(G.t*3+b.id)-b.z)*Math.min(1,dt*3);}}
+function b3Gull(b,dt){const f=b.fl,dx=b.x-D.x,dy=b.y-D.y,dd=Math.hypot(dx,dy);b.flap+=dt*(b.state==='ground'?0:9);
+  if(dd<240&&f.md!=='scatter'&&!G.over){f.md='scatter';f.mt=R(3,4);if(f.sq<=0){f.sq=2.5;float(b.x,b.y-b.z-20,RI(0,1)?'Squawk!':'SQUAWK!','#f4f4f0');b3St('squawks');}}
+  if(f.md==='scatter'){b.state='fly';const a=Math.atan2(dy,dx)+Math.sin(b.id)*.6;b3Move(b,b.x+Math.cos(a)*200,b.y+Math.sin(a)*200,BIRD.gull.sp*1.5,dt,5);b.z+=(140-b.z)*Math.min(1,dt*1.5);}
+  else if(f.md==='land'&&f.land){const tx=f.land.x+b.lx,ty=f.land.y+b.ly;if(Math.hypot(tx-b.x,ty-b.y)<8){b.x=tx;b.y=ty;b.vx=b.vy=0;b.z=Math.max(0,b.z-dt*60);if(b.z<=0)b.state='ground';}else{b.state='fly';b3Move(b,tx,ty,BIRD.gull.sp,dt,4);b.z+=(20-b.z)*Math.min(1,dt*1.5);}}
+  else{b.state='fly';b.ph+=dt*.55;const tx=f.cx+Math.cos(b.ph)*b.rr,ty=f.cy+Math.sin(b.ph)*b.rr*.6;b3Move(b,tx,ty,BIRD.gull.sp*1.1,dt,3);b.z+=(65+18*Math.sin(G.t*.8+b.id)-b.z)*Math.min(1,dt*1.2);}
+  b3KeepSide(b,f.side);}
+function b3Flocks(dt){for(const f of B3.flocks){f.sq-=dt;f.mt-=dt;if(f.ship&&f.md!=='land'){f.cx+=(f.ship.x-f.cx)*Math.min(1,dt*2);f.cy+=(f.ship.y-f.cy)*Math.min(1,dt*2);}
+    if(f.mt<=0){if(f.md==='circle'&&f.land&&Math.hypot(f.land.x-D.x,f.land.y-D.y)>600){f.md='land';f.mt=R(8,12);b3St('flockLandings');}else{f.md='circle';f.mt=R(14,24);}}}}
+function b3Upd(dt,mine){B3.cur=mine;b3Spawner(dt);b3Flocks(dt);const sw={n:0};for(const b of mine)if(b.kind==='vbat'&&b.md==='swoop'&&!b.dead)sw.n++;
+  for(const b of mine){if(b.dead)continue;if(b.kind==='fairy')b3Fairy(b,dt);else if(b.kind==='vbat')b3Bat(b,dt,sw);else if(b.fl)b3Gull(b,dt);}}
+{const _ub=updBirds;updBirds=function(dt){let mine=null;for(const b of birds)if(b.b3){mine=[];break;}
+  if(mine){let j=0;for(let i=0;i<birds.length;i++){const b=birds[i];if(b.b3)mine.push(b);else birds[j++]=b;}birds.length=j;}
+  const r=_ub.apply(this,arguments);mine=mine||[];
+  if(scene==='play'&&G&&!G.over)b3Upd(dt,mine);B3.cur=[];for(const b of birds)if(b.b3&&mine.indexOf(b)<0)mine.push(b); // newly spawned this frame
+  {let j=0;for(let i=0;i<birds.length;i++)if(!birds[i].b3)birds[j++]=birds[i];birds.length=j;}
+  for(const b of mine){if(!b.dead){birds.push(b);continue;}if(b.gone)continue;if(b.b3h){b.b3h.n=Math.max(0,b.b3h.n-1);b.b3h.lost++;}if(b.fl){b.fl.n=Math.max(0,b.fl.n-1);}}
+  return r;};}
+// eating: a low fairy/bat/gull can be snapped from the ground too (they hover low), and from the air; fairies sometimes dart aside
+function b3Eat(){if(D.eatCD>0)return false;const air=D.alt>=.5,mx=D.x+Math.cos(D.ang)*80,my=D.y+Math.sin(D.ang)*80;let best=null,bd=1e9;
+  for(const b of birds){if(!b.b3||b.dead)continue;if(!air&&(b.z>100||b.state==='ground'))continue;if(air&&b.state==='ground')continue;
+    const d=Math.min(Math.hypot(b.x-mx,b.y-my),Math.hypot(b.x-D.x,b.y-D.y)+12);if(d<72&&d<bd){bd=d;best=b;}}
+  if(!best)return false;D.eatT=.3;const y=best.y-best.z;
+  if(best.kind==='fairy'&&!best.dodged&&rnd()<.35){best.dodged=1;D.eatCD=.4;best.md='flee';best.mt=1.5;best.da=Math.atan2(best.y-D.y,best.x-D.x);best.dt2=.3;sparkle(best.x,y,6);float(best.x,y-18,'Missed! The fairy darted away','#ffe0ff');b3St('fairyDodges');return true;}
+  best.dead=true;const B=BIRD[best.kind];D.eatCD=air?.6:.4;D.hp=Math.min(D.maxHp,D.hp+B.heal);D.healFx=.6;try{feed(B.heal);}catch(e){}try{glutEat(foodOf(best.kind));}catch(e){}try{tallyAdd(best.kind);}catch(e){}
+  G.stats.birds=(G.stats.birds||0)+1;G.stats.birdPts=(G.stats.birdPts||0)+B.pts;b3St(best.kind+'Eaten');float(D.x+R(-10,10),D.y-heightOf()-70,`+${B.heal} HP`,'#6dff7a');
+  if(best.kind==='fairy'){sparkle(best.x,y,12);puff(best.x,y,8,'rgba(255,240,200,',60,4);float(best.x,y-18,`Gulp! *poof of sparkles* +${B.pts} pts`,'#ffe8ff');}
+  else if(best.kind==='vbat'){puff(best.x,y,7,'rgba(120,90,140,',60,4);float(best.x,y-18,`Gulp! Bat snack +${B.pts} pts`,'#e0c8ff');}
+  else{puff(best.x,y,8,'rgba(240,240,235,',70,4);float(best.x,y-18,`Snack! +${B.pts} pts`,'#ffd27a');}
+  return true;}
+// the northern barrier keeps every bird out of the north - except these, which belong there (and the gulls hold their own side)
+{const _ko=nrKeepOut;nrKeepOut=function(){const H=[];for(const b of birds)if(b.b3&&!b.dead){b.dead=true;H.push(b);}try{return _ko.apply(this,arguments);}finally{for(const b of H)b.dead=false;}};}
+{const _te=tryEatBird;tryEatBird=function(){if(b3Eat())return true;return _te.apply(this,arguments);};}
+// fire: fairies vanish in a sparkle puff, bats flap off dizzy (no remains)
+{const _ko=birdKO;birdKO=function(b,why){if(b.dead||(b.kind!=='fairy'&&b.kind!=='vbat'))return _ko.apply(this,arguments);b.dead=true;const B=BIRD[b.kind],y=b.y-(b.z||0);
+  G.stats.birdsSinged=(G.stats.birdsSinged||0)+1;G.stats.birdPts=(G.stats.birdPts||0)+B.pts;b3St(b.kind+'Singed');
+  if(b.kind==='fairy'){sparkle(b.x,y,10);puff(b.x,y,6,'rgba(255,230,200,',60,4);float(b.x,y-16,`Poof! The fairy zips off dizzy +${B.pts} pts`,'#ffe8ff');}
+  else{puff(b.x,y,6,'rgba(90,70,100,',60,4);float(b.x,y-16,`${why} The bat flaps off dizzy +${B.pts} pts`,'#e0c8ff');}};}
+// art
+function b3DrawFairy(b){const x=b.x,y=b.y-b.z,w=Math.sin(b.flap),gl=.5+.3*Math.sin(G.t*6+b.ph),c=b.c1||'#ffb0e8';
+  ell(b.x,b.y,5,2,'rgba(0,0,0,.12)');
+  for(let i=1;i<=4;i++){const tx=x-(b.vx||0)*.035*i,ty=y-(b.vy||0)*.035*i+i*1.5;ell(tx,ty,3-i*.55,3-i*.55,`rgba(255,240,170,${.6-i*.13})`);}
+  ell(x,y,13,13,`rgba(255,240,190,${.18*gl+.08})`);ell(x,y,7,7,`rgba(255,250,220,${.25*gl+.1})`);
+  ctx.globalAlpha=.7;ell(x-6,y-4-w*3,7,3.5+w*1.8,'#d8f4ff');ell(x+6,y-4-w*3,7,3.5+w*1.8,'#d8f4ff');ctx.globalAlpha=1;
+  ell(x,y+1.5,3,5,c);ell(x,y-5,3,3,'#ffe2c8');ell(x,y-7,3.2,1.6,c);
+  if(((G.fc||0)+b.id)%9===0)txt('✦',x+R(-10,10),y+R(-10,8),7,'#fff8c0','center',false);}
+function b3DrawBat(b){const x=b.x,y=b.y-b.z,w=Math.sin(b.flap),c='#3a2846',c2='#5c3c6e';
+  ell(b.x,b.y,7,2.4,'rgba(0,0,0,.15)');
+  poly([x-3,y-1,x-15,y-8-w*8,x-20,y-1-w*3,x-14,y+1-w*2,x-10,y+4],c2);poly([x+3,y-1,x+15,y-8-w*8,x+20,y-1-w*3,x+14,y+1-w*2,x+10,y+4],c2);
+  ell(x,y,5,6,c);poly([x-4.5,y-3,x-3.5,y-11,x-1,y-5],c);poly([x+4.5,y-3,x+3.5,y-11,x+1,y-5],c);
+  ell(x-2,y-1.5,2.6,2.6,'rgba(255,40,60,.35)');ell(x+2,y-1.5,2.6,2.6,'rgba(255,40,60,.35)');ell(x-2,y-1.5,1.2,1.2,'#ff3040');ell(x+2,y-1.5,1.2,1.2,'#ff3040');
+  if(b.full>0)txt('✦',x+R(-8,8),y-12+R(-4,4),8,'#ff6a8a','center',false);}
+{const _db=drawBird;drawBird=function(b,fly){if(b.kind==='fairy'){ctx.save();ctx.translate(b.x,b.y);ctx.scale(1.45,1.45);ctx.translate(-b.x,-b.y);try{return b3DrawFairy(b);}finally{ctx.restore();}}if(b.kind==='vbat')return b3DrawBat(b);return _db.apply(this,arguments);};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);B3.flocks.length=0;if(B3.homes)for(const h of B3.homes){h.on=false;h.n=0;h.lost=0;h.rt=0;}return r;};}
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);B3.flocks.length=0;if(B3.homes)for(const h of B3.homes){h.on=false;h.n=0;}for(const b of birds)if(b.b3){b.dead=true;b.gone=1;}return r;};}
 // ---- 45. phone-landscape HUD: the region banner and the big announcement banner are drawn LAST, as the bottom slot of the HUD centre lane (part6 hudSlot), so it never covers a bar ----
 const HUD_BANNER_LAST=1;
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);ctx.setTransform(DPR,0,0,DPR,0,0);drawRegionBanner();if(!G.over&&!G.won&&!paused)drawAnnounce(VW<760);else UI.banner=null;};}
