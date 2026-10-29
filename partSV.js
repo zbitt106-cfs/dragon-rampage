@@ -40,7 +40,7 @@ function svLoad(key){let d;try{d=JSON.parse(localStorage.getItem(key)||'null');}
   try{svApply(d);svToLair();return true;}catch(e){console.warn('load failed',e);newGame();return'Something went wrong loading that save, so a new game was started instead.';}}
 // every load starts the dragon at its lair spawn point, landed, still and safe, exactly where newGame puts it.
 // A carried egg goes back to its citadel nest (the egg hook already resets G.nrEggW/B), a carried princess back to her tower.
-let svD0=null;const SV_POSE=['x','y','vx','vy','ang','alt','altT','mode','swim','overWater','landDust','crashCD','cruise','crA','crT','crLava','nrKb','nrSlowT','webT','stompT','eatT','walkT','hurt','breath','mdStone','flapT'];
+let svD0=null;const SV_POSE=['x','y','vx','vy','ang','alt','altT','mode','swim','overWater','landDust','crashCD','cruise','crA','crT','crLava','nrKb','nrSlowT','webT','stompT','eatT','walkT','hurt','breath','mdStone','mdGrey','flapT'];
 function svToLair(){const z=svD0||{x:LAIR.x,y:LAIR.y+150,vx:0,vy:0,ang:-Math.PI/2,alt:0,altT:0,mode:'ground'};
   for(const k of SV_POSE)if(k in z)D[k]=z[k];D.x=LAIR.x;D.y=LAIR.y+150;D.vx=0;D.vy=0;D.alt=0;D.altT=0;D.mode='ground';D.princess=false;D.nrEgg=null;
   cam.x=D.x;cam.y=D.y;svD0=null;}

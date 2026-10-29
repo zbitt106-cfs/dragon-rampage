@@ -3603,7 +3603,7 @@ function svLoad(key){let d;try{d=JSON.parse(localStorage.getItem(key)||'null');}
   try{svApply(d);svToLair();return true;}catch(e){console.warn('load failed',e);newGame();return'Something went wrong loading that save, so a new game was started instead.';}}
 // every load starts the dragon at its lair spawn point, landed, still and safe, exactly where newGame puts it.
 // A carried egg goes back to its citadel nest (the egg hook already resets G.nrEggW/B), a carried princess back to her tower.
-let svD0=null;const SV_POSE=['x','y','vx','vy','ang','alt','altT','mode','swim','overWater','landDust','crashCD','cruise','crA','crT','crLava','nrKb','nrSlowT','webT','stompT','eatT','walkT','hurt','breath','mdStone','flapT'];
+let svD0=null;const SV_POSE=['x','y','vx','vy','ang','alt','altT','mode','swim','overWater','landDust','crashCD','cruise','crA','crT','crLava','nrKb','nrSlowT','webT','stompT','eatT','walkT','hurt','breath','mdStone','mdGrey','flapT'];
 function svToLair(){const z=svD0||{x:LAIR.x,y:LAIR.y+150,vx:0,vy:0,ang:-Math.PI/2,alt:0,altT:0,mode:'ground'};
   for(const k of SV_POSE)if(k in z)D[k]=z[k];D.x=LAIR.x;D.y=LAIR.y+150;D.vx=0;D.vy=0;D.alt=0;D.altT=0;D.mode='ground';D.princess=false;D.nrEgg=null;
   cam.x=D.x;cam.y=D.y;svD0=null;}
@@ -7935,7 +7935,10 @@ function nrTurHurt(t,d,how){if(t.st!=='ok')return;t.hp-=d;t.hitT=G.t;if(t.hp<=0)
 function nrTurRebuild(t){t.st='ok';t.maxHp=nrTurMaxHp(t);t.hp=t.maxHp;t.cd=2;G.nrTurRebuilt=(G.nrTurRebuilt||0)+1;if(Math.abs(t.x-D.x)<2000&&Math.abs(t.y-D.y)<1500){sparkle(t.x,t.y-60,16);float(t.x,t.y-120,'✨ The tower magically rebuilds','#e6d0ff');}}
 // dragon fire burns them, a bite chips them
 {const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);for(const t of NR_TUR)if(t.st==='ok'&&Math.abs(t.x-ox)<DR.fireRange+60&&Math.abs(t.y-oy)<DR.fireRange+60&&inFire(t.x,t.y,ox,oy)){t.burnT=G.t;nrTurHurt(t,DR.fireDps*.3*dt,'fire');}return r;};}
-{const _te=tryEat;tryEat=function(){for(const t of NR_TUR)if(t.st==='ok'&&Math.hypot(D.x-t.x,D.y-t.y)<110&&D.alt<.5){D.eatCD=.6;nrTurHurt(t,15,'bite');float(D.x,D.y-90,'Crunch the tower!','#ffd27a');return;}return _te.apply(this,arguments);};}
+{const _te=tryEat;tryEat=function(){for(const t of NR_TUR)if(t.st==='ok'&&Math.hypot(D.x-t.x,D.y-t.y)<110&&D.alt<.5){D.eatCD=.6;nrTurHurt(t,NR_TUR_BITE,'bite');float(D.x,D.y-90,'Crunch the tower!','#ffd27a');return;}return _te.apply(this,arguments);};}
+// (QUEUE 34/35) magic turrets crack under a dragon's weight: bite 32 (was 15), STOMP 45 (was none) - stomp is the strongest; fire unchanged
+const NR_TUR_BITE=32,NR_TUR_STOMP=45;
+{const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);let n=0;for(const t of NR_TUR)if(t.st==='ok'&&Math.hypot(D.x-t.x,D.y-t.y)<DR.stompR+60){nrTurHurt(t,NR_TUR_STOMP*DR.stompDmg/60,'stomp');n++;}if(n){G.nrTurStomps=(G.nrTurStomps||0)+n;float(D.x,D.y-110,'STOMP! The tower cracks','#ffd27a');}return r;};}
 // slowed by frost
 {const _uc=updCruise;updCruise=function(){const r=_uc.apply(this,arguments);return D.nrSlowT>0?r*.6:r;};}
 {const _t=nrTick;nrTick=function(dt){_t(dt);nrTurUpd(dt);};}
@@ -8186,7 +8189,7 @@ NR_DRAW.cerberus=function(x,y,s,f,a,u){const body='#3e3038',dk='#271d24',lt='#64
 const NR_WARS={satyr:Object.assign({},NRS.satyr,{side:'L',flee:0,dm:1.5,cd:.9}),unicorn:Object.assign({},NRS.unicorn,{side:'L',flee:0,dm:3,cd:1.1}),minotaur:Object.assign({},NRS.minotaur,{side:'L'})};
 nrStr=function(sp){const S=NR_WARS[sp]&&!NRS[sp].dm?NR_WARS[sp]:NRS[sp];return S.dm?S.hp/(S.armor||1)*(S.horn?S.dm+S.horn*.3:S.dm)/S.cd*(S.rng?1.2:1):0;};
 {const _dm=nrDarkMix;nrDarkMix=function(n,l){l=l||nrLvl();const out=_dm.call(this,n,l);
-  const add=[['spider',Math.max(1,Math.round(n*.08))],['scorpion',Math.max(1,Math.round(n*.06))],['cerberus',l>=2?Math.max(1,Math.round(n*.05)):1]];if(l>=3&&!out.includes('cyclops'))add.push(['cyclops',1]);if(l>=2&&!out.includes('wyvern'))add.push(['wyvern',1]);if(l>=6)add.push(['wyvern',1]);
+  const add=[['spider',Math.max(1,Math.round(n*.08))],['scorpion',Math.max(1,Math.round(n*.06))],['cerberus',l>=2?Math.max(1,Math.round(n*.05)):1],['medusa',Math.max(1,Math.round(n*.04))]];if(l>=3&&!out.includes('cyclops'))add.push(['cyclops',1]);if(l>=2&&!out.includes('wyvern'))add.push(['wyvern',1]);if(l>=6)add.push(['wyvern',1]);
   let c=0;for(const[k,m]of add)for(let i=0;i<m;i++){let j=out.lastIndexOf((c++)%3===2?'gobarch':'goblin');if(j<0)j=out.lastIndexOf('goblin');if(j<0)j=out.lastIndexOf('gobarch');if(j<0)j=out.lastIndexOf('orc');if(j<0)break;out[j]=k;}
   return out;};}
 {const _lm=nrLightMix;nrLightMix=function(n,dark){const out=_lm.apply(this,arguments),L=nrLvl(),tgt=.9*dark.reduce((s,k)=>s+nrStr(k),0);
@@ -8203,91 +8206,153 @@ nrStr=function(sp){const S=NR_WARS[sp]&&!NRS[sp].dm?NR_WARS[sp]:NRS[sp];return S
 nrEnemy=function(a,b){const A=a.side||NRS[a.species].side,B=b.side||NRS[b.species].side;return (A==='L'&&(B==='D'||B==='W'))||(B==='L'&&(A==='D'||A==='W'));};
 {const _nu=nrUpd;nrUpd=function(u,dt){if(u.war&&NR_WARS[u.species]){const k=u.species,old=NRS[k];NRS[k]=NR_WARS[k];try{return _nu.apply(this,arguments);}finally{NRS[k]=old;}}return _nu.apply(this,arguments);};}
 {const _af=nrAbsFight;nrAbsFight=function(a,b,dt){const old={};for(const k in NR_WARS){old[k]=NRS[k];NRS[k]=NR_WARS[k];}try{return _af.apply(this,arguments);}finally{for(const k in old)NRS[k]=old[k];}};}
-// ---- 12. MEDUSA mini boss: a ruined temple at the far west of the dark lands ----
+// ---- 12. (QUEUE 32/33) The HYDRA mini boss lives in the old Gorgon temple at the far west of the dark lands; Medusa is now a regular dark-side creature (below) ----
+// 3-5 cartoony heads (more at higher levels) bite up close and spit swamp water from range. Knock a head down and it hisses and REGROWS after 6 s, unless you
+// BURN the stump first (fire on the hydra cauterizes every open stump; a head regrows at most twice). All heads down at once = defeated (dizzy, then a long nap).
+// Reward: +50 MAX HEALTH (the bar keeps its fixed width, items 19/20). Stays beaten for the rest of this dragon's life (G.mdDown, the old Medusa flag: an old
+// save where Medusa was beaten counts the Hydra as beaten). Not edible: it is far too big, it just slinks into its pool for a nap.
 const MDL={x:-16300,y:-9300,r:330};
-const MDB={on:false,hp:0,maxHp:0,x:MDL.x,y:MDL.y,face:1,cd:2,gz:0,gzCd:6,tl:0,tlCd:4,hb:0,koT:0,hitT:-9,stoneT:0,toastT:-99,anim:0};
-function mdMaxHp(){return Math.min(1100,340+80*(nrLvl()-1));}
+const HYD={on:false,x:MDL.x,y:MDL.y,face:1,heads:[],koT:0,hitT:-9,toastT:-99,anim:0,P:[]};
+const HY_K={grow:6,regrowMax:2,biteR:200,biteDm:3,spitDm:4,spitSp:380,spitR:640};
+function hyHeadN(){return Math.min(5,3+Math.floor((nrLvl()-1)/2));}
+function hyHeadHp(){return Math.round(Math.min(260,85+20*(nrLvl()-1)));}
 function mdDown(){return !!G.mdDown;}
-function mdStart(){MDB.on=true;MDB.maxHp=mdMaxHp();MDB.hp=G.mdHp>0?Math.min(G.mdHp,MDB.maxHp):MDB.maxHp;MDB.x=MDL.x;MDB.y=MDL.y;MDB.koT=0;MDB.gz=0;MDB.tl=0;MDB.cd=1.5;MDB.gzCd=5;MDB.tlCd=3;}
-function mdHurt(d,how){if(!MDB.on||MDB.koT>0||mdDown()||d<=0)return;MDB.hp-=d;MDB.hitT=G.t;G.mdHp=Math.max(1,Math.round(MDB.hp));G.mdHits=(G.mdHits||0)+1;
-  if(MDB.hp<=0){MDB.hp=0;MDB.koT=2.2;float(MDB.x,MDB.y-110,'Dizzy!','#ffe28a');}}
-function mdDefeat(){MDB.on=false;G.mdDown=1;G.mdHp=0;G.mdWins=(G.mdWins||0)+1;puff(MDB.x,MDB.y-40,14,'rgba(230,230,240,',90,10);sparkle(MDB.x,MDB.y-60,20);
-  D.fireBonus=(D.fireBonus||0)+25;try{D.maxFire=wfFireMax();D.fire=D.maxFire;}catch(e){}
-  G.banner={text:'Medusa is defeated!',sub:'She turns into a harmless stone statue. Your flame grows: +25 max fire (until you lose this dragon)',t:4};
-  showToast('🐍 Medusa is defeated — she turns into a stone statue! 🔥 +25 permanent max fire');try{horn();}catch(e){}}
-function mdFacing(){return Math.abs(angDiff(Math.atan2(MDB.y-60-D.y,MDB.x-D.x),D.ang))<1.15;}
-function mdUpd(dt){if(mdDown()){MDB.on=false;return;}const dd=Math.hypot(D.x-MDL.x,D.y-MDL.y);
-  if(!MDB.on){if(dd<1500)mdStart();else return;}if(dd>2600){MDB.on=false;return;}MDB.anim+=dt;
-  if(MDB.koT>0){MDB.koT-=dt;if(MDB.koT<=0)mdDefeat();return;}
-  if(MDB.maxHp!==mdMaxHp()){const f=MDB.hp/MDB.maxHp;MDB.maxHp=mdMaxHp();MDB.hp=MDB.maxHp*f;}
-  const de=Math.hypot(D.x-MDB.x,D.y-MDB.y),near=de<900&&!G.over;if(Math.abs(D.x-MDB.x)>4)MDB.face=D.x>MDB.x?1:-1;
-  if(near&&G.t-MDB.toastT>40){MDB.toastT=G.t;showToast('🐍 MEDUSA! Don\'t look into her glowing eyes — turn away when they flash!');}
-  // slither toward the dragon, but stay in the ruined temple
-  if(near&&!(MDB.gz>0)&&de>120){const a=Math.atan2(D.y-MDB.y,D.x-MDB.x),nx=MDB.x+Math.cos(a)*70*dt,ny=MDB.y+Math.sin(a)*50*dt;if(Math.hypot(nx-MDL.x,(ny-MDL.y)*1.3)<MDL.r){MDB.x=nx;MDB.y=ny;}}
+function hyAlive(h){return h.hp>0;}
+function hyMaxHp(){return HYD.heads.length*hyHeadHp();}
+function hyHpNow(){let s=0;for(const h of HYD.heads)s+=Math.max(0,h.hp);return s;}
+function hyStart(){HYD.on=true;HYD.x=MDL.x;HYD.y=MDL.y;HYD.koT=0;HYD.P=[];const n=hyHeadN(),hp=hyHeadHp(),sv=Array.isArray(G.hyHeads)?G.hyHeads:null;HYD.heads=[];
+  for(let i=0;i<n;i++){const v=sv&&sv[i]!=null?sv[i]:hp;HYD.heads.push({i,hp:v>0?Math.min(v,hp):0,grow:0,burnt:v>0?0:1,regrow:0,cd:R(.8,2),bite:0,spCd:R(2.5,4.5),hitT:-9});}}
+function hySave(){G.hyHeads=HYD.heads.map(h=>h.hp>0?Math.round(h.hp):(h.burnt?0:-1));} // -1 = an open stump: it regrows if you leave
+function hyHeadPos(h){const n=HYD.heads.length,k=h.i-(n-1)/2,sw=Math.sin(HYD.anim*1.6+h.i*1.3)*8,b=h.bite>0?14:0;
+  return {x:HYD.x+HYD.face*28+k*44+sw*.6+HYD.face*b,y:HYD.y-118+Math.abs(k)*16+Math.cos(HYD.anim*2+h.i)*5+b*.4};}
+function hyNearest(px,py){let b=null,bd=1e9;for(const h of HYD.heads)if(hyAlive(h)){const p=hyHeadPos(h),d=Math.hypot(p.x-px,p.y-py);if(d<bd){bd=d;b=h;}}return b;}
+function hyHurt(d,how,px,py){if(!HYD.on||HYD.koT>0||mdDown()||d<=0)return;const h=hyNearest(px==null?D.x:px,py==null?D.y-60:py);if(!h)return;
+  h.hp-=d;h.hitT=HYD.hitT=G.t;G.hyHits=(G.hyHits||0)+1;
+  if(h.hp<=0){h.hp=0;G.hyCut=(G.hyCut||0)+1;const p=hyHeadPos(h);puff(p.x,p.y,10,'rgba(150,200,140,',80,8);
+    if(h.regrow>=HY_K.regrowMax){h.burnt=1;h.grow=0;float(p.x,p.y-30,'Hisss! That head is too tired to grow back','#c8ffb0');}
+    else{h.grow=HY_K.grow;float(p.x,p.y-30,'Hisss! A head is down - burn the stump before it grows back!','#c8ffb0');}
+    if(HYD.heads.every(q=>!hyAlive(q))){HYD.koT=2.2;float(HYD.x,HYD.y-170,'Dizzy!','#ffe28a');}}
+  hySave();}
+function hyDefeat(){HYD.on=false;HYD.P=[];G.mdDown=1;G.hyHeads=null;G.hyWins=(G.hyWins||0)+1;G.mdWins=(G.mdWins||0)+1;puff(HYD.x,HYD.y-40,14,'rgba(150,210,190,',90,10);sparkle(HYD.x,HYD.y-80,24);
+  const gain=50;D.hpBonus=(D.hpBonus||0)+gain;D.maxHp+=gain;D.hp=D.maxHp;D.healFx=1;G.hyHp=(G.hyHp||0)+gain;
+  G.banner={text:'The Hydra is defeated!',sub:`It slinks into the temple pool for a very long nap (you can gobble it up). You feel tougher: +${gain} max health (now ${D.maxHp}, until you lose this dragon)`,t:4.5};
+  float(D.x,D.y-heightOf()-130,`MAX HEALTH +${gain}!`,'#7aff8a');
+  showToast(`🐉 The Hydra is defeated! ❤️ +${gain} max health`);try{horn();}catch(e){}}
+function hyUpd(dt){if(mdDown()){HYD.on=false;return;}const dd=Math.hypot(D.x-MDL.x,D.y-MDL.y);
+  if(!HYD.on){if(dd<1500)hyStart();else return;}if(dd>2600){hySave();HYD.on=false;HYD.P=[];return;}HYD.anim+=dt;
+  if(HYD.koT>0){HYD.koT-=dt;HYD.P=[];if(HYD.koT<=0)hyDefeat();return;}
+  const de=Math.hypot(D.x-HYD.x,D.y-HYD.y),near=de<900&&!G.over;if(Math.abs(D.x-HYD.x)>4)HYD.face=D.x>HYD.x?1:-1;
+  if(near&&G.t-HYD.toastT>40){HYD.toastT=G.t;showToast('🐉 The HYDRA! Knock its heads down - and burn the stumps before they grow back!');}
+  // regrowing stumps
+  for(const h of HYD.heads)if(!hyAlive(h)&&!h.burnt&&h.grow>0){h.grow-=dt;if(h.grow<=0){h.regrow++;h.hp=Math.round(hyHeadHp()*.6);G.hyRegrow=(G.hyRegrow||0)+1;const p=hyHeadPos(h);float(p.x,p.y-30,'The head grows back! Use fire on the stumps','#ffe0a0');hySave();}}
+  // drift a little toward the dragon inside the temple pool
+  if(near&&de>140){const a=Math.atan2(D.y-HYD.y,D.x-HYD.x),nx=HYD.x+Math.cos(a)*40*dt,ny=HYD.y+Math.sin(a)*30*dt;if(Math.hypot(nx-MDL.x,(ny-MDL.y)*1.3)<MDL.r-60){HYD.x=nx;HYD.y=ny;}}
+  // swamp-water spit (projectiles)
+  for(const p of HYD.P){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(!G.over&&Math.hypot(D.x-p.x,D.y-p.y)<46+(D.alt>.3?30:0)&&D.alt<.85){p.dead=1;hurtDragon(HY_K.spitDm,'hydra');G.hySpitHits=(G.hySpitHits||0)+1;float(D.x,D.y-heightOf()-80,`Splash! Swamp spit -${HY_K.spitDm}`,'#a8f0c8');puff(D.x,D.y-20,6,'rgba(150,220,180,',60,5);}
+    if(p.t>2.2)p.dead=1;}
+  if(HYD.P.length)HYD.P=HYD.P.filter(p=>!p.dead);
   if(!near)return;
-  // stone gaze: a telegraphed glow, then a dragon that is still facing her turns to stone for ~1.5 s (no lasting harm)
-  MDB.gzCd-=dt;if(MDB.gz>0){MDB.gz-=dt;if(MDB.gz<=0){G.mdGazes=(G.mdGazes||0)+1;if(de<700&&mdFacing()){D.mdStone=1.5;G.mdStoned=(G.mdStoned||0)+1;float(D.x,D.y-110,'Turned to stone! (1.5 s)','#d0d0d8');}else{G.mdDodged=(G.mdDodged||0)+1;float(D.x,D.y-110,'You looked away!','#e0ffe0');}}}
-  else if(MDB.gzCd<=0&&de<650){MDB.gz=1.2;MDB.gzCd=R(7,9);float(MDB.x,MDB.y-130,'Her eyes glow... LOOK AWAY!','#fff2a0');}
-  // tail sweep (ground only) and snake-hair bites
-  MDB.tlCd-=dt;if(MDB.tl>0){MDB.tl-=dt;if(MDB.tl<=0&&de<210&&D.alt<.4){hurtDragon(7,'medusa');const a=Math.atan2(D.y-MDB.y,D.x-MDB.x);D.x+=Math.cos(a)*40;D.y+=Math.sin(a)*40;G.mdTail=(G.mdTail||0)+1;float(D.x,D.y-90,'Tail sweep! -7','#ffb0a0');}}
-  else if(MDB.tlCd<=0&&de<200&&D.alt<.4&&!(MDB.gz>0)){MDB.tl=.6;MDB.tlCd=R(4.5,6);}
-  MDB.cd-=dt;if(MDB.cd<=0&&de<170&&D.alt<.6){MDB.cd=1.2;MDB.hb=.25;hurtDragon(3,'medusa');G.mdBites=(G.mdBites||0)+1;if(rnd()<.5)float(D.x+R(-20,20),D.y-90,'Hiss! Snake-hair nip -3','#c8ffb0');}
-  if(MDB.hb>0)MDB.hb-=dt;}
-// the stone dragon: frozen in place for a moment, drawn grey
-{const _ud=updDragon;updDragon=function(dt){if(D.mdStone>0&&!G.over){D.mdStone-=dt;if(D.vx!==undefined){D.vx=0;D.vy=0;}if(rnd()<.2)sparkle(D.x+R(-30,30),D.y-heightOf()-R(0,40),1);return;}return _ud.apply(this,arguments);};}
+  for(const h of HYD.heads){if(!hyAlive(h))continue;if(h.bite>0)h.bite-=dt;h.cd-=dt;h.spCd-=dt;const hp=hyHeadPos(h),dh=Math.hypot(D.x-hp.x,D.y-(hp.y+90));
+    if(h.cd<=0&&de<HY_K.biteR&&D.alt<.6){h.cd=R(1.3,1.8);h.bite=.25;hurtDragon(HY_K.biteDm,'hydra');G.hyBites=(G.hyBites||0)+1;if(rnd()<.4)float(D.x+R(-20,20),D.y-90,`Snap! -${HY_K.biteDm}`,'#ffb0a0');}
+    else if(h.spCd<=0&&de>150&&de<HY_K.spitR&&HYD.P.length<4){h.spCd=R(3.5,5.5);const a=Math.atan2(D.y-hp.y-60,D.x-hp.x);HYD.P.push({x:hp.x,y:hp.y+60,vx:Math.cos(a)*HY_K.spitSp,vy:Math.sin(a)*HY_K.spitSp,t:0});G.hySpits=(G.hySpits||0)+1;}}}
+// the old stone-gaze freeze stays for saves that carry it; the new gaze (regular Medusas) only greys and slows for a moment
+{const _ud=updDragon;updDragon=function(dt){if(D.mdGrey>0)D.mdGrey-=dt;if(D.mdStone>0&&!G.over){D.mdStone-=dt;if(D.vx!==undefined){D.vx=0;D.vy=0;}if(rnd()<.2)sparkle(D.x+R(-30,30),D.y-heightOf()-R(0,40),1);return;}return _ud.apply(this,arguments);};}
 const MD_FILTER=(()=>{try{const c=document.createElement('canvas').getContext('2d');c.filter='grayscale(1)';return c.filter==='grayscale(1)';}catch(e){return false;}})();
-{const _dd=drawDragon;drawDragon=function(){if(D.mdStone>0){ctx.save();if(MD_FILTER)ctx.filter='grayscale(1) brightness(1.15)';try{_dd.apply(this,arguments);}finally{ctx.restore();}
-    if(!MD_FILTER){ctx.globalAlpha=.45;ell(D.x,D.y-heightOf()-10,70,40,'#9a9aa2');ctx.globalAlpha=1;}txt('🗿',D.x,D.y-heightOf()-80,18,'#ddd','center');}else _dd.apply(this,arguments);
+{const _dd=drawDragon;drawDragon=function(){if(D.mdStone>0||D.mdGrey>0){ctx.save();if(MD_FILTER)ctx.filter=D.mdStone>0?'grayscale(1) brightness(1.15)':'grayscale(.85) brightness(1.1)';try{_dd.apply(this,arguments);}finally{ctx.restore();}
+    if(!MD_FILTER){ctx.globalAlpha=.45;ell(D.x,D.y-heightOf()-10,70,40,'#9a9aa2');ctx.globalAlpha=1;}if(D.mdStone>0)txt('🗿',D.x,D.y-heightOf()-80,18,'#ddd','center');}else _dd.apply(this,arguments);
   if(D.nrEgg)eggCarryDraw();};}
-// player attacks on Medusa: fire, bite, stomp/dive, claw, lava
-{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);if(MDB.on&&!(MDB.koT>0)&&(inFire(MDB.x,MDB.y-40,ox,oy)||inFire(MDB.x,MDB.y,ox,oy)))mdHurt(DR.fireDps*.5*dt,'fire');return r;};}
-{const _te=tryEat;tryEat=function(){if(MDB.on&&!(MDB.koT>0)&&!(D.eatCD>0)&&D.alt<.5&&Math.hypot(D.x+Math.cos(D.ang)*60-MDB.x,D.y+Math.sin(D.ang)*60-MDB.y+30)<130){mdHurt(16,'bite');D.eatCD=.45;float(MDB.x,MDB.y-120,'Chomp! -16','#ffe0a0');return;}return _te.apply(this,arguments);};}
-{const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);if(MDB.on&&Math.hypot(D.x-MDB.x,D.y-MDB.y)<DR.stompR+60)mdHurt(30,'stomp');return r;};}
-{const _ds=diveSlam;diveSlam=function(){const r=_ds.apply(this,arguments);if(MDB.on&&Math.hypot(D.x-MDB.x,D.y-MDB.y)<DR.stompR+80)mdHurt(40,'dive');return r;};}
-if(typeof clawScratch==='function'){const _cs=clawScratch;clawScratch=function(){const r=_cs.apply(this,arguments);if(MDB.on&&D.alt<.5&&Math.hypot(D.x+Math.cos(D.ang)*60-MDB.x,D.y+Math.sin(D.ang)*60-MDB.y)<150)mdHurt(12,'claw');return r;};}
-{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);if(MDB.on&&Math.hypot(x-MDB.x,y-MDB.y)<LAVA_CFG.splashR+70)mdHurt(35,'lava');return r;};}
-// drawing: ruined temple + Medusa (or her statue once beaten)
+// player attacks on the Hydra: fire (also burns the stumps), bite, stomp/dive, claw, lava
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);if(HYD.on&&!(HYD.koT>0)){
+    if(inFire(HYD.x,HYD.y-40,ox,oy)||inFire(HYD.x,HYD.y,ox,oy)){for(const h of HYD.heads)if(!hyAlive(h)&&!h.burnt){h.burnt=1;h.grow=0;G.hyBurnt=(G.hyBurnt||0)+1;const p=hyHeadPos(h);puff(p.x,p.y,6,'rgba(90,80,80,',60,6);float(p.x,p.y-26,'Stump sealed! It won\'t grow back','#ffd27a');hySave();}}
+    for(const h of HYD.heads)if(hyAlive(h)){const p=hyHeadPos(h);if(inFire(p.x,p.y+100,ox,oy)||inFire(HYD.x,HYD.y-40,ox,oy)){hyHurt(DR.fireDps*.5*dt/Math.max(1,HYD.heads.filter(hyAlive).length),'fire',p.x,p.y);}}}return r;};}
+{const _te=tryEat;tryEat=function(){if(HYD.on&&!(HYD.koT>0)&&!(D.eatCD>0)&&D.alt<.5){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;if(Math.hypot(mx-HYD.x,my-HYD.y+30)<150){hyHurt(18,'bite',mx,my-100);D.eatCD=.45;float(HYD.x,HYD.y-150,'Chomp! -18','#ffe0a0');return;}}return _te.apply(this,arguments);};}
+{const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);if(HYD.on&&Math.hypot(D.x-HYD.x,D.y-HYD.y)<DR.stompR+80)hyHurt(30,'stomp');return r;};}
+{const _ds=diveSlam;diveSlam=function(){const r=_ds.apply(this,arguments);if(HYD.on&&Math.hypot(D.x-HYD.x,D.y-HYD.y)<DR.stompR+100)hyHurt(40,'dive');return r;};}
+if(typeof clawScratch==='function'){const _cs=clawScratch;clawScratch=function(){const r=_cs.apply(this,arguments);if(HYD.on&&D.alt<.5){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;if(Math.hypot(mx-HYD.x,my-HYD.y)<170)hyHurt(12,'claw',mx,my-100);}return r;};}
+{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);if(HYD.on&&Math.hypot(x-HYD.x,y-HYD.y)<LAVA_CFG.splashR+90)hyHurt(35,'lava',x,y-100);return r;};}
+// drawing: the temple pool + the Hydra (or the sleeping Hydra once beaten)
 function mdTemple(){const x=MDL.x,y=MDL.y;ell(x,y+10,MDL.r+40,(MDL.r+40)*.55,'rgba(40,30,40,.35)');ell(x,y,MDL.r,MDL.r*.5,'#6e6a66');ell(x,y-6,MDL.r-30,(MDL.r-30)*.46,'#8a857e');
+  ell(x,y+4,MDL.r-90,(MDL.r-90)*.42,'#3d6e66');ell(x-20,y-2,MDL.r-130,(MDL.r-130)*.36,'#4f8a7c');for(let i=0;i<3;i++){const a=G.t*.7+i*2.1;ell(x+Math.cos(a)*90,y+Math.sin(a)*30,14,4,'rgba(200,240,230,.35)');}
   for(let i=0;i<5;i++){const a=Math.PI*(1.05+i*.225),cx=x+Math.cos(a)*(MDL.r-70),cy=y+Math.sin(a)*(MDL.r-70)*.5,hgt=i%2?44:110;rect(cx-12,cy-hgt,24,hgt,'#b8b0a2');rect(cx-16,cy-hgt-8,32,9,'#9a9284');rect(cx-16,cy-4,32,8,'#9a9284');if(i%2)poly([cx-12,cy-hgt,cx+12,cy-hgt,cx+4,cy-hgt-12,cx-6,cy-hgt-6],'#b8b0a2');}
-  for(const[dx,dy]of[[-120,60],[140,50],[60,90]])ell(x+dx,y+dy,22,10,'#a49c8e');poly([x-90,y-120,x+90,y-120,x+70,y-150,x-70,y-150],'#9a9284');txt('Temple of the Gorgon',x,y+MDL.r*.5+28,14,'#e8e0d0','center');}
-function mdArt(x,y,f,s,stone){const T=G.t,sk=stone?'#a8a8ae':'#7ec07a',tail=stone?'#8e8e96':'#4e9a5a',bel=stone?'#bcbcc2':'#d8e8a0',dress=stone?'#9a9aa2':'#7a4aa8',ko=MDB.koT>0&&!stone;
-  ctx.save();ctx.translate(x,y);if(ko)ctx.rotate(Math.sin(T*9)*.2);ctx.scale(s*f,s);
+  for(const[dx,dy]of[[-120,60],[140,50],[60,90]])ell(x+dx,y+dy,22,10,'#a49c8e');poly([x-90,y-120,x+90,y-120,x+70,y-150,x-70,y-150],'#9a9284');txt('Temple of the Hydra',x,y+MDL.r*.5+28,14,'#e8e0d0','center');}
+function hyArt(sleep){const x=HYD.on?HYD.x:MDL.x,y=HYD.on?HYD.y:MDL.y,f=HYD.face,T=G.t,body='#3f9a7a',dk='#2a6e56',bel='#cfe8a0',ko=HYD.koT>0;
+  ell(x,y+6,96,30,'rgba(20,40,40,.35)');
+  for(let i=5;i>=0;i--){const tx=x-f*(60+i*14),ty=y+2+Math.sin(T*2+i)*3;ell(tx,ty,18-i*2,9-i,body);}
+  ell(x,y-24,70,40,body);ell(x+f*6,y-14,48,20,bel);for(let i=0;i<4;i++)poly([x-36+i*22,y-58+Math.abs(i-1.5)*4,x-28+i*22,y-74+Math.abs(i-1.5)*4,x-20+i*22,y-58+Math.abs(i-1.5)*4],dk);
+  if(sleep){for(let i=0;i<3;i++){const hx=x+(i-1)*38,hy=y-30+Math.abs(i-1)*6;ell(hx,hy,15,10,body);line(hx+3,hy-2,hx+11,hy-2,'#1a3a2a',1.6);}
+    for(let i=0;i<3;i++){const p=((T*.5+i/3)%1);txt('z',x+40+p*30,y-70-p*50,10+p*10,'rgba(255,255,255,'+(1-p)+')','center');}return;}
+  const heads=HYD.heads.length?HYD.heads:[0,1,2].map(i=>({i,hp:1,bite:0,grow:0,burnt:0,hitT:-9}));
+  for(const h of heads){const p=HYD.heads.length?hyHeadPos(h):{x:x+(h.i-1)*44,y:y-118+Math.abs(h.i-1)*16},bx=x+(h.i-(heads.length-1)/2)*18,by=y-46;
+    if(hyAlive(h)){ctx.strokeStyle=body;ctx.lineWidth=15;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(bx,by);ctx.quadraticCurveTo(bx-f*10,(by+p.y)/2,p.x,p.y+8);ctx.stroke();
+      ctx.strokeStyle=bel;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(bx+f*3,by);ctx.quadraticCurveTo(bx-f*7,(by+p.y)/2,p.x+f*3,p.y+10);ctx.stroke();
+      const open=h.bite>0;ell(p.x,p.y,17,12,body);poly([p.x-f*6,p.y-10,p.x-f*14,p.y-22,p.x-f*2,p.y-12],dk);ell(p.x+f*14,p.y+(open?5:3),12,open?7:5,body);
+      if(open){ell(p.x+f*15,p.y+7,8,4,'#c83048');ell(p.x+f*20,p.y+4,1.4,2,'#fff');ell(p.x+f*11,p.y+4,1.4,2,'#fff');}else line(p.x+f*6,p.y+6,p.x+f*24,p.y+6,'#1a3a2a',1.4);
+      ell(p.x+f*4,p.y-4,4.4,4.4,'#fff');ell(p.x+f*5,p.y-4,2.2,2.6,ko?'#888':'#2a2010');if(ko){txt('×',p.x+f*4,p.y-1,10,'#333','center');}
+      ell(p.x+f*24,p.y+2,1.2,1,'#1a3a2a');if(G.t-h.hitT<.12){ctx.globalAlpha=.5;ell(p.x,p.y,20,15,'#fff');ctx.globalAlpha=1;}}
+    else{const sx=bx+f*4,sy=by-24;ctx.strokeStyle=body;ctx.lineWidth=14;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(sx,sy);ctx.stroke();
+      ell(sx,sy,8,5,h.burnt?'#5a4a44':'#e89a7a');if(h.burnt){if(rnd()<.15)puff(sx,sy-6,1,'rgba(120,120,120,',20,3);}
+      else if(h.grow>0){const g=1-h.grow/HY_K.grow;ell(sx,sy-6-g*10,5+g*8,4+g*5,body);ell(sx+f*(2+g*4),sy-8-g*10,1.6+g,1.6+g,'#fff');}}}
+  if(ko){for(let i=0;i<3;i++){const an=T*5+i*TAU/3;txt('★',x+Math.cos(an)*30,y-150+Math.sin(an)*6,13,'#ffe060','center');}}
+  for(const p of HYD.P){ell(p.x,p.y,7,6,'rgba(140,230,190,.85)');ell(p.x-2,p.y-2,2.5,2,'rgba(255,255,255,.8)');}}
+function mdDraw(){if(Math.abs(MDL.x-cam.x)>VW/cam.z/2+700||Math.abs(MDL.y-cam.y)>VH/cam.z/2+600)return;mdTemple();
+  if(mdDown()){if(G.hyEaten)return;hyArt(true);txt('The Hydra (fast asleep - gobble it up?)',MDL.x,MDL.y-130,13,'#e0f0e8','center');return;}hyArt(false);}
+// once beaten (all heads down) the sleeping Hydra can be gulped like other big creatures (optional); it is gone until the next dragon
+{const _te=tryEat;tryEat=function(){if(mdDown()&&!G.hyEaten&&!(D.eatCD>0)&&D.alt<.5&&scene==='play'&&Math.hypot(D.x-MDL.x,D.y-MDL.y)<220){G.hyEaten=1;D.eatCD=.6;D.eatT=.3;const h=40;D.hp=Math.min(D.maxHp,D.hp+h);try{feed(h);}catch(e){}try{if(typeof glutEat==='function')glutEat(60);}catch(e){}
+    G.stats.eaten=(G.stats.eaten||0)+1;puff(MDL.x,MDL.y-30,16,'rgba(150,220,190,',100,10);float(MDL.x,MDL.y-90,'BIG GULP! The Hydra (+'+h+')','#ffe28a');showToast('🐉 Gulp! The Hydra is gone - until the next dragon comes along...');if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('gulp',MDL.x,MDL.y,1);}catch(e){}return;}
+  return _te.apply(this,arguments);};}
+{const _f=nrDrawFx;nrDrawFx=function(){mdDraw();return _f.apply(this,arguments);};}
+// boss bar (fixed width, items 19/20): total head health, plus how many heads are up
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!HYD.on||mdDown()||!HYD.heads.length)return;const w=Math.min(380,VW*.55),x=(VW-w)/2,y=VW<760?150:118,up=HYD.heads.filter(hyAlive).length;
+  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,hyHpNow())/Math.max(1,hyMaxHp()),12,'#4fc39a');txt(`🐉 Hydra · ${up}/${HYD.heads.length} heads up`,VW/2,y+10,11,'#fff','center');};}
+{const _t=nrTick;nrTick=function(dt){_t(dt);hyUpd(dt);};}
+// ---- Medusa, now a REGULAR dark-side creature: a few roam the Goblin Bogs (far west); she can march with the dark armies. Snake-hair nips up close and a short,
+// telegraphed stone gaze: if you are facing her when her eyes flash you turn grey and slow for 1.2 s (never deadly). Normal health bar, edible like any creature. ----
+NRS.medusa={hp:30,sp:86,side:'D',dm:2.5,cd:1.3,food:22,sz:1.05,aggro:460};
+NR_SP.add('medusa');NR_NAMES.medusa='Medusas';HEAL.medusa=FOOD.medusa=22;FAUNA.medusa={hp:30,sp:86,zone:'nr'};
+if(typeof DG!=='undefined'&&DG.ch)DG.ch.medusa=.15;
+if(typeof tallyAddSect==='function')tallyAddSect('nrdark','Northern Realms · Dark lands','👹','#9ad06a',[['medusa',NR_NAMES.medusa]]);
+NR_AMB.goblin.push(['medusa',2]);NR_AMB.orc.push(['medusa',.6]);
+const MD_GZ={tele:.9,grey:1.2,r:460,gap:3};
+function mduFacing(u){return Math.abs(angDiff(Math.atan2(u.y-30-D.y,u.x-D.x),D.ang))<1.15;}
+function mdAttack(u,S,T,dt,isD,_na,args){const d=Math.hypot(T.x-u.x,T.y-u.y);if(Math.abs(T.x-u.x)>1)u.face=T.x>u.x?1:-1;u.gzCd=(u.gzCd===undefined?R(2,4):u.gzCd)-dt;if(u.hb>0)u.hb-=dt;
+  if(u.gz>0){u.gz-=dt;if(u.gz<=0){G.mdGazes=(G.mdGazes||0)+1;if(isD&&!G.over&&Math.hypot(D.x-u.x,D.y-u.y)<MD_GZ.r+40&&mduFacing(u)){D.mdGrey=MD_GZ.grey;D.webT=Math.max(D.webT||0,MD_GZ.grey);G.mdStoned=(G.mdStoned||0)+1;float(D.x,D.y-heightOf()-90,'Stone gaze! Slowed for a moment','#d0d0d8');}
+      else if(isD){G.mdDodged=(G.mdDodged||0)+1;float(D.x,D.y-heightOf()-90,'You looked away!','#e0ffe0');}}return;}
+  if(isD&&u.gzCd<=0&&d<MD_GZ.r&&G.t-(G.mdGazeG||-99)>MD_GZ.gap){u.gzCd=R(7,9);u.gz=MD_GZ.tele;G.mdGazeG=G.t;float(u.x,u.y-56,'Her eyes glow... LOOK AWAY!','#fff2a0');return;}
+  if(d>nrMeleeR(u)){moveTo(u,T.x,T.y,S.sp,dt);u.anim=(u.anim||0)+dt*10;return;}
+  if(u.cd<=0){u.cd=S.cd*R(.9,1.15);u.hb=.25;if(isD){hurtDragon(S.dm,'medusa');u.lastHitD=G.t;if(rnd()<.5)float(D.x+R(-20,20),D.y-90,'Hiss! Snake-hair nip','#c8ffb0');}else nrHit(T,S.dm,u);}}
+{const _na=nrAttack;nrAttack=function(u,S,T,dt,isD){if(u.species==='medusa')return mdAttack(u,S,T,dt,isD);return _na.apply(this,arguments);};}
+function mdArt(x,y,f,s,stone,st){st=st||{};const T=G.t,sk=stone?'#a8a8ae':'#7ec07a',tail=stone?'#8e8e96':'#4e9a5a',bel=stone?'#bcbcc2':'#d8e8a0',dress=stone?'#9a9aa2':'#7a4aa8';
+  ctx.save();ctx.translate(x,y);ctx.scale(s*f,s);
   for(let i=6;i>=0;i--){const tx=-14-i*9,ty=-2+Math.sin(T*3+i)*(stone?0:2)+(i>3?4:0);ell(tx,ty,13-i*.9,8-i*.5,tail);ell(tx,ty+2,9-i*.6,3.5,bel);}
-  const sw=MDB.tl>0?-1.2:0;ctx.save();ctx.rotate(sw);ell(-74,2,9,5,tail);poly([-80,0,-96,-4,-82,6],tail);ctx.restore();
+  ell(-74,2,9,5,tail);poly([-80,0,-96,-4,-82,6],tail);
   ell(0,-18,18,22,dress);ell(0,-4,24,8,dress);ell(0,-46,12,13,sk);ell(-10,-28,4,10,sk);ell(10,-28,4,10,sk);
-  const glow=MDB.gz>0&&!stone;for(let i=0;i<8;i++){const a=-Math.PI*.95+i*Math.PI*.9/7,bx=Math.cos(a)*11,by=-50+Math.sin(a)*11,w=stone?0:Math.sin(T*6+i*1.3)*3+(MDB.hb>0&&i%2?6:0),hx=bx+Math.cos(a)*14+w,hy=by+Math.sin(a)*12;
+  const glow=st.gz>0&&!stone;for(let i=0;i<8;i++){const a=-Math.PI*.95+i*Math.PI*.9/7,bx=Math.cos(a)*11,by=-50+Math.sin(a)*11,w=stone?0:Math.sin(T*6+i*1.3)*3+(st.hb>0&&i%2?6:0),hx=bx+Math.cos(a)*14+w,hy=by+Math.sin(a)*12;
     ctx.strokeStyle=tail;ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(bx,by);ctx.quadraticCurveTo(bx+Math.cos(a)*8-w,by+Math.sin(a)*6,hx,hy);ctx.stroke();ell(hx,hy,3.6,2.8,tail);if(!stone){ell(hx+1,hy-1,.8,.8,'#fff');}}
   ell(-4,-47,2.6,glow?3:2,glow?'#fff6a0':stone?'#888':'#2a3a20');ell(4,-47,2.6,glow?3:2,glow?'#fff6a0':stone?'#888':'#2a3a20');
-  if(stone){line(-4,-41,4,-41,'#777',1.2);}else{ctx.strokeStyle='#4a2a3a';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,-42,3.5,.2,Math.PI-.2);ctx.stroke();}
-  if(glow){const p=1-MDB.gz/1.2;ctx.globalAlpha=.25+.5*p;ell(0,-47,22+30*p,14+16*p,'#fff6a0');ctx.globalAlpha=1;}
-  ctx.restore();
-  if(ko){for(let i=0;i<3;i++){const an=T*5+i*TAU/3;txt('★',x+Math.cos(an)*22,y-110*s+Math.sin(an)*5,13,'#ffe060','center');}}
-  if(G.t-MDB.hitT<.12&&!stone){ctx.globalAlpha=.45;ell(x,y-40*s,30*s,40*s,'#fff');ctx.globalAlpha=1;}}
-function mdDraw(){if(Math.abs(MDL.x-cam.x)>VW/cam.z/2+700||Math.abs(MDL.y-cam.y)>VH/cam.z/2+600)return;mdTemple();
-  if(mdDown()){mdArt(MDL.x,MDL.y-20,1,1.5,true);txt('Medusa (stone statue)',MDL.x,MDL.y-150,13,'#e0e0e8','center');return;}
-  mdArt(MDB.on?MDB.x:MDL.x,MDB.on?MDB.y:MDL.y,MDB.face,1.5,false);}
-{const _f=nrDrawFx;nrDrawFx=function(){mdDraw();return _f.apply(this,arguments);};}
-// boss bar
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!MDB.on||mdDown()||!MDB.maxHp)return;const w=Math.min(380,VW*.55),x=(VW-w)/2,y=VW<760?150:118;
-  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,MDB.hp)/MDB.maxHp,12,'#7ec07a');txt(`🐍 Medusa · ${Math.ceil(MDB.hp)}/${MDB.maxHp}`,VW/2,y+10,11,'#fff','center');};}
-{const _t=nrTick;nrTick=function(dt){_t(dt);mdUpd(dt);};}
+  ctx.strokeStyle='#4a2a3a';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,-42,3.5,.2,Math.PI-.2);ctx.stroke();
+  if(glow){const p=1-st.gz/(st.gzMax||1.2);ctx.globalAlpha=.25+.5*p;ell(0,-47,22+30*p,14+16*p,'#fff6a0');ctx.globalAlpha=1;}
+  ctx.restore();}
+NR_DRAW.medusa=function(x,y,s,f,a,u){mdArt(x+6*s*f,y-4*s,f,s*.62,false,{gz:u.gz||0,gzMax:MD_GZ.tele,hb:u.hb||0});};
 // map marker
 {const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s;
-  if(big||!mdDown()){ell(X(MDL.x),Y(MDL.y),big?5:3,big?5:3,mdDown()?'#9a9aa2':'#7ec07a');if(big)txt(mdDown()?'Gorgon temple (statue)':'🐍 Medusa',X(MDL.x)+8,Y(MDL.y)+4,10,'#e8ffe0','left');}
+  if(big||!mdDown()){ell(X(MDL.x),Y(MDL.y),big?5:3,big?5:3,mdDown()?'#9a9aa2':'#4fc39a');if(big)txt(mdDown()?'Hydra temple (asleep)':'🐉 Hydra',X(MDL.x)+8,Y(MDL.y)+4,10,'#e8ffe0','left');}
   for(const k in NR_CC){const c=NR_CC[k];rect(X(c.x)-(big?5:3),Y(c.y)-(big?5:3),big?10:6,big?10:6,k==='L'?'#f0f0ff':'#2a2030');if(big)txt(c.n,X(c.x)+8,Y(c.y)+4,10,k==='L'?'#e8f0ff':'#ffb0a0','left');}}catch(e){}return r;};}
-// 10/12: stays down for the rest of this dragon's life: carried over levels, cleared when the dragon dies (newGame makes a fresh G)
-{const _nl=nextLevel;nextLevel=function(){const k={mdDown:G.mdDown,mdWins:G.mdWins};const r=_nl.apply(this,arguments);Object.assign(G,k);return r;};}
-{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);MDB.on=false;MDB.koT=0;D.mdStone=0;return r;};}
+// 10/12/32: stays down for the rest of this dragon's life: carried over levels, cleared when the dragon dies (newGame makes a fresh G)
+{const _nl=nextLevel;nextLevel=function(){const k={mdDown:G.mdDown,mdWins:G.mdWins,hyWins:G.hyWins,hyHp:G.hyHp,hyEaten:G.hyEaten};const r=_nl.apply(this,arguments);Object.assign(G,k);HYD.on=false;HYD.P=[];return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);HYD.on=false;HYD.koT=0;HYD.P=[];HYD.heads=[];D.mdStone=0;D.mdGrey=0;return r;};}
+const MDB=HYD; // older code/tests read MDB.on
 // ---- 18. the carried egg is drawn in the claws, under the dragon, at flight height, with a glow, plus a HUD icon ----
 function eggCarryDraw(){const h=heightOf(),a=D.ang,s=.85+.25*D.alt,x=D.x-Math.cos(a)*6,y=D.y-h+26+8*D.alt,W=D.nrEgg==='W',p=.5+.5*Math.sin(G.t*4);
   ctx.globalAlpha=.35+.2*p;ell(x,y-14*s,30*s,32*s,W?'#ffffff':'#6a3aff');ctx.globalAlpha=1;
   for(const sd of[-1,1])line(x+sd*14,y-30*s,x+sd*9*s,y-12*s,'#5a4030',3);
   nrEggArt(x,y,D.nrEgg,s);for(const sd of[-1,1]){ell(x+sd*9*s,y-12*s,4,3,'#3a2a20');}G.eggDrawn=G.fc;}
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!D.nrEgg)return;const W=D.nrEgg==='W',x=VW/2,y=(VW<760?150:118)+(MDB.on&&!mdDown()?22:0)+(WZB.on&&!G.nrOpen?22:0);
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!D.nrEgg)return;const W=D.nrEgg==='W',x=VW/2,y=(VW<760?150:118)+(HYD.on&&!mdDown()?22:0)+(WZB.on&&!G.nrOpen?22:0);
   rect(x-104,y-2,208,24,'rgba(0,0,0,.55)');ell(x-88,y+11,7,9,W?'#f4f4fa':'#1e1a26');ell(x-88,y+11,8.5,10.5,W?'rgba(255,255,255,.35)':'rgba(140,90,255,.45)');
   txt(W?'Carrying the WHITE egg → lair':'Carrying the BLACK egg → lair',x+8,y+15,11,'#fff2c0','center');G.eggHud=G.fc;};}
 // ---- 19/20. no HUD bar grows with its max: the health bar keeps the same fixed width as the others (fill = hp/maxHp, numbers as text) ----
 hpBarW=function(){return 230;};
+// saving mid-fight keeps the Hydra's heads (cut / burnt) - they are written to G before the snapshot
+{const _ss=svSnapshot;svSnapshot=function(){try{if(HYD.on&&HYD.heads.length)hySave();}catch(e){}return _ss.apply(this,arguments);};}
 // ======================= queue 3-9, 13, 14: kingdom economy + creature upgrades (worm, treasury, stone, carts, towers, landing dragons, KO linger, lava burrows) =======================
 // ---- 3. the sand worm only hunts a LANDED dragon in OPEN desert: towns (Sandhaven etc.) and oases are safe zones, flying is safe ----
 const WORM_SAFE={town:750,oasis:260};
@@ -8655,6 +8720,121 @@ function gmcPatch(){if(GMP===ground)return;GMP=ground;const gc=ground.getContext
   else if(GMD>0&&(++GMF%6===0)){const n=Math.ceil(ground.width/128);gmcStrip(GMK%n);GMK=(GMK+1)%n;GMD--;}
   const di=ctx.drawImage;ctx.drawImage=function(img){if(img===ground&&arguments.length===9){const a=arguments,s=1/8;return di.call(this,GMC,a[1]*s,a[2]*s,a[3]*s,a[4]*s,a[5],a[6],a[7],a[8]);}return di.apply(this,arguments);};
   try{return _m.apply(this,arguments);}finally{delete ctx.drawImage;}};}
+// ======================= queue 36/37: the GRIFFIN, light-side mini boss =======================
+// A cartoony eagle-lion who slowly roams the light lands (Shire / Lumeria / Dwarf Holds) on a loop of waypoints, walking and flying by turns.
+// He pounces on any dark creature that comes within his normal aggro range on his roam (raiders, vanguards, or a big battle he happens to stumble into);
+// he never heads for the big battle on purpose (37). He is hostile to the dragon like every fantasy fighter.
+// Ground: claw swipes + a telegraphed pounce.  Air: a telegraphed talon dive/swoop.  Boss bar (fixed width).  Defeat: dizzy, then he lies there seeing stars
+// and can be gulped (optional). Reward +50 MAX HEALTH. Stays beaten until the dragon dies (G.grDown, saved with G; cleared by newGame).
+const GR_WP=[[-12200,-5300],[-10000,-4300],[-7600,-5500],[-4600,-4700],[-1500,-5600],[1500,-4600],[4200,-5600],[6600,-4500],[8600,-5400],[5200,-6300],[1200,-6200],[-3000,-6200],[-8200,-6200],[-11400,-6100]];
+const GR={x:-1500,y:-5600,wp:4,on:false,hp:0,maxHp:0,mode:'walk',modeT:10,alt:0,face:1,anim:0,koT:0,hitT:-9,toastT:-99,cd:1,pcd:3,dcd:4,act:null,actT:0,tx:0,ty:0,foe:null,foeT:0,lastD:-99,swipeT:0};
+const GR_K={aggro:520,walk:62,fly:120,swipe:4,pounce:6,dive:7,vsDark:{swipe:16,pounce:24,dive:26},food:60,heal:40,reward:50};
+function grMaxHp(){return Math.round(Math.min(1000,420+80*(nrLvl()-1)));}
+function grDown(){return !!G.grDown;}
+function grLight(x,y){const r=nrRealm(x,y);return !!r&&NR_LIGHT.has(r);}
+function grInit(){if(G.grX==null){G.grX=GR_WP[4][0];G.grY=GR_WP[4][1];G.grWp=5;}GR.x=G.grX;GR.y=G.grY;GR.wp=G.grWp||0;GR.maxHp=grMaxHp();GR.hp=G.grHp>0?Math.min(G.grHp,GR.maxHp):GR.maxHp;GR.koT=0;GR.act=null;GR.foe=null;GR.on=true;}
+function grDark(v){if(!v||v.dead||v.inside)return false;const S=NRS[v.species];if(!S||!S.dm)return false;const sd=v.side||S.side;return sd==='D';}
+function grFindFoe(){let b=null,bd=GR_K.aggro*GR_K.aggro;for(const v of NRU){if(!grDark(v))continue;const dx=v.x-GR.x,dy=v.y-GR.y,d=dx*dx+dy*dy;if(d<bd){bd=d;b=v;}}return b;}
+function grHurt(d,how){if(!GR.on||GR.koT>0||grDown()||d<=0)return;GR.hp-=d;GR.hitT=G.t;GR.lastD=G.t;G.grHp=Math.max(1,Math.round(GR.hp));G.grHits=(G.grHits||0)+1;
+  if(GR.hp<=0){GR.hp=0;GR.koT=2.2;GR.alt=0;GR.act=null;float(GR.x,GR.y-110,'Dizzy!','#ffe28a');}}
+function grDefeat(){G.grDown=1;G.grHp=0;G.grWins=(G.grWins||0)+1;G.grX=GR.x;G.grY=GR.y;sparkle(GR.x,GR.y-60,22);puff(GR.x,GR.y-30,10,'rgba(255,240,200,',80,8);
+  const gain=GR_K.reward;D.hpBonus=(D.hpBonus||0)+gain;D.maxHp+=gain;D.hp=D.maxHp;D.healFx=1;G.grHpGain=(G.grHpGain||0)+gain;
+  G.banner={text:'The Griffin is defeated!',sub:`He flops down seeing stars (you can gobble him up). You feel tougher: +${gain} max health (now ${D.maxHp}, until you lose this dragon)`,t:4.5};
+  float(D.x,D.y-heightOf()-130,`MAX HEALTH +${gain}!`,'#7aff8a');showToast(`🦅 The Griffin is defeated! ❤️ +${gain} max health`);try{horn();}catch(e){}}
+function grSay(m,c){if(Math.abs(GR.x-D.x)<1400&&Math.abs(GR.y-D.y)<1000)float(GR.x,GR.y-120-GR.alt*90,m,c||'#ffe8a0');}
+function grUpd(dt){if(grDown()){GR.on=false;return;}if(!GR.on)grInit();if(GR.maxHp!==grMaxHp()){const f=GR.hp/GR.maxHp;GR.maxHp=grMaxHp();GR.hp=GR.maxHp*f;}
+  const far=Math.abs(GR.x-D.x)>2600||Math.abs(GR.y-D.y)>2000;
+  if(GR.koT>0){GR.koT-=dt;if(GR.koT<=0)grDefeat();return;}
+  if(far){ // cheap roam while nobody is watching; heal up slowly
+    GR.foe=null;GR.act=null;GR.alt=0;const w=GR_WP[GR.wp],dx=w[0]-GR.x,dy=w[1]-GR.y,d=Math.hypot(dx,dy),s=GR_K.walk*1.4*dt;if(d<s+4)GR.wp=(GR.wp+1)%GR_WP.length;else{GR.x+=dx/d*s;GR.y+=dy/d*s;}
+    GR.hp=Math.min(GR.maxHp,GR.hp+3*dt);G.grX=Math.round(GR.x);G.grY=Math.round(GR.y);G.grWp=GR.wp;G.grHp=Math.round(GR.hp);return;}
+  GR.anim+=dt;GR.cd-=dt;GR.pcd-=dt;GR.dcd-=dt;if(GR.swipeT>0)GR.swipeT-=dt;
+  // walk / fly by turns
+  GR.modeT-=dt;if(GR.modeT<=0&&!GR.act){GR.mode=GR.mode==='walk'?'fly':'walk';GR.modeT=GR.mode==='fly'?R(8,12):R(9,14);G.grSwitch=(G.grSwitch||0)+1;}
+  const tgtAlt=GR.mode==='fly'?1:0;if(!GR.act)GR.alt+=(tgtAlt-GR.alt)*Math.min(1,dt*1.6);
+  // who to fight: dark creatures within aggro range (never seeks the big battle), or the dragon when it is close
+  if(!GR.foe||!grDark(GR.foe)||Math.hypot(GR.foe.x-GR.x,GR.foe.y-GR.y)>GR_K.aggro*1.4){GR.foe=null;if(G.t>GR.foeT){GR.foeT=G.t+.4;GR.foe=grFindFoe();}}
+  const dd=Math.hypot(D.x-GR.x,D.y-GR.y),dragonOn=!G.over&&!G.won&&(dd<GR_K.aggro||(G.t-GR.lastD<6&&dd<GR_K.aggro*1.8));
+  let T=null,isD=false;if(dragonOn&&(!GR.foe||dd<Math.hypot(GR.foe.x-GR.x,GR.foe.y-GR.y)*.8||G.t-GR.lastD<3)){T=D;isD=true;}else if(GR.foe)T=GR.foe;
+  if(isD&&G.t-GR.toastT>45){GR.toastT=G.t;showToast('🦅 The GRIFFIN guards the light lands! Claws on the ground, talon dives from the sky');}
+  if(T&&!isD){G.grFights=(G.grFights||0)+1;GR.fightT=G.t;}
+  // abstract scuffle: dark creatures next to him chip at him a little
+  for(const v of NRU)if(grDark(v)&&Math.abs(v.x-GR.x)<70&&Math.abs(v.y-GR.y)<60&&GR.alt<.3){const S=NRS[v.species];GR.hp-=S.dm/S.cd*.35*dt;G.grChip=(G.grChip||0)+1;}
+  if(GR.hp<GR.maxHp*.15&&!isD)GR.hp=Math.max(GR.hp,GR.maxHp*.15); // the dark creatures can wear him down, but only the dragon can beat him
+  if(!isD&&G.t-GR.lastD>10)GR.hp=Math.min(GR.maxHp,GR.hp+2*dt);
+  G.grX=Math.round(GR.x);G.grY=Math.round(GR.y);G.grWp=GR.wp;G.grHp=Math.max(1,Math.round(GR.hp));
+  // current move (pounce / dive)
+  if(GR.act){GR.actT-=dt;const a=GR.act;
+    if(a.ph==='tele'){if(GR.actT<=0){a.ph='go';GR.actT=a.k==='pounce'?.45:.55;a.sx=GR.x;a.sy=GR.y;a.tx=a.T.x;a.ty=a.T.y;}return;}
+    const p=1-Math.max(0,GR.actT)/(a.k==='pounce'?.45:.55);GR.x=a.sx+(a.tx-a.sx)*p;GR.y=a.sy+(a.ty-a.sy)*p;if(a.k==='pounce')GR.alt=Math.sin(p*Math.PI)*.45;else GR.alt=Math.max(.05,1-p);
+    if(GR.actT<=0){const hitR=a.k==='pounce'?70:90;
+      if(a.isD){if(!G.over&&Math.hypot(D.x-GR.x,D.y-GR.y)<hitR+30&&(a.k==='dive'||D.alt<.5)){const dm=GR_K[a.k];hurtDragon(dm,'griffin');float(D.x,D.y-heightOf()-80,a.k==='dive'?`Talon swoop! -${dm}`:`Pounce! -${dm}`,'#ffd0a0');G.grHitsD=(G.grHitsD||0)+1;}}
+      else{let n=0;for(const v of NRU)if(grDark(v)&&Math.hypot(v.x-GR.x,v.y-GR.y)<hitR+20){nrHit(v,GR_K.vsDark[a.k],null);n++;}if(n){G.grKills=(G.grKills||0);G.grStrikes=(G.grStrikes||0)+n;}}
+      G[a.k==='dive'?'grDives':'grPounces']=(G[a.k==='dive'?'grDives':'grPounces']||0)+1;GR.act=null;if(a.k==='dive')GR.alt=.6;}
+    return;}
+  if(!T){// roam: next waypoint, at a stroll
+    const w=GR_WP[GR.wp],dx=w[0]-GR.x,dy=w[1]-GR.y,d=Math.hypot(dx,dy),s=(GR.mode==='fly'?GR_K.fly:GR_K.walk)*dt;if(d<s+4)GR.wp=(GR.wp+1)%GR_WP.length;else{GR.x+=dx/d*s;GR.y+=dy/d*s;}if(Math.abs(dx)>4)GR.face=dx>0?1:-1;return;}
+  const tx=T.x,ty=T.y,d=Math.hypot(tx-GR.x,ty-GR.y);if(Math.abs(tx-GR.x)>4)GR.face=tx>GR.x?1:-1;
+  if(GR.alt>.6){// air: circle in and dive
+    if(GR.dcd<=0&&d<420){GR.dcd=R(3.5,5);GR.act={k:'dive',ph:'tele',T,isD};GR.actT=.6;if(isD)grSay('SCREEE! (diving!)');return;}
+    if(d>160){const s=GR_K.fly*1.3*dt;GR.x+=(tx-GR.x)/d*s;GR.y+=(ty-GR.y)/d*s;}return;}
+  // ground: pounce from mid range, claw swipes up close
+  if(GR.pcd<=0&&d>110&&d<330&&(!isD||D.alt<.5)){GR.pcd=R(4.5,6);GR.act={k:'pounce',ph:'tele',T,isD};GR.actT=.4;if(isD)grSay('Grrr... POUNCE!');return;}
+  if(d<85){if(GR.cd<=0){GR.cd=R(1.2,1.6);GR.swipeT=.25;G.grSwipes=(G.grSwipes||0)+1;
+      if(isD){if(D.alt<.5){hurtDragon(GR_K.swipe,'griffin');if(rnd()<.5)float(D.x+R(-20,20),D.y-90,`Claw swipe! -${GR_K.swipe}`,'#ffd0a0');}}else nrHit(T,GR_K.vsDark.swipe,null);}return;}
+  if(isD&&D.alt>.5&&GR.mode==='walk'){GR.mode='fly';GR.modeT=R(6,9);} // takes off to chase a flying dragon
+  const s=GR_K.walk*1.5*dt;GR.x+=(tx-GR.x)/d*s;GR.y+=(ty-GR.y)/d*s;}
+{const _t=nrTick;nrTick=function(dt){_t(dt);if(scene==='play'&&G&&!G.over)grUpd(dt);};}
+// player attacks: fire hits him in the air too; bite/stomp/claw/lava only when he is low
+function grNear(px,py,r){return GR.on&&!(GR.koT>0)&&!grDown()&&Math.hypot(px-GR.x,py-(GR.y-GR.alt*60))<r;}
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);if(GR.on&&!(GR.koT>0)&&!grDown()&&(inFire(GR.x,GR.y,ox,oy)||inFire(GR.x,GR.y-40,ox,oy)))grHurt(DR.fireDps*.5*dt,'fire');return r;};}
+{const _te=tryEat;tryEat=function(){if(!(D.eatCD>0)&&D.alt<.5&&GR.alt<.5){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;if(grNear(mx,my,120)){grHurt(18,'bite');D.eatCD=.45;float(GR.x,GR.y-110,'Chomp! -18','#ffe0a0');return;}}return _te.apply(this,arguments);};}
+{const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);if(GR.alt<.4&&grNear(D.x,D.y,DR.stompR+60))grHurt(30,'stomp');return r;};}
+{const _ds=diveSlam;diveSlam=function(){const r=_ds.apply(this,arguments);if(GR.alt<.5&&grNear(D.x,D.y,DR.stompR+80))grHurt(40,'dive');return r;};}
+if(typeof clawScratch==='function'){const _cs=clawScratch;clawScratch=function(){const r=_cs.apply(this,arguments);if(D.alt<.5&&GR.alt<.5&&grNear(D.x+Math.cos(D.ang)*60,D.y+Math.sin(D.ang)*60,140))grHurt(12,'claw');return r;};}
+{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);if(grNear(x,y,LAVA_CFG.splashR+60))grHurt(35,'lava');return r;};}
+// after defeat he lies where he fell, seeing stars: edible (optional), gone until the next dragon once gulped
+function grEdible(){return grDown()&&!G.grEaten&&scene==='play';}
+{const _te=tryEat;tryEat=function(){if(grEdible()&&!(D.eatCD>0)&&D.alt<.5){const gx=G.grX,gy=G.grY,mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
+    if(Math.min(Math.hypot(D.x-gx,D.y-gy),Math.hypot(mx-gx,my-gy))<120){G.grEaten=1;D.eatCD=.6;D.eatT=.3;const h=GR_K.heal;D.hp=Math.min(D.maxHp,D.hp+h);try{feed(h);}catch(e){}try{if(typeof glutEat==='function')glutEat(GR_K.food);}catch(e){}
+      G.stats.eaten=(G.stats.eaten||0)+1;puff(gx,gy-30,14,'rgba(255,240,200,',90,10);sparkle(gx,gy-30,14);float(gx,gy-70,'BIG GULP! The Griffin (+'+h+')','#ffe28a');
+      showToast('🦅 Gulp! The Griffin is gone - until the next dragon comes along...');if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('gulp',gx,gy,1);}catch(e){}return;}}
+  return _te.apply(this,arguments);};}
+// drawing
+function grArt(x,y,f,alt,st){const T=G.t,gold='#d9a441',dg='#a8762a',wh='#f6f2e8',fly=alt>.15,ko=st.ko,lift=alt*90;
+  ell(x,y+4,40-alt*14,12-alt*4,'rgba(0,0,0,'+(.3-alt*.15)+')');if(st.tele)ell(x,y+4,52,16,'rgba(255,80,40,.25)');
+  ctx.save();ctx.translate(x,y-lift);if(ko)ctx.rotate(f*.9);ctx.scale(f,1);
+  const wing=fly?Math.sin(T*9)*.9:-.25,step=fly||ko?0:Math.sin(st.anim*8)*5;
+  // legs (lion back, eagle front)
+  line(-20,-14,-22+step,0,dg,6);line(-12,-14,-10-step,0,dg,6);line(14,-16,16-step,0,'#e8c060',5);line(20,-16,22+step,0,'#e8c060',5);
+  for(const lx of[16-step,22+step])line(lx,0,lx+5,1,'#7a5a20',1.6);
+  // tail
+  ctx.strokeStyle=gold;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-28,-22);ctx.quadraticCurveTo(-46,-30+Math.sin(T*3)*5,-50,-44);ctx.stroke();ell(-51,-46,5,6,dg);
+  // far wing
+  ctx.save();ctx.translate(2,-30);ctx.rotate(-1.1-wing*.7);poly([0,0,46,-6,56,4,40,10,24,8],'#e6dcc8');ctx.restore();
+  ell(0,-22,30,15,gold);ell(4,-16,20,8,'#ecc870');
+  // near wing
+  ctx.save();ctx.translate(-2,-28);ctx.rotate(-1.3+wing);poly([0,0,48,-8,60,2,52,8,40,6,30,12,14,8],wh);for(let i=0;i<3;i++)line(18+i*12,2,30+i*12,8,'#d8ccb0',1.4);ctx.restore();
+  // head: white eagle head, golden beak, crest
+  ell(24,-36,13,12,wh);poly([20,-46,15,-58,26,-48],wh);poly([28,-47,26,-57,33,-48],wh);
+  const open=st.swipe;poly([34,-38,48,-34,36,-29],'#f0b030');if(open)poly([35,-30,46,-27,36,-26],'#e09a20');
+  ell(28,-39,3.6,3.8,'#fff');ell(29,-39,ko?0:2,ko?0:2.4,'#2a1a08');if(ko)txt('×',28.5,-36.5,8,'#333','center');
+  if(st.hit){ctx.globalAlpha=.45;ell(0,-26,40,24,'#fff');ctx.globalAlpha=1;}
+  ctx.restore();
+  if(ko){for(let i=0;i<3;i++){const an=T*5+i*TAU/3;txt('★',x+Math.cos(an)*22,y-70+Math.sin(an)*5,13,'#ffe060','center');}}
+  if(st.tele)txt('!',x+f*30,y-lift-80,16,'#ff6040','center');}
+function grDraw(){const x=grDown()?G.grX:GR.x,y=grDown()?G.grY:GR.y;if(x==null||Math.abs(x-cam.x)>VW/cam.z/2+300||Math.abs(y-cam.y)>VH/cam.z/2+300)return;
+  if(grDown()){if(G.grEaten)return;grArt(x,y,1,0,{ko:1,anim:0});if(Math.hypot(x-D.x,y-D.y)<260&&!(G.grHintT>G.t)){G.grHintT=G.t+6;float(x,y-90,'Dizzy griffin - gobble him up!','#ffe28a');}return;}
+  if(!GR.on)return;grArt(x,y,GR.face,GR.alt,{ko:GR.koT>0,anim:GR.anim,swipe:GR.swipeT>0,hit:G.t-GR.hitT<.12,tele:GR.act&&GR.act.ph==='tele'});G.grDrawn=G.fc;}
+{const _f=nrDrawFx;nrDrawFx=function(){const r=_f.apply(this,arguments);grDraw();return r;};}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!GR.on||grDown()||!GR.maxHp)return;if(Math.hypot(D.x-GR.x,D.y-GR.y)>900&&!(G.t-GR.lastD<6))return;
+  const w=Math.min(380,VW*.55),x=(VW-w)/2,y=(VW<760?150:118)+(HYD.on&&!mdDown()?22:0);
+  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,GR.hp)/GR.maxHp,12,'#e0b050');txt(`🦅 Griffin · ${Math.ceil(GR.hp)}/${GR.maxHp}${GR.alt>.5?' · flying':''}`,VW/2,y+10,11,'#fff','center');G.grBar=G.fc;};}
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{if(big&&!grDown()&&GR.on){const s=mmw/(WX1-WX0);ell(mmx+(GR.x-WX0)*s,mmy+(GR.y-WY0)*s,4,4,'#e0b050');txt('🦅 Griffin',mmx+(GR.x-WX0)*s+7,mmy+(GR.y-WY0)*s+4,10,'#fff0c0','left');}}catch(e){}return r;};}
+{const _nl=nextLevel;nextLevel=function(){const k={grDown:G.grDown,grWins:G.grWins,grEaten:G.grEaten,grX:G.grX,grY:G.grY,grWp:G.grWp,grHpGain:G.grHpGain};const r=_nl.apply(this,arguments);Object.assign(G,k);GR.on=false;GR.act=null;return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);GR.on=false;GR.koT=0;GR.act=null;GR.foe=null;GR.mode='walk';GR.alt=0;return r;};}
+// after a load: re-read his place/health from G
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);GR.on=false;GR.act=null;GR.koT=0;HYD.on=false;HYD.P=[];return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
