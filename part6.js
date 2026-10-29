@@ -86,9 +86,9 @@ function hudMMGeom(sm){const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.3
   ctx.font='10px Georgia';const capW=Math.ceil(ctx.measureText(`Explored ${exploredPct()}%  ·  M: map`).width)+4,mmL=Math.min(mx0-3,mx0+mmw-capW); // caption may be wider than a small map
   return{mx0,my0,mmw,mmh,mmL};}
 function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;UI.boxes=[];
-  // dragon vitals + mode
+  // dragon vitals
   // phones: no fire gauge here (the FIRE button's ring + number shows it); a compact lava counter takes that row only while there are lava shots
-  const tch=typeof TOUCH!=='undefined'&&TOUCH.on,lvR=tch&&D.lava>0,fb=tch?(lvR?18:0):18,hy=(G.easy?0:18)+fb,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),104+hy);
+  const tch=typeof TOUCH!=='undefined'&&TOUCH.on,lvR=tch&&D.lava>0,fb=tch?(lvR?18:0):18,hy=(G.easy?0:18)+fb,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),72+hy);
   const MMG=hudMMGeom(sm);HUDL.x0=10+Math.max(250,hbw+20)+10;HUDL.x1=MMG.mmL-10;HUDL.xr=VW-10;HUDL.mmB=MMG.my0-3+MMG.mmh+6+12+3+4;HUDL.y=10;HUDL.n++;
   HUDL.obs=[];if(TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(b.x-SAFE.l>VW*.35)HUDL.obs.push({x:b.x-SAFE.l-b.r,y:b.y-SAFE.t-b.r,w:2*b.r,h:2*b.r}); // right-hand touch buttons (FIRE/BITE/STOMP/FLY)
   UI.fireGauge=!tch;UI.lavaRow=lvR?{x:20,y:76,w:230,h:14}:null;txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
@@ -101,9 +101,8 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;UI.boxes=[]
     drawDrumstick(28,85+fb,st?`rgba(255,${Math.round(80*pl)},${Math.round(80*pl)},1)`:low?'#ffb060':'#e8c090');bar(38,78+fb,212,14,st?1:hf,st?`rgba(${150+Math.round(105*pl)},20,20,1)`:low?(Math.floor(G.t*3)%2?'#e07020':'#a04810'):'#b8742a',st?'STARVING! Eat something!':`Hunger ${Math.ceil(D.hunger)}${low?'  (hungry!)':''}`);
     if(st){ctx.strokeStyle=`rgba(255,60,60,${pl})`;ctx.lineWidth=2;ctx.strokeRect(37,77+fb,214,16);
       if(!G.over&&!G.won)txt('⚠ STARVING! Eat a villager or animal! ⚠',VW/2,VH*.30,VW<760?18:24,`rgba(255,${Math.round(90+90*pl)},${Math.round(60+60*pl)},1)`,'center');}}
-  const air=D.mode==='air';rect(20,78+hy,230,28,air?'#2a4a7a':'#4a3a22');
-  // (items 46/48) no movement-state text (FLYING / ON THE GROUND / SWIMMING) - the wings and the water already show it; only the F hint stays
-  txt(air?'F: land':'F: take off',242,97+hy,11,'#ddd','right',false);
+  // (items 46/48/49) no movement-state row at all: no FLYING / GROUND / SWIMMING text and no F: take off / F: land bar - the wings and the water
+  // show the state and the FLY button / F key is in the controls help; the vitals panel ends right under the last bar
   // wanted meter
   const cmpW=sm||hudLaneW()<260; // no room for the full WANTED panel: compact bar in the left column instead
   if(!cmpW){const WS=hudSlot('wanted',400,72,260),mw=WS.w-20,mx=WS.x+10,my=WS.y,cx=WS.cx;panel(mx-10,my,mw+20,72);
@@ -121,7 +120,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;UI.boxes=[]
   if(G.level>0&&Math.floor(G.t*2)%2)txt('⚠',mx+mw*f,my+41,13,'#fff','center');}
   // small screens: the compact wanted bar is drawn in the left column, under the resources (below)
   // LEFT COLUMN under the vitals: CASTLE LV (+ damage note) -> resources -> (small screens) wanted bar -> lava badge (partV)
-  const colW=Math.max(250,hbw+20);let cy=118+hy;
+  const colW=Math.max(250,hbw+20);let cy=86+hy;
   panel(10,cy,colW,28);txt(`CASTLE LV ${G.lvl}`,20,cy+18,12,'#ffd84a'); // princess status + lair-hoard lines removed from the HUD (castle level stays)
   const cs=musterSlow();if(cs>1.05)txt(`damaged: waves ${Math.round((cs-1)*100)}% slower`,10+colW-8,cy+18,10,'#ffc080','right',false);
   cy+=32;cy+=drawStockPill(10,cy,colW)+4; // resources: wood, stone, kingdom gold, the dragon's hoard
