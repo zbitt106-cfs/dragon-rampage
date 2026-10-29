@@ -25,7 +25,7 @@ Object.assign(REGION_LABEL,{shire:[-11600,-4900],elven:[-1300,-5200],dwarf:[6000
 
 // ---- settlements, roads and the border battlefield ----
 const NR_TOWNS=[
-  {k:'elven',n:'Silverleaf',x:-1500,y:-4300},{k:'elven',n:'Moonglade',x:1700,y:-5300},{k:'elven',n:'Starwood',x:-4700,y:-5500},
+  {k:'elven',n:'Silverleaf',x:-1500,y:-4300},{k:'elven',n:'Moonglade',x:1700,y:-5300},{k:'elven',n:'Starwood',x:-6600,y:-5900},
   {k:'shire',n:'Bramblebottom',x:-10200,y:-4100},{k:'shire',n:'Thistledown',x:-13500,y:-5300},
   {k:'dwarf',n:'Ironhold Gate',x:6300,y:-4300},{k:'dwarf',n:'Emberforge',x:5300,y:-5900},
   {k:'goblin',n:'Gobbleton',x:-10600,y:-8600},{k:'goblin',n:'Scrapheap Hollow',x:-14000,y:-9900},{k:'goblin',n:'Snaggletooth Camp',x:-7700,y:-10300},
@@ -34,11 +34,13 @@ const NR_TOWNS=[
 NR_TOWNS.forEach((t,i)=>t.i=i);
 const NRT=n=>NR_TOWNS.find(t=>t.n===n);
 const NR_BF={x:-1400,y:nrDarkY(-1400)+230}; // the border battlefield (just inside elven land)
-const NR_ROADS=[['Gorgrim War-Fort','BF'],['BF','Silverleaf'],['Silverleaf','Moonglade'],['Silverleaf','Starwood'],['Starwood','Bramblebottom'],['Bramblebottom','Thistledown'],
+// the two grand central castles (queue 15-17): at the true geographic centre (bounding-box midpoint) of each side's land; the eggs live here and the big armies march from here
+const NR_CC={L:{k:'L',n:'Lumenspire Citadel',x:-4400,y:-4950,egg:'W'},D:{k:'D',n:'Doomforge Citadel',x:-4400,y:-9100,egg:'B'}};
+const NR_ROADS=[['Gorgrim War-Fort','BF'],['BF','Silverleaf'],['Silverleaf','Moonglade'],['Silverleaf','LC'],['LC','Starwood'],['LC','BF'],['DC','BF'],['DC','Gorgrim War-Fort'],['DC','Snaggletooth Camp'],['Starwood','Bramblebottom'],['Bramblebottom','Thistledown'],
   ['Moonglade','Emberforge'],['Emberforge','Ironhold Gate'],['Gobbleton','Scrapheap Hollow'],['Gobbleton','Snaggletooth Camp'],['Snaggletooth Camp','Gorgrim War-Fort'],
   ['Gorgrim War-Fort','Blackspike Camp'],['Blackspike Camp','Megalith Ring'],['Megalith Ring','One-Eye Caves'],['Silverleaf','PASS']];
 const NR_PASS={x:2150,y:-2900};
-function nrPt(n){return n==='BF'?NR_BF:n==='PASS'?NR_PASS:NRT(n);}
+function nrPt(n){return n==='BF'?NR_BF:n==='PASS'?NR_PASS:n==='LC'?NR_CC.L:n==='DC'?NR_CC.D:NRT(n);}
 function nrRoadPts(a,b){const L=Math.hypot(b.x-a.x,b.y-a.y),n=Math.max(2,Math.ceil(L/36)),px=-(b.y-a.y)/L,py=(b.x-a.x)/L,out=[];
   for(let i=0;i<=n;i++){const t=i/n,w=Math.sin(t*Math.PI)*Math.sin(t*7+a.x*.013)*130;out.push({x:a.x+(b.x-a.x)*t+px*w,y:a.y+(b.y-a.y)*t+py*w});}return out;}
 const NR_ROADP=NR_ROADS.map(([a,b])=>({a,b,p:nrRoadPts(nrPt(a),nrPt(b))}));
@@ -75,17 +77,18 @@ function nrPaint(g){g.save();g.setTransform(1/TS,0,0,1/TS,-WX0/TS,-WY0/TS);
   g.restore();}
 {const _bt=buildTerrain;buildTerrain=function(){const first=!TERR;const r=_bt.apply(this,arguments);if(first&&TERR)nrPaint(TERR.getContext('2d'));return r;};}
 // ---- the Wizard's Isle: a small island in the deep north-east sea (literals: onIsle may be asked before this part has run) ----
-function onWzIsle(x,y){const dx=x-11600,dy=(y+6000)*1.2;return dx*dx+dy*dy<230*230;}
-const WZ={x:11600,y:-6000,r:230,H:196};
+function onWzIsle(x,y){const dx=x-WZ.x,dy=(y-WZ.y)*1.2;return dx*dx+dy*dy<WZ.r*WZ.r;}
+const WZ={x:11500,y:-1500,r:230,H:196}; // moved south (was 11600,-6000, then -1750): it sits in the Kraken Deep fully SOUTH of the magic wind wall - the isle clears the barrier line by ~1100 and even his biggest wind-gust ring (900) by ~370, so it is always reachable before the barrier opens
 {const _nc=nrCol;nrCol=function(x,y,wx,wy,n){if(onWzIsle(x,y)){const dx=x-WZ.x,dy=(y-WZ.y)*1.2,r=Math.hypot(dx,dy)/WZ.r;return r>.8?nrMix([230,216,176],[206,190,150],n):nrMix([120,96,176],[150,120,206],n);}return _nc(x,y,wx,wy,n);};}
-{const _rk=regionKey;regionKey=function(x,y){if(y<-4000&&onWzIsle(x,y))return'wzisle';return _rk(x,y);};}
+{const _rk=regionKey;regionKey=function(x,y){if(y<0&&onWzIsle(x,y))return'wzisle';return _rk(x,y);};}
 REGION_NAMES.wzisle="The Wizard's Isle";REGION_SUB.wzisle='Crackling tower of the Storm Wizard - he holds the magic barrier';REGION_LABEL.wzisle=[WZ.x,WZ.y-300];
 // ---- the magic barrier: glowing crystal mountains along the south edge + a shimmer along the north coast ----
 // Locked: the dragon may not enter the north lands. Unlocked (wizard defeated): ONLY the player's dragon crosses; every other unit stays on its side for good.
-function nrBarZone(x,y){return y<nrEdge(x)+60&&x<coastX(y)+60&&y<MWY0+300;}
+// The barrier runs the WHOLE width of the map: crystal mountains on land, a wall of strong magic winds over the sea (same line), so nobody sneaks north by sea or air.
+function nrBarZone(x,y){return y<nrEdge(x)+60&&y<MWY0+300;}
 function nrBarPush(o,nr){ // returns true if moved
   if(nr){let m=false;const ey=nrEdge(o.x)-40;if(o.y>ey){o.y=ey;m=true;}const cx=coastX(o.y)-40;if(o.x>cx){o.x=cx;m=true;}return m;}
-  if(!nrBarZone(o.x,o.y))return false;const dS=nrEdge(o.x)+62-o.y,dE=coastX(o.y)+62-o.x;if(dS<=dE)o.y=nrEdge(o.x)+62;else o.x=coastX(o.y)+62;return true;}
+  if(!nrBarZone(o.x,o.y))return false;o.y=nrEdge(o.x)+62;return true;}
 // ---- realm art: every building/tree kind is painted once into a cached sprite (cheap to draw), with small live glows/smoke on top ----
 const NR_ART={},NR_SPR=new Map();
 function nG(x,y,r,c){const g=SJC.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,c);g.addColorStop(1,'rgba(0,0,0,0)');SJC.fillStyle=g;SJC.beginPath();SJC.arc(x,y,r,0,TAU);SJC.fill();}
@@ -367,7 +370,7 @@ function nrUpd(u,dt){const S=NRS[u.species],dd=Math.hypot(u.x-D.x,u.y-D.y),alive
   if(u.role==='sq')nrSquadMove(u,S,dt);else nrWander(u,S,dt);nrClamp(u);}
 {const _uw=updWild;updWild=function(u,dt){if(u.nr){nrUpd(u,dt);return;}return _uw.apply(this,arguments);};updWild._base=_uw._base;}
 // every other unit, creature and bird stays out of the north for good (only the player's dragon may ever cross the barrier)
-function nrKeepOut(){for(const u of units){if(u.dead||u.nr||u.princess)continue;if(u.y<MWY0+300&&nrBarZone(u.x,u.y))nrBarPush(u,false);}
+function nrKeepOut(){for(const u of units){if(u.dead||u.nr||u.princess||u.nsea)continue;if(u.y<MWY0+300&&nrBarZone(u.x,u.y))nrBarPush(u,false);}
   if(typeof birds!=='undefined')for(const b of birds){if(!b.dead&&b.y<MWY0+300&&nrBarZone(b.x,b.y))nrBarPush(b,false);}
   for(const s of(typeof ships!=='undefined'?ships:[]))if(s&&s.y<MWY0+300&&nrBarZone(s.x,s.y))nrBarPush(s,false);}
 
@@ -438,10 +441,10 @@ function nrUpdWar(dt){if(!G||G.over||G.won)return;
   if(G.fc%30===0&&NRU.length)NRU=NRU.filter(u=>!u.dead);}
 function nrSqHome(sq){const h=sq.homeT;sq.st='home';sq.route=nrRoute(sq.at||'BF',h);sq.pi=0;}
 function nrMarch(){const n=nrArmySize(),dk=nrDarkMix(n),lt=nrLightMix(n,dk);
-  const A=nrMkSq('army','D',dk,nrRoute('Gorgrim War-Fort','BF').map((p,i,a)=>i===a.length-1?{x:NR_BF.x,y:NR_BF.y-90}:p),{homeT:'Gorgrim War-Fort',at:'BF'});
-  const B=nrMkSq('army','L',lt,nrRoute('Silverleaf','BF').map((p,i,a)=>i===a.length-1?{x:NR_BF.x,y:NR_BF.y+90}:p),{homeT:'Silverleaf',at:'BF'});
+  const A=nrMkSq('army','D',dk,nrRoute('DC','BF').map((p,i,a)=>i===a.length-1?{x:NR_BF.x,y:NR_BF.y-90}:p),{homeT:'DC',at:'BF'});
+  const B=nrMkSq('army','L',lt,nrRoute('LC','BF').map((p,i,a)=>i===a.length-1?{x:NR_BF.x,y:NR_BF.y+90}:p),{homeT:'LC',at:'BF'});
   A.foe=B;B.foe=A;G.nrBattles=(G.nrBattles||0)+1;G.nrArmy={d:dk.length,l:lt.length,t:G.t};
-  showToast(`📯 The goblin army marches! (${dk.length} strong) — the elves muster ${lt.length} defenders at the border`);try{horn();}catch(e){}}
+  showToast(`📯 The dark army marches out of the Doomforge Citadel! (${dk.length} strong) — the Lumenspire Citadel sends ${lt.length} defenders to the border`);try{horn();}catch(e){}}
 function nrBattle(dt){const A=NRQ.find(q=>q.kind==='army'&&q.side==='D'&&!q.dead),B=NRQ.find(q=>q.kind==='army'&&q.side==='L'&&!q.dead);
   if(!A&&!B)return;
   if(A&&B&&A.st==='battle'&&B.st==='battle'){A.bt=(A.bt||0)+dt;
@@ -449,17 +452,18 @@ function nrBattle(dt){const A=NRQ.find(q=>q.kind==='army'&&q.side==='D'&&!q.dead
     else{ // when real, the soldiers actually fight: nudge both blocks together
       A.x+=(B.x-A.x)*Math.min(1,dt*.3)*.5;B.x+=(A.x-B.x)*Math.min(1,dt*.3)*.5;}
     const aL=A.mem.length,bL=B.mem.length;
-    if(!aL||!bL||A.bt>120){const lightWon=!aL||A.bt>120;showToast(lightWon?'🛡️ The light army holds the border! The goblins scatter home':'⚔️ The dark army broke through... the elves fall back to Silverleaf');
+    if(!aL||!bL||A.bt>120){const lightWon=!aL||A.bt>120;showToast(lightWon?'🛡️ The light army holds the border! The dark survivors flee back to the Doomforge Citadel':'⚔️ The dark army broke through... the light army falls back to the Lumenspire Citadel');
       G.nrLastWin=lightWon?'L':'D';if(aL)nrSqHome(A);if(bL)nrSqHome(B);if(!lightWon&&aL){A.st='van';A.kind='van';A.st='go';A.route=nrRoute('BF','Silverleaf');A.pi=0;A.at='Silverleaf';}}}
   else if(A&&!B&&A.st==='battle'){A.kind='van';A.st='go';A.route=nrRoute('BF','Silverleaf');A.pi=0;A.at='Silverleaf';}
   else if(B&&!A&&B.st==='battle')nrSqHome(B);}
 function nrVanguard(){const dark=NR_TOWNS.filter(t=>NR_DARK.has(t.k)&&t.k!=='cyclops'),light=NR_TOWNS.filter(t=>NR_LIGHT.has(t.k));
-  const h=dark[RI(0,dark.length-1)],tg=light[RI(0,light.length-1)];const n=RI(3,6),l=nrLvl(),mix=[];
+  const h={n:'DC'},tg=light[RI(0,light.length-1)];const n=RI(3,6),l=nrLvl(),mix=[];
   for(let i=0;i<n;i++)mix.push(i===0&&l>=3?'orc':rnd()<.18+.03*l?'orc':i%3===1?'gobarch':'goblin');if(l>=5&&rnd()<.4)mix[n-1]='troll';
   nrMkSq('van','D',mix,nrRoute(h.n,tg.n),{homeT:h.n,at:tg.n});G.nrVans=(G.nrVans||0)+1;
-  if(Math.hypot(tg.x-D.x,tg.y-D.y)<5000||G.nrOpen)showToast(`🏴 A goblin raiding party (${n}) sneaks toward ${tg.n}!`);}
+  if(Math.hypot(tg.x-D.x,tg.y-D.y)<5000||G.nrOpen)showToast(`🏴 A raiding party (${n}) leaves the Doomforge Citadel for ${tg.n}!`);}
 // ======================= the Storm Wizard (boss) & the magic barrier =======================
-// He stands on top of his tower on a small island in the NE deep sea and never leaves it. Defeat him and the barrier opens - for the dragon only.
+// He stands on top of his tower on a small island in the NE deep sea and never leaves it. His health bar is a MAGIC SHIELD over him and his tower (q.js):
+// break it and the barrier opens - for the dragon only - and he is left dizzy and edible.
 const WZB={on:false,hp:0,maxHp:0,cd:2,spell:0,ice:[],marks:[],winds:[],koT:0,said:0,hitT:0,cast:0,stats:{ice:0,lightning:0,wind:0,melt:0}};
 const WZ_DMG={ice:9,lightning:6,wind:1};
 function wzMaxHp(){return Math.round(300*(1+.15*(nrLvl()-1))*(EASY?.7:1));}
@@ -489,7 +493,7 @@ function wzUpd(dt){const dd=Math.hypot(D.x-WZ.x,D.y-WZ.y);
       D.nrKb={vx:Math.cos(a)*1100,vy:Math.sin(a)*1100*.8,t:.65};float(D.x,D.y-heightOf()-80,'Whoooosh!','#d8f0ff');}}
   WZB.ice=WZB.ice.filter(s=>!s.done);WZB.marks=WZB.marks.filter(m=>!m.done||m.flash>0);WZB.winds=WZB.winds.filter(w=>w.t<1.7);}
 function wzDefeat(){WZB.on=false;G.nrOpen=1;G.nrOpenT=G.t;G.nrWzHp=0;puff(WZ.x,WZ.y-WZ.H,14,'rgba(200,170,255,',90,10);sparkle(WZ.x,WZ.y-WZ.H,20);
-  D.gold=(D.gold||0)+300;float(WZ.x,WZ.y-WZ.H-60,'+300 gold','#ffd84a');showToast('✨ The barrier opens for you! The Storm Wizard vanishes in a puff (+300 gold)');try{horn();}catch(e){}G.nrWzWins=(G.nrWzWins||0)+1;}
+  D.gold=(D.gold||0)+300;float(WZ.x,WZ.y-WZ.H-60,'+300 gold','#ffd84a');showToast('🛡️ The magic shield shatters! The barrier opens for you (+300 gold) — the dizzy wizard can be gobbled up');try{horn();}catch(e){}G.nrWzWins=(G.nrWzWins||0)+1;}
 // dragon fire: hurts the wizard and melts ice spikes into steam
 {const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);
   if(WZB.on&&WZB.koT<=0&&inFire(WZ.x,WZ.y,ox,oy))wzHurt(DR.fireDps*.55*dt,'fire');
@@ -500,7 +504,7 @@ function wzDefeat(){WZB.on=false;G.nrOpen=1;G.nrOpenT=G.t;G.nrWzHp=0;puff(WZ.x,W
 let NR_BART=-9;
 function nrTick(dt){
   if(D.nrKb){const k=D.nrKb;D.x+=k.vx*dt;D.y+=k.vy*dt;k.vx*=Math.pow(.05,dt);k.vy*=Math.pow(.05,dt);k.t-=dt;D.x=clamp(D.x,WX0+40,WX1-40);D.y=clamp(D.y,WY0+40,WY1-40);if(k.t<=0)D.nrKb=null;}
-  if(!G.nrOpen&&nrBarZone(D.x,D.y)){nrBarPush(D,false);if(G.t-NR_BART>4){NR_BART=G.t;showToast('🔮 A magic barrier blocks the way — defeat the Wizard!');}}
+  if(!G.nrOpen&&nrBarZone(D.x,D.y)){nrBarPush(D,false);if(G.t-NR_BART>4){NR_BART=G.t;showToast(D.x>coastX(D.y)?'🌪️ Strong magic winds blow you back — defeat the Wizard!':'🔮 A magic barrier blocks the way — defeat the Wizard!');}}
   if(G.fc%4===0)nrKeepOut();
   nrUpdP(dt);nrUpdKO(dt);for(const r of NR_RINGS)r.t+=dt;if(NR_RINGS.length&&NR_RINGS[0].t>.6)NR_RINGS.shift();
   nrUpdWar(dt);nrPop(dt);wzUpd(dt);
@@ -640,7 +644,7 @@ function wzDraw(){const t=wzTop(),x=t.x,y=t.y+20;
 {const _cf=drawCrashFx;drawCrashFx=function(){const r=_cf.apply(this,arguments);nrDrawFx();return r;};}
 // screen boss bar
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!WZB.on||G.nrOpen||!WZB.maxHp)return;const w=Math.min(420,VW*.6),x=(VW-w)/2,y=VW<760?118:84;
-  rect(x-2,y-2,w+4,14,'rgba(20,10,40,.75)');rect(x,y,w*Math.max(0,WZB.hp)/WZB.maxHp,10,'#a87aff');txt('🧙 The Storm Wizard'+(EASY?' (easy)':''),VW/2,y-6,13,'#e8dcff','center');};}
+  rect(x-2,y-2,w+4,14,'rgba(20,10,40,.75)');rect(x,y,w*Math.max(0,WZB.hp)/WZB.maxHp,10,'#a87aff');txt('🛡️ Storm Wizard\'s magic shield'+(EASY?' (easy)':''),VW/2,y-6,13,'#e8dcff','center');};}
 // ======================= magic turret towers =======================
 // Light lands: elven crystal towers shoot ice bolts (damage + a brief slow). Dark lands: orc spiked storm towers shoot lightning (short charge-up, then a zap).
 // They guard the castles, the border and the key villages, shoot the dragon and enemy-faction soldiers, can be burned/bitten down, and magically rebuild.
@@ -715,14 +719,14 @@ function nrTurFx(){const x0=cam.x-VW/cam.z/2-200,x1=cam.x+VW/cam.z/2+200;
 // region music for the Northern Realms (themes from partA/partMU)
 if(typeof MU!=='undefined'&&MU.themes)Object.assign(MU.themes,{shire:'pastoral',elven:'night',dwarf:'peaks',goblin:'jungle',orc:'battle',cyclops:'peaks',wzisle:'ocean'});
 // ======================= dragon eggs & the yin-yang guardian dragons =======================
-// A WHITE egg rests in the elven main castle (Silverleaf), a BLACK egg in the goblin main castle (Gobbleton), each on a shrine with its own guard.
+// A WHITE egg rests in the light side's shared Lumenspire Citadel, a BLACK egg in the dark side's Doomforge Citadel (see n.js/p.js), each in its keep with a garrison.
 // Grab it (like the princess) and fly it to your lair: it hatches a wingless, serpentine guardian dragon that circles the lair outskirts
 // (white: black eyes, ice breath; black: white eyes, lightning breath; they ride opposite each other like yin and yang).
 // Guardians last until the player dragon dies (saved). A guardian that is knocked out goes dizzy, puffs away, and its egg reappears at its castle.
-const NR_EGG={W:{k:'W',town:'Silverleaf',dx:0,dy:-70,g:[],gT:-99},B:{k:'B',town:'Gobbleton',dx:0,dy:-70,g:[],gT:-99}};
+const NR_EGG={W:{k:'W',cc:'L',town:'Lumenspire Citadel',dx:0,dy:40,g:[],gT:-99},B:{k:'B',cc:'D',town:'Doomforge Citadel',dx:0,dy:40,g:[],gT:-99}};
 const GD_R=560,GD_W=.32,GD_HP=140,GD_RANGE=480,GD_CD=1.1,GD_SEG=30;
 let GD=[];
-function eggPos(e){const t=NRT(e.town);return{x:t.x+e.dx,y:t.y+e.dy};}
+function eggPos(e){const t=NR_CC[e.cc];return{x:t.x+e.dx,y:t.y+e.dy};}
 function eggState(k){return G['nrEgg'+k]||'nest';}
 function eggSet(k,s){G['nrEgg'+k]=s;}
 function gdMk(k,hp){return{k,hp:hp||GD_HP,maxHp:GD_HP,cd:R(0,1),fx:null,hitT:-9,koT:0,segs:[]};}
@@ -751,7 +755,7 @@ function eggHatch(k){D.nrEgg=null;eggSet(k,'lair');G['nrGd'+k]=GD_HP;gdSync();sp
 function eggReturn(k,why){if(D.nrEgg===k)D.nrEgg=null;eggSet(k,'nest');const e=NR_EGG[k];e.gT=-99;if(why)showToast(why);}
 // --- guardians ---
 function gdUpd(dt){G.nrGdA=((G.nrGdA||0)+GD_W*dt)%TAU;
-  for(const g of GD){const h=gdHead(g);g.fx&&(g.fx.t-=dt);if(g.koT>0){g.koT-=dt;if(g.koT<=0){g.dead=true;puff(h.x,h.y-30,12,'rgba(230,230,240,',70,9);G['nrGd'+g.k]=0;eggReturn(g.k,g.k==='W'?'💫 The white guardian puffed away — its egg is back in Silverleaf castle':'💫 The black guardian puffed away — its egg is back in Gobbleton castle');}continue;}
+  for(const g of GD){const h=gdHead(g);g.fx&&(g.fx.t-=dt);if(g.koT>0){g.koT-=dt;if(g.koT<=0){g.dead=true;puff(h.x,h.y-30,12,'rgba(230,230,240,',70,9);G['nrGd'+g.k]=0;eggReturn(g.k,g.k==='W'?'💫 The white guardian puffed away — its egg is back in the Lumenspire Citadel':'💫 The black guardian puffed away — its egg is back in the Doomforge Citadel');}continue;}
     let best=null,bd=GD_RANGE,near=0;const scan=a=>{for(const u of a){if(!gdFoe(u))continue;const d=Math.hypot(u.x-h.x,u.y-h.y);if(d<120)near++;if(d<bd){bd=d;best=u;}}};
     scan(units);
     g.cd-=dt;if(best&&g.cd<=0){g.cd=GD_CD;gdHurtFoe(best,g.k==='W'?6:7,g.k);g.fx={x:best.x,y:best.y,t:.35};g.shots=(g.shots||0)+1;}
@@ -784,7 +788,7 @@ function gdDraw(g){const T=G.t,a0=gdAng(g),W=g.k==='W',body=W?'#f2f2f8':'#1c1824
 function nrEggFx(){const x0=cam.x-VW/cam.z/2-300,x1=cam.x+VW/cam.z/2+300,y0=cam.y-VH/cam.z/2-300,y1=cam.y+VH/cam.z/2+300;
   for(const e of Object.values(NR_EGG)){if(eggState(e.k)!=='nest')continue;const p=eggPos(e);if(p.x<x0||p.x>x1||p.y<y0||p.y>y1)continue;
     poly([p.x-24,p.y+4,p.x+24,p.y+4,p.x+16,p.y-6,p.x-16,p.y-6],e.k==='W'?'#d8d0f0':'#3a2e3e');rect(p.x-18,p.y-10,36,5,e.k==='W'?'#b8a8e8':'#5a3a4a');nrEggArt(p.x,p.y-10,e.k,1);}
-  if(D.nrEgg){const hh=heightOf(),a=D.ang;nrEggArt(D.x+Math.cos(a)*24,D.y-hh+Math.sin(a)*24+30,D.nrEgg,.8);}
+  // (the carried egg is now drawn after the dragon, in its claws: n.js eggCarryDraw)
   if(GD.length&&Math.abs(LAIR.x-cam.x)<VW/cam.z/2+GD_R+200&&Math.abs(LAIR.y-cam.y)<VH/cam.z/2+GD_R+200)for(const g of GD)gdDraw(g);}
 {const _f=nrDrawFx;nrDrawFx=function(){_f();nrEggFx();};}
 // --- save / load: G.nrEggW/B and G.nrGdW/B are plain G fields, so the existing save keeps them; old saves simply have none ---
@@ -792,3 +796,612 @@ function nrEggFx(){const x0=cam.x-VW/cam.z/2-300,x1=cam.x+VW/cam.z/2+300,y0=cam.
 // --- moving up a castle level is not a death: guardians, eggs at the lair and the wizard's opened barrier carry over ---
 {const _nl=nextLevel;nextLevel=function(){const k={nrGdW:G.nrGdW,nrGdB:G.nrGdB,nrEggW:G.nrEggW,nrEggB:G.nrEggB,nrOpen:G.nrOpen,nrOpenT:G.nrOpenT},egg=D.nrEgg;const r=_nl.apply(this,arguments);
   for(const f in k)if(k[f]!==undefined)G[f]=k[f];if(egg){eggSet(egg,'nest');}for(const q of ['W','B'])if(G['nrEgg'+q]==='carried')G['nrEgg'+q]='nest';D.nrEgg=null;gdSync();return r;};}
+
+// ================= fire & lava hurt birds =================
+// Birds live in their own list (not `units`), so the breath and lava splash never reached them. Now: fire singes a bird in the cone
+// (small birds pop at once, hawks/eagles/vultures last a moment longer); a lava splash knocks out every low bird in the blast.
+// Family-friendly: a singed bird is "knocked out of the sky" in a puff of feathers with dizzy stars, no remains.
+function birdKO(b,why){if(b.dead)return;b.dead=true;const B=BIRD[b.kind]||{pts:10},y=b.y-(b.z||0);
+  puff(b.x,y,6,'rgba(245,235,215,',70,4);if(typeof hnFx==='function')hnFx(b.x,b.y-(b.z||0)*.6,'feathers');
+  G.stats.birdsSinged=(G.stats.birdsSinged||0)+1;G.stats.birdPts=(G.stats.birdPts||0)+B.pts;float(b.x,y-16,`Feathers fly! ${why} +${B.pts} pts`,'#ffd27a');}
+function birdFireHp(b){return b.bfHp!==undefined?b.bfHp:(b.bfHp=(BIRD[b.kind]&&BIRD[b.kind].hp||1)*.25);}
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);
+  if(typeof birds!=='undefined')for(const b of birds){if(b.dead||Math.abs(b.x-ox)>DR.fireRange+20||Math.abs(b.y-oy)>DR.fireRange+20||!inFire(b.x,b.y,ox,oy))continue;
+    b.bfHp=birdFireHp(b)-dt;b.scared=3;if(b.bfHp<=0)birdKO(b,'Singed!');}
+  return r;};}
+{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);const R2=(LAVA_CFG.splashR+20)**2;
+  if(typeof birds!=='undefined')for(const b of birds)if(!b.dead&&(b.z||0)<160&&(b.x-x)**2+(b.y-y)**2<R2)birdKO(b,'Lava!');return r;};}
+
+// ================= the northern sea above the Wizard's Isle =================
+// Open water north of the isle, beyond the magic wind wall (x from the coast to the east edge, y from the top edge to just north of the wall) used to be empty.
+// Now it holds narwhal pods, orca and dolphin pods, whales and fish schools. Lazy: they only exist while the dragon is near the north-east
+// (spawned out of sight, topped up every few seconds, so anything eaten comes back) and are removed when it leaves, so the rest of the map pays nothing.
+const NSEA_PLAN={narwhal:3,orca:2,dolphin:3,whale:3,school:5}; // groups (narwhal 3-5, orca 2-3, dolphin 3-4 each; whales single; schools of 6-9 fish)
+const NSEA={on:false,t:0,grp:{}};
+const NSEA_GAP=240; // they keep this far north of the wind wall
+function nseaIn(x,y){return y>WY0+260&&y<nrEdge(x)-NSEA_GAP&&y<WZ.y-700&&x>coastX(y)+180&&x<WX1-160&&inSea(x,y)&&Math.hypot(x-WZ.x,(y-WZ.y)*1.2)>950;}
+function nseaPt(far){for(let t=0;t<120;t++){const y=R(WY0+300,Math.min(WZ.y-760,-2700-NSEA_GAP)),x=R(coastX(y)+220,WX1-200);if(!nseaIn(x,y)||seaD(x,y)<200)continue;if(far&&Math.hypot(x-D.x,y-D.y)<1100)continue;return{x,y};}return null;}
+function nseaNear(){return D.y<nrEdge(D.x)+1300&&D.x>coastX(D.y)-500;} // the dragon is at or near the north-east sea (the wind wall, the Wizard's Isle, or beyond)
+function nseaUnits(){return units.filter(u=>!u.dead&&u.nsea);}
+function nseaSpawn(k,far){const p=nseaPt(far);if(!p)return 0;const n0=units.length,g=++NSEA.t;
+  if(k==='narwhal')ocPod(p,RI(3,5));else if(k==='orca'||k==='dolphin')nwGroup(k,far,p);
+  else if(k==='whale')mkSea('whale',p.x,p.y,{hp:140,maxHp:140,spoutT:R(2,6)});else if(k==='school')mkSea('school',p.x,p.y,{n:RI(6,9),hp:999,maxHp:999});
+  for(let i=n0;i<units.length;i++){units[i].nsea=k;units[i].nsg=g;}return units.length-n0;}
+function nseaGroups(k){return new Set(nseaUnits().filter(u=>u.nsea===k).map(u=>u.nsg)).size;}
+function nseaTick(dt){if(!nseaNear()){if(NSEA.on){NSEA.on=false;for(const u of units)if(u.nsea)u.dead=true;units=units.filter(u=>!u.nsea);}return;}
+  // the wind wall holds them too: they stay north of it (two-way barrier for everything but the player's dragon)
+  for(const u of units)if(u.nsea&&!u.dead){const lim=nrEdge(u.x)-90;if(u.y>lim)u.y=lim;}
+  NSEA.cd=(NSEA.cd||0)-dt;if(NSEA.on&&NSEA.cd>0)return;NSEA.on=true;NSEA.cd=4;
+  for(const k in NSEA_PLAN){let have=nseaGroups(k);for(let i=0;have<NSEA_PLAN[k]&&i<NSEA_PLAN[k];i++)if(nseaSpawn(k,true))have++;}}
+{const _up=updParts;updParts=function(dt){_up(dt);if(scene==='play'&&G&&!G.over)nseaTick(dt);};}
+{const _r=nrReset;nrReset=function(){const r=_r.apply(this,arguments);NSEA.on=false;NSEA.cd=0;return r;};}
+REGION_SUB.wzisle=(REGION_SUB.wzisle||'')+'. Beyond his wall of winds, narwhals, orcas, dolphins and whales swim the cold north sea';
+
+// ================= the wall of magic winds over the sea (same line as the crystal mountains) =================
+// The barrier zone itself (nrBarZone) now spans the whole map width; this draws the sea half: swirling gusts and streaks along nrEdge.
+// Strong before the Wizard falls; afterwards it still blows (fainter) - only the player's dragon may pass, everything else stays on its side.
+function wwDraw(x0,x1,y0,y1){const T=G.t,a=G.nrOpen?.4:1,xs=Math.max(x0,coastX(nrEdge(x0))-40),xe=Math.min(x1,WX1);if(xs>=xe)return;
+  ctx.lineCap='round';const st=Math.floor(xs/52)*52;
+  // misty violet band - the body of the wall
+  for(let x=st;x<xe;x+=52){const y=nrEdge(x);if(y<y0-200||y>y1+60||x<coastX(y)-30)continue;const p=Math.sin(T*1.3+x*.013);
+    ell(x,y-46,70,78,`rgba(196,186,255,${(.10+.04*p)*a})`);ell(x+20,y-70+10*p,46,40,`rgba(235,240,255,${(.08+.04*p)*a})`);}
+  for(let x=st;x<xe;x+=52){const y=nrEdge(x);if(y<y0-200||y>y1+60||x<coastX(y)-30)continue;
+    for(let k=0;k<5;k++){const ph=T*(1.7+k*.45)+x*.021+k*2.3,yy=y+34-k*34+Math.sin(ph)*12,w=.42+.2*Math.sin(ph*1.3+k);
+      ctx.strokeStyle=k%2?`rgba(200,176,255,${w*a})`:`rgba(236,246,255,${(w+.1)*a})`;ctx.lineWidth=(6-k*.8);ctx.beginPath();
+      ctx.moveTo(x-38,yy);ctx.quadraticCurveTo(x-4,yy-24*Math.cos(ph),x+44,yy+5*Math.sin(ph));ctx.stroke();}
+    if((x/52|0)%2===0){const ph=T*3+x*.05,cx=x+12*Math.sin(T*.9+x),cy=y-56+10*Math.cos(ph);ctx.strokeStyle=`rgba(245,250,255,${.6*a})`;ctx.lineWidth=3.2;
+      ctx.beginPath();ctx.arc(cx,cy,22,ph,ph+4.2);ctx.stroke();ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(cx,cy,11,ph+2,ph+5.6);ctx.stroke();}}
+  // fast streaks racing along the wall
+  for(let i=0;i<44;i++){const span=xe-xs;if(span<60)break;const x=xs+((T*(260+i*9)+i*977)%span),y=nrEdge(x)-4-(i%6)*24+Math.sin(T*2+i)*8;if(x<coastX(y))continue;
+    ctx.strokeStyle=`rgba(250,252,255,${.7*a})`;ctx.lineWidth=2.6;ctx.beginPath();ctx.moveTo(x-64,y);ctx.lineTo(x,y-4);ctx.stroke();}
+  ctx.lineCap='butt';}
+// drawn after drawSeaTop (the sea surface is painted over everything below it)
+{const _st=drawSeaTop;drawSeaTop=function(){const r=_st.apply(this,arguments);const hw=VW/cam.z/2+120,hh=VH/cam.z/2+200;wwDraw(cam.x-hw,cam.x+hw,cam.y-hh,cam.y+hh);return r;};}
+
+// ---- the new isle is kept clear: no ice floes on/around it, and the giant squid lurks elsewhere ----
+{const _np=ocNorthPt;ocNorthPt=function(far){for(let t=0;t<20;t++){const p=_np.apply(this,arguments);if(!p||Math.hypot(p.x-WZ.x,(p.y-WZ.y)*1.2)>700)return p;}return null;};}
+{const _sq=sqDeepOK;sqDeepOK=function(x,y){return Math.hypot(x-WZ.x,(y-WZ.y)*1.2)>1300&&_sq.apply(this,arguments);};}
+function wzClearFloes(){if(OC&&OC.floes)OC.floes=OC.floes.filter(f=>Math.hypot(f.x-WZ.x,(f.y-WZ.y)*1.2)>WZ.r+Math.max(f.rx,f.ry)+250);}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);wzClearFloes();return r;};}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);wzClearFloes();if(!G.nrOpen&&nrBarZone(D.x,D.y))nrBarPush(D,false);nrbLoad();return r;};}
+
+// ================= every northern building can be burned, lava-splashed or stomped down, then magically rebuilds =================
+// [hp, hit radius]. Not buildings (stay): the crystal barrier peaks, rocks/stones/boulders, lava vents, bonfires. Plants already burn (PB). The Wizard's tower is added in q.js (only destroyable once he is defeated).
+const NR_BLD={elfspire:[260,70],elfhouse:[110,50],treehouse:[80,40],lantern:[14,16],hobhole:[100,48],dwhall:[260,72],dwforge:[150,52],dwmine:[180,56],dwgate:[300,80],
+  gobtower:[160,48],gobshack:[70,42],orcfort:[300,100],orcwall:[150,64],orctent:[60,44],spikes:[24,24],cyccave:[300,90],megahut:[160,64]};
+const NRB_RE=45;let NRB=[],NRB_SRC=null,NRB_N=-1;
+function nrbList(){if(NRB_SRC!==DECOR||NRB_N!==DECOR.length){NRB_SRC=DECOR;NRB_N=DECOR.length;NRB=DECOR.filter(o=>o.nr&&NR_BLD[o.k]);for(const o of NRB)if(o.bst===undefined){o.bmax=NR_BLD[o.k][0]*(o.s||1);o.bhp=o.bmax;o.bst='ok';}}return NRB;}
+function nrbName(k){return{elfspire:'Elven castle',elfhouse:'Elf house',treehouse:'Tree house',lantern:'Elf lantern',hobhole:'Hobbit hole',dwhall:'Dwarf hall',dwforge:'Dwarf forge',dwmine:'Dwarf mine',dwgate:'Ironhold Gate',
+  gobtower:'Goblin tower',gobshack:'Goblin shack',orcfort:'Orc fortress',orcwall:'Orc palisade',orctent:'Orc tent',spikes:'Spike barricade',cyccave:'Cyclops cave',megahut:'Cyclops hut'}[k]||'Building';}
+function nrbHurt(o,d,how){if(o.bst!=='ok')return false;o.bhp-=d;o.bhit=G.t;if(how==='fire')o.bburn=G.t;if(o.bhp>0)return false;
+  o.bhp=0;o.bst='ruin';o.breT=G.t+NRB_RE;G.nrBldDown=(G.nrBldDown||0)+1;const r=NR_BLD[o.k][1]*(o.s||1);
+  puff(o.x,o.y-r*.5,Math.min(14,4+r/8|0),'rgba(150,130,110,',60+r,8);if(r>30)G.shake=Math.max(G.shake,r>60?6:3);
+  if(o.k!=='spikes'&&o.k!=='lantern'||rnd()<.25)float(o.x,o.y-r-30,`${nrbName(o.k)} ${how==='fire'?'burns down':how==='lava'?'melts in the lava':how==='claw'?'is smashed to rubble':'is stomped flat'}!`,'#ffd27a');return true;}
+function nrbRebuild(o){o.bst='ok';o.bhp=o.bmax;o.bburn=0;G.nrBldRebuilt=(G.nrBldRebuilt||0)+1;
+  if(Math.abs(o.x-D.x)<2000&&Math.abs(o.y-D.y)<1500){sparkle(o.x,o.y-40,12);if(o.k!=='spikes'&&o.k!=='lantern')float(o.x,o.y-NR_BLD[o.k][1]-40,`✨ The ${nrbName(o.k).toLowerCase()} magically rebuilds`,'#e6d0ff');}}
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);if(oy<MWY0+400){const F=DR.fireRange+110;
+  for(const o of nrbList())if(o.bst==='ok'&&Math.abs(o.x-ox)<F&&Math.abs(o.y-oy)<F){const R=NR_BLD[o.k][1]*(o.s||1)*.6;if(inFire(o.x,o.y,ox,oy)||inFire(o.x-R,o.y,ox,oy)||inFire(o.x+R,o.y,ox,oy))nrbHurt(o,DR.fireDps*.5*dt,'fire');}}
+  return r;};}
+{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);if(y<MWY0+400)for(const o of nrbList())if(o.bst==='ok'&&Math.hypot(o.x-x,o.y-y)<LAVA_CFG.splashR+NR_BLD[o.k][1]*(o.s||1))nrbHurt(o,70,'lava');return r;};}
+{const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);if(D.y<MWY0+400)for(const o of nrbList())if(o.bst==='ok'&&Math.hypot(o.x-D.x,o.y-D.y)<DR.stompR+NR_BLD[o.k][1]*(o.s||1))nrbHurt(o,DR.stompDmg*1.6,'stomp');return r;};}
+{const _t=nrTick;nrTick=function(dt){_t(dt);if(G.fc%30===0)for(const o of nrbList())if(o.bst==='ruin'&&G.t>=o.breT&&Math.hypot(o.x-D.x,o.y-D.y)>500)nrbRebuild(o);};}
+{const _r=nrReset;nrReset=function(){const r=_r.apply(this,arguments);for(const o of nrbList()){o.bst='ok';o.bhp=o.bmax;o.bburn=0;}return r;};}
+// save/load: the ruined ones (indices into the fixed, seeded list) - older saves simply have none
+{const _ss=svSnapshot;svSnapshot=function(){const L=nrbList();G.nrBR=[];for(let i=0;i<L.length;i++)if(L[i].bst==='ruin')G.nrBR.push(i,Math.max(0,Math.round(L[i].breT-G.t)));return _ss.apply(this,arguments);};}
+function nrbLoad(){const L=nrbList();for(const o of L){o.bst='ok';o.bhp=o.bmax;}if(Array.isArray(G.nrBR))for(let i=0;i+1<G.nrBR.length;i+=2){const o=L[G.nrBR[i]];if(o){o.bst='ruin';o.bhp=0;o.breT=G.t+(+G.nrBR[i+1]||NRB_RE);}}}
+// drawing: rubble while down (a soft sparkle shortly before it rebuilds), flames/smoke while burning, a small health bar when damaged
+{const _dd=nrDrawDecor;nrDrawDecor=function(o){if(o.bst==='ruin'){nrbRubble(o);return;}_dd(o);if(o.bst==='ok'){const x=o.x,y=o.y,s=o.s||1,R=NR_BLD[o.k][1]*s;
+  if(o.bburn&&G.t-o.bburn<1.2){const f=.5+.4*Math.sin(G.t*15+x);ell(x,y-R*.6,R*.55,R*.6,`rgba(255,${120+Math.round(60*f)},40,${.22+.14*f})`);if(rnd()<.25)smoke(x+R*(rnd()-.5),y-R);}
+  if(o.bhp<o.bmax&&o.bmax>=40&&Math.abs(x-D.x)<700&&Math.abs(y-D.y)<500){rect(x-22,y-R*1.5-30,44,4,'rgba(0,0,0,.5)');rect(x-22,y-R*1.5-30,44*o.bhp/o.bmax,4,'#ffb050');}}};}
+function nrbRubble(o){const x=o.x,y=o.y,R=NR_BLD[o.k][1]*(o.s||1),n=Math.max(3,Math.min(11,R/7|0)),dark=/gob|orc|cyc|mega|spikes/.test(o.k),c1=dark?'#4a4038':o.k.startsWith('elf')||o.k==='lantern'?'#d8d0e8':'#8a8278',c2=dark?'#2e2824':'#6a645c';
+  ell(x,y,R*1.05,R*.42,'rgba(30,24,20,.35)');for(let i=0;i<n;i++){const a=i*2.4+(o.v||0),rr=R*.75*((i*37%11)/11);ell(x+Math.cos(a)*rr,y-4+Math.sin(a)*rr*.35-(i%3)*3,4+R*.09+(i%3),3+R*.06,i%2?c1:c2);}
+  if(R>30)for(let i=0;i<3;i++)line(x-R*.4+i*R*.35,y-4,x-R*.3+i*R*.35,y-R*.35,'#3a2e24',2);const q=(o.breT-G.t)/NRB_RE;if(q<.25&&q>0)ell(x,y-R*.4,R*.8,R*.6,`rgba(220,200,255,${.22*(1-q/.25)})`);}
+// ======================= queue 1, 10, 11, 12, 18: Cerberus, mixed armies, Medusa, wizard/Medusa stay down until death, carried egg in flight =======================
+// ---- 1. CERBERUS: cartoony three-headed dogs in small packs near goblin/orc lands (hostile, triple bite + fast lunge, edible once worn down) ----
+NRS.cerberus={hp:90,sp:122,side:'W',dm:3,cd:1.35,food:38,sz:1.3,tough:1,aggro:480};
+NR_SP.add('cerberus');NR_NAMES.cerberus='Cerberus (three-headed dogs)';HEAL.cerberus=FOOD.cerberus=38;FAUNA.cerberus={hp:90,sp:122,zone:'nr'};
+if(typeof DG!=='undefined'&&DG.ch)DG.ch.cerberus=.2;
+if(typeof tallyAddSect==='function')tallyAddSect('nrdark','Northern Realms · Dark lands','👹','#9ad06a',[['cerberus',NR_NAMES.cerberus]]);
+NR_AMB.goblin.push(['cerberus',1]);NR_AMB.orc.push(['cerberus',1]);
+const CB_PACK_MAX=2;
+function cbNear(){let n=0;for(const u of NRU)if(!u.dead&&u.species==='cerberus'&&u.role==='amb'&&Math.abs(u.x-D.x)<3300&&Math.abs(u.y-D.y)<3300)n++;return n;}
+{const _sp=nrSpawn;nrSpawn=function(sp,x,y,o){
+  // war units (11): a neutral creature that joins a squad fights for that squad's side with real war stats
+  if(o&&o.sq&&NR_WARS[sp]&&NRS[sp].side!==o.sq.side){const old=NRS[sp];NRS[sp]=NR_WARS[sp];let u;try{u=_sp.call(this,sp,x,y,Object.assign({},o,{side:o.sq.side,war:1}));}finally{NRS[sp]=old;}return u;}
+  if(sp==='cerberus'&&o&&o.role==='amb'&&!o.pack){if(cbNear()>=CB_PACK_MAX*3)return _sp.call(this,'goblin',x,y,o);
+    const u=_sp.apply(this,arguments);u.pack=1;const n=RI(1,2);for(let i=0;i<n;i++){const a=R(0,TAU);const v=_sp.call(this,'cerberus',x+Math.cos(a)*60,y+Math.sin(a)*40,Object.assign({},o,{pack:1}));v.pack=1;}G.cbPacks=(G.cbPacks||0)+1;return u;}
+  return _sp.apply(this,arguments);};}
+function cbAttack(u,S,T,dt,isD){const d=Math.hypot(T.x-u.x,T.y-u.y);if(Math.abs(T.x-u.x)>1)u.face=T.x>u.x?1:-1;u.lcd=(u.lcd||0)-dt;if(u.bite>0)u.bite-=dt;
+  const dmg=()=>S.dm*(G.lvl>1?1+.06*(G.lvl-1):1);
+  if(u.lg>0){u.lg-=dt;u.x+=Math.cos(u.lga)*S.sp*3*dt;u.y+=Math.sin(u.lga)*S.sp*3*dt;nrClamp(u);u.anim=(u.anim||0)+dt*20;if(d<50&&!(u.tb>0)){u.tb=3;u.tbT=0;u.lg=0;}return;}
+  if(u.tb>0){u.tbT-=dt;if(u.tbT<=0){u.tbT=.16;u.tb--;u.bite=.14;u.mouth=((u.mouth||0)+1)%3;
+      if(d<64&&(!isD||D.alt<.4)){if(isD){hurtDragon(dmg(),'cerberus');u.lastHitD=G.t;}else nrHit(T,S.dm,u);G.cbBites=(G.cbBites||0)+1;}
+      if(u.tb===0){u.cd=S.cd;if(isD&&dist(u,D)<900&&rnd()<.6)float(D.x+R(-20,20),D.y-90,'Chomp chomp chomp!','#ffb0a0');}}return;}
+  if(u.tele>0){u.tele-=dt;if(u.tele<=0){u.lg=.42;u.lga=Math.atan2(T.y-u.y,T.x-u.x);u.lcd=3.2;G.cbLunges=(G.cbLunges||0)+1;}return;}
+  if(d<54){if(u.cd<=0){u.tb=3;u.tbT=0;}return;}
+  if(d<260&&u.lcd<=0){u.tele=.35;if(isD&&dist(u,D)<900)float(u.x,u.y-46,'Grrr-rrr-rrr!','#ffb0a0');return;}
+  moveTo(u,T.x,T.y,S.sp,dt);u.anim=(u.anim||0)+dt*12;}
+{const _na=nrAttack;nrAttack=function(u,S,T,dt,isD){if(u.species==='cerberus')return cbAttack(u,S,T,dt,isD);return _na.apply(this,arguments);};}
+NR_DRAW.cerberus=function(x,y,s,f,a,u){const body='#3e3038',dk='#271d24',lt='#64505a',crouch=u.tele>0?3*s:0;y+=crouch*.3;
+  for(const lx of[-11,-5,6,12]){const sw=a?Math.sin((u.anim||0)*1.6+lx)*3*s:0;line(x+lx*s*f,y-9*s,x+lx*s*f+sw,y,dk,3.4*s);ell(x+lx*s*f+sw,y,2.8*s,1.5*s,'#1a1418');}
+  const tw=Math.sin(G.t*8+(u.id||0))*3*s;line(x-14*s*f,y-15*s,x-23*s*f,y-25*s+tw,dk,2.6*s);ell(x-23*s*f,y-26*s+tw,2.6*s,3*s,'#e0603a');ell(x-23*s*f,y-27*s+tw,1.3*s,1.6*s,'#ffd070');
+  ell(x,y-15*s,17*s,9*s,body);ell(x+1*s*f,y-19*s,12*s,4.5*s,lt);
+  for(let i=0;i<3;i++){const bob=Math.sin(G.t*6+i*2.1)*1.2*s,hx=x+(10+i*5)*s*f,hy=y-(32-i*5)*s+bob+crouch,open=u.bite>0&&(u.mouth||0)===i;
+    line(x+7*s*f,y-19*s,hx-2*s*f,hy+2*s,body,6*s);ell(hx-3*s*f,hy+4*s,4.4*s,2*s,'#a83232');for(const k of[-2,0,2])ell(hx-3*s*f+k*s,hy+5*s,.9*s,.9*s,'#e8c040');
+    poly([hx-4*s*f,hy-3*s,hx-2*s*f,hy-10*s,hx+1*s*f,hy-4*s],dk);ell(hx,hy,6*s,5*s,body);ell(hx+5*s*f,hy+(open?0:1)*s,4.2*s,2.8*s,lt);ell(hx+8.6*s*f,hy-.4*s,1.4*s,1.3*s,'#111');
+    if(open){ell(hx+5*s*f,hy+3.6*s,3.4*s,2*s,'#c83048');ell(hx+6*s*f,hy+2.2*s,.8*s,.8*s,'#fff');ell(hx+3.6*s*f,hy+2.2*s,.8*s,.8*s,'#fff');}
+    nrEyes(hx+1.5*s*f,hy-1.6*s,2,2.6*s,.75*s);}
+  if(u.tele>0)txt('!',x+18*s*f,y-46*s,14,'#ff6040','center');};
+// ---- 11. MIXED ARMIES: every creature of each side marches (heavies rarer), strength still matched ----
+const NR_WARS={satyr:Object.assign({},NRS.satyr,{side:'L',flee:0,dm:1.5,cd:.9}),unicorn:Object.assign({},NRS.unicorn,{side:'L',flee:0,dm:3,cd:1.1}),minotaur:Object.assign({},NRS.minotaur,{side:'L'})};
+nrStr=function(sp){const S=NR_WARS[sp]&&!NRS[sp].dm?NR_WARS[sp]:NRS[sp];return S.dm?S.hp/(S.armor||1)*(S.horn?S.dm+S.horn*.3:S.dm)/S.cd*(S.rng?1.2:1):0;};
+{const _dm=nrDarkMix;nrDarkMix=function(n,l){l=l||nrLvl();const out=_dm.call(this,n,l);
+  const add=[['spider',Math.max(1,Math.round(n*.08))],['scorpion',Math.max(1,Math.round(n*.06))],['cerberus',l>=2?Math.max(1,Math.round(n*.05)):1]];if(l>=3&&!out.includes('cyclops'))add.push(['cyclops',1]);if(l>=2&&!out.includes('wyvern'))add.push(['wyvern',1]);if(l>=6)add.push(['wyvern',1]);
+  let c=0;for(const[k,m]of add)for(let i=0;i<m;i++){let j=out.lastIndexOf((c++)%3===2?'gobarch':'goblin');if(j<0)j=out.lastIndexOf('goblin');if(j<0)j=out.lastIndexOf('gobarch');if(j<0)j=out.lastIndexOf('orc');if(j<0)break;out[j]=k;}
+  return out;};}
+{const _lm=nrLightMix;nrLightMix=function(n,dark){const out=_lm.apply(this,arguments),L=nrLvl(),tgt=.9*dark.reduce((s,k)=>s+nrStr(k),0);
+  const add=[['centaur',Math.max(1,Math.round(n*.1))],['satyr',Math.max(1,Math.round(n*.06))],['unicorn',Math.max(1,Math.round(n*.05))]];if(L>=2)add.push(['minotaur',Math.max(1,Math.round(n/18))]);
+  for(const[k,m]of add)for(let i=0;i<m;i++){let j=out.lastIndexOf('hobsol');if(j<0)j=out.lastIndexOf('elf');if(j<0)break;out[j]=k;}
+  let s=out.reduce((a,k)=>a+nrStr(k),0);const UP={hobsol:'elf',elf:'dwarf',dwarf:'unirider',satyr:'centaur'};
+  for(let j=0;s<tgt&&j<out.length*3;j++){const q=j%out.length,up=UP[out[q]];if(up){s+=nrStr(up)-nrStr(out[q]);out[q]=up;}}return out;};}
+// vanguards and patrols get a little variety too
+{const _mk=nrMkSq;nrMkSq=function(kind,side,list,route,o){list=list.slice();const l=nrLvl();
+  if(kind==='van'&&side==='D'){for(let i=1;i<list.length;i++)if((list[i]==='goblin'||list[i]==='gobarch')&&rnd()<.35)list[i]=nrPick([['spider',3],['scorpion',2],['cerberus',l>=2?2:1],['wyvern',l>=4?1:0]]);}
+  if(kind==='patrol'&&side==='L'&&rnd()<.6)list[list.length-1]=nrPick([['centaur',3],['satyr',2],['unicorn',2],['minotaur',l>=2?1:0]]);
+  return _mk.call(this,kind,side,list,route,o);};}
+// war units: their own side, their war stats while they update / fight abstractly
+nrEnemy=function(a,b){const A=a.side||NRS[a.species].side,B=b.side||NRS[b.species].side;return (A==='L'&&(B==='D'||B==='W'))||(B==='L'&&(A==='D'||A==='W'));};
+{const _nu=nrUpd;nrUpd=function(u,dt){if(u.war&&NR_WARS[u.species]){const k=u.species,old=NRS[k];NRS[k]=NR_WARS[k];try{return _nu.apply(this,arguments);}finally{NRS[k]=old;}}return _nu.apply(this,arguments);};}
+{const _af=nrAbsFight;nrAbsFight=function(a,b,dt){const old={};for(const k in NR_WARS){old[k]=NRS[k];NRS[k]=NR_WARS[k];}try{return _af.apply(this,arguments);}finally{for(const k in old)NRS[k]=old[k];}};}
+// ---- 12. MEDUSA mini boss: a ruined temple at the far west of the dark lands ----
+const MDL={x:-16300,y:-9300,r:330};
+const MDB={on:false,hp:0,maxHp:0,x:MDL.x,y:MDL.y,face:1,cd:2,gz:0,gzCd:6,tl:0,tlCd:4,hb:0,koT:0,hitT:-9,stoneT:0,toastT:-99,anim:0};
+function mdMaxHp(){return Math.min(1100,340+80*(nrLvl()-1));}
+function mdDown(){return !!G.mdDown;}
+function mdStart(){MDB.on=true;MDB.maxHp=mdMaxHp();MDB.hp=G.mdHp>0?Math.min(G.mdHp,MDB.maxHp):MDB.maxHp;MDB.x=MDL.x;MDB.y=MDL.y;MDB.koT=0;MDB.gz=0;MDB.tl=0;MDB.cd=1.5;MDB.gzCd=5;MDB.tlCd=3;}
+function mdHurt(d,how){if(!MDB.on||MDB.koT>0||mdDown()||d<=0)return;MDB.hp-=d;MDB.hitT=G.t;G.mdHp=Math.max(1,Math.round(MDB.hp));G.mdHits=(G.mdHits||0)+1;
+  if(MDB.hp<=0){MDB.hp=0;MDB.koT=2.2;float(MDB.x,MDB.y-110,'Dizzy!','#ffe28a');}}
+function mdDefeat(){MDB.on=false;G.mdDown=1;G.mdHp=0;G.mdWins=(G.mdWins||0)+1;puff(MDB.x,MDB.y-40,14,'rgba(230,230,240,',90,10);sparkle(MDB.x,MDB.y-60,20);
+  D.fireBonus=(D.fireBonus||0)+25;try{D.maxFire=wfFireMax();D.fire=D.maxFire;}catch(e){}
+  G.banner={text:'Medusa is defeated!',sub:'She turns into a harmless stone statue. Your flame grows: +25 max fire (until you lose this dragon)',t:4};
+  showToast('🐍 Medusa is defeated — she turns into a stone statue! 🔥 +25 permanent max fire');try{horn();}catch(e){}}
+function mdFacing(){return Math.abs(angDiff(Math.atan2(MDB.y-60-D.y,MDB.x-D.x),D.ang))<1.15;}
+function mdUpd(dt){if(mdDown()){MDB.on=false;return;}const dd=Math.hypot(D.x-MDL.x,D.y-MDL.y);
+  if(!MDB.on){if(dd<1500)mdStart();else return;}if(dd>2600){MDB.on=false;return;}MDB.anim+=dt;
+  if(MDB.koT>0){MDB.koT-=dt;if(MDB.koT<=0)mdDefeat();return;}
+  if(MDB.maxHp!==mdMaxHp()){const f=MDB.hp/MDB.maxHp;MDB.maxHp=mdMaxHp();MDB.hp=MDB.maxHp*f;}
+  const de=Math.hypot(D.x-MDB.x,D.y-MDB.y),near=de<900&&!G.over;if(Math.abs(D.x-MDB.x)>4)MDB.face=D.x>MDB.x?1:-1;
+  if(near&&G.t-MDB.toastT>40){MDB.toastT=G.t;showToast('🐍 MEDUSA! Don\'t look into her glowing eyes — turn away when they flash!');}
+  // slither toward the dragon, but stay in the ruined temple
+  if(near&&!(MDB.gz>0)&&de>120){const a=Math.atan2(D.y-MDB.y,D.x-MDB.x),nx=MDB.x+Math.cos(a)*70*dt,ny=MDB.y+Math.sin(a)*50*dt;if(Math.hypot(nx-MDL.x,(ny-MDL.y)*1.3)<MDL.r){MDB.x=nx;MDB.y=ny;}}
+  if(!near)return;
+  // stone gaze: a telegraphed glow, then a dragon that is still facing her turns to stone for ~1.5 s (no lasting harm)
+  MDB.gzCd-=dt;if(MDB.gz>0){MDB.gz-=dt;if(MDB.gz<=0){G.mdGazes=(G.mdGazes||0)+1;if(de<700&&mdFacing()){D.mdStone=1.5;G.mdStoned=(G.mdStoned||0)+1;float(D.x,D.y-110,'Turned to stone! (1.5 s)','#d0d0d8');}else{G.mdDodged=(G.mdDodged||0)+1;float(D.x,D.y-110,'You looked away!','#e0ffe0');}}}
+  else if(MDB.gzCd<=0&&de<650){MDB.gz=1.2;MDB.gzCd=R(7,9);float(MDB.x,MDB.y-130,'Her eyes glow... LOOK AWAY!','#fff2a0');}
+  // tail sweep (ground only) and snake-hair bites
+  MDB.tlCd-=dt;if(MDB.tl>0){MDB.tl-=dt;if(MDB.tl<=0&&de<210&&D.alt<.4){hurtDragon(7,'medusa');const a=Math.atan2(D.y-MDB.y,D.x-MDB.x);D.x+=Math.cos(a)*40;D.y+=Math.sin(a)*40;G.mdTail=(G.mdTail||0)+1;float(D.x,D.y-90,'Tail sweep! -7','#ffb0a0');}}
+  else if(MDB.tlCd<=0&&de<200&&D.alt<.4&&!(MDB.gz>0)){MDB.tl=.6;MDB.tlCd=R(4.5,6);}
+  MDB.cd-=dt;if(MDB.cd<=0&&de<170&&D.alt<.6){MDB.cd=1.2;MDB.hb=.25;hurtDragon(3,'medusa');G.mdBites=(G.mdBites||0)+1;if(rnd()<.5)float(D.x+R(-20,20),D.y-90,'Hiss! Snake-hair nip -3','#c8ffb0');}
+  if(MDB.hb>0)MDB.hb-=dt;}
+// the stone dragon: frozen in place for a moment, drawn grey
+{const _ud=updDragon;updDragon=function(dt){if(D.mdStone>0&&!G.over){D.mdStone-=dt;if(D.vx!==undefined){D.vx=0;D.vy=0;}if(rnd()<.2)sparkle(D.x+R(-30,30),D.y-heightOf()-R(0,40),1);return;}return _ud.apply(this,arguments);};}
+const MD_FILTER=(()=>{try{const c=document.createElement('canvas').getContext('2d');c.filter='grayscale(1)';return c.filter==='grayscale(1)';}catch(e){return false;}})();
+{const _dd=drawDragon;drawDragon=function(){if(D.mdStone>0){ctx.save();if(MD_FILTER)ctx.filter='grayscale(1) brightness(1.15)';try{_dd.apply(this,arguments);}finally{ctx.restore();}
+    if(!MD_FILTER){ctx.globalAlpha=.45;ell(D.x,D.y-heightOf()-10,70,40,'#9a9aa2');ctx.globalAlpha=1;}txt('🗿',D.x,D.y-heightOf()-80,18,'#ddd','center');}else _dd.apply(this,arguments);
+  if(D.nrEgg)eggCarryDraw();};}
+// player attacks on Medusa: fire, bite, stomp/dive, claw, lava
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);if(MDB.on&&!(MDB.koT>0)&&(inFire(MDB.x,MDB.y-40,ox,oy)||inFire(MDB.x,MDB.y,ox,oy)))mdHurt(DR.fireDps*.5*dt,'fire');return r;};}
+{const _te=tryEat;tryEat=function(){if(MDB.on&&!(MDB.koT>0)&&!(D.eatCD>0)&&D.alt<.5&&Math.hypot(D.x+Math.cos(D.ang)*60-MDB.x,D.y+Math.sin(D.ang)*60-MDB.y+30)<130){mdHurt(16,'bite');D.eatCD=.45;float(MDB.x,MDB.y-120,'Chomp! -16','#ffe0a0');return;}return _te.apply(this,arguments);};}
+{const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);if(MDB.on&&Math.hypot(D.x-MDB.x,D.y-MDB.y)<DR.stompR+60)mdHurt(30,'stomp');return r;};}
+{const _ds=diveSlam;diveSlam=function(){const r=_ds.apply(this,arguments);if(MDB.on&&Math.hypot(D.x-MDB.x,D.y-MDB.y)<DR.stompR+80)mdHurt(40,'dive');return r;};}
+if(typeof clawScratch==='function'){const _cs=clawScratch;clawScratch=function(){const r=_cs.apply(this,arguments);if(MDB.on&&D.alt<.5&&Math.hypot(D.x+Math.cos(D.ang)*60-MDB.x,D.y+Math.sin(D.ang)*60-MDB.y)<150)mdHurt(12,'claw');return r;};}
+{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);if(MDB.on&&Math.hypot(x-MDB.x,y-MDB.y)<LAVA_CFG.splashR+70)mdHurt(35,'lava');return r;};}
+// drawing: ruined temple + Medusa (or her statue once beaten)
+function mdTemple(){const x=MDL.x,y=MDL.y;ell(x,y+10,MDL.r+40,(MDL.r+40)*.55,'rgba(40,30,40,.35)');ell(x,y,MDL.r,MDL.r*.5,'#6e6a66');ell(x,y-6,MDL.r-30,(MDL.r-30)*.46,'#8a857e');
+  for(let i=0;i<5;i++){const a=Math.PI*(1.05+i*.225),cx=x+Math.cos(a)*(MDL.r-70),cy=y+Math.sin(a)*(MDL.r-70)*.5,hgt=i%2?44:110;rect(cx-12,cy-hgt,24,hgt,'#b8b0a2');rect(cx-16,cy-hgt-8,32,9,'#9a9284');rect(cx-16,cy-4,32,8,'#9a9284');if(i%2)poly([cx-12,cy-hgt,cx+12,cy-hgt,cx+4,cy-hgt-12,cx-6,cy-hgt-6],'#b8b0a2');}
+  for(const[dx,dy]of[[-120,60],[140,50],[60,90]])ell(x+dx,y+dy,22,10,'#a49c8e');poly([x-90,y-120,x+90,y-120,x+70,y-150,x-70,y-150],'#9a9284');txt('Temple of the Gorgon',x,y+MDL.r*.5+28,14,'#e8e0d0','center');}
+function mdArt(x,y,f,s,stone){const T=G.t,sk=stone?'#a8a8ae':'#7ec07a',tail=stone?'#8e8e96':'#4e9a5a',bel=stone?'#bcbcc2':'#d8e8a0',dress=stone?'#9a9aa2':'#7a4aa8',ko=MDB.koT>0&&!stone;
+  ctx.save();ctx.translate(x,y);if(ko)ctx.rotate(Math.sin(T*9)*.2);ctx.scale(s*f,s);
+  for(let i=6;i>=0;i--){const tx=-14-i*9,ty=-2+Math.sin(T*3+i)*(stone?0:2)+(i>3?4:0);ell(tx,ty,13-i*.9,8-i*.5,tail);ell(tx,ty+2,9-i*.6,3.5,bel);}
+  const sw=MDB.tl>0?-1.2:0;ctx.save();ctx.rotate(sw);ell(-74,2,9,5,tail);poly([-80,0,-96,-4,-82,6],tail);ctx.restore();
+  ell(0,-18,18,22,dress);ell(0,-4,24,8,dress);ell(0,-46,12,13,sk);ell(-10,-28,4,10,sk);ell(10,-28,4,10,sk);
+  const glow=MDB.gz>0&&!stone;for(let i=0;i<8;i++){const a=-Math.PI*.95+i*Math.PI*.9/7,bx=Math.cos(a)*11,by=-50+Math.sin(a)*11,w=stone?0:Math.sin(T*6+i*1.3)*3+(MDB.hb>0&&i%2?6:0),hx=bx+Math.cos(a)*14+w,hy=by+Math.sin(a)*12;
+    ctx.strokeStyle=tail;ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(bx,by);ctx.quadraticCurveTo(bx+Math.cos(a)*8-w,by+Math.sin(a)*6,hx,hy);ctx.stroke();ell(hx,hy,3.6,2.8,tail);if(!stone){ell(hx+1,hy-1,.8,.8,'#fff');}}
+  ell(-4,-47,2.6,glow?3:2,glow?'#fff6a0':stone?'#888':'#2a3a20');ell(4,-47,2.6,glow?3:2,glow?'#fff6a0':stone?'#888':'#2a3a20');
+  if(stone){line(-4,-41,4,-41,'#777',1.2);}else{ctx.strokeStyle='#4a2a3a';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,-42,3.5,.2,Math.PI-.2);ctx.stroke();}
+  if(glow){const p=1-MDB.gz/1.2;ctx.globalAlpha=.25+.5*p;ell(0,-47,22+30*p,14+16*p,'#fff6a0');ctx.globalAlpha=1;}
+  ctx.restore();
+  if(ko){for(let i=0;i<3;i++){const an=T*5+i*TAU/3;txt('★',x+Math.cos(an)*22,y-110*s+Math.sin(an)*5,13,'#ffe060','center');}}
+  if(G.t-MDB.hitT<.12&&!stone){ctx.globalAlpha=.45;ell(x,y-40*s,30*s,40*s,'#fff');ctx.globalAlpha=1;}}
+function mdDraw(){if(Math.abs(MDL.x-cam.x)>VW/cam.z/2+700||Math.abs(MDL.y-cam.y)>VH/cam.z/2+600)return;mdTemple();
+  if(mdDown()){mdArt(MDL.x,MDL.y-20,1,1.5,true);txt('Medusa (stone statue)',MDL.x,MDL.y-150,13,'#e0e0e8','center');return;}
+  mdArt(MDB.on?MDB.x:MDL.x,MDB.on?MDB.y:MDL.y,MDB.face,1.5,false);}
+{const _f=nrDrawFx;nrDrawFx=function(){mdDraw();return _f.apply(this,arguments);};}
+// boss bar
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!MDB.on||mdDown()||!MDB.maxHp)return;const w=Math.min(380,VW*.55),x=(VW-w)/2,y=VW<760?150:118;
+  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,MDB.hp)/MDB.maxHp,12,'#7ec07a');txt(`🐍 Medusa · ${Math.ceil(MDB.hp)}/${MDB.maxHp}`,VW/2,y+10,11,'#fff','center');};}
+{const _t=nrTick;nrTick=function(dt){_t(dt);mdUpd(dt);};}
+// map marker
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s;
+  if(big||!mdDown()){ell(X(MDL.x),Y(MDL.y),big?5:3,big?5:3,mdDown()?'#9a9aa2':'#7ec07a');if(big)txt(mdDown()?'Gorgon temple (statue)':'🐍 Medusa',X(MDL.x)+8,Y(MDL.y)+4,10,'#e8ffe0','left');}
+  for(const k in NR_CC){const c=NR_CC[k];rect(X(c.x)-(big?5:3),Y(c.y)-(big?5:3),big?10:6,big?10:6,k==='L'?'#f0f0ff':'#2a2030');if(big)txt(c.n,X(c.x)+8,Y(c.y)+4,10,k==='L'?'#e8f0ff':'#ffb0a0','left');}}catch(e){}return r;};}
+// 10/12: stays down for the rest of this dragon's life: carried over levels, cleared when the dragon dies (newGame makes a fresh G)
+{const _nl=nextLevel;nextLevel=function(){const k={mdDown:G.mdDown,mdWins:G.mdWins};const r=_nl.apply(this,arguments);Object.assign(G,k);return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);MDB.on=false;MDB.koT=0;D.mdStone=0;return r;};}
+// ---- 18. the carried egg is drawn in the claws, under the dragon, at flight height, with a glow, plus a HUD icon ----
+function eggCarryDraw(){const h=heightOf(),a=D.ang,s=.85+.25*D.alt,x=D.x-Math.cos(a)*6,y=D.y-h+26+8*D.alt,W=D.nrEgg==='W',p=.5+.5*Math.sin(G.t*4);
+  ctx.globalAlpha=.35+.2*p;ell(x,y-14*s,30*s,32*s,W?'#ffffff':'#6a3aff');ctx.globalAlpha=1;
+  for(const sd of[-1,1])line(x+sd*14,y-30*s,x+sd*9*s,y-12*s,'#5a4030',3);
+  nrEggArt(x,y,D.nrEgg,s);for(const sd of[-1,1]){ell(x+sd*9*s,y-12*s,4,3,'#3a2a20');}G.eggDrawn=G.fc;}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!D.nrEgg)return;const W=D.nrEgg==='W',x=VW/2,y=(VW<760?150:118)+(MDB.on&&!mdDown()?22:0)+(WZB.on&&!G.nrOpen?22:0);
+  rect(x-104,y-2,208,24,'rgba(0,0,0,.55)');ell(x-88,y+11,7,9,W?'#f4f4fa':'#1e1a26');ell(x-88,y+11,8.5,10.5,W?'rgba(255,255,255,.35)':'rgba(140,90,255,.45)');
+  txt(W?'Carrying the WHITE egg → lair':'Carrying the BLACK egg → lair',x+8,y+15,11,'#fff2c0','center');G.eggHud=G.fc;};}
+// ---- 19/20. no HUD bar grows with its max: the health bar keeps the same fixed width as the others (fill = hp/maxHp, numbers as text) ----
+hpBarW=function(){return 230;};
+// ======================= queue 3-9, 13, 14: kingdom economy + creature upgrades (worm, treasury, stone, carts, towers, landing dragons, KO linger, lava burrows) =======================
+// ---- 3. the sand worm only hunts a LANDED dragon in OPEN desert: towns (Sandhaven etc.) and oases are safe zones, flying is safe ----
+const WORM_SAFE={town:750,oasis:260};
+function wormSafe(x,y){if(typeof inOasis==='function'&&(inOasis(x,y)||Math.hypot((x-OASIS.x)/(OASIS.rx+WORM_SAFE.oasis),(y-OASIS.y)/(OASIS.ry+WORM_SAFE.oasis))<1))return 'oasis';
+  for(const v of VILLAGES)if(d2(x,y,v.x,v.y)<WORM_SAFE.town)return 'town';return null;}
+{const _uw=updWorm;updWorm=function(u,dt){const safe=wormSafe(D.x,D.y);if(safe){
+    // the dragon stands in a safe zone: the worm loses the scent and keeps to its own dunes
+    const sv=D.alt;D.alt=1;try{_uw.call(this,u,dt);}finally{D.alt=sv;}if(D.alt<.4&&dist(u,D)<750){G.wormSafeT=(G.wormSafeT||0)+dt;}return;}
+  const w0=u.warn;const r=_uw.apply(this,arguments);if(u.warn!==w0)G.wormWarn=(G.wormWarn||0)+1;if(u.ws==='up'&&u.upT>4.4&&!u.burstSeen){u.burstSeen=1;G.wormBurst=(G.wormBurst||0)+1;}if(u.ws==='under')u.burstSeen=0;return r;};}
+// rumble ripples above a hunting worm (fair warning before it bursts)
+{const _dw=drawWorm;drawWorm=function(u){if(u.ws==='under'&&D.alt<.4&&dist(u,D)<750&&!wormSafe(D.x,D.y)){const p=(G.t*2)%1;for(let i=0;i<2;i++){const q=(p+i*.5)%1;ctx.strokeStyle=`rgba(120,90,50,${.5*(1-q)})`;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(u.x,u.y,14+q*40,6+q*16,0,0,TAU);ctx.stroke();}}return _dw.apply(this,arguments);};}
+// ---- 4. no treasury cap (there never was one on the piles); HUD numbers stay short and clean however big the hoard gets ----
+uiAmt=function(n){n=Math.max(0,Math.floor(+n||0));const f=(v,s)=>{const t=v>=100?String(Math.round(v)):v>=10?v.toFixed(1):v.toFixed(2);return(t.includes('.')?t.replace(/\.?0+$/,''):t)+s;};
+  return n>=1e9?f(n/1e9,'B'):n>=1e6?f(n/1e6,'M'):n>=1e4?f(n/1e3,'k'):String(n);};
+// ---- 6. supply carts run ~1.8x more trips (shorter loading/dispatch, quicker carts, one more cart per source, faster replacements) ----
+const SC_OLD={loadEvery:SC.loadEvery,lazyGo:SC.lazyGo,speed:SC.speed,perSrc:SC.perSrc,respawn:SC.respawn};Object.assign(SC,{loadEvery:.6,lazyGo:12,speed:58,perSrc:3,respawn:20});
+// ---- 5 + 8. wood buildings upgrade to STONE (grey walls, slate roofs, +60% HP, fire-resistant): only while stone > 100, at most one per game minute ----
+const STUP={min:100,every:60,hp:1.6,fire:.4,hit:.6,kinds:new Set(['hut','barn','cabin','barracks','gate','minehut','sawmill','bakery','smithy','jeweler','storehouse','fishmonger','adobe'])};
+const kStruct=s=>!s.nr&&!isRT(s)&&s.kind!=='bridge'; // kingdom buildings (bridges have their own stone upgrade)
+function stUpCost(k){const c=COST[k]||[3,1];return c[0]+c[1]+2;} // stone for the stone version
+function stoneReserve(){let n=0;for(const s of structures){if(!kStruct(s))continue;n+=STUP.kinds.has(s.kind)?stUpCost(s.kind):(COST[s.kind]||[0,0])[1];}return n;}
+function woodReserve(){let n=0;for(const s of structures){if(!kStruct(s))continue;n+=(COST[s.kind]||[0,0])[0];}return n;}
+function stBase(s){if(!s.hp0)s.hp0=(KDEF[s.kind]&&KDEF[s.kind].hp)||s.maxHp;return s.hp0;}
+function stUpgrade(s){const c=stUpCost(s.kind);G.stone-=c;const b=stBase(s),f=s.hp/s.maxHp;s.stoneUp=1;s.maxHp=Math.round(b*STUP.hp);s.hp=Math.round(s.maxHp*f);G.stUps=(G.stUps||0)+1;G.stLast=G.t;
+  puff(s.x,s.y-10,10,'rgba(200,200,210,',80,8);if(dist(s,D)<1500)float(s.x,s.y-60,`Masons rebuild the ${STRUCT_NAME[s.kind]||s.kind} in STONE (-${c} stone)`,'#d8dce6');
+  if(typeof showToast==='function'&&(G.stUps<=3||G.stUps%10===0))showToast(`🧱 ${STRUCT_NAME[s.kind]||s.kind} upgraded to stone (${G.stUps} so far)`);}
+function stTick(dt){if(!G||G.over)return;G.stT=(G.stT||0)+dt;if(G.stT<STUP.every||G.stone<=STUP.min)return;
+  const C={x:GATE.x,y:GATE.y};let best=null,bd=1e18;for(const s of structures){if(!kStruct(s)||!STUP.kinds.has(s.kind)||s.stoneUp||s.state!=='ok'||s.fire)continue;if(G.stone-stUpCost(s.kind)<0)continue;const d=d2(s.x,s.y,C.x,C.y);if(d<bd){bd=d;best=s;}}
+  if(best){G.stT=0;stUpgrade(best);}}
+// stone takes less from everything and much less from fire; a collapsed stone building is rebuilt in stone if the stone is there
+{const _h=hurtStruct;hurtStruct=function(s,d){if(s&&s.stoneUp&&!HEAVY)d*=s.fire?STUP.fire:STUP.hit;return _h.call(this,s,d);};}
+{const _r=onRuin;onRuin=function(s){const r=_r.apply(this,arguments);if(s&&s.stoneUp){const c=stUpCost(s.kind);if(G.stone>=c+STUP.min*0){G.stone-=c;s.stoneKeep=1;}else{s.stoneUp=0;s.maxHp=stBase(s);G.stLost=(G.stLost||0)+1;}}return r;};}
+// fire catches stone roofs only half as often
+{const _af=applyFire;applyFire=function(){const S=structures.filter(s=>s.stoneUp&&!s.fire);const r=_af.apply(this,arguments);for(const s of S)if(s.fire&&rnd()<.5){s.fire=0;G.stFireShrug=(G.stFireShrug||0)+1;}return r;};}
+const ST_FILTER=(()=>{try{const c=document.createElement('canvas').getContext('2d');c.filter='grayscale(1)';return c.filter==='grayscale(1)';}catch(e){return false;}})();
+{const _ds=drawStruct;drawStruct=function(s){if(!s||!s.stoneUp||s.state==='ruin')return _ds.apply(this,arguments);const sz=(KDEF[s.kind]&&KDEF[s.kind].sz)||({hut:24,barn:34,cabin:26,barracks:40,gate:44}[s.kind])||28;
+  if(ST_FILTER){ctx.save();ctx.filter='grayscale(.92) brightness(1.08) contrast(1.05)';try{_ds.apply(this,arguments);}finally{ctx.restore();}}
+  else{_ds.apply(this,arguments);ctx.save();ctx.globalAlpha=.55;rect(s.x-sz*.85,s.y-sz*1.05,sz*1.7,sz*1.05,'#9a9ca6');ctx.restore();}
+  // stone courses + a slate roof cap so the upgrade reads on every device
+  ctx.save();ctx.globalAlpha=.6;for(let r=1;r<4;r++)line(s.x-sz*.8,s.y-sz*.26*r,s.x+sz*.8,s.y-sz*.26*r,'#5e6068',1);
+  for(let r=0;r<4;r++)for(let i=-2;i<=2;i++)line(s.x+i*sz*.3+(r%2)*sz*.15,s.y-sz*.26*r,s.x+i*sz*.3+(r%2)*sz*.15,s.y-sz*.26*(r+1),'#5e6068',1);ctx.globalAlpha=.9;
+  poly([s.x-sz*.95,s.y-sz*1.02,s.x,s.y-sz*1.62,s.x+sz*.95,s.y-sz*1.02],'#4a5262');line(s.x-sz*.95,s.y-sz*1.02,s.x+sz*.95,s.y-sz*1.02,'#2e3440',2);ctx.restore();};}
+// ---- 7 + 8. defensive towers come from SURPLUS only: wooden archer towers from wood above the full-kingdom wood rebuild reserve;
+// giant stone crossbow (scorpion) towers only once the stone stock covers rebuilding the WHOLE kingdom in stone (spending only the surplus) ----
+rtCanPay=function(k){if(!k)return rtCanPay('stower')||rtCanPay('wtower');const[w,s]=RT.T[k].cost;
+  if(k==='wtower')return G.wood-woodReserve()>=w&&G.stone>=s;return G.stone-stoneReserve()>=s&&G.wood>=w;};
+rtUnlocked=function(k){return rtCanPay(k);};
+rtPay=function(k){const[w,s]=RT.T[k].cost;G.wood-=w;G.stone-=s;G.rtSpent=(G.rtSpent||0)+w+s;G.rtW=Math.max(0,(G.rtW||0)-w);G.rtS=Math.max(0,(G.rtS||0)-s);};
+// once the kingdom is at its tower max, stone surplus turns standing archer towers into crossbow towers one at a time
+{const _t=rtTick;rtTick=function(dt){_t.apply(this,arguments);if(!G||G.over)return;G.rtUpCk=(G.rtUpCk||0)-dt;if(G.rtUpCk>0)return;G.rtUpCk=RT.check;
+  const T=rtTowers();if(T.length<rtMax()||T.some(s=>s.state==='building')||!rtCanPay('stower'))return;const s=T.find(q=>q.kind==='wtower'&&q.state==='ok');if(!s)return;
+  for(const u of units)if(!u.dead&&u.wtS===s){u.dead=true;u.gone=true;}s.kind='stower';s.maxHp=KDEF.stower.hp;s.hp=s.maxHp;G.rtUpg=(G.rtUpg||0)+1;rtStartBuild(s,'up');};}
+// ---- 9. wild dragons LAND to fight a grounded player: walk, bite, claw and breathe fire on the ground; take off when the player flies or they get hurt ----
+const WDG={landR:520,offHurt:.18,reland:4,walk:.5,fireR:230,fireCd:3.4,clawDmg:3,fireDmg:4};
+{const _w=updWD;updWD=function(u,dt){if(u.st==='attack'&&!(u.daze>0)){const dd=dist(u,D),easy=G.easy,thr=wdThreat();
+    if(u.gnd){const hurt=u.gHp0-u.hp>u.maxHp*WDG.offHurt;if(D.alt>.5||hurt||!thr||u.atkT<=0||u.hp<u.maxHp*.3){u.gnd=0;u.toffT=G.t;G.wdOff=(G.wdOff||0)+1;if(dd<1400)float(u.x,u.y-60,hurt?'Ow! It flaps back up!':'It takes off after you!','#ffe6a8');}}
+    else if(D.alt<.3&&thr&&dd<WDG.landR&&(!u.toffT||G.t-u.toffT>WDG.reland)&&u.hp>u.maxHp*.45){u.gnd=1;u.gHp0=u.hp;G.wdLand=(G.wdLand||0)+1;if(dd<1400)float(u.x,u.y-60,'THUD! The wild dragon lands to fight you!','#ffd0a0');}
+    if(u.gnd){u.cd-=dt;u.fcd-=dt;u.atkT-=dt;u.fireT=Math.max(0,u.fireT-dt);u.anim=(u.anim||0)+dt;u.alt=lerp(u.alt,0,Math.min(1,dt*3));u.flapT+=dt*1.5;
+      if(dd>64)wdMove(u,D.x,D.y,FAUNA.wdragon.sp*WDG.walk*(easy?.8:1),dt);else{const a=Math.atan2(D.y-u.y,D.x-u.x);u.ang=a;u.face=Math.cos(a)>0?1:-1;}
+      if(u.alt<.15&&dd<84&&u.cd<=0){u.cd=easy?2.2:1.3;u.gSw=(u.gSw||0)+1;if(u.gSw%2){const dmg=easy?3:FAUNA.wdragon.bite;hurtDragon(dmg,'wdragon');G.wdGBite=(G.wdGBite||0)+1;float(D.x+R(-20,20),D.y-70,`Wild dragon bite! -${dmg}`,'#ffb0a0');}
+        else{hurtDragon(WDG.clawDmg,'wdragon');G.wdClaw=(G.wdClaw||0)+1;G.wdClaws=(G.wdClaws||0)+1;float(D.x+R(-20,20),D.y-70,`Claw swipe! -${WDG.clawDmg}`,'#ffb0a0');}}
+      if(u.alt<.15&&dd>70&&dd<WDG.fireR&&u.fcd<=0){u.fcd=WDG.fireCd;wdFire(u,1);G.wdGFire=(G.wdGFire||0)+1;const a=Math.atan2(D.y-u.y,D.x-u.x),df=Math.abs(Math.atan2(Math.sin(a-u.ang),Math.cos(a-u.ang)));
+        if(df<.6&&D.alt<.3){hurtDragon(easy?2:WDG.fireDmg,'wdragon');float(D.x,D.y-80,'Scorched by dragon fire!','#ffb070');}}
+      return;}}
+  else u.gnd=0;return _w.apply(this,arguments);};}
+// altitude hit rules: ground-only attacks (stomp/slam shockwave, claw scratch) cannot reach a wild dragon up in the air
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){if(u&&u.species==='wdragon'&&!u.dead){if((src==='stomp'||src==='scratch')&&u.alt>.45){G.wdAirMiss=(G.wdAirMiss||0)+1;return;}}return _hu.apply(this,arguments);};}
+// ---- 13. KO linger: a creature beaten (not eaten) goes dizzy with spinning stars for ~1.3 s, can still be gobbled for food, then puffs away ----
+// never the princess or King William (they are never harmed in the first place). NR creatures already linger dizzy (NR_KO) and are now edible too.
+let KOL=[];const KO_T=1.3;
+function koOk(u){return u&&!u.nr&&u.type!=='sea'&&!u.princess&&!u.isPrincess&&!u.isKing&&!u.king&&u.species!=='wdragon'&&u.species!=='sandworm'&&!u.isPrince;}
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){if(!u||u.dead||!koOk(u)||Math.abs(u.x-D.x)>2000||Math.abs(u.y-D.y)>1500)return _hu.apply(this,arguments);
+  const m=NR_MUTE;NR_MUTE=1;let r;try{r=_hu.apply(this,arguments);}finally{NR_MUTE=m;}
+  if(u.dead&&!u.eaten&&!u.gone){KOL.push({u:Object.assign({},u,{dead:false}),src:u,t:0,src2:src});G.kolN=(G.kolN||0)+1;}else if(u.dead&&!NR_MUTE)puff(u.x,u.y,5,'rgba(235,235,245,',50,6);return r;};}
+function koTick(dt){for(const k of KOL){k.t+=dt;if(k.t>=KO_T&&!k.done){k.done=1;puff(k.u.x,k.u.y-6,7,'rgba(235,235,245,',60,7);}}if(KOL.length)KOL=KOL.filter(k=>!k.done);}
+function koStars(x,y,t){for(let i=0;i<3;i++){const a=t*6+i*TAU/3;const sx=x+Math.cos(a)*10,sy=y+Math.sin(a)*3.5;poly([sx,sy-3.5,sx+1.2,sy-1,sx+3.5,sy-1,sx+1.6,sy+.8,sx+2.3,sy+3.5,sx,sy+1.8,sx-2.3,sy+3.5,sx-1.6,sy+.8,sx-3.5,sy-1,sx-1.2,sy-1],'#ffe24a');}}
+function koDraw(){for(const k of KOL){const u=k.u;if(Math.abs(u.x-cam.x)>1800||Math.abs(u.y-cam.y)>1400)continue;u.anim=(u.anim||0);ctx.save();ctx.translate(u.x,u.y);ctx.rotate(Math.sin(k.t*9)*.18);ctx.translate(-u.x,-u.y);
+    try{if(u.type==='knight')drawKnight(u);else if(u.type==='animal')drawAnimal(u);else drawPerson(u);}catch(e){}ctx.restore();koStars(u.x,u.y-(u.type==='animal'?22:34),k.t);}}
+  // (northern NR_KO units already get their dizzy stars from nrDrawU)
+{const _f=nrDrawFx;nrDrawFx=function(){const r=_f.apply(this,arguments);koDraw();return r;};}
+function koFind(){const gr=D.alt<0.3,r=(gr?DR.eatRGround:DR.eatRAir)*1.3,mx=D.x+Math.cos(D.ang)*80,my=D.y+Math.sin(D.ang)*80;let best=null,bd=r;
+  for(const L of[KOL,NR_KO])for(const k of L){if(k.done||k.eaten||k.t>=(L===KOL?KO_T:1.4))continue;const d=Math.min(d2(k.u.x,k.u.y,mx,my),d2(k.u.x,k.u.y,D.x,D.y));if(d<bd){bd=d;best={k,L};}}return best;}
+function koEat(b){const k=b.k;k.eaten=1;k.done=1;const st=Object.assign({},G.stats);const c=Object.assign({},k.u,{dead:false,eaten:false});const m=NR_MUTE;NR_MUTE=1;
+  try{eatUnit(c);}finally{NR_MUTE=m;}for(const q of['knights','archers','hunters'])if(st[q]!==undefined)G.stats[q]=st[q];G.kolEaten=(G.kolEaten||0)+1;D.eatCD=.25;sparkle(k.u.x,k.u.y,6);
+  if(b.L===NR_KO)NR_KO=NR_KO.filter(q=>q!==k);}
+{const _te=tryEat;tryEat=function(){if(!D.nrEgg&&!D.carry&&!(typeof PR!=='undefined'&&PR.carried)){const T=biteTargets();if(!T.length){const b=koFind();if(b){koEat(b);return;}}}return _te.apply(this,arguments);};}
+// ---- 14. lava destroys burrows: a lava splash on a meerkat burrow collapses it into a scorched crater; whoever hid inside pops out and flees
+// (and can be eaten); the colony digs it out again after 60-90 s once the dragon is away. A hidden sand worm hit by lava is forced up, dazed. ----
+function burRuin(c,b,x,y){b.ruin=1;b.reT=G.t+R(60,90);b.ruinAt=G.t;G.burRuined=(G.burRuined||0)+1;if(typeof scorch==='function')try{scorch(b.x,b.y+2,26);}catch(e){}
+  puff(b.x,b.y,10,'rgba(90,70,50,',80,8);if(dist(b,D)<1500)float(b.x,b.y-30,'The lava caves the burrow in!','#ffb070');
+  const live=c.bur.filter(q=>!q.ruin);for(const u of mkMembers(c)){if(u.bur!==b)continue;const was=u.mst==='hide';u.bur=live.length?live[RI(0,live.length-1)]:b;
+    if(was){u.mst='flee';u.inside=false;u.x=b.x+R(-8,8);u.y=b.y+R(-5,5);u.pop=1;u.fleeT=R(2.5,3.5);u.fx=x;u.fy=y;G.burPop=(G.burPop||0)+1;}else if(!live.length){u.mst='flee';u.fleeT=3;u.fx=x;u.fy=y;}}}
+{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments),R2=LAVA_CFG.splashR+30;
+  for(const c of MK.cols){if(d2(c.x,c.y,x,y)>LAVA_CFG.splashR+120)continue;for(const b of c.bur)if(!b.ruin&&d2(b.x,b.y,x,y)<R2)burRuin(c,b,x,y);}
+  for(const u of units)if(!u.dead&&u.species==='sandworm'&&u.ws==='under'&&d2(u.x,u.y,x,y)<LAVA_CFG.splashR+40){u.ws='up';u.t=0;u.upT=4;u.inside=false;u.bite=1.5;u.stuck=true;G.wormLava=(G.wormLava||0)+1;
+    puff(u.x,u.y,20,'rgba(220,190,130,',160,10);float(u.x,u.y-120,'Lava in its tunnel! The sand worm bursts up, dazed!','#ffb070');}
+  return r;};}
+{const _u=updMK;updMK=function(u,dt){const c=MK.cols[u.col];
+  if(c&&u.bur&&u.bur.ruin&&u.mst!=='flee'){const live=c.bur.filter(q=>!q.ruin);if(live.length)u.bur=live[RI(0,live.length-1)];else if(u.mst==='hide'||u.mst==='run'){u.mst='flee';u.inside=false;u.fleeT=3;u.fx=D.x;u.fy=D.y;}}
+  if(u.mst==='flee'){u.inside=false;u.fleeT-=dt;const a=Math.atan2(u.y-u.fy,u.x-u.fx),s=150*dt,nx=u.x+Math.cos(a)*s,ny=u.y+Math.sin(a)*s;const Z=ZONES[u.zone];if(!Z||Z.ok(nx,ny)){u.x=nx;u.y=ny;}u.face=Math.cos(a)>0?1:-1;u.anim=(u.anim||0)+dt*14;
+    if(u.fleeT<=0){const live=c?c.bur.filter(q=>!q.ruin):[];if(live.length){u.bur=live[RI(0,live.length-1)];u.mst='run';}else{u.mst='out';u.t=0;}}return;}
+  return _u.apply(this,arguments);};}
+{const _t=mkTick;mkTick=function(dt){const r=_t.apply(this,arguments);for(const c of MK.cols)for(const b of c.bur)if(b.ruin&&G.t>=b.reT&&dist(b,D)>500){b.ruin=0;G.burReopen=(G.burReopen||0)+1;if(dist(b,D)<1500)float(b.x,b.y-24,'The meerkats dig the burrow out again','#fff2b0');}return r;};}
+{const _dm=drawMounds;drawMounds=function(x0,y0,x1,y1){_dm.apply(this,arguments);for(const c of MK.cols){if(c.x<x0-120||c.x>x1+120||c.y<y0-80||c.y>y1+80)continue;
+  c.bur.forEach((b,i)=>{if(!b.ruin)return;const s=i===0?1.3:1,age=G.t-(b.ruinAt||0);ell(b.x,b.y+1,22*s,10*s,'#3a3028');ell(b.x,b.y,16*s,7*s,'#221c18');ell(b.x-4*s,b.y-1,5*s,2*s,'#4a3e32');
+    if(age<10)for(let k=0;k<4;k++){const a=k*1.7+G.t*.5;ell(b.x+Math.cos(a)*10*s,b.y+Math.sin(a)*4*s,1.6,1.2,`rgba(255,${120+k*20},40,${.9*(1-age/10)})`);}});}};}
+// ---- ticks ----
+{const _t=nrTick;nrTick=function(dt){_t(dt);stTick(dt);koTick(dt);};}
+{const _ng=newGame;newGame=function(){KOL=[];return _ng.apply(this,arguments);};}
+// ======================= queue 15-17: the two grand CENTRAL EGG CASTLES (one per side, shared by its allied races) =======================
+// Lumenspire Citadel (light: white/silver elven-dwarven grandeur, ice towers) and Doomforge Citadel (dark: black iron, spikes and lava, lightning towers),
+// at the bounding-box centre of each side's land (NR_CC in a.js). Walls, a gate, corner towers and a keep (all burnable / lava-able / stompable, they
+// magically rebuild like every northern building). The egg sits in front of the keep, guarded by a mixed garrison; take it and the castle musters a
+// rescue party that chases you (light ones never past the border). The big 5-minute armies and the dark vanguards march out of these castles and go back there.
+const CC_W=380,CC_H=250,CC_CLR={n:0};
+function ccLayout(c){const p=c.k==='L'?'lc':'dc',L=[];for(let x=-CC_W+70;x<=CC_W-70;x+=95){L.push([p+'wall',x,-CC_H]);if(Math.abs(x)>100)L.push([p+'wall',x,CC_H]);}
+  for(let y=-CC_H+55;y<=CC_H-45;y+=58){L.push([p+'wallv',-CC_W,y]);L.push([p+'wallv',CC_W,y]);}
+  for(const sx of[-1,1]){for(const sy of[-1,1])L.push([p+'tower',sx*CC_W,sy*CC_H]);L.push([p+'tower',sx*CC_W,0]);}
+  L.push([p+'gate',0,CC_H+4]);L.push([p+'keep',0,-40]);return L;}
+function ccInside(c,x,y,m){m=m||0;return Math.abs(x-c.x)<CC_W+m&&Math.abs(y-c.y)<CC_H+m;}
+// --- art (cached sprites) ---
+nArt('lcwall',110,84,55,74,v=>{sR(-50,-46,100,48,'#e6e8f2');for(let i=0;i<5;i++)sR(-50+i*21.5,-57,13,12,'#f6f6fc');for(let r=1;r<4;r++)sL(-50,-46+r*12,50,-46+r*12,'#cfd2e2',1);sL(-50,-46,50,-46,'#d8b04a',2);sR(-50,-4,100,6,'#c0c4d8');});
+nArt('lcwallv',44,96,22,86,v=>{sR(-15,-58,30,60,'#dfe2ee');sR(-17,-66,34,10,'#f4f4fa');sL(-15,-40,15,-40,'#c8cce0',1);sL(-15,-20,15,-20,'#c8cce0',1);});
+nArt('lctower',96,180,48,170,v=>{nSh(36,10);sR(-28,-112,56,114,'#eef0f8');sE(0,0,28,8,'#d4d8e6');sR(-31,-118,62,10,'#d8b04a');sP([-36,-116,0,-170,36,-116],'#7f9fe0');sP([-36,-116,0,-170,0,-116],'#9ab6f0');sR(-6,-84,12,20,'#9ad8ff');sR(-6,-46,12,16,'#9ad8ff');sL(0,-170,0,-178,'#d8b04a',2);});
+nArt('lcgate',180,160,90,150,v=>{nSh(80,14);for(const sx of[-1,1]){sR(sx*52-20,-112,40,114,'#eef0f8');sP([sx*52-25,-110,sx*52,-150,sx*52+25,-110],'#7f9fe0');}
+  sR(-32,-90,64,92,'#e2e4f0');sP([-24,0,-24,-50,0,-72,24,-50,24,0],'#6a5a7a');for(let i=-18;i<=18;i+=9)sL(i,-60,i,0,'#c8c8d8',2);sL(-24,-40,24,-40,'#c8c8d8',2);sR(-32,-96,64,8,'#d8b04a');});
+nArt('lckeep',280,280,140,262,v=>{nSh(120,22);sR(-110,-120,220,122,'#eef0f8');for(let i=0;i<9;i++)sR(-110+i*25,-132,14,14,'#f6f6fc');sR(-110,-12,220,12,'#cfd2e2');
+  sR(-36,-215,72,100,'#f4f4fc');sP([-44,-212,0,-262,44,-212],'#7f9fe0');sP([-44,-212,0,-262,0,-212],'#9ab6f0');sR(-40,-218,80,8,'#d8b04a');
+  for(const sx of[-1,1]){sR(sx*88-16,-170,32,52,'#e6e8f4');sP([sx*88-20,-168,sx*88,-200,sx*88+20,-168],'#7f9fe0');}
+  for(const x of[-80,-45,45,80])sR(x-7,-90,14,22,'#9ad8ff');sR(-10,-190,20,28,'#bfe8ff');sP([-26,0,-26,-48,0,-66,26,-48,26,0],'#8a7aa0');sP([-20,0,-20,-44,0,-58,20,-44,20,0],'#d8e8ff');
+  sR(-4,-262,2,-22,'#d8b04a');sP([-2,-282,18,-276,-2,-270],'#9ad8ff');});
+nArt('dcwall',110,90,55,78,v=>{sR(-50,-46,100,48,'#2c2832');for(let i=0;i<6;i++)sP([-50+i*18,-46,-41+i*18,-64,-32+i*18,-46],'#46404e');for(let r=1;r<4;r++)sL(-50,-46+r*12,50,-46+r*12,'#1c1a20',1);sR(-50,-6,100,7,'#ff6a20');sR(-50,-4,100,4,'#ffb040');});
+nArt('dcwallv',44,100,22,90,v=>{sR(-15,-58,30,60,'#28242e');sP([-15,-58,0,-74,15,-58],'#46404e');sR(-15,-4,30,5,'#ff6a20');});
+nArt('dctower',100,190,50,178,v=>{nSh(36,10);sR(-28,-116,56,118,'#2a2630');sE(0,0,28,8,'#1a1820');for(const sx of[-1,1])sP([sx*28,-60,sx*44,-70,sx*28,-76],'#5a5260');
+  sP([-34,-114,-26,-150,-14,-124,0,-178,14,-124,26,-150,34,-114],'#3e3846');sR(-6,-88,12,20,'#ff7a2a');sR(-6,-46,12,14,'#ff7a2a');sR(-30,-4,60,5,'#ff6a20');});
+nArt('dcgate',190,170,95,158,v=>{nSh(84,14);for(const sx of[-1,1]){sR(sx*54-22,-116,44,118,'#2a2630');sP([sx*54-26,-114,sx*54,-160,sx*54+26,-114],'#3e3846');}
+  sR(-34,-92,68,94,'#24202a');sP([-26,0,-26,-56,0,-76,26,-56,26,0],'#120e14');for(let i=-20;i<=20;i+=10)sP([i-5,-58+Math.abs(i),i,-44+Math.abs(i)*.5,i+5,-58+Math.abs(i)],'#e8e0d0');sR(-26,-6,52,6,'#ff6a20');});
+nArt('dckeep',290,290,145,270,v=>{nSh(124,22);sR(-112,-124,224,126,'#2a2630');for(let i=0;i<10;i++)sP([-112+i*22.4,-124,-101+i*22.4,-146,-90+i*22.4,-124],'#46404e');
+  sR(-38,-220,76,100,'#24202a');sP([-46,-216,-30,-246,-16,-226,0,-270,16,-226,30,-246,46,-216],'#3e3846');for(const sx of[-1,1]){sR(sx*90-17,-176,34,56,'#2e2a34');sP([sx*90-21,-174,sx*90,-210,sx*90+21,-174],'#3e3846');}
+  for(const x of[-80,-45,45,80])sR(x-7,-92,14,22,'#ff7a2a');sR(-10,-192,20,28,'#ffb040');sP([-28,0,-28,-50,0,-70,28,-50,28,0],'#120e14');sR(-112,-8,224,8,'#ff6a20');sR(-112,-5,224,4,'#ffc060');});
+Object.assign(NR_BLD,{lcwall:[240,52],lcwallv:[220,30],lctower:[320,42],lcgate:[420,70],lckeep:[700,110],dcwall:[240,52],dcwallv:[220,30],dctower:[320,42],dcgate:[420,70],dckeep:[700,110]});
+{const _n=nrbName;nrbName=function(k){const m={lcwall:'Citadel wall',lcwallv:'Citadel wall',lctower:'Citadel tower',lcgate:'Citadel gate',lckeep:'Lumenspire keep',dcwall:'Iron wall',dcwallv:'Iron wall',dctower:'Iron tower',dcgate:'Iron gate',dckeep:'Doomforge keep'}[k];return m||_n.apply(this,arguments);};}
+// --- placement: after nrDecor (once per decor set); clear the scenery the castles would overlap ---
+function ccPlace(){if(DECOR.some(o=>o.cc))return 0;let cleared=0;
+  for(let i=DECOR.length-1;i>=0;i--){const o=DECOR[i];if(o.nr&&!o.town&&o.town!==0&&o.k!=='magicpeak'&&o.k!=='wztower'&&Object.values(NR_CC).some(c=>ccInside(c,o.x,o.y,110))){DECOR.splice(i,1);cleared++;}}
+  for(const c of Object.values(NR_CC))for(const[k,dx,dy]of ccLayout(c))DECOR.push({k,x:c.x+dx,y:c.y+dy,nr:1,cc:c.k,v:0,s:1});G.ccCleared=CC_CLR.n=cleared;return cleared;}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);if(ccPlace()&&typeof pbIndex==='function')pbIndex();return r;};}
+// courtyard paving painted into the terrain
+{const _p=nrPaint;nrPaint=function(g){_p.apply(this,arguments);g.save();g.setTransform(1/TS,0,0,1/TS,-WX0/TS,-WY0/TS);
+  for(const c of Object.values(NR_CC)){const L=c.k==='L';g.fillStyle=L?'#dcdcea':'#2a2428';g.fillRect(c.x-CC_W,c.y-CC_H,CC_W*2,CC_H*2);
+    g.strokeStyle=L?'rgba(170,175,200,.6)':'rgba(255,110,30,.5)';g.lineWidth=L?3:4;for(let x=c.x-CC_W+40;x<c.x+CC_W;x+=80){g.beginPath();g.moveTo(x,c.y-CC_H);g.lineTo(x,c.y+CC_H);g.stroke();}
+    for(let y=c.y-CC_H+40;y<c.y+CC_H;y+=80){g.beginPath();g.moveTo(c.x-CC_W,y);g.lineTo(c.x+CC_W,y);g.stroke();}
+    if(!L){g.fillStyle='#ff6a20';g.fillRect(c.x-CC_W-40,c.y-CC_H-40,CC_W*2+80,14);g.fillRect(c.x-CC_W-40,c.y+CC_H+26,CC_W*2+80,14);g.fillRect(c.x-CC_W-40,c.y-CC_H-40,14,CC_H*2+80);g.fillRect(c.x+CC_W+26,c.y-CC_H-40,14,CC_H*2+80);}
+    g.fillStyle=L?'#c8cce0':'#3a2e2a';g.fillRect(c.x-40,c.y+CC_H,80,140);}
+  g.restore();};}
+// magic turret towers on the walls (ice for light, lightning for dark)
+{const _tp=nrTurPlace;nrTurPlace=function(){_tp.apply(this,arguments);for(const c of Object.values(NR_CC)){const kind=c.k==='L'?'ice':'storm';
+  for(const[dx,dy]of[[-CC_W-80,-CC_H+40],[CC_W+80,-CC_H+40],[-CC_W-80,CC_H+50],[CC_W+80,CC_H+50],[-150,CC_H+90],[150,CC_H+90]])NR_TUR.push({x:c.x+dx,y:c.y+dy,side:c.k,kind,hp:NR_TUR_K[kind].hp,cd:R(0,1),st:'ok',reT:0,ch:0,shots:0,cc:c.k});}};}
+// (eggGuards and its castle garrison are redefined below)
+// --- garrison (mixed allied races) and the gate patrol ---
+const CC_GAR={L:['elf','dwarf','unirider','hobsol','centaur','elf','dwarf','elf','unirider','dwarf'],D:['orc','goblin','gobarch','orc','troll','gobarch','goblin','cerberus','orc','cyclops']};
+const CC_PAT={L:['elf','dwarf','centaur','hobsol'],D:['orc','goblin','cerberus','gobarch']};
+eggGuards=function(e,dt){const c=NR_CC[e.cc];if(Math.hypot(D.x-c.x,D.y-c.y)>1900)return;
+  e.g=e.g.filter(u=>!u.gone&&(!u.dead||G.t-(u.koAt||(u.koAt=G.t))<60));const alive=e.g.filter(u=>!u.dead).length;
+  if(eggState(e.k)==='nest'&&e.g.length<CC_GAR[c.k].length&&G.t-e.gT>.6){e.gT=G.t;const L=CC_GAR[c.k],i=e.g.length,a=i/L.length*TAU;
+    const u=nrSpawn(L[i],c.x+Math.cos(a)*200,c.y+Math.sin(a)*130,{home:{x:c.x-CC_W+40,y:c.y-CC_H+40,w:CC_W*2-80,h:CC_H*2-80},eggG:e.k,ccG:c.k});e.g.push(u);}
+  // the patrol walks the outside of the walls
+  e.p=(e.p||[]).filter(u=>!u.dead&&!u.gone);if(e.p.length<CC_PAT[c.k].length&&G.t-(e.pT||-99)>1.5){e.pT=G.t;const sp=CC_PAT[c.k][e.p.length];
+    e.p.push(nrSpawn(sp,c.x+R(-CC_W,CC_W),c.y+CC_H+120,{home:{x:c.x-CC_W-260,y:c.y-CC_H-200,w:CC_W*2+520,h:CC_H*2+400},ccP:c.k,role:'ccpat'}));}
+  return alive;};
+// --- muster + rescue charge when the egg is carried off (like King William's charge for the princess) ---
+const CC_RES={hits:8,far:5200,cap:14};
+function ccMuster(k){const e=NR_EGG[k],c=NR_CC[e.cc],n=Math.min(CC_RES.cap,6+nrLvl());G.ccMust=(G.ccMust||0)+1;G['ccHit'+k]=0;
+  const L=CC_GAR[c.k];for(let i=0;i<n;i++){const u=nrSpawn(L[i%L.length],c.x+R(-90,90),c.y+CC_H+R(20,80),{ccRes:k,role:'ccres',home:{x:c.x-CC_W,y:c.y-CC_H,w:CC_W*2,h:CC_H*2}});u.ccRes=k;}
+  for(const u of e.g)if(!u.dead)u.ccRes=k;
+  showToast(c.k==='L'?`📯 The Lumenspire Citadel musters ${n} riders and archers to take back the white egg!`:`📯 Doom drums! ${n} raiders pour out of the Doomforge Citadel after the black egg!`);try{horn();}catch(e){}}
+{const _tg=tryGrab;tryGrab=function(){const was=D.nrEgg;const r=_tg.apply(this,arguments);if(!was&&D.nrEgg)ccMuster(D.nrEgg);return r;};}
+{const _nu=nrUpd;nrUpd=function(u,dt){const k=u.ccRes;if(!k)return _nu.apply(this,arguments);const S=NRS[u.species],c=NR_CC[NR_EGG[k].cc];
+  if(D.nrEgg!==k||G.over||Math.hypot(u.x-c.x,u.y-c.y)>CC_RES.far||(u.side==='L'&&nrPastBorder(D))){u.ccRes=0;u.role=u.role==='ccres'?'amb':u.role;return _nu.apply(this,arguments);}
+  u.cd-=dt;const d=Math.hypot(D.x-u.x,D.y-u.y),reach=S.rng||S.fly||D.alt<.4||(u.species==='spider'&&d<360);const h0=u.lastHitD;
+  if(reach&&d<(S.rng?S.rng:90))nrAttack(u,S,D,dt,true);else moveTo(u,D.x,D.y,S.sp*1.15,dt);nrClamp(u);u.anim=(u.anim||0)+dt*10;
+  if(u.lastHitD!==h0&&u.lastHitD===G.t){G['ccHit'+k]=(G['ccHit'+k]||0)+1;G.ccResHits=(G.ccResHits||0)+1;
+    if(G['ccHit'+k]>=CC_RES.hits&&D.nrEgg===k){G.ccRescued=(G.ccRescued||0)+1;eggReturn(k,k==='W'?'🛡️ The light army rescued the WHITE egg — it is back in the Lumenspire Citadel':'🛡️ The dark raiders snatched back the BLACK egg — it is back in the Doomforge Citadel');
+      float(D.x,D.y-100,'They took the egg back!','#ffe0a0');}}};}
+// saves: old saves (eggs at the old town shrines) need nothing - the egg position always comes from its castle; reset per-castle state on load
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);if(!DECOR.some(o=>o.cc)){ccPlace();if(typeof pbIndex==='function')pbIndex();}for(const k of['W','B'])G['ccHit'+k]=0;return r;};}
+// ======================= queue 21-25: alpha troll caves (dark), alpha centaur glades (light), roamers kept, alphas in the big armies, the wizard's tower is destroyable =======================
+// ---- 21/22. three turfs per side. Each is home to a WHITE alpha troll (cave) or a SILVER-AND-GOLD alpha centaur (sacred glade) with a band of 3-4 regulars.
+// Same alpha rules as the lion / white wolf: defends the turf, war-cry rallies the band with the shared RALLY boost (+12% dmg, +8% speed, 10% less damage, 10 s, orange glow),
+// helpers refill over time, a new alpha takes over a while after one is beaten. Same alpha rule as partAL: a bite at full health is shrugged off (and stings him); once worn to 80% he is dizzy and can be gulped.
+const AT={troll:{n:'Troll cave',who:'The white alpha troll',call:'GRAAAWRR! *chest thump*',grp:'trolls',hp:2.4,dm:1.5,sz:1.3,eat:.8,R:520,col:'#f4f6fa',ring:'235,240,255',
+    cands:[[-9300,-11000],[-8600,-10600],[-2900,-10900],[-3600,-10500],[3600,-11000],[3000,-10600],[-12400,-10700]]},
+  centaur:{n:'Sacred glade',who:'The alpha centaur',call:'Ta-ra-RAAA! *hoof horn*',grp:'centaurs',hp:2.6,dm:1.6,sz:1.28,eat:.8,R:520,col:'#ffe08a',ring:'255,225,140',rng:380,
+    cands:[[-11800,-6300],[-12400,-5700],[-300,-6400],[600,-6200],[3400,-3600],[2800,-3800],[-7600,-3400]]}};
+const AT_BAND=[3,4],AT_REFILL=40,AT_NEW=75,AT_CALM=6,AT_LEASH=950;
+let TURFS=[];
+function atSpotOK(x,y,sp){const rk=nrRealm(x,y);if(!rk)return false;const dark=y<nrDarkY(x);if((sp==='troll')!==dark)return false;if(inSea(x,y)||x<WX0+500||y<WY0+450)return false;
+  if(y>nrDarkY(x)-500&&dark||(!dark&&(y<nrDarkY(x)+450||y>nrEdge(x)-450)))return false;
+  if(NR_TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<900))return false;if(Object.values(NR_CC).some(c=>Math.hypot(c.x-x,c.y-y)<1100))return false;
+  if(typeof MDL!=='undefined'&&Math.hypot(MDL.x-x,MDL.y-y)<1200)return false;if(Math.hypot(NR_BF.x-x,NR_BF.y-y)<1200)return false;
+  if(TURFS.some(t=>Math.hypot(t.x-x,t.y-y)<2500))return false;return true;}
+function atPlace(){TURFS=[];for(const sp of['troll','centaur']){let n=0;for(const[cx,cy]of AT[sp].cands){if(n>=3)break;let p=null;
+    for(let r=0;r<=900&&!p;r+=150)for(let a=0;a<8&&!p;a++){const x=cx+Math.cos(a*TAU/8)*r,y=cy+Math.sin(a*TAU/8)*r*.7;if(atSpotOK(x,y,sp))p={x:Math.round(x),y:Math.round(y)};if(!r)break;}
+    if(p){TURFS.push({sp,i:TURFS.length,x:p.x,y:p.y,n:n,name:AT[sp].n,res:0,alert:false,calm:0,roarT:-99,refT:0,newT:0,away:null,alphaDead:0});n++;}}}
+  // the art: a cave mouth in the dark rocks / a ring of silver trees and standing stones; cleared of other decor
+  for(const t of TURFS){for(let i=DECOR.length-1;i>=0;i--){const o=DECOR[i];if(o.nr&&!o.town&&o.town!==0&&!o.cc&&!o.at&&o.k!=='wztower'&&o.k!=='magicpeak'&&Math.hypot(o.x-t.x,o.y-t.y)<170)DECOR.splice(i,1);}
+    if(!DECOR.some(o=>o.at===t.i+1))DECOR.push({k:t.sp==='troll'?'atcave':'atglade',x:t.x,y:t.y,nr:1,at:t.i+1,s:1,v:t.i});}
+  if(typeof pbIndex==='function')try{pbIndex();}catch(e){}}
+nArt('atcave',240,170,120,150,v=>{nSh(100,24);sP([-110,0,-96,-70,-60,-120,-10,-140,40,-128,86,-96,110,-40,112,0],'#4a4450');sP([-80,0,-70,-60,-40,-96,0,-108,40,-96,74,-60,84,0],'#5c5664');
+  sP([-60,0,-50,-48,-20,-72,20,-72,48,-48,58,0],'#5a5048');sP([-44,0,-34,-40,-12,-58,14,-58,36,-40,44,0],'#16121a');
+  for(let i=0;i<5;i++)sE(-90+i*44,-8-(i%2)*6,14,8,'#3a343e');sE(-26,-6,6,4,'#d8d4cc');sE(-14,-4,4,3,'#d8d4cc');sL(-100,-30,-70,-40,'#2e2a32',3);sL(70,-50,100,-30,'#2e2a32',3);
+  sP([-6,-120,0,-150,6,-120],'#7a7484');sE(0,-84,16,6,'rgba(255,170,90,.35)');});
+nArt('atglade',300,170,150,140,v=>{nSh(130,26);sE(0,-4,120,30,'#7fbf6a');sE(0,-6,80,18,'#9fd884');sE(0,-6,26,8,'#e8f4ff');
+  for(let i=0;i<6;i++){const a=i*TAU/6,x=Math.cos(a)*100,y=Math.sin(a)*24;sP([x-7,y,x-5,y-40,x+5,y-40,x+7,y],'#c8ccd8');sL(x-5,y-40,x+5,y-40,'#e0c060',2);}
+  for(const[x,h]of[[-130,110],[130,100],[-70,120],[78,126]]){sP([x-5,-10,x-3,-h*.6,x+3,-h*.6,x+5,-10],'#d8dce8');sE(x,-h*.75,30,h*.32,'#cfe8d8');sE(x-8,-h*.82,18,h*.2,'#e8fff0');sE(x+6,-h*.66,5,4,'#ffe08a');}});
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);atPlace();return r;};}
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);if(!TURFS.length||!DECOR.some(o=>o.at))atPlace();for(const t of TURFS){t.res=0;t.alert=false;t.away=null;}return r;};}
+// variant stat blocks (swapped into NRS while that unit updates/draws, then restored)
+const AT_V={};
+function atVar(sp,alpha,rally){const k=sp+(alpha?'A':'')+(rally?'R':'');if(AT_V[k])return AT_V[k];const B=NRS[sp],o=Object.assign({},B);
+  if(alpha){const A=AT[sp];o.hp=Math.round(B.hp*A.hp);o.dm=B.dm*A.dm;o.sz=(B.sz||1)*A.sz;if(A.rng)o.rng=A.rng;o.food=Math.round((B.food||20)*1.6);o.aggro=Math.max(B.aggro||300,420);}
+  if(rally){o.dm*=RALLY.dmg;o.sp*=RALLY.spd;}return AT_V[k]=o;}
+function atRallied(u){return u.rallyT>G.t;}
+function atWith(u,fn){if(!u||!u.nr||!(u.atAlpha||atRallied(u)))return fn();const sp=u.species,B=NRS[sp];NRS[sp]=Object.assign(atVar(sp,u.atAlpha,atRallied(u)),{__b:B});
+  try{return fn();}finally{NRS[sp]=B;}}
+function atMakeAlpha(u){const V=atVar(u.species,1,0);u.atAlpha=1;u.alpha=1;u.maxHp=Math.round(V.hp*nrHpMul());u.hp=u.maxHp;return u;}
+function atBand(t){return NRU.filter(u=>!u.dead&&u.turf===t);}
+function atSpawn(t,alpha){const a=R(0,TAU),r=alpha?R(0,40):R(70,200);const u=nrSpawn(t.sp,t.x+Math.cos(a)*r,t.y+60+Math.sin(a)*r*.6,{role:'turf',turf:t,home:{x:t.x-260,y:t.y-120,w:520,h:340}});
+  if(alpha)atMakeAlpha(u);return u;}
+function atCall(t,al){t.roarT=G.t;al.roarFx=1.6;float(al.x,al.y-60*AT[t.sp].sz,AT[t.sp].call,AT[t.sp].col);if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play(t.sp==='troll'?'roar':'howl',al.x,al.y,1);}catch(e){}
+  if(Math.hypot(al.x-D.x,al.y-D.y)<900)G.shake=Math.max(G.shake||0,4);G['atCall_'+t.sp]=(G['atCall_'+t.sp]||0)+1;
+  for(const m of atBand(t)){if(!atRallied(m))G.tfRallied=(G.tfRallied||0)+1;m.rallyT=G.t+RALLY.fade;m.mad=G.t;}}
+function atTick(dt){if(!G||G.over)return;if(G.atToast&&G.t>=G.atToast.t){showToast(G.atToast.m);G.atToast=null;}for(const t of TURFS){const d=Math.hypot(t.x-D.x,t.y-D.y),band=atBand(t);for(const u of band)if(u.roarFx>0)u.roarFx-=dt;
+  // drafted alpha comes home once its army is gone or back at the castle
+  if(t.away){const s=t.away,k=t.i+1,gone=s.dead||!NRQ.includes(s),lost=s.units?!s.units.some(u=>!u.dead&&u.atFrom===k):!s.mem.some(m=>m.atAlpha===k);
+    if(gone||lost){t.away=null;if(lost&&!gone){t.alphaDead=G.t+AT_NEW;}else G.atReturned=(G.atReturned||0)+1;
+      for(const u of (s.units||[]))if(!u.dead&&u.atFrom===k)nrGone(u);if(t.res&&!t.alphaDead&&!atBand(t).some(u=>u.atAlpha))atSpawn(t,1);}}
+  if(!t.res){if(d<1900){t.res=1;if(!t.away&&!(t.alphaDead>G.t))atSpawn(t,1);const n=RI(AT_BAND[0],AT_BAND[1]);for(let i=0;i<n;i++)atSpawn(t,0);}continue;}
+  if(d>3200){for(const u of band)nrGone(u);t.res=0;t.alert=false;continue;}
+  const al=band.find(u=>u.atAlpha);if(!al&&!t.away&&!t.alphaDead){t.alphaDead=G.t+AT_NEW;G.atAlphaDown=(G.atAlphaDown||0)+1;if(d<1500)float(t.x,t.y-120,`${AT[t.sp].who} is beaten! The band is leaderless...`,'#ffe6a8');}
+  if(t.alphaDead&&G.t>=t.alphaDead&&!t.away&&d>700){t.alphaDead=0;atSpawn(t,1);G.atNewAlpha=(G.atNewAlpha||0)+1;if(d<1800)float(t.x,t.y-120,`A new alpha takes over the ${AT[t.sp].n.toLowerCase()}!`,'#fff2c0');}
+  t.refT+=dt;if(t.refT>=AT_REFILL){t.refT=0;if(band.filter(u=>!u.atAlpha).length<AT_BAND[1]&&d>700){atSpawn(t,0);G.atRefill=(G.atRefill||0)+1;}}
+  const spot=!G.won&&D.alt<.6&&d<AT[t.sp].R+180&&!(t.sp==='centaur'&&nrPastBorder(D));
+  if(spot){t.calm=0;if(!t.alert&&al){t.alert=true;atCall(t,al);float(al.x,al.y-84*AT[t.sp].sz,`${AT[t.sp].who} calls the ${AT[t.sp].grp} to fight!`,'#fff2c0');}
+    else if(t.alert){for(const m of band){m.rallyT=Math.max(m.rallyT||0,al?G.t+RALLY.fade:m.rallyT||0);m.mad=G.t;}if(al&&G.t-t.roarT>8)atCall(t,al);}}
+  else if(t.alert){t.calm+=dt;if(t.calm>AT_CALM){t.alert=false;if(al&&d<1500)float(al.x,al.y-60,`${AT[t.sp].who} grunts and settles down`,'#e8e0d0');}}}}
+{const _t=nrTick;nrTick=function(dt){_t(dt);atTick(dt);};}
+// AI: alerted band members charge the dragon anywhere near the turf (leashed), alphas + rallied units use their boosted stat blocks
+{const _u=nrUpd;nrUpd=function(u,dt){if(u.turf&&u.turf.alert&&!G.over&&!G.won){const t=u.turf,S=NRS[u.species],dd=Math.hypot(u.x-D.x,u.y-D.y);
+    const reach=S.rng||D.alt<.4;if(reach&&dd<1100&&Math.hypot(u.x-t.x,u.y-t.y)<AT_LEASH){return atWith(u,()=>{const V=NRS[u.species];u.vsD=1;u.tgt=null;u.cd-=dt;u.t-=dt;
+      if(V.regen&&u.hp<u.maxHp&&!(u.burn>0))u.hp=Math.min(u.maxHp,u.hp+V.regen*dt);if(u.dash>0){u.dash-=dt;u.x+=Math.cos(u.dva)*480*dt;u.y+=Math.sin(u.dva)*480*dt;nrClamp(u);return;}
+      if(u.atAlpha&&u.species==='centaur'&&dd<200&&D.alt<.4&&!(u.chgCd>G.t)){u.chgCd=G.t+5;u.dash=.28;u.dva=Math.atan2(D.y-u.y,D.x-u.x);hurtDragon(EASY?4:7,'centaur');u.lastHitD=G.t;G.atCharge=(G.atCharge||0)+1;float(D.x,D.y-90,'Hoof charge! -'+(EASY?4:7),'#ffb0a0');return;}
+      nrAttack(u,V,D,dt,true);nrClamp(u);});}
+    if(Math.hypot(u.x-t.x,u.y-t.y)>AT_LEASH){moveTo(u,t.x,t.y+60,NRS[u.species].sp,dt);nrClamp(u);return;}}
+  return atWith(u,()=>_u.call(this,u,dt));};}
+// perf: a live ctx.filter on the main canvas turns every one of the alpha's vector shapes into its own filtered layer (~20 ms per alpha on a throttled phone).
+// Instead the alpha is drawn once into a small offscreen canvas (ctx calls redirected there), filtered offscreen, then blitted with one plain drawImage.
+const AT_SPRITE_FX=true,ATFX_N=320;let ATFX=null;
+const ATFX_PROPS=['fillStyle','strokeStyle','lineWidth','lineCap','lineJoin','miterLimit','lineDashOffset','globalAlpha','globalCompositeOperation','font','textAlign','textBaseline','direction','shadowBlur','shadowColor','shadowOffsetX','shadowOffsetY','imageSmoothingEnabled','filter'];
+function atFx(u,F,draw){if(!ATFX){const a=document.createElement('canvas'),b=document.createElement('canvas');a.width=a.height=b.width=b.height=ATFX_N;ATFX={a,b,ga:a.getContext('2d'),gb:b.getContext('2d')};}
+  const {a,b,ga,gb}=ATFX,M=ctx.getTransform(),p=M.transformPoint(new DOMPoint(u.x,u.y-20)),ox=Math.round(p.x-ATFX_N/2),oy=Math.round(p.y-ATFX_N/2);
+  if(ox>ctx.canvas.width||oy>ctx.canvas.height||ox+ATFX_N<0||oy+ATFX_N<0)return;
+  ga.setTransform(1,0,0,1,0,0);ga.globalAlpha=1;ga.globalCompositeOperation='source-over';ga.filter='none';ga.clearRect(0,0,ATFX_N,ATFX_N);
+  ga.setTransform(M.a,M.b,M.c,M.d,M.e-ox,M.f-oy);for(const k of ATFX_PROPS)if(k in ga)try{ga[k]=ctx[k];}catch(e){}ga.globalAlpha=ctx.globalAlpha;
+  const P=CanvasRenderingContext2D.prototype,own=[];
+  for(const m of Object.getOwnPropertyNames(P)){if(m==='constructor'||m==='canvas')continue;const d=Object.getOwnPropertyDescriptor(P,m);
+    if(typeof d.value==='function'){if(m==='getTransform')continue;Object.defineProperty(ctx,m,{configurable:true,writable:true,value:m==='setTransform'?function(){if(arguments.length===0)return;if(arguments.length===1){const t=arguments[0];return ga.setTransform(t.a,t.b,t.c,t.d,t.e-ox,t.f-oy);}const A=arguments;return ga.setTransform(A[0],A[1],A[2],A[3],A[4]-ox,A[5]-oy);}:m==='resetTransform'?function(){return ga.setTransform(1,0,0,1,-ox,-oy);}:function(){return d.value.apply(ga,arguments);}});own.push(m);}
+    else if(d.get&&d.set){Object.defineProperty(ctx,m,{configurable:true,get(){return ga[m];},set(v){ga[m]=v;}});own.push(m);}}
+  Object.defineProperty(ctx,'getTransform',{configurable:true,writable:true,value:function(){const t=ga.getTransform();t.e+=ox;t.f+=oy;return t;}});own.push('getTransform');
+  try{draw();}finally{for(const m of own)delete ctx[m];}
+  gb.setTransform(1,0,0,1,0,0);gb.filter='none';gb.clearRect(0,0,ATFX_N,ATFX_N);gb.filter=F;gb.drawImage(a,0,0);gb.filter='none';
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.filter='none';ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.drawImage(b,ox,oy);ctx.restore();}
+{const _da=drawAnimal;drawAnimal=function(u){if(!u||!u.nr||!(u.atAlpha||atRallied(u)))return _da.apply(this,arguments);const S=atVar(u.species,u.atAlpha,0),s=S.sz||1;
+  if(atRallied(u)){const p=.5+.5*Math.sin(G.t*8+u.id);ell(u.x,u.y-14*s,22*s,26*s,`rgba(255,150,40,${.14+.1*p})`);}
+  if(u.roarFx>0){const q=1-u.roarFx/1.6;ctx.strokeStyle=`rgba(${AT[u.species].ring},${.8*(1-q)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(u.x,u.y-20,30+q*120,12+q*48,0,0,TAU);ctx.stroke();}
+  if(!u.atAlpha)return atWith(u,()=>_da.apply(this,arguments));
+  {const F=u.species==='troll'?'grayscale(1) brightness(1.75) contrast(.9)':'saturate(.25) brightness(1.45)';if(ST_FILTER&&AT_SPRITE_FX)atFx(u,F,()=>atWith(u,()=>_da.call(this,u)));else{ctx.save();if(ST_FILTER)ctx.filter=F;try{atWith(u,()=>_da.call(this,u));}finally{ctx.restore();}}}
+  if(!ST_FILTER){ctx.save();ctx.globalAlpha=.45;ell(u.x,u.y-18*s,11*s,16*s,'#f4f6fa');ctx.restore();}
+  const top=u.y-46*s;if(u.species==='centaur'){poly([u.x-7,top+4,u.x-6,top-4,u.x-3,top,u.x,top-6,u.x+3,top,u.x+6,top-4,u.x+7,top+4],'#ffd24a');line(u.x-9*s,u.y-28*s,u.x+9*s,u.y-18*s,'#e0b040',2.5);}
+  else{line(u.x-8*s,top+4,u.x+8*s,top+4,'#c8d4e8',2);ell(u.x,top+1,3,3,'#a8e0ff');}};}
+// alpha death bookkeeping
+// (rallied responders already take RALLY.def less damage from partAL's shared rallyT rule; the alpha itself does not)
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){const r=_hu.call(this,u,d,src);if(u&&u.dead&&u.atAlpha){G.atAlphaKO=(G.atAlphaKO||0)+1;}return r;};}
+// eating: same rule as the lion/wolf alphas (partAL, AL_TH 80%): above 80% the bite is shrugged off and stings; at/below 80% he is dizzy and can be gulped (the troll's own 'wear it down to half' rule is lifted for a dizzy alpha)
+{const _te=tryEat;tryEat=function(){let T=[];try{T=biteTargets();}catch(e){}const f=T[0];
+  if(f&&f.atAlpha&&f.hp>f.maxHp*AT[f.species].eat&&T.every(u=>u.atAlpha&&u.hp>u.maxHp*AT[u.species].eat)){D.eatCD=.8;f.mad=G.t;G.atShove=(G.atShove||0)+1;
+    hurtUnit(f,Math.ceil(f.maxHp*.24),'bite');f.roarFx=1.2;float(f.x,f.y-70,`${AT[f.species].who} shrugs off the bite!`,'#ffd27a');return;}
+  if(f&&f.atAlpha&&NRS[f.species].tough){const B=NRS[f.species];NRS[f.species]=Object.assign({},B,{tough:0});try{return _te.apply(this,arguments);}finally{NRS[f.species]=B;}}
+  return _te.apply(this,arguments);};}
+{const _da=drawAnimal;drawAnimal=function(u){_da.apply(this,arguments);if(u&&u.atAlpha&&!u.dead&&u.hp<=u.maxHp*AT[u.species].eat){if(!u.atDz){u.atDz=1;G.atDizzy=(G.atDizzy||0)+1;}
+  const s=atVar(u.species,1,0).sz,hy=u.y-50*s;for(let i=0;i<3;i++){const a=G.t*3.2+i*TAU/3;hnStar(u.x+Math.cos(a)*14*s,hy+Math.sin(a)*4,3.4,i%2?'#ffe35a':'#fff7c0');}}};}
+// minimap marks
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s;
+  for(const t of TURFS){ell(X(t.x),Y(t.y),big?4:2.2,big?4:2.2,t.sp==='troll'?'#e8ecf4':'#ffd24a');if(big)txt(t.sp==='troll'?'🪨 Troll cave':'🌿 Sacred glade',X(t.x)+7,Y(t.y)+4,10,t.sp==='troll'?'#e8ecf4':'#fff0b0','left');}}catch(e){}return r;};}
+// ---- 23. the free-roaming regulars stay: ambient trolls/centaurs still come from NR_AMB (turf bands are extra, role 'turf') ----
+// ---- 24. regular trolls & centaurs already sit in the army mixes (item 11); from level 4 an alpha may lead the band: it leaves its turf, marches, and goes home after ----
+{const _m=nrMarch;nrMarch=function(){const r=_m.apply(this,arguments);if(nrLvl()<4)return r;const msg=[];
+  for(const side of['D','L']){const sq=NRQ.filter(q=>q.kind==='army'&&q.side===side&&!q.dead).pop();if(!sq)continue;const sp=side==='D'?'troll':'centaur';
+    const free=TURFS.filter(t=>t.sp===sp&&!t.away&&!(t.alphaDead>G.t));if(!free.length||rnd()>.5)continue;const t=free[RI(0,free.length-1)];
+    for(const u of atBand(t))if(u.atAlpha)nrGone(u);t.away=sq;const V=atVar(sp,1,0);sq.mem.push({sp,hp:Math.round(V.hp*nrHpMul()),atAlpha:t.i+1});
+    for(let i=0;i<RI(1,2);i++)sq.mem.push({sp,hp:Math.round(NRS[sp].hp*nrHpMul())});G.atDrafted=(G.atDrafted||0)+1;
+    msg.push(side==='D'?'🪨 a white alpha troll leads its trolls':'🌿 an alpha centaur leads its centaurs');}
+  if(msg.length)G.atToast={t:G.t+2.5,m:'📯 Also marching: '+msg.join(' and ')+' into battle!'};
+  return r;};}
+{const _mz=nrMaterialize;nrMaterialize=function(sq){const had=sq.units;const r=_mz.apply(this,arguments);if(!had&&sq.units)for(const u of sq.units)if(u.mem&&u.mem.atAlpha){const hp=u.mem.hp;atMakeAlpha(u);u.hp=Math.min(u.maxHp,hp);u.atFrom=u.mem.atAlpha;}return r;};}
+// ---- 25 + 26. The Wizard's tower: INVULNERABLE while the Storm Wizard is alive (fire, lava and stomps do nothing). Once he is defeated (G.nrOpen) it can be
+// burned / melted / stomped down like any northern building and magically rebuilds (NRB_RE). When the dragon dies the wizard returns (item 10) and the tower is
+// restored and invulnerable again (nrReset on newGame, plus a guard below for loaded saves).
+NR_BLD.wztower=[620,70];
+{const _n=nrbName;nrbName=function(k){return k==='wztower'?"Wizard's tower":_n.apply(this,arguments);};}
+function wzTw(){return nrbList().find(o=>o.k==='wztower');}
+function wzTowerOpen(){return !!G.nrOpen;}
+// the generic northern handlers only look north of MWY0+400; the wizard's isle (y -1500) gets its own, gated on the wizard being defeated
+// item 28: while he lives, every hit on the tower (fire, lava, stomp, claw, dive slam, bite) drains his MAGIC SHIELD (= his health bar, WZB.hp) instead; the tower takes no damage.
+// (fire that already hit him this frame is not counted twice)
+const WZ_SHIELD={fire:.55/.5,lava:.5,stomp:.35,claw:.6};
+{const _h=nrbHurt;nrbHurt=function(o,d,how){if(o&&o.k==='wztower'&&!wzTowerOpen()){G.wzTowerShrug=(G.wzTowerShrug||0)+1;
+    if(WZB.on&&WZB.koT<=0&&!(how==='fire'&&WZB.hitT===G.t)){const h0=WZB.hp;wzHurt(d*(WZ_SHIELD[how]||.5),how==='fire'?'fire':'bite');if(WZB.hp<h0){G.wzShieldHits=(G.wzShieldHits||0)+1;G['wzSh_'+how]=(G['wzSh_'+how]||0)+1;o.shFx=G.t;}}
+    if(!(o.wzSay>G.t)&&Math.hypot(o.x-D.x,o.y-D.y)<1200){o.wzSay=G.t+4;float(o.x,o.y-260,'The magic shield absorbs the blow!','#d8c8ff');}return false;}
+  const r=_h.apply(this,arguments);if(r&&o.k==='wztower')G.wzTowerDown=(G.wzTowerDown||0)+1;return r;};}
+const WZ_NEAR=o=>o&&o.y>=MWY0+400;
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);const o=wzTw();if(WZ_NEAR(o)&&o.bst==='ok'&&Math.abs(o.x-ox)<DR.fireRange+120&&Math.abs(o.y-oy)<DR.fireRange+120){
+  if(inFire(o.x,o.y,ox,oy)||inFire(o.x,o.y-60,ox,oy)||inFire(o.x-40,o.y,ox,oy)||inFire(o.x+40,o.y,ox,oy))nrbHurt(o,DR.fireDps*.5*dt,'fire');}return r;};}
+{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);const o=wzTw();if(WZ_NEAR(o)&&o.bst==='ok'&&Math.hypot(o.x-x,o.y-y)<LAVA_CFG.splashR+70)nrbHurt(o,70,'lava');return r;};}
+{const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);const o=wzTw();if(WZ_NEAR(o)&&o.bst==='ok'&&Math.hypot(o.x-D.x,o.y-D.y)<DR.stompR+70)nrbHurt(o,DR.stompDmg*1.6,'stomp');return r;};}
+// item 27: once he is defeated the tower can also be SMASHED, not only burned: stomp/crash-landing (above), dive slam, bite and claw scratch all chip it
+{const _ds=diveSlam;diveSlam=function(){const r=_ds.apply(this,arguments);const o=wzTw();if(WZ_NEAR(o)&&o.bst==='ok'&&Math.hypot(o.x-D.x,o.y-D.y)<220)nrbHurt(o,110,'stomp')&&(G.wzSmash=(G.wzSmash||0)+1);return r;};}
+{const _cs=clawScratch;clawScratch=function(){const r=_cs.apply(this,arguments);const o=wzTw();if(r!==false&&WZ_NEAR(o)&&o.bst==='ok'&&D.alt<.45&&Math.hypot(o.x-(D.x+Math.cos(D.ang)*80),o.y-(D.y+Math.sin(D.ang)*80))<170){
+  if(nrbHurt(o,30,'claw'))G.wzSmash=(G.wzSmash||0)+1;else if(wzTowerOpen())puff(o.x,o.y-30,5,'rgba(170,160,190,',60,5);}return r;};}
+{const _bw=biteWell;biteWell=function(){const o=wzTw();if(D.alt<.3&&WZ_NEAR(o)&&o.bst==='ok'&&wzTowerOpen()){const mx=D.x+Math.cos(D.ang)*70,my=D.y+Math.sin(D.ang)*70;
+    if(Math.hypot(mx-o.x,my-(o.y-20))<120){const down=nrbHurt(o,40,'claw');D.eatCD=.45;D.eatT=.3;G.wzBites=(G.wzBites||0)+1;if(down)G.wzSmash=(G.wzSmash||0)+1;
+      else float(o.x,o.y-140,'Crunch! Enchanted stone cracks','#d8c8ff');puff(mx,my,8,'rgba(170,160,190,',90,8);return true;}}
+  return _bw.apply(this,arguments);};}
+// wizard back (death / a save with him alive) -> tower whole again at once
+{const _t=nrTick;nrTick=function(dt){_t(dt);if(!wzTowerOpen()){const o=wzTw();if(o&&(o.bst!=='ok'||o.bhp<o.bmax)){o.bst='ok';o.bhp=o.bmax;o.bburn=0;G.wzTowerRestored=(G.wzTowerRestored||0)+1;}}};}
+// the shield bubble over tower + wizard: bright when full, fading as it drops, flashes when struck
+{const _dd=nrDrawDecor;nrDrawDecor=function(o){_dd(o);if(o.k!=='wztower'||wzTowerOpen()||Math.abs(o.x-D.x)>1400||Math.abs(o.y-D.y)>1000)return;
+  const f=WZB.maxHp?Math.max(0,WZB.hp)/WZB.maxHp:1,p=.5+.5*Math.sin(G.t*2.4),hit=o.shFx&&G.t-o.shFx<.25||WZB.hitT&&G.t-WZB.hitT<.25,cy=o.y-WZ.H*.62,ry=WZ.H*.78,rx=95;
+  ctx.save();ctx.globalAlpha=.25+.75*f;ell(o.x,cy,rx,ry,`rgba(170,150,255,${(hit?.22:.08)+.05*p})`);ctx.strokeStyle=hit?'rgba(255,255,255,.9)':`rgba(205,185,255,${.35+.25*p})`;ctx.lineWidth=hit?4:2.5;
+  ctx.beginPath();ctx.ellipse(o.x,cy,rx,ry,0,0,TAU);ctx.stroke();for(let i=0;i<5;i++){const a=G.t*.7+i*TAU/5;ell(o.x+Math.cos(a)*rx*.92,cy+Math.sin(a)*ry*.92,2.5,2.5,'rgba(240,230,255,.85)');}
+  if(f<.35){ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;line(o.x-30,cy-ry*.6,o.x-5,cy-ry*.2,'rgba(255,255,255,.55)',1.5);line(o.x-5,cy-ry*.2,o.x-20,cy+ry*.1,'rgba(255,255,255,.55)',1.5);}ctx.restore();};}
+// shield broken: he is defeated (barrier/wind wall open, item 10) but stays dizzy where he stood - on the tower, or on the rubble once it is knocked down - and can be gulped (optional)
+function wzEdibleSpot(){const o=wzTw(),up=o&&o.bst==='ok';return{x:WZ.x,y:up?WZ.y-WZ.H:WZ.y+20,up};}
+function wzEdible(){return G.nrOpen&&!G.wzEaten&&scene==='play';}
+{const _w=wzDraw;wzDraw=function(){const r=_w.apply(this,arguments);if(!wzEdible())return r;const sp=wzEdibleSpot(),x=sp.x,y=sp.y;if(Math.abs(x-D.x)>1600||Math.abs(y-D.y)>1200)return r;
+  ctx.save();ctx.translate(x,y);ctx.rotate(.5+Math.sin(G.t*3)*.12);ctx.translate(-x,-y);poly([x-11,y,x+11,y,x+4,y-30,x-4,y-30],'#4a3aa8');ell(x,y-34,6,6,'#f0d0b0');
+  poly([x-6,y-28,x+6,y-28,x+2,y-12,x-2,y-12],'#f4f4f4');poly([x-10,y-37,x+10,y-37,x+16,y-58],'#3a2a90');ell(x,y-37,11,3,'#3a2a90');line(x-3,y-36,x-1,y-34,'#222',1);line(x+1,y-36,x+3,y-34,'#222',1);ctx.restore();
+  line(x+22,y+2,x+34,y-6,'#7a5a3a',2.4);for(let i=0;i<3;i++){const a=G.t*5+i*TAU/3;txt('★',x+Math.cos(a)*14,y-62+Math.sin(a)*4,11,'#ffe060','center');}
+  if(Math.hypot(x-D.x,(sp.up?WZ.y:y)-D.y)<260&&!(G.wzHintT>G.t)){G.wzHintT=G.t+6;float(x,y-80,'Dizzy wizard - gobble him up!','#ffe28a');}return r;};}
+{const _te=tryEat;tryEat=function(){if(wzEdible()&&!(D.eatCD>0)){const sp=wzEdibleSpot(),gx=sp.up?WZ.x:sp.x,gy=sp.up?WZ.y:sp.y,mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
+    if(Math.min(Math.hypot(D.x-gx,D.y-gy),Math.hypot(mx-gx,my-gy))<(sp.up?150:95)){G.wzEaten=1;G.wzEatenN=(G.wzEatenN||0)+1;D.eatCD=.6;D.eatT=.3;const heal=30;D.hp=Math.min(D.maxHp,D.hp+heal);try{feed(heal);}catch(e){}
+      G.stats.eaten=(G.stats.eaten||0)+1;puff(sp.x,sp.y-30,14,'rgba(200,170,255,',90,10);sparkle(sp.x,sp.y-30,16);float(sp.x,sp.y-70,'GULP! The Storm Wizard (+'+heal+')','#ffe28a');
+      showToast('🧙 Gulp! The Storm Wizard is gone - until the next dragon comes along...');if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('gulp',sp.x,sp.y,1);}catch(e){}return;}}
+  return _te.apply(this,arguments);};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);G.wzEaten=0;return r;};}
+// ---- perf: the small minimap used to downscale the whole 3200x2200 ground canvas every frame (very slow once the browser keeps it in software).
+// It now draws from a 1/8-size cached copy that is refreshed one 128-px column strip per frame (a full refresh about every 0.4 s). The big world map is unchanged. ----
+let GMC=null,GMK=0,GMD=0,GMP=null,GMF=0;
+// minimap cache: 1/8-scale copy of `ground`; strips are re-copied only after something draws on the ground (dirty sweep), never during static frames
+function gmcStrip(k){const g=GMC.getContext('2d',{willReadFrequently:true}),sw=128,sx=k*sw;g.clearRect(sx/8,0,sw/8,GMC.height);g.drawImage(ground,sx,0,sw,ground.height,sx/8,0,sw/8,GMC.height);}
+function gmcPatch(){if(GMP===ground)return;GMP=ground;const gc=ground.getContext('2d');for(const m of ['fillRect','fill','stroke','drawImage','putImageData','fillText','strokeText','clearRect']){const f=gc[m];if(typeof f!=='function')continue;gc[m]=function(){GMD=Math.ceil(ground.width/128);return f.apply(this,arguments);};}}
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){if(big||typeof ground==='undefined'||!ground||!ground.width)return _m.apply(this,arguments);
+  gmcPatch();
+  if(!GMC||GMC.width!==Math.ceil(ground.width/8)){GMC=document.createElement('canvas');GMC.width=Math.ceil(ground.width/8);GMC.height=Math.ceil(ground.height/8);const g=GMC.getContext('2d',{willReadFrequently:true});g.imageSmoothingEnabled=true;g.drawImage(ground,0,0,ground.width,ground.height,0,0,GMC.width,GMC.height);GMK=0;GMD=0;}
+  else if(GMD>0&&(++GMF%6===0)){const n=Math.ceil(ground.width/128);gmcStrip(GMK%n);GMK=(GMK+1)%n;GMD--;}
+  const di=ctx.drawImage;ctx.drawImage=function(img){if(img===ground&&arguments.length===9){const a=arguments,s=1/8;return di.call(this,GMC,a[1]*s,a[2]*s,a[3]*s,a[4]*s,a[5],a[6],a[7],a[8]);}return di.apply(this,arguments);};
+  try{return _m.apply(this,arguments);}finally{delete ctx.drawImage;}};}

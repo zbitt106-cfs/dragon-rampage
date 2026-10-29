@@ -83,7 +83,7 @@ ZONES.jbank={ok:(x,y)=>regionKey(x,y)==='jungle'&&!inWater(x,y)&&jriverD(x,y)<33
 // base populations (prey get the +5% stochastic boost through PREY_SP / HN_BASE like every other prey species)
 const SJ_PLAN=[['zebra',10],['gazelle',12],['wildebeest',12],['giraffe',5],['elephant',4],['warthog',8],['ostrich',6],['cheetah',3],
   ['monkey',13],['tapir',7],['capybara',11],['frog',15], // jungle population +5% (was 12/6/10/14; with the gorillas, otters, fish, crocs and birds the jungle base goes 107 -> 112)
-  ['jaguar',3],['tiger',2],['python',4]];
+  ['jaguar',3],['tiger',2],['python',14]]; // pythons 4 -> 14: 12 live at the ancient ruins (see RUIN_PY), 2 roam
 const SJ_PREY=['zebra','gazelle','wildebeest','giraffe','elephant','warthog','ostrich','monkey','tapir','capybara','frog'];
 for(const[s,n]of SJ_PLAN){FAUNA_PLAN.push([s,n]);HN_BASE.plan.push([s,n]);}for(const s of SJ_PREY)PREY_SP.add(s);
 const PRIDES={lion:{n:2,size:3},hyena:{n:2,size:4}}; // lion prides & hyena clans (pack members share a home and get angry together)
@@ -98,6 +98,14 @@ function spawnSJ(sp,far,at){const F=FAUNA[sp],Z=ZONES[F.zone];let p=at||null,hom
   const bank=F.zone==='jbank',hw=bank?520:sp==='monkey'?700:1000,hh=bank?400:sp==='monkey'?500:760;home=home||{x:p.x-hw/2,y:p.y-hh/2,w:hw,h:hh};
   const u=mkUnit('animal',p.x,p.y,{species:sp,wild:true,zone:F.zone,home,hp:F.hp,maxHp:F.hp,free:true,pack:0,t:R(0,3),jt:0,face:rnd()<.5?1:-1});units.push(u);return u;}
 {const _sw=spawnWild;spawnWild=function(sp,far,at){if(SJ_SP.has(sp))return spawnSJ(sp,far,at);return _sw(sp,far,at);};}
+// ---------- the ancient ruins are python country: 5 / 4 / 3 pythons coil around the three ruin sites (biggest first), 2 more roam ----------
+const RUIN_PY=[5,4,3];
+function ruinPySpot(far){const cnt=RUINS.map((q,i)=>units.filter(u=>!u.dead&&u.species==='python'&&u.ruin===i+1).length);
+  const order=RUINS.map((q,i)=>i).filter(i=>cnt[i]<RUIN_PY[i]).sort((a,b)=>cnt[a]/RUIN_PY[a]-cnt[b]/RUIN_PY[b]);
+  for(const i of order){const q=RUINS[i];for(let t=0;t<30;t++){const a=R(0,6.283),r=R(q.w*.45,q.w*1.15),p={x:q.x+Math.cos(a)*r,y:q.y+Math.sin(a)*r*.7};
+    if(regionKey(p.x,p.y)==='jungle'&&!inWater(p.x,p.y)&&sjFar(p,far))return{p,i,q};}}return null;}
+{const _sw=spawnWild;spawnWild=function(sp,far,at){if(sp!=='python'||at)return _sw(sp,far,at);const s=ruinPySpot(far);if(!s)return _sw(sp,far,at);
+  const u=_sw(sp,far,s.p);if(u){const h=s.q.w*2.6;u.home={x:s.q.x-h/2,y:s.q.y-h*.4,w:h,h:h*.8};u.strict=true;u.ruin=s.i+1;}return u;};}
 function spawnPride(sp,far){const F=FAUNA[sp],Z=ZONES[F.zone],P=PRIDES[sp];let p=null;for(let t=0;!p&&t<80;t++){const q=Z.s();if(Z.ok(q.x,q.y)&&sjFar(q,far))p=q;}if(!p)return;
   const pk=++packId,home={x:p.x-380,y:p.y-280,w:760,h:560};
   for(let i=0;i<P.size;i++){const q=sjNear(Z,p,40,30);units.push(mkUnit('animal',q.x,q.y,{species:sp,wild:true,zone:F.zone,home,hp:F.hp,maxHp:F.hp,free:true,pack:pk,male:(sp==='lion'||sp==='gorilla')&&i===0?1:0,t:R(0,3),jt:0,face:rnd()<.5?1:-1}));}}
