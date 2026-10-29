@@ -2438,7 +2438,7 @@ if(typeof drawDecorHi==='function'){const _dh=drawDecorHi;drawDecorHi=function(o
 //  - PURPLE LIGHTNING: telegraphed ring, then a purple bolt (8 dmg vs 6, radius 95 vs 90).
 // Beaten (104): stays beaten for good - saved, kept through level-ups (only a brand-new game after losing the dragon resets him). Reward: +50 max health, +400 gold,
 // his volcano unlocks for lava drinking and the LAVA SHOT is upgraded at EVERY volcano (102/103): a dark-purple TRIPLE shot (spread 0.14 rad) with +50% splash damage.
-const DWV={x:9700,y:-9000,r:250,H:170,drinkR:190,name:'Cinder Isle'},DW_HP=525,DW_DMG={lava:13,erupt:6,bolt:8},DW_KB=1300,DW_GOLD=400,DW_GAIN=50,DW_SPIRE=520;
+const DWV={x:9700,y:-9000,r:250,H:170,drinkR:190,name:'Cinder Isle'},DW_HP=525,DW_DMG={lava:13,erupt:6,bolt:8},DW_KB=1300,DW_GOLD=0,DW_GAIN=0,/* QUEUE 105: no gold / max-health reward; the volcano + purple triple lava ARE the reward */DW_SPIRE=520;
 const DWL={n:3,spread:.14,mul:1.5};
 const DWB={on:false,hp:0,maxHp:0,cd:2,spell:0,shots:[],marks:[],erupts:[],koT:0,said:0,hitT:0,cast:0,stats:{lava:0,bolt:0,erupt:0}};
 function onDwIsle(x,y){const dx=x-DWV.x,dy=(y-DWV.y)*1.2;return dx*dx+dy*dy<DWV.r*DWV.r;}
@@ -2474,8 +2474,8 @@ function dwUpd(dt){if(!G||G.over)return;const dd=Math.hypot(D.x-DWV.x,D.y-DWV.y)
       D.nrKb={vx:Math.cos(a)*DW_KB,vy:Math.sin(a)*DW_KB*.8,t:.7};float(D.x,D.y-heightOf()-80,'KABOOM! Blown back!','#ff9a4a');G.dwKb=(G.dwKb||0)+1;}}
   DWB.shots=DWB.shots.filter(s=>!s.done);DWB.marks=DWB.marks.filter(m=>!m.done||m.flash>0);DWB.erupts=DWB.erupts.filter(w=>w.t<1.6);}
 function dwDefeat(){DWB.on=false;G.dwDown=1;G.dwHp=0;G.dwWins=(G.dwWins||0)+1;G.lavaUp=1;const t=dwTop();puff(t.x,t.y,14,'rgba(200,160,255,',90,10);sparkle(t.x,t.y,22);
-  D.gold=(D.gold||0)+DW_GOLD;D.hpBonus=(D.hpBonus||0)+DW_GAIN;D.maxHp+=DW_GAIN;D.hp=D.maxHp;D.healFx=1;float(t.x,t.y-40,`+${DW_GOLD} gold`,'#ffd84a');
-  boostAlert('🌋 Purple TRIPLE lava shot!',`Dark Wizard beaten · +${DW_GAIN} max health · 3 purple globs, +${Math.round((DWL.mul-1)*100)}% damage each, at every volcano`);
+  D.hp=D.maxHp;D.healFx=1;float(t.x,t.y-40,'Volcano unlocked!','#d8a8ff');
+  boostAlert('🌋 Purple TRIPLE lava shot!',`Dark Wizard beaten · his volcano is yours · 3 purple globs, +${Math.round((DWL.mul-1)*100)}% damage each, at every volcano`);
   try{achEv('dwizard');}catch(e){}try{horn();}catch(e){}}
 // hits on him / his volcano / his spire all drain the shield
 function dwNear(x,y,r){return Math.hypot(x-DWV.x,(y-DWV.y)*1.2)<DWV.r*.6+(r||0)||Math.hypot(x-dwSpire().x,y-dwSpire().y)<60+(r||0);}
@@ -2502,9 +2502,10 @@ function dwEdible(){return dwDown()&&!G.dwEaten&&scene==='play';}
   return _te.apply(this,arguments);};}
 {const _t=nrTick;nrTick=function(dt){_t(dt);if(scene==='play'&&G)dwUpd(dt);};}
 // ---- 102: his volcano is drinkable once he is beaten; the triple purple lava shot at every volcano ----
-function nearDW(){return dwDown()&&D&&D.mode==='ground'&&D.alt<.3&&!D.swim&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60;}
+function dwEatRange(){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;return Math.min(Math.hypot(D.x-DWV.x,D.y-DWV.y),Math.hypot(mx-DWV.x,my-DWV.y))<200;}
+function nearDW(){return dwDown()&&D&&!(dwEdible()&&dwEatRange())&&D.mode==='ground'&&D.alt<.3&&!D.swim&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60;}
 {const _n=nearLava;nearLava=function(){return _n.apply(this,arguments)||nearDW();};}
-{const _l=lavaDrink;lavaDrink=function(){if(nearDW()){const ox=VOLC.x,oy=VOLC.y;VOLC.x=DWV.x;VOLC.y=DWV.y;try{const r=_l.apply(this,arguments);if(r)G.dwDrinks=(G.dwDrinks||0)+1;return r;}finally{VOLC.x=ox;VOLC.y=oy;}}
+{const _l=lavaDrink;lavaDrink=function(){if(dwEdible()&&D&&dwEatRange())return false;/* 106: the dizzy wizard on the rim is gulped first, then E drinks */if(nearDW()){const ox=VOLC.x,oy=VOLC.y;VOLC.x=DWV.x;VOLC.y=DWV.y;try{const r=_l.apply(this,arguments);if(r)G.dwDrinks=(G.dwDrinks||0)+1;return r;}finally{VOLC.x=ox;VOLC.y=oy;}}
   if(!dwDown()&&D&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60&&D.alt<.3&&!(G.dwLockT>G.t)){G.dwLockT=G.t+3;float(D.x,D.y-90,'The Dark Wizard\'s shield keeps you from the lava!','#e0c8ff');}
   return _l.apply(this,arguments);};}
 {const _lf=lavaFire;lavaFire=function(dt){const n0=LGLOBS.length;const r=_lf.apply(this,arguments);if(G&&G.lavaUp&&LGLOBS.length===n0+1){const g=LGLOBS[n0];g.dw=1;
@@ -2565,7 +2566,7 @@ function dwReset(){Object.assign(DWB,{on:false,hp:0,maxHp:0,cd:2,spell:0,shots:[
 if(typeof tallyAddSect==='function')tallyAddSect('nrdark','Northern Realms · Dark lands','👹','#9ad06a',[['dwizard','Dark Wizard']]);
 {const _ab=achBuild;achBuild=function(){const L=_ab.apply(this,arguments),i=L.findIndex(a=>a.id==='wizEat'),A=(id,name,how,ok,o)=>Object.assign({sec:'boss',id,name,how,ok},o||{});
   L.splice(i<0?L.length:i+1,0,A('dwizard','Volcano Tamer',"Break the Dark Wizard's shield on his volcano isle in the dark northern sea",()=>!!ACH.ev.dwizard||achG('dwWins')>0,
-      {rew:()=>`+${DW_GAIN} max health, +${DW_GOLD} gold · purple TRIPLE lava shot at every volcano (+${Math.round((DWL.mul-1)*100)}% damage each) · his volcano unlocks`}),
+      {rew:()=>`Purple TRIPLE lava shot at every volcano (+${Math.round((DWL.mul-1)*100)}% damage each) · his volcano unlocks`}),
     A('dwEat','Spicy Snack','Gobble the dizzy Dark Wizard after breaking his shield',()=>!!ACH.ev.dwEat||achG('dwEatenN')>0));return L;};}
 {const _w=wzClearFloes;wzClearFloes=function(){_w();if(OC&&OC.floes)OC.floes=OC.floes.filter(f=>Math.hypot(f.x-DWV.x,(f.y-DWV.y)*1.2)>DWV.r+Math.max(f.rx,f.ry)+250);};}
 // ======================= queue 98: the weather turns stormier near the Wizard's Isle =======================

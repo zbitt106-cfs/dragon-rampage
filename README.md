@@ -191,11 +191,11 @@ On **Cinder Isle**, a small ash-grey volcano island in the northern dark ocean (
   - **Lava shots:** 5 lava blobs, 13 damage each. These never melt in water.
   - **Eruption:** his volcano erupts in a ring that grows to 900 px over 1.5 s: 6 damage and a strong knockback (stronger than the wind wall's push).
   - **Purple lightning:** a purple mark appears for 1 s, then the bolt hits for 8 damage.
-- **Beat him:** +400 gold, **+50 max health**, a full heal, the *Volcano Tamer* achievement and a horn. He lies dizzy and can be eaten (+40 HP, *Spicy Snack* achievement). His spire can then be smashed for +100 gold.
+- **Beat him:** your reward is **his volcano and the purple triple lava shot** (below), plus a full heal, the *Volcano Tamer* achievement and a horn. There is no gold or max-health bonus for beating him. He lies dizzy and can be eaten (+40 HP, *Spicy Snack* achievement). His spire can then be smashed for +100 gold.
 - **He stays beaten** through every level-up and save/load; he never respawns in that game. Starting a new game (after your dragon is defeated) brings him back, like the Storm Wizard.
 
-## Purple TRIPLE lava (Dark Wizard reward)
-Beating the Dark Wizard unlocks **his volcano for lava drinking** (20 shots, like the others; before that his shield keeps you away) and upgrades lava at **every** volcano (Mount Cinder, Mount Ember and Cinder Isle). A small alert announces it: *"🌋 Purple TRIPLE lava shot!"*.
+## Purple TRIPLE lava (the Dark Wizard's reward)
+Beating the Dark Wizard unlocks **his volcano for lava drinking**: land anywhere by the crater on Cinder Isle and press **E** (pad X / touch DRINK). The rules are exactly the same as at Mount Cinder: a full load of 20 shots, an 8-second refill cooldown, and *Already full of lava!* when you are topped up. Before he is beaten, his shield keeps you away. While he lies dizzy on the rim, the first **E** gulps him and after that **E** drinks. The unlock is saved and kept through level-ups; only a new game resets it. and upgrades lava at **every** volcano (Mount Cinder, Mount Ember and Cinder Isle). A small alert announces it: *"🌋 Purple TRIPLE lava shot!"* (*Dark Wizard beaten · his volcano is yours · 3 purple globs, +50% damage each, at every volcano*).
 - Each lava press now lobs **3 dark-purple globs** (straight ahead and ±8°) for the cost of **1 lava**.
 - Each glob does **+50% damage**: units 30 → 45 (wet units 25 → 37.5), stone buildings 55 → 82.5, wooden buildings 60 → 90, ships 70 → 105, siege engines 70 → 105. Cooling puddles are unchanged (2 per tick).
 - The upgrade is saved and kept through every level-up. Like the Dark Wizard's beaten state, it resets only on a new game.
@@ -205,6 +205,8 @@ Beating the Dark Wizard unlocks **his volcano for lava drinking** (20 shots, lik
 | ![](screenshots/302_dark_wizard_volcano_fight.png) | ![](screenshots/303_dark_wizard_eruption.png) |
 | Beaten: triple lava unlocked | Purple triple lava shot |
 | ![](screenshots/304_dark_wizard_beaten_alert.png) | ![](screenshots/305_purple_triple_lava_shot.png) |
+| Volcano Tamer achievement hint | Drinking lava at Cinder Isle |
+| ![](screenshots/306_volcano_tamer_hint.png) | ![](screenshots/307_cinder_isle_drinking_lava.png) |
 
 ## Wanted tiers and the MILITIA
 The WANTED meter rises as you cause damage and cools down faster the farther you are from where the trouble was. Wild animals never raise it. The kingdom's response grows in tiers:
@@ -675,7 +677,7 @@ Open **🏆 Achievements** from the title menu (it shows *N of 74* right on the 
 What's in the list (74):
 - **Castle, hoard & princess:** first gold home, 500 / 2000 gold stashed, smashing the keep's roof, grabbing Princess Elizabeth (she is never harmed), flying her home (the ransom), castle levels 3, 5 and 10.
 - **Dragons & dragon eggs:** eat your first and 10th wild dragon egg, beat 1 and 5 wild dragons, carry home and hatch the **light (white) egg** from the Lumenspire Citadel and the **dark (black) egg** from the Doomforge Citadel (one achievement each, each hint names the guardian dragon you get), and the Glutton boost (eat a whale's worth of food).
-- **Bosses:** the wizard (defeat him, and gobble him), the Dark Wizard (*Volcano Tamer*, with a 🎁 *+400 gold · +50 max health · purple triple lava* hint, and *Spicy Snack* for eating him), the hydra, griffin, Nessie, the giant squid, the giant octopus, the sand worm, Medusa, Cerberus, and wrecking the jungle temple.
+- **Bosses:** the wizard (defeat him, and gobble him), the Dark Wizard (*Volcano Tamer*, with a 🎁 *Purple TRIPLE lava shot at every volcano (+50% damage each) · his volcano unlocks* hint, and *Spicy Snack* for eating him), the hydra, griffin, Nessie, the giant squid, the giant octopus, the sand worm, Medusa, Cerberus, and wrecking the jungle temple.
 - **Alpha guardians (first defeat of each type):** the savanna pride's male lion, the Deepwood's white alpha wolf, the jungle's silverback gorilla, the alpha hippo, the white alpha troll and the alpha centaur. **Alphas come back:** a new lion, wolf or silverback takes over about 60 s after you fly away, a new hippo wades in about 2 minutes later, and a new troll or centaur alpha arrives about 75 s later, so you can always find one.
 - **Hoard raids & royal fleets:** beat a hoard-raiding champion (1 and 5), pick up a gold sack a raiding knight dropped, stop a prince's royal war fleet, sink a royal warship.
 - **Kingdom:** stop a royal **trade ship at sea**, and separately stop a trade ship **on land** (unloading at the quay, or its carts unloading on shore), destroy the **rich desert caravan** (*+20 gold*), break the castle gate, wreck the barracks, topple 3 towers, knock down the lighthouse, wreck a catapult, stop a tax collector, defeat a knight, defeat 50 of King William's soldiers, burn 10 crop fields, knock down or burn 25 trees, and wreck 5 carts.
