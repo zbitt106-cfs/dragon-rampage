@@ -3079,11 +3079,11 @@ function raidGrab(){const r=RAID.cur,ch=r.champ;const take=Math.min(G.stash,Math
   G.banner={text:`${r.name} has stolen ${take} gold!`,sub:'Stop the champion before the sack reaches the castle gate!',t:4.5};if(typeof SFX!=='undefined')SFX.play('clink');showToast(`💰 ${r.short} is running off with ${take} gold!`);}
 function raidEscaped(){const r=RAID.cur,ch=r.champ;ch.dead=true;ch.gone=true;
   G.banner={text:`${r.name} returns to King William with ${r.loot} gold`,sub:'The court cheers… for now. The hoard is smaller.',t:4.5};endRaid(false);}
-function raidChampDown(u,eaten){const r=u.raid;if(!r||RAID.cur!==r||r.done)return;r.done=true;const bonus=40+20*r.n,pts=300+150*r.n,back=r.loot;
+function raidChampDown(u,eaten){const r=u.raid;if(!r||RAID.cur!==r||r.done)return;r.done=true;const bonus=0,pts=300+150*r.n,back=r.loot,byGd=!eaten&&u.gdHitT!==undefined&&G.t-u.gdHitT<.05; // queue 73: no lump-sum bonus; the only gold is what the knights carry (the stolen sacks)
   G.stash+=back+bonus;G.stats.raidPts=(G.stats.raidPts||0)+pts;G.stats.champs=(G.stats.champs||0)+1;if(typeof hoardDrop==='function'&&back+bonus>0)hoardDrop(back+bonus,u.x,u.y);
   float(u.x,u.y-80,eaten?`${r.dame?'Dame':'Sir'}? Gulp! +${pts} pts`:`${r.short} is defeated! +${pts} pts`,'#ffe08a');sparkle(u.x,u.y,24);
-  G.banner={text:eaten?`You gobbled ${r.name}!`:`${r.name} has fallen!`,sub:`${back?back+' stolen gold returns to your hoard':'The hoard is safe'}  +  ${bonus} bonus gold  ·  +${pts} pts`,t:4.5};
-  if(typeof SFX!=='undefined')SFX.play('fanfare');showToast(`🏆 Raid beaten: +${back+bonus} gold`);endRaid(true);}
+  G.banner={text:eaten?`You gobbled ${r.name}!`:byGd?`Your guardian dragons beat ${r.name}!`:`${r.name} has fallen!`,sub:`Raid defeated!  ${back?back+' stolen gold returns to your hoard':'The hoard is safe'}  ·  +${pts} pts`,t:4.5,raid:1};
+  if(typeof SFX!=='undefined')SFX.play('fanfare');showToast(back?`🏆 Raid beaten: ${back} gold back`:'🏆 Raid beaten: the hoard is safe');endRaid(true);}
 function endRaid(won){const r=RAID.cur;for(const u of r.members)if(!u.dead){u.raid=null;if(u.raidEsc&&!won){}if(u.raidEsc)u.retreat=!won?true:u.retreat;}RAID.cur=null;RAID.n++;RAID.cd=G.easy?RAID_CD_EASY:RAID_CD;}
 function updRaids(dt){if(scene!=='play'||!G||G.over||G.won)return;const r=RAID.cur;if(!r)RAID.cd=Math.max(0,RAID.cd-dt);
   if(!r){if(RAID.cd<=0&&G.stash>=raidMinGold()){RAID.thr=Math.max(RAID.thr,RAID.n+1);startRaidWarning();}return;} // a raid every RAID_CD seconds (after the last one ends) as long as the hoard holds the minimum; the tier comes from the hoard at announcement (partRK)
@@ -6767,7 +6767,7 @@ function drawLootSacks(u){const n=rkSacks(u);if(!n)return;const f=u.face||1,b=Ma
     if(Math.sin(G.t*6+i*1.7)>.55)ell(sx+R(-2,2),sy-s-2,1.2,1.2,'#fff4b0');ell(sx-1,sy-1,1.6,1.6,'#ffd84a');}}
 const r_loot=u=>(u.raid&&u.raid.loot)||0;
 {const _d=drawKnight;drawKnight=function(u){const res=_d.apply(this,arguments);if(u.champ&&u.raid&&u.raid.phase==='flee')drawLootSacks(u);return res;};}
-// stopped on the way back: the dropped sacks go straight back to the lair pile with a "+N" pop (plus the usual bonus)
+// stopped on the way back: the dropped sacks go straight back to the lair pile with a "+N" pop (queue 73: no lump-sum bonus any more)
 {const _c=raidChampDown;raidChampDown=function(u,eaten){const r=u&&u.raid,live=r&&RAID.cur===r&&!r.done,back=live?(r.loot||0):0;const res=_c.apply(this,arguments);
   if(live&&back>0){G.rkReturned=(G.rkReturned||0)+back;if(typeof GA!=='undefined')GA.pop.push({n:back,t:0});puff(u.x,u.y-10,12,'rgba(255,216,74,',150,5);float(u.x,u.y-56,`The gold sacks drop: ${back} gold back to your hoard!`,'#ffd84a');}
   return res;};}
@@ -8145,7 +8145,7 @@ let GD=[];
 function eggPos(e){const t=NR_CC[e.cc];return{x:t.x+e.dx,y:t.y+e.dy};}
 function eggState(k){return G['nrEgg'+k]||'nest';}
 function eggSet(k,s){G['nrEgg'+k]=s;}
-function gdMk(k,hp){return{k,hp:hp||GD_HP,maxHp:GD_HP,cd:R(0,1),fx:null,hitT:-9,koT:0,segs:[]};}
+function gdMk(k,hp){return{k,hp:hp||gdMaxHp(),maxHp:gdMaxHp(),cd:R(0,1),fx:null,hitT:-9,koT:0,segs:[]};}
 function gdSync(){GD=GD.filter(g=>G['nrGd'+g.k]>0);for(const k of ['W','B'])if(G['nrGd'+k]>0&&!GD.some(g=>g.k===k))GD.push(gdMk(k,G['nrGd'+k]));}
 function gdAng(g){return (G.nrGdA||0)+(g.k==='B'?Math.PI:0);}
 function gdHead(g){const a=gdAng(g);return{x:LAIR.x+Math.cos(a)*GD_R,y:LAIR.y+Math.sin(a)*GD_R*.78,a};}
@@ -8165,7 +8165,7 @@ function eggGuards(e,dt){if(eggState(e.k)!=='nest')return;const p=eggPos(e);if(M
       showToast(e.k==='W'?'🥚 You took the WHITE dragon egg! Fly it to your lair to hatch it':'🥚 You took the BLACK dragon egg! Fly it to your lair to hatch it');
       return true;}}
   return _tg.apply(this,arguments);};}
-function eggHatch(k){D.nrEgg=null;eggSet(k,'lair');G['nrGd'+k]=GD_HP;gdSync();sparkle(LAIR.x,LAIR.y-40,26);puff(LAIR.x,LAIR.y-30,10,k==='W'?'rgba(230,240,255,':'rgba(60,50,80,',70,9);
+function eggHatch(k){D.nrEgg=null;eggSet(k,'lair');G['nrGd'+k]=gdMaxHp();gdSync();sparkle(LAIR.x,LAIR.y-40,26);puff(LAIR.x,LAIR.y-30,10,k==='W'?'rgba(230,240,255,':'rgba(60,50,80,',70,9);
   float(LAIR.x,LAIR.y-90,k==='W'?'A white guardian dragon hatches!':'A black guardian dragon hatches!','#ffe9a0');
   showToast(k==='W'?'🐉 The WHITE guardian dragon (ice breath) now circles your lair!':'🐉 The BLACK guardian dragon (lightning breath) now circles your lair!');try{horn();}catch(e){}}
 function eggReturn(k,why){if(D.nrEgg===k)D.nrEgg=null;eggSet(k,'nest');const e=NR_EGG[k];e.gT=-99;if(why)showToast(why);}
@@ -8190,7 +8190,8 @@ function gdUpd(dt){G.nrGdA=((G.nrGdA||0)+GD_W*dt)%TAU;
 function nrEggArt(x,y,k,s){s=s||1;ell(x,y+2,14*s,5*s,'rgba(0,0,0,.25)');ell(x,y-16*s,14.5*s,18.5*s,k==='W'?'#7a80a8':'#c8b0ff');ell(x,y-16*s,13*s,17*s,k==='W'?'#f4f4fa':'#1e1a26');ell(x-4*s,y-22*s,4*s,6*s,k==='W'?'#ffffff':'#4a4060');
   for(let i=0;i<3;i++)ell(x-6*s+i*6*s,y-12*s+(i%2)*4*s,2*s,2*s,k==='W'?'#cfd8ff':'#8a6aff');const p=.5+.5*Math.sin(G.t*3);ell(x,y-16*s,(22+4*p)*s,(24+4*p)*s,k==='W'?`rgba(200,230,255,${.18+.1*p})`:`rgba(150,90,255,${.18+.1*p})`);}
 function gdDraw(g){const T=G.t,a0=gdAng(g),W=g.k==='W',body=W?'#f2f2f8':'#1c1824',belly=W?'#c8d0e8':'#4a3a5a',mane=W?'#9ad8ff':'#ffd040',eye=W?'#111':'#fff';
-  const ko=g.koT>0,pts=[];for(let i=0;i<GD_SEG;i++){const a=a0-i*.036,w=Math.sin(T*4-i*.38)*14;const r=GD_R+w;pts.push({x:LAIR.x+Math.cos(a)*r,y:LAIR.y+Math.sin(a)*r*.78-34-Math.sin(T*3-i*.27)*6});}
+  const ko=g.koT>0||!!g.down,pts=[];for(let i=0;i<GD_SEG;i++){const a=a0-i*.036,w=Math.sin(T*4-i*.38)*14;const r=GD_R+w;pts.push({x:LAIR.x+Math.cos(a)*r,y:LAIR.y+Math.sin(a)*r*.78-34-Math.sin(T*3-i*.27)*6});}
+  if(g.eng>0&&g.hx!==undefined){const e=Math.min(1,g.eng),bx=-Math.cos(g.dir||0),by=-Math.sin(g.dir||0);for(let i=0;i<GD_SEG;i++){const w=Math.sin(T*5-i*.45)*10*Math.min(1,i/4),ex=g.hx+bx*i*13-by*w,ey=g.hy-34+by*i*13*.8+bx*w-Math.sin(T*3-i*.27)*5;pts[i].x+=(ex-pts[i].x)*e;pts[i].y+=(ey-pts[i].y)*e;}} // engaged: the guardian leaves its circle to meet raiders (queue 72)
   const ol=W?'#5a6488':'#b8a8d8';
   for(let i=GD_SEG-1;i>=0;i--){const p=pts[i],s=1-i/GD_SEG*.6;ell(p.x,p.y+34,12*s,4*s,'rgba(0,0,0,.16)');ell(p.x,p.y,16.5*s,14.5*s,ol);ell(p.x,p.y,15*s,13*s,body);ell(p.x,p.y+4*s,9*s,6*s,belly);if(i%4===1)poly([p.x-3,p.y-11*s,p.x,p.y-20*s,p.x+3,p.y-11*s],mane);
     if(i===7||i===19){line(p.x-6,p.y+8,p.x-10,p.y+18,body,4);line(p.x+6,p.y+8,p.x+10,p.y+18,body,4);}}
@@ -9324,7 +9325,7 @@ const HUD_BANNER_LAST=1;
 // 60: the desert road between Sandhaven and the castle is safe too (like Sandhaven and the oasis).
 // 59: the worm is confined to the desert: it never moves off the sand, and once the dragon is off the sand it loses the scent, cannot bite,
 //     and an above-ground worm sinks back into the dunes.
-const WRM={land:1.0,tunnel:650,far:780,road:140};
+const WRM={land:.9,tunnel:280,far:340,road:140,upT:2.5,hpMul:1.8,chase:140};
 // 60: the desert road from Sandhaven to the king's castle (the caravan road) is a safe zone too: within WRM.road px of it
 let WRM_ROAD=null;function wormRoadD(x,y){if(!WRM_ROAD||WRM_ROAD.lvl!==G.lvl||WRM_ROAD.g!==G){try{WRM_ROAD={P:rcPath(),lvl:G.lvl,g:G};}catch(e){return 1e9;}}
   const P=WRM_ROAD.P;let b=1e9;for(let i=0;i<P.length-1;i++){const a=P[i],c=P[i+1],vx=c.x-a.x,vy=c.y-a.y,L=vx*vx+vy*vy||1,t=clamp(((x-a.x)*vx+(y-a.y)*vy)/L,0,1);b=Math.min(b,Math.hypot(x-a.x-vx*t,y-a.y-vy*t));}return b;}
@@ -9338,7 +9339,7 @@ function wormBeat(u){if(G.wormDown)return;G.wormDown=1;G.wormWins=(G.wormWins||0
 {const _d=updDesert;updDesert=function(dt){if(G&&!G.wormDown)G.wormFirst=0;return _d.apply(this,arguments);};}
 {const _nl=nextLevel;nextLevel=function(){const k={wormDown:G.wormDown,wormWins:G.wormWins};const r=_nl.apply(this,arguments);Object.assign(G,k);return r;};}
 function wormOpen(){return D.alt<.4&&!G.over&&!G.won&&inDesert(D.x,D.y)&&!wormSafe(D.x,D.y);}
-function wormTunnel(u){const a0=Math.atan2(u.y-D.y,u.x-D.x);for(let i=0;i<16;i++){const a=a0+(i%2?1:-1)*Math.ceil(i/2)*.4;for(const r of[WRM.tunnel,500,380]){const x=D.x+Math.cos(a)*r,y=D.y+Math.sin(a)*r;
+function wormTunnel(u){const a0=Math.atan2(u.y-D.y,u.x-D.x);for(let i=0;i<16;i++){const a=a0+(i%2?1:-1)*Math.ceil(i/2)*.4;for(const r of[WRM.tunnel,330,220]){const x=D.x+Math.cos(a)*r,y=D.y+Math.sin(a)*r;
     if(ZONES.desert.ok(x,y)&&inDesert(x,y)&&!wormSafe(x,y)){u.x=x;u.y=y;u.tgt=null;u.hPrey=null;u.cd=Math.max(u.cd,1);G.wormTunnel=(G.wormTunnel||0)+1;return true;}}}return false;}
 {const _uw=updWorm;updWorm=function(u,dt){
   if(u.ws==='under'&&wormOpen()){G.wrmLand=(G.wrmLand||0)+dt;
@@ -9349,6 +9350,155 @@ function wormTunnel(u){const a0=Math.atan2(u.y-D.y,u.x-D.x);for(let i=0;i<16;i++
   // off the sand (or in a safe zone): an above-ground worm stops and sinks back down
   if(u.ws==='up'&&wormSafe(D.x,D.y)){u.stuck=false;u.upT=Math.min(u.upT,.25);G.wormSink=(G.wormSink||0)+1;}
   const ox=u.x,oy=u.y;const r=_uw.apply(this,arguments);if(!u.dead&&!inDesert(u.x,u.y)){u.x=ox;u.y=oy;G.wormClamp=(G.wormClamp||0)+1;}return r;};}
+
+// (items 61-62) the worm strikes sooner (rumble ~0.6 s after landing, burst ~2-2.5 s), stays up for a shorter time (2.5 s instead of 4.5 s),
+// and is 1.8x tougher (150 -> 270 hp). Lava-stunned / dazed worms keep their longer time up so you can still eat them.
+{const _s=spawnWorm;spawnWorm=function(){const u=_s.apply(this,arguments);if(u&&!u.hpX){u.hpX=1;u.maxHp=Math.round(u.maxHp*WRM.hpMul);u.hp=u.maxHp;}return u;};}
+{const _uw=updWorm;updWorm=function(u,dt){if(!u.hpX){u.hpX=1;const f=u.hp/u.maxHp;u.maxHp=Math.round(u.maxHp*WRM.hpMul);u.hp=Math.max(1,Math.round(u.maxHp*f));}
+  const was=u.ws,dd=dist(u,D);
+  // faster final run in under the sand once it is coming for a landed dragon
+  if(was==='under'&&wormOpen()&&dd<750&&dd>40){const a=Math.atan2(D.y-u.y,D.x-u.x),k=Math.min(dd-40,(WRM.chase-110)*dt),nx=u.x+Math.cos(a)*k,ny=u.y+Math.sin(a)*k;if(ZONES.desert.ok(nx,ny)&&inDesert(nx,ny)){u.x=nx;u.y=ny;}}
+  const pre=G.wrmLand||0;const r=_uw.apply(this,arguments);
+  // a fresh landing never waits on an old cool-down (the spawn's 3 s or the 4-6 s after a dive): it is ready ~1 s after the tunnel
+  if(u.ws==='under'&&pre<WRM.land&&(G.wrmLand||0)>=WRM.land&&u.cd>1.1){u.cd=1.1;G.wormCdCap=(G.wormCdCap||0)+1;}
+  if(was==='under'&&u.ws==='up'&&!u.stuck&&u.upT>WRM.upT){u.upT=WRM.upT;u.bite=Math.min(u.bite,.9);G.wormUpSet=(G.wormUpSet||0)+1;}
+  return r;};}
+// ======================= queue 63-66: gentle per-castle-level scaling for MINI BOSSES and the two fantasy castles only =======================
+// The king's castle grows ~+31% gate health per level (260+80/level); mini bosses grow about HALF that: +15% health and +6% damage per castle level,
+// capped at level 8 (x2.05 health, x1.42 damage) so it stays kid-friendly. Mini bosses: giant squid (Kraken), giant octopus, sand worm, Nessie,
+// Hydra (per head; always 3 heads now), Griffin, Cerberus, and every other dragon (wild / rival dragons). The Lumenspire (light) and Doomforge (dark)
+// citadel towers scale the same way (and so do the realm's other magic towers - they belong to the same two castles' kingdoms).
+// The WIZARD never scales (300 health at every level), and regular soldiers, units and creatures (incl. pack alphas) no longer scale either.
+const LVS={hp:.15,dm:.06,cap:8};
+function lvsL(){return Math.min(LVS.cap,Math.max(1,(G&&G.lvl)||1));}
+function bossHpMul(){return 1+LVS.hp*(lvsL()-1);}
+function bossDmMul(){return 1+LVS.dm*(lvsL()-1);}
+const LVS_SRC={squid:1,octopus:1,sandworm:1,nessie:1,hydra:1,griffin:1,cerberus:1,wdragon:1,iceturret:1,stormturret:1};
+function lvsBoss(u){return !!u&&!u.dead&&(u.species==='sandworm'||u.species==='wdragon'||u.species==='cerberus'||u.kind==='squid'||(u.oc&&u.kind==='octopus'));}
+function lvsApply(u){if(!u.hpB)u.hpB=u.maxHp;const m=Math.round(u.hpB*bossHpMul());if(u.maxHp!==m){const f=u.maxHp>0?Math.min(1,u.hp/u.maxHp):1;u.maxHp=m;u.hp=Math.max(1,Math.round(m*f));G.lvsApplied=(G.lvsApplied||0)+1;}}
+nrHpMul=function(){return 1;};                       // 65: regular realm creatures (and pack alphas) keep their base health at every level
+wzMaxHp=function(){return Math.round(300*(EASY?.7:1));}; // 64: the wizard never scales
+hyHeadN=function(){return 3;};
+hyHeadHp=function(){return Math.round(85*bossHpMul());};
+grMaxHp=function(){return Math.round(420*bossHpMul());};
+nsMaxHp=function(){return Math.round(800*bossHpMul());};
+nrTurMaxHp=function(t){return Math.round(NR_TUR_K[t.kind].hp*bossHpMul());};
+{const _hd=hurtDragon;hurtDragon=function(d,src){if(typeof src==='string'&&LVS_SRC[src]&&d>0){d*=bossDmMul();G.lvsDm=(G.lvsDm||0)+1;}return _hd.call(this,d,src);};}
+{const _u=update;let acc=0;update=function(dt){const r=_u.apply(this,arguments);acc+=dt;if(acc>=.25&&!G.over){acc=0;
+  for(const u of units)if(lvsBoss(u))lvsApply(u);for(const u of NRU)if(u.species==='cerberus'&&!u.dead)lvsApply(u);}return r;};}
+{const _sw=spawnWorm;spawnWorm=function(){const u=_sw.apply(this,arguments);if(u)lvsApply(u);return u;};}
+{const _mw=mkWD;mkWD=function(){const u=_mw.apply(this,arguments);if(u)lvsApply(u);return u;};}
+{const _ns=nrSpawn;nrSpawn=function(sp){const u=_ns.apply(this,arguments);if(u&&sp==='cerberus')lvsApply(u);return u;};}
+// ======================= queue 67-68: permanent boosts get a SMALL alert at the BOTTOM of the screen (no gameplay change) =======================
+// Max health feasts (+50), mini-boss rewards, the Glutton "whale's worth" (+5), nest-egg fire and wild-dragon stamina boosts no longer use the big
+// centre banner (that stays for realm / event announcements). They queue as a small dark-teal strip with a gold edge just above the bottom of the
+// screen; on phones it sits left of the FIRE/BITE buttons and is a registered HUD box, so the hudlay test checks it for overlaps.
+const BOOST={t:3.4,max:4};
+function boostAlert(text,sub){if(!G)return;const Q=G.boostQ||(G.boostQ=[]);const last=Q[Q.length-1];
+  if(last&&last.text===text&&last.age<.5){last.sub=sub;return;}if(Q.length>=BOOST.max)Q.shift();Q.push({text,sub:sub||'',age:0});G.boostN=(G.boostN||0)+1;}
+function boostSwap(fn,icon){return function(){const b0=G.banner,t0=GPAD.toast,tt0=GPAD.toastT;const r=fn.apply(this,arguments);
+  if(G.banner!==b0&&G.banner){const nb=G.banner;G.banner=b0;boostAlert((icon||'')+nb.text,nb.sub);}
+  if(GPAD.toast!==t0&&GPAD.toast){const s=GPAD.toast;GPAD.toast=t0;GPAD.toastT=tt0;if(!(G.boostQ&&G.boostQ.length&&G.boostQ[G.boostQ.length-1].age<.1))boostAlert(s,'');}return r;};}
+maxHpUp=boostSwap(maxHpUp,'❤ ');
+stUp=boostSwap(stUp,'⚡ ');
+mhBanner=function(text,sub){boostAlert((/^Fire/.test(text)?'🔥 ':/whale/i.test(text)?'🐋 ':'❤ ')+text,sub);};
+for(const nm of['hyDefeat','grDefeat','nsDefeat']){const f=window[nm]||{hyDefeat,grDefeat,nsDefeat}[nm];const w=function(){const h0=D.maxHp,t0=GPAD.toast,tt0=GPAD.toastT;const r=f.apply(this,arguments);const gain=D.maxHp-h0;
+    if(gain>0){const b=G.banner;if(b&&b.sub)b.sub=b.sub.replace(/\s*You feel tougher: \+\d+ max health \(now \d+, until you lose this dragon\)/,'');GPAD.toast=t0;GPAD.toastT=tt0;
+      boostAlert(`❤ Max health +${gain}!`,`${b&&b.text?b.text.replace(/!$/,''):'Mini boss beaten'} · max health now ${D.maxHp} (until you lose this dragon)`);}return r;};
+  if(nm==='hyDefeat')hyDefeat=w;else if(nm==='grDefeat')grDefeat=w;else nsDefeat=w;}
+function drawBoost(){const Q=G&&G.boostQ;if(!Q||!Q.length||scene!=='play')return;const a=Q[0];
+  const touch=TOUCH.on;let R=VW-8;if(touch)for(const o of HUDL.obs)R=Math.min(R,o.x-HUDL.gap-2);const L=8,h=a.sub?(touch?32:36):(touch?20:22);
+  const w=Math.max(120,Math.min(touch?360:460,R-L)),x=touch?Math.max(L,Math.min((L+R)/2,VW/2)-w/2):VW/2-w/2,y=VH-h-(touch?6:58),fade=Math.min(1,a.age*6,(BOOST.t-a.age)*3);
+  const ub=UI.banner;a.hold=!!(ub&&x<ub.x+ub.w&&x+w>ub.x&&y<ub.y+ub.h&&y+h>ub.y);if(a.hold){G.boostHeld=(G.boostHeld||0)+1;return;} // phone landscape: wait under a big announcement, never overlap it
+  hudBox('boost',x,y,w,h);ctx.save();ctx.globalAlpha=Math.max(0,fade);ctx.fillStyle='rgba(12,48,52,.88)';ctx.fillRect(x,y,w,h);ctx.fillStyle='#e6c34a';ctx.fillRect(x,y,3,h);ctx.fillRect(x+w-3,y,3,h);
+  ctx.strokeStyle='rgba(230,195,74,.75)';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,h-1);
+  const tw=w-14;txt(a.text,x+w/2,y+(touch?14:15),hudFit(a.text,tw,touch?12:13),'#bff7c8','center');
+  if(a.sub)txt(a.sub,x+w/2,y+h-(touch?5:7),hudFit(a.sub,tw,touch?10:11,false),'#e8f4f0','center',false);ctx.restore();}
+{const _h=drawHUD;drawHUD=function(){const r=_h.apply(this,arguments);try{drawBoost();}catch(e){}return r;};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);const Q=G.boostQ;if(Q&&Q.length&&!Q[0].hold){Q[0].age+=dt;if(Q[0].age>=BOOST.t)Q.shift();}return r;};}
+// ======================= queue 69-72: lair guardian dragons vs hoard raids =======================
+// 69  While ANY guardian dragon is standing, raiding knights cannot take lair gold: they must first beat every guardian. No guardians = old rules.
+// 70  After combat (no raider / soldier near the lair for GDB.calm s, raid not on the lair) guardians heal to full in ~GDB.heal s.
+//     A guardian knocked out in a fight is NOT lost any more: it lies dizzy by the lair and gets back up (GDB.wake of its health, then heals) once
+//     things are calm, i.e. after the raid has left. (It still vanishes, egg back in its citadel, if the player dragon dies, as before.)
+// 71  Balance (castle level 1, scales with the castle level like the raid champion): see README "Lair guardians". 1 guardian beats Tier 1-5 raids
+//     (hoard up to 2,999 gold), 2 guardians beat Tier 1-8 (up to 5,999 gold); bigger raids can win unless the dragon helps.
+// 72  Guardians always leave their circle to meet ANY raid near the lair, breathe on it and slow it (ice: chill + splash, lightning: chains).
+const GDB={hp:600,eng:1150,leash:1250,spd:190,hold:300,melee:80,arch:250,vsK:1.4,
+  chD:7,spD:1.8,arD:1.6,hitCd:1,arCd:1.4,
+  brD:30,cd:1,wSplash:.6,wR:80,wSlow:2.5,slow:.55,bChain:2,bCf:.65,bR:170,
+  calm:4,heal:8,wake:.3};
+function gdLv(){return 1+.15*(Math.max(1,(G&&G.lvl)||1)-1);}
+function gdMaxHp(){return Math.round(GDB.hp*gdLv());}
+function gdStanding(){return GD.filter(g=>!g.dead&&!g.down);}
+function gdOrbit(g){const a=gdAng(g);return{x:LAIR.x+Math.cos(a)*GD_R,y:LAIR.y+Math.sin(a)*GD_R*.78,a};}
+gdHead=function(g){if(g.hx!==undefined&&g.eng>0)return{x:g.hx,y:g.hy,a:g.dir||0};return gdOrbit(g);};
+function gdHitRaider(u,d,k){if(!u||u.dead)return;G.gdDealt=(G.gdDealt||0)+d;u.gdHitT=G.t;gdHurtFoe(u,d,k);if(k==='W')u.gdSlowT=Math.max(u.gdSlowT||0,GDB.wSlow);}
+gdUpd=function(dt){G.nrGdA=((G.nrGdA||0)+GD_W*dt)%TAU;const lv=gdLv(),M=gdMaxHp(),r=RAID.cur,raidOn=!!(r&&r.phase!=='warn');
+  const foes=[];for(const u of units){if(!gdFoe(u))continue;if(Math.abs(u.x-LAIR.x)<GDB.eng&&Math.abs(u.y-LAIR.y)<GDB.eng&&Math.hypot(u.x-LAIR.x,u.y-LAIR.y)<GDB.eng)foes.push(u);}
+  if(foes.length)G.gdFoeT=G.t;const calm=G.t-(G.gdFoeT===undefined?-99:G.gdFoeT)>GDB.calm;
+  if(foes.length&&raidOn&&!r.gdT0&&foes.some(u=>u.raid===r))r.gdT0=G.t; // when the guardians first engaged this raid (for "time bought")
+  for(const g of GD){if(g.maxHp!==M){g.hp=g.maxHp>0?g.hp*M/g.maxHp:M;g.maxHp=M;}g.fx&&(g.fx.t-=dt);const o=gdOrbit(g);
+    if(g.hx===undefined){g.hx=o.x;g.hy=o.y;g.eng=0;}
+    if(g.koT>0)g.koT=0;
+    if(g.down){if(calm){g.down=false;g.hp=Math.max(g.hp,M*GDB.wake);const h=gdHead(g);float(h.x,h.y-60,g.k==='W'?'The white guardian shakes off the dizziness!':'The black guardian shakes off the dizziness!','#ffe9a0');sparkle(h.x,h.y-30,10);}
+      else{G['nrGd'+g.k]=Math.max(.01,Math.round(g.hp*10)/10);continue;}}
+    // pick a foe: the nearest raider/soldier to this guardian's head (both guardians naturally end up on the raid's front line)
+    let tgt=null,bd=1e9;for(const u of foes){const d=Math.hypot(u.x-g.hx,u.y-g.hy);if(d<bd){bd=d;tgt=u;}}
+    const ch=raidOn&&r.champ&&!r.champ.dead?r.champ:null,lead=ch&&foes.includes(ch)?ch:tgt;
+    let dx,dy;if(lead){const side=g.k==='W'?-1:1,ang=Math.atan2(LAIR.y-lead.y,LAIR.x-lead.x);dx=lead.x+Math.cos(ang)*45-Math.sin(ang)*side*55;dy=lead.y+Math.sin(ang)*45+Math.cos(ang)*side*55;
+      const ld=Math.hypot(dx-LAIR.x,dy-LAIR.y);if(ld>GDB.leash){dx=LAIR.x+(dx-LAIR.x)*GDB.leash/ld;dy=LAIR.y+(dy-LAIR.y)*GDB.leash/ld;}g.eng=Math.min(1,g.eng+dt*2);}
+    else{dx=o.x;dy=o.y;}
+    const mx=dx-g.hx,my=dy-g.hy,md=Math.hypot(mx,my),st=Math.min(md,GDB.spd*dt),hold=lead&&Math.hypot(lead.x-g.hx,lead.y-g.hy)<110; // close enough: stand and fight (no chasing in circles)
+    if(md>1&&!hold){g.hx+=mx/md*st;g.hy+=my/md*st;g.dir=Math.atan2(my,mx);}
+    if(!lead&&g.eng>0){if(md<20)g.eng=Math.max(0,g.eng-dt*1.5);}
+    // breath
+    g.cd-=dt;if(tgt&&bd<GD_RANGE&&g.cd<=0){g.cd=GDB.cd;const d=GDB.brD*lv*R(.85,1.15);g.shots=(g.shots||0)+1;g.fx={x:tgt.x,y:tgt.y,t:.35};
+      if(tgt.raid){gdHitRaider(tgt,d,g.k);
+        if(g.k==='W'){for(const u of foes)if(u!==tgt&&u.raid&&!u.dead&&Math.hypot(u.x-tgt.x,u.y-tgt.y)<GDB.wR)gdHitRaider(u,d*GDB.wSplash,'W');}
+        else{let prev=tgt;const hit=[tgt];for(let c=0;c<GDB.bChain;c++){let nx=null,nd=GDB.bR;for(const u of foes)if(!hit.includes(u)&&u.raid&&!u.dead){const q=Math.hypot(u.x-prev.x,u.y-prev.y);if(q<nd){nd=q;nx=u;}}if(!nx)break;hit.push(nx);gdHitRaider(nx,d*GDB.bCf,'B');prev=nx;}}}
+      else gdHurtFoe(tgt,g.k==='W'?6:7,g.k);}
+    // non-raid soldiers bunching on the head still wear it down (old rule); raiders hit it with their own blows (raidStep below)
+    let near=0;for(const u of foes)if(!u.raid&&Math.hypot(u.x-g.hx,u.y-g.hy)<120)near++;if(near){g.hp-=3*near*dt;g.hitT=G.t;}
+    if(calm&&g.hp<M)g.hp=Math.min(M,g.hp+M/GDB.heal*dt);
+    if(g.hp<=0){g.hp=0;g.down=true;G.gdDowns=(G.gdDowns||0)+1;float(g.hx,g.hy-50,'Dizzy!','#ffe0a0');
+      if(!gdStanding().length&&raidOn&&typeof showToast==='function')showToast('💫 Your guardian dragons are dizzy: the raiders head for the hoard!');}
+    G['nrGd'+g.k]=Math.max(.01,Math.round(g.hp*10)/10);}
+  GD=GD.filter(g=>!g.dead);};
+// bigger raids bring dragon-hunting gear (heavier lances, barbed arrows): their blows on a GUARDIAN grow x GDB.vsK per tier (not on the player dragon)
+// raider gear vs guardian dragons, by raid tier: small steps up to Tier 5 (2,000-gold hoards), then dragon-hunting nets and long spears from Tier 6,
+// then the King's dragonslayer kit from Tier 9 (hoards above 5,000). Past the table it keeps growing by GDB.vsK per tier.
+GDB.vs=[1,1,1.1,1.25,1.4,1.6,2.8,3,3.2,8.5,9.5,10.5,11.5];
+// x gdLv(): guardians and champions both grow x1.15 per castle level, so the raid-vs-guardian balance is the same at every level
+function gdVs(r){const T=Math.max(1,(r&&r.tier)||1),V=GDB.vs;return (T<V.length?V[T]:V[V.length-1]*Math.pow(GDB.vsK,T-V.length+1))*gdLv();}
+function gdHurt(g,d){if(!g||g.down)return;g.hp-=d;g.hitT=G.t;G.gdTaken=(G.gdTaken||0)+d;}
+// raiders: once the champion comes within GDB.hold of a standing guardian (or reaches the hoard) the whole raid fights the guardians first
+{const _r=raidStep;raidStep=function(u,dt){const r=u.raid;if(u.gdSlowT>0)u.gdSlowT-=dt;
+  if(r&&RAID.cur===r&&r.phase==='march'&&GD.length){const st=gdStanding();
+    if(!st.length){r.gdEng=false;return _r.apply(this,arguments);}
+    const ch=r.champ;if(!r.gdEng&&ch&&!ch.dead){for(const g of st){const h=gdHead(g);if(Math.hypot(h.x-ch.x,h.y-ch.y)<GDB.hold){r.gdEng=true;break;}}if(!r.gdEng&&(!r.path||!r.path.length))r.gdEng=true;}
+    if(r.gdEng){const arch=u.type==='archer';if(!G.over&&D.alt<DR.hitAltSword&&dist(u,D)<(arch?400:u.champ?150:230))return _r.apply(this,arguments); // the dragon itself is right here: fight it as before
+      let g=null,bd=1e9;for(const q of st){const h=gdHead(q);const d=Math.hypot(h.x-u.x,h.y-u.y);if(d<bd){bd=d;g=q;}}const h=gdHead(g),reach=arch?GDB.arch:GDB.melee;
+      u.gdCd=(u.gdCd===undefined?R(0,.8):u.gdCd)-dt;u.swing=Math.max(0,(u.swing||0)-dt);
+      if(bd>reach){moveTo(u,h.x+R(-1,1),h.y+R(-1,1),u.champ?70:90,dt);}
+      else{u.anim+=dt*4;u.face=h.x>u.x?1:-1;if(u.gdCd<=0){const m=(u.dmgM||1)*gdVs(r);if(arch){u.gdCd=GDB.arCd;gdHurt(g,GDB.arD*m*R(.85,1.15));if(typeof projs!=='undefined')u.shootT=Math.max(u.shootT||0,.5);}
+        else{u.gdCd=GDB.hitCd;u.swing=.3;gdHurt(g,(u.champ?GDB.chD:GDB.spD)*m*R(.85,1.15));}}}
+      return true;}}
+  return _r.apply(this,arguments);};}
+{const _g=raidGrab;raidGrab=function(){if(GD.length&&gdStanding().length){const r=RAID.cur;if(r)r.gdEng=true;return;}const r=RAID.cur;if(r)r.grabT=G.t;return _g.apply(this,arguments);};}
+{const _m=moveTo;moveTo=function(u,tx,ty,sp,dt){if(u&&u.gdSlowT>0)arguments[3]=sp*GDB.slow;return _m.apply(this,arguments);};}
+// ======================= queue 74: raid announcements are MAP-WIDE (they affect the lair) =======================
+// Incoming / stolen / escaped / defeated raid banners (and their toasts) never depend on where the dragon is (unlike the
+// regional north-battle and trade-ship news, which stay gated by nrWarSay/kbSay). They also get priority: if another
+// banner tries to replace a raid banner during its first 2.6 s, that banner waits and shows right after the raid one.
+const RAIDBN={min:2.6};
+function raidBnMark(b0){if(G.banner&&G.banner!==b0){G.banner.raid=1;G.raidBn={b:G.banner,t0:G.t};G.raidBnN=(G.raidBnN||0)+1;}}
+function raidBnWrap(f){return function(){const b0=G&&G.banner;const r=f.apply(this,arguments);try{raidBnMark(b0);}catch(e){}return r;};}
+startRaidWarning=raidBnWrap(startRaidWarning);raidGrab=raidBnWrap(raidGrab);raidEscaped=raidBnWrap(raidEscaped);raidChampDown=raidBnWrap(raidChampDown);
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);try{if(scene==='play'&&G){const rb=G.raidBn;
+  if(rb){if(G.banner!==rb.b){if(G.t-rb.t0<RAIDBN.min&&rb.b.t>0){if(G.banner&&!G.banner.raid)G.bnHeld=G.banner;G.banner=rb.b;G.raidBnKept=(G.raidBnKept||0)+1;}else G.raidBn=null;}
+    else if(!(rb.b.t>0))G.raidBn=null;}
+  if(!G.raidBn&&G.bnHeld&&!G.banner){G.banner=G.bnHeld;G.bnHeld=null;}}}catch(e){}return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
@@ -9539,7 +9689,7 @@ function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,
     'HUNGER (normal mode): your belly empties in about a minute or so (faster flying or breathing fire). Eat to refill it, or you starve and lose health. Easy mode: no hunger.',
     'WANTED tiers: foot soldiers, then knights, archers, mounted knights (lance charges) and siege engines from the castle gate. At the top tier whole villages take up spears: the MILITIA!',
     'MOUNT CINDER, the volcano beside your lair: land at the crater and press E / X to drink 20 LAVA SHOTS. Each fire press lobs a glob that cracks even stone and wells!',
-    'Your GOLD HOARD grows as you stash loot. Big hoards lure HOARD RAIDS: a named champion marches on your lair. Beat or eat them to win the gold back, a bonus, and their banner as a trophy!',
+    'Your GOLD HOARD grows as you stash loot. Big hoards lure HOARD RAIDS: a named champion marches on your lair. Beat or eat them to win the stolen gold back and their banner as a trophy!',
     'Smash the CASTLE GATE: while it lies in rubble, waves are smaller and come far less often, until the engineers rebuild it with wood and stone.',
     'Patrols roam the roads under a banner (shields on the map). Attacking them raises the alarm. Burn the wooden bridges to cut them off!',
     'FIRE BAR: the red bar under stamina drains while you breathe fire and refills when you stop. Empty = no fire until it recovers a bit. It glows orange while you hold lava shots.',

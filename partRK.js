@@ -52,7 +52,7 @@ function drawLootSacks(u){const n=rkSacks(u);if(!n)return;const f=u.face||1,b=Ma
     if(Math.sin(G.t*6+i*1.7)>.55)ell(sx+R(-2,2),sy-s-2,1.2,1.2,'#fff4b0');ell(sx-1,sy-1,1.6,1.6,'#ffd84a');}}
 const r_loot=u=>(u.raid&&u.raid.loot)||0;
 {const _d=drawKnight;drawKnight=function(u){const res=_d.apply(this,arguments);if(u.champ&&u.raid&&u.raid.phase==='flee')drawLootSacks(u);return res;};}
-// stopped on the way back: the dropped sacks go straight back to the lair pile with a "+N" pop (plus the usual bonus)
+// stopped on the way back: the dropped sacks go straight back to the lair pile with a "+N" pop (queue 73: no lump-sum bonus any more)
 {const _c=raidChampDown;raidChampDown=function(u,eaten){const r=u&&u.raid,live=r&&RAID.cur===r&&!r.done,back=live?(r.loot||0):0;const res=_c.apply(this,arguments);
   if(live&&back>0){G.rkReturned=(G.rkReturned||0)+back;if(typeof GA!=='undefined')GA.pop.push({n:back,t:0});puff(u.x,u.y-10,12,'rgba(255,216,74,',150,5);float(u.x,u.y-56,`The gold sacks drop: ${back} gold back to your hoard!`,'#ffd84a');}
   return res;};}

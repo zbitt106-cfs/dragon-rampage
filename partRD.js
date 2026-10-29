@@ -42,11 +42,11 @@ function raidGrab(){const r=RAID.cur,ch=r.champ;const take=Math.min(G.stash,Math
   G.banner={text:`${r.name} has stolen ${take} gold!`,sub:'Stop the champion before the sack reaches the castle gate!',t:4.5};if(typeof SFX!=='undefined')SFX.play('clink');showToast(`💰 ${r.short} is running off with ${take} gold!`);}
 function raidEscaped(){const r=RAID.cur,ch=r.champ;ch.dead=true;ch.gone=true;
   G.banner={text:`${r.name} returns to King William with ${r.loot} gold`,sub:'The court cheers… for now. The hoard is smaller.',t:4.5};endRaid(false);}
-function raidChampDown(u,eaten){const r=u.raid;if(!r||RAID.cur!==r||r.done)return;r.done=true;const bonus=40+20*r.n,pts=300+150*r.n,back=r.loot;
+function raidChampDown(u,eaten){const r=u.raid;if(!r||RAID.cur!==r||r.done)return;r.done=true;const bonus=0,pts=300+150*r.n,back=r.loot,byGd=!eaten&&u.gdHitT!==undefined&&G.t-u.gdHitT<.05; // queue 73: no lump-sum bonus; the only gold is what the knights carry (the stolen sacks)
   G.stash+=back+bonus;G.stats.raidPts=(G.stats.raidPts||0)+pts;G.stats.champs=(G.stats.champs||0)+1;if(typeof hoardDrop==='function'&&back+bonus>0)hoardDrop(back+bonus,u.x,u.y);
   float(u.x,u.y-80,eaten?`${r.dame?'Dame':'Sir'}? Gulp! +${pts} pts`:`${r.short} is defeated! +${pts} pts`,'#ffe08a');sparkle(u.x,u.y,24);
-  G.banner={text:eaten?`You gobbled ${r.name}!`:`${r.name} has fallen!`,sub:`${back?back+' stolen gold returns to your hoard':'The hoard is safe'}  +  ${bonus} bonus gold  ·  +${pts} pts`,t:4.5};
-  if(typeof SFX!=='undefined')SFX.play('fanfare');showToast(`🏆 Raid beaten: +${back+bonus} gold`);endRaid(true);}
+  G.banner={text:eaten?`You gobbled ${r.name}!`:byGd?`Your guardian dragons beat ${r.name}!`:`${r.name} has fallen!`,sub:`Raid defeated!  ${back?back+' stolen gold returns to your hoard':'The hoard is safe'}  ·  +${pts} pts`,t:4.5,raid:1};
+  if(typeof SFX!=='undefined')SFX.play('fanfare');showToast(back?`🏆 Raid beaten: ${back} gold back`:'🏆 Raid beaten: the hoard is safe');endRaid(true);}
 function endRaid(won){const r=RAID.cur;for(const u of r.members)if(!u.dead){u.raid=null;if(u.raidEsc&&!won){}if(u.raidEsc)u.retreat=!won?true:u.retreat;}RAID.cur=null;RAID.n++;RAID.cd=G.easy?RAID_CD_EASY:RAID_CD;}
 function updRaids(dt){if(scene!=='play'||!G||G.over||G.won)return;const r=RAID.cur;if(!r)RAID.cd=Math.max(0,RAID.cd-dt);
   if(!r){if(RAID.cd<=0&&G.stash>=raidMinGold()){RAID.thr=Math.max(RAID.thr,RAID.n+1);startRaidWarning();}return;} // a raid every RAID_CD seconds (after the last one ends) as long as the hoard holds the minimum; the tier comes from the hoard at announcement (partRK)
