@@ -160,12 +160,12 @@ function drawAnnounce(sm){if(!G.banner){UI.banner=null;return;}const b=G.banner,
   const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>bw-24?Math.max(8,Math.floor(f*(bw-24)/w)):f;};
   txt(b.text,bcx,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,bcx,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,bcx,by+50,fitF(b.extra,sm?12:14,false),'#ffc0a0','center',false);ctx.globalAlpha=1;}
 function center(lines,top){let y=top;for(const [s,size,col,bold] of lines){txt(s,VW/2,y,size,col,'center',bold);y+=size*1.45;}}
-let titleSel=0;const TITLE_N=4; // (item 50) Start · Mode · Settings · Load: volume, mute and graphics live in the Settings panel (partY)
+let titleSel=0;const TITLE_N=5; // (item 50) Start · Mode · Settings · Load: volume, mute and graphics live in the Settings panel (partY)
 function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,5,.66)';ctx.fillRect(0,0,VW,VH);
   const k=TOUCH.on?Math.min(1.2,VH/470,VW/900):Math.min(1,VH/920,VW/1000);ctx.setTransform(DPR*k,0,0,DPR*k,DPR*(VW-VW*k)/2,0);const W0=VW;TOUCH.tg={k,ox:(VW-VW*k)/2,cx:W0/2,y0:112};
   let y=46;txt("DRAGON'S RAMPAGE",W0/2,y+10,52,'#ff9a3a','center');txt('You are a full-grown dragon. Raid the castle, steal the gold, carry off Princess Elizabeth!',W0/2,y+40,17,'#f3dcb8','center',false);
   // menu
-  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`⚙  Settings:  ${AUD.muted?'sound MUTED':`music ${Math.round(AUD.music*100)}% · effects ${Math.round(AUD.sfx*100)}%`} · graphics ${GFX_Q.toUpperCase()}`,svHasAny()?'⟲  Continue / Load saved game':'⟲  Load saved game  (no saves yet)'];
+  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`⚙  Settings:  ${AUD.muted?'sound MUTED':`music ${Math.round(AUD.music*100)}% · effects ${Math.round(AUD.sfx*100)}%`} · graphics ${GFX_Q.toUpperCase()}`,svHasAny()?'⟲  Continue / Load saved game':'⟲  Load saved game  (no saves yet)',typeof achTitleRow==='function'?achTitleRow():'🏆  Achievements'];
   rows.forEach((r,i)=>{const s=titleSel===i;panel(W0/2-230,y+i*36,460,30);if(s){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y+i*36,460,30);}
     txt(r,W0/2,y+i*36+21,17,s?'#ffd24a':(i===1&&EASY)?'#9f9':i===3&&!svHasAny()?'#888':'#ddd','center');});
   if(TOUCH.on){y+=TITLE_N*36+16;txt('Tap a row to choose it · ⚙ Settings: volume, mute and graphics',W0/2,y,13,'#bbb','center',false);
@@ -268,7 +268,8 @@ function frameBody(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
   else if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(TITLE_N-1,titleSel+1);
     if(P('g'))setGfx(!GFX_HI);
     if(P('m')||((P('arrowleft')||P('arrowright')||P('a')||P('d'))&&titleSel===1)||(P('enter')&&titleSel===1))setEasy(!EASY);
-    if(P('enter')&&titleSel===3){pmOpen('load','title');}
+    if(P('enter')&&titleSel===4){pmOpen('ach','title');}
+    else if(P('enter')&&titleSel===3){pmOpen('load','title');}
     else if(P('enter')&&titleSel===2){pmOpen('settings','title');}
     else if((P('enter')&&titleSel===0)||P(' ')){scene='play';newGame();pressed={};}
     else{G.t+=dt;cam.x=1700+Math.sin(ts/9000)*700;cam.y=1900+Math.cos(ts/11000)*1300;cam.z=1;updFire(dt);updEconomy(dt);G.fc++;for(const u of units){const t=farTick(u,dt);if(!t)continue;if(u.type==='villager')updVillager(u,t);else if(u.type==='animal'){if(u.wild)updWild(u,t);else updAnimal(u,t);}}updBirds(dt);updParts(dt);}}

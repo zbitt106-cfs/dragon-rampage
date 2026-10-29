@@ -39,7 +39,7 @@ function onRelayout(){const ch=Math.abs(VW-_rlW)>2||Math.abs(VH-_rlH)>2;_rlW=VW;
 // title menu hit test (geometry mirrors drawTitle)
 function titleTap(x,y){{const f=flipBtn();if(Math.hypot(x-f.x,y-f.y)<f.r*1.25){setFlip(!FLIP);return true;}}const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
   for(let i=0;i<TITLE_N;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
-      if(i===3){pmOpen('load','title');return true;}if(i===2){pmOpen('settings','title');return true;}pressed['enter']=true;
+      if(i===4){pmOpen('ach','title');return true;}if(i===3){pmOpen('load','title');return true;}if(i===2){pmOpen('settings','title');return true;}pressed['enter']=true;
       return true;}}
   if(ly>g.y0+TITLE_N*36+20){pressed['enter']=true;titleSel=0;}return true;}
 function onTouchStart(e){if(e.cancelable)e.preventDefault();TOUCH.on=true;TOUCH.lastTouch=Date.now();audio();try{if(!TOUCH.btns.length)touchLayout();}catch(_){}

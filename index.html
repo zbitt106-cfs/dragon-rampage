@@ -129,7 +129,8 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
   seed=1337;
   G={lvl,bank:opt.bank||0,easy:EASY,dmgMul:EASY?.55:1,alarmMul:EASY?.75:1,waveMul:(EASY?.5:1)*(1+.25*(lvl-1)),gold:0,stash:0,won:false,wonT:0,spawnQ:[],spawnQT:0,gateOpenT:0,postT:0,hunterT:3,quipT:0,
      t:0,alarm:0,level:0,lastLevel:0,sinceDmg:99,waveNum:0,waveCD:0,reinforceT:0,banner:null,shake:0,
-     wood:8,stone:4,cartsPool:3,cartBuildT:0,spawnT:0,rebuildT:0,
+     wood:100,stone:20,cartsPool:3, // queue 77: the kingdom starts every game and every castle level with 100 wood and 20 stone
+    cartBuildT:0,spawnT:0,rebuildT:0,
      visited:{},region:null,regCand:null,regCandT:0,fc:0,patrolT:20,packAngry:{},faunaT:5,regBanner:null,
      stats:{regions:0,bridges:0,huts:0,barns:0,trees:0,crops:0,eaten:0,animals:0,knights:0,archers:0,siege:0,carts:0,piles:0,ships:0,pirates:0,squid:0,seaPts:0},score:0,over:false,overT:0,msg:null};
   D={x:LAIR.x,y:LAIR.y+150,vx:0,vy:0,ang:-Math.PI/2,alt:0,altT:0,mode:"ground",hp:EASY?360:220,maxHp:EASY?360:220,gold:0,princess:false,st:100,maxSt:100,
@@ -3235,7 +3236,7 @@ function onRelayout(){const ch=Math.abs(VW-_rlW)>2||Math.abs(VH-_rlH)>2;_rlW=VW;
 // title menu hit test (geometry mirrors drawTitle)
 function titleTap(x,y){{const f=flipBtn();if(Math.hypot(x-f.x,y-f.y)<f.r*1.25){setFlip(!FLIP);return true;}}const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
   for(let i=0;i<TITLE_N;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
-      if(i===3){pmOpen('load','title');return true;}if(i===2){pmOpen('settings','title');return true;}pressed['enter']=true;
+      if(i===4){pmOpen('ach','title');return true;}if(i===3){pmOpen('load','title');return true;}if(i===2){pmOpen('settings','title');return true;}pressed['enter']=true;
       return true;}}
   if(ly>g.y0+TITLE_N*36+20){pressed['enter']=true;titleSel=0;}return true;}
 function onTouchStart(e){if(e.cancelable)e.preventDefault();TOUCH.on=true;TOUCH.lastTouch=Date.now();audio();try{if(!TOUCH.btns.length)touchLayout();}catch(_){}
@@ -7904,8 +7905,9 @@ function wzUpd(dt){const dd=Math.hypot(D.x-WZ.x,D.y-WZ.y);
   for(const w of WZB.winds){w.t+=dt;w.r=30+870*Math.min(1,w.t/1.6);if(!w.hit&&Math.abs(dd-w.r)<60){w.hit=1;hurtDragon(WZ_DMG.wind,'wind');const a=Math.atan2(D.y-WZ.y,D.x-WZ.x);
       D.nrKb={vx:Math.cos(a)*1100,vy:Math.sin(a)*1100*.8,t:.65};float(D.x,D.y-heightOf()-80,'Whoooosh!','#d8f0ff');}}
   WZB.ice=WZB.ice.filter(s=>!s.done);WZB.marks=WZB.marks.filter(m=>!m.done||m.flash>0);WZB.winds=WZB.winds.filter(w=>w.t<1.7);}
+const WZ_GOLD=300; // gold for breaking the wizard's shield (achievements list reads it)
 function wzDefeat(){WZB.on=false;G.nrOpen=1;G.nrOpenT=G.t;G.nrWzHp=0;puff(WZ.x,WZ.y-WZ.H,14,'rgba(200,170,255,',90,10);sparkle(WZ.x,WZ.y-WZ.H,20);
-  D.gold=(D.gold||0)+300;float(WZ.x,WZ.y-WZ.H-60,'+300 gold','#ffd84a');showToast('🛡️ The magic shield shatters! The barrier opens for you (+300 gold) — the dizzy wizard can be gobbled up');try{horn();}catch(e){}G.nrWzWins=(G.nrWzWins||0)+1;}
+  D.gold=(D.gold||0)+WZ_GOLD;float(WZ.x,WZ.y-WZ.H-60,`+${WZ_GOLD} gold`,'#ffd84a');showToast(`🛡️ The magic shield shatters! The barrier opens for you (+${WZ_GOLD} gold) — the dizzy wizard can be gobbled up`);try{horn();}catch(e){}G.nrWzWins=(G.nrWzWins||0)+1;}
 // dragon fire: hurts the wizard and melts ice spikes into steam
 {const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);
   if(WZB.on&&WZB.koT<=0&&inFire(WZ.x,WZ.y,ox,oy))wzHurt(DR.fireDps*.55*dt,'fire');
@@ -8377,7 +8379,7 @@ nrEnemy=function(a,b){const A=a.side||NRS[a.species].side,B=b.side||NRS[b.specie
 // save where Medusa was beaten counts the Hydra as beaten). Not edible: it is far too big, it just slinks into its pool for a nap.
 const MDL={x:-16300,y:-9300,r:330};
 const HYD={on:false,x:MDL.x,y:MDL.y,face:1,heads:[],koT:0,hitT:-9,toastT:-99,anim:0,P:[]};
-const HY_K={grow:6,regrowMax:2,biteR:200,biteDm:3,spitDm:4,spitSp:380,spitR:640};
+const HY_K={reward:50,grow:6,regrowMax:2,biteR:200,biteDm:3,spitDm:4,spitSp:380,spitR:640};
 function hyHeadN(){return Math.min(5,3+Math.floor((nrLvl()-1)/2));}
 function hyHeadHp(){return Math.round(Math.min(260,85+20*(nrLvl()-1)));}
 function mdDown(){return !!G.mdDown;}
@@ -8398,7 +8400,7 @@ function hyHurt(d,how,px,py){if(!HYD.on||HYD.koT>0||mdDown()||d<=0)return;const 
     if(HYD.heads.every(q=>!hyAlive(q))){HYD.koT=2.2;float(HYD.x,HYD.y-170,'Dizzy!','#ffe28a');}}
   hySave();}
 function hyDefeat(){HYD.on=false;HYD.P=[];G.mdDown=1;G.hyHeads=null;G.hyWins=(G.hyWins||0)+1;G.mdWins=(G.mdWins||0)+1;puff(HYD.x,HYD.y-40,14,'rgba(150,210,190,',90,10);sparkle(HYD.x,HYD.y-80,24);
-  const gain=50;D.hpBonus=(D.hpBonus||0)+gain;D.maxHp+=gain;D.hp=D.maxHp;D.healFx=1;G.hyHp=(G.hyHp||0)+gain;
+  const gain=HY_K.reward;D.hpBonus=(D.hpBonus||0)+gain;D.maxHp+=gain;D.hp=D.maxHp;D.healFx=1;G.hyHp=(G.hyHp||0)+gain;
   G.banner={text:'The Hydra is defeated!',sub:`It slinks into the temple pool for a very long nap (you can gobble it up). You feel tougher: +${gain} max health (now ${D.maxHp}, until you lose this dragon)`,t:4.5};
   float(D.x,D.y-heightOf()-130,`MAX HEALTH +${gain}!`,'#7aff8a');
   showToast(`🐉 The Hydra is defeated! ❤️ +${gain} max health`);try{horn();}catch(e){}}
@@ -9365,11 +9367,11 @@ function wormTunnel(u){const a0=Math.atan2(u.y-D.y,u.x-D.x);for(let i=0;i<16;i++
   return r;};}
 // ======================= queue 63-66: gentle per-castle-level scaling for MINI BOSSES and the two fantasy castles only =======================
 // The king's castle grows ~+31% gate health per level (260+80/level); mini bosses grow about HALF that: +15% health and +6% damage per castle level,
-// capped at level 8 (x2.05 health, x1.42 damage) so it stays kid-friendly. Mini bosses: giant squid (Kraken), giant octopus, sand worm, Nessie,
+// with NO upper cap (queue 76: the old level-8 cap is gone; x2.05 / x1.42 at level 8, x2.8 / x1.72 at 13, x4.0 / x2.2 at 21). Mini bosses: giant squid (Kraken), giant octopus, sand worm, Nessie,
 // Hydra (per head; always 3 heads now), Griffin, Cerberus, and every other dragon (wild / rival dragons). The Lumenspire (light) and Doomforge (dark)
 // citadel towers scale the same way (and so do the realm's other magic towers - they belong to the same two castles' kingdoms).
 // The WIZARD never scales (300 health at every level), and regular soldiers, units and creatures (incl. pack alphas) no longer scale either.
-const LVS={hp:.15,dm:.06,cap:8};
+const LVS={hp:.15,dm:.06,cap:Infinity}; // queue 76: no level cap (guardians gdLv() and raid champions were never capped)
 function lvsL(){return Math.min(LVS.cap,Math.max(1,(G&&G.lvl)||1));}
 function bossHpMul(){return 1+LVS.hp*(lvsL()-1);}
 function bossDmMul(){return 1+LVS.dm*(lvsL()-1);}
@@ -9499,6 +9501,303 @@ startRaidWarning=raidBnWrap(startRaidWarning);raidGrab=raidBnWrap(raidGrab);raid
   if(rb){if(G.banner!==rb.b){if(G.t-rb.t0<RAIDBN.min&&rb.b.t>0){if(G.banner&&!G.banner.raid)G.bnHeld=G.banner;G.banner=rb.b;G.raidBnKept=(G.raidBnKept||0)+1;}else G.raidBn=null;}
     else if(!(rb.b.t>0))G.raidBn=null;}
   if(!G.raidBn&&G.bnHeld&&!G.banner){G.banner=G.bnHeld;G.bnHeld=null;}}}catch(e){}return r;};}
+// ======================= queue 75: defeated raiding knights drop their purse of gold on the ground =======================
+// Every raiding knight (champion, spearmen, archers) carries a purse that scales with the raid tier: spear/archer 5+5*Tier, champion 20+10*Tier
+// (Tier 1: 10 / 30, Tier 5: 30 / 70, Tier 8: 45 / 100, Tier 12: 65 / 140), plus anything it picked up on the way. When it is defeated (by the
+// dragon, fire, a stomp, a gulp or the lair guardians) the purse drops as a gold sack on the ground. It never vanishes. ONLY the player dragon
+// collects it (land / fly low next to it, like coins); guardians and other creatures can't. Sacks left lying there are scooped up by LATER
+// raiding knights that pass within 90 px, who carry them as loot (and drop them again if they fall). A champion who escapes takes his purse home.
+// Sacks are kept in saves (G.rgS) and on new castle levels; a new game clears them.
+const RG={esc:[5,5],champ:[20,10],grab:60,alt:.55,pass:90,merge:36,max:40};
+let RGOLD=[];
+function rgPurse(T,champ){T=Math.max(1,T||1);const k=champ?RG.champ:RG.esc;return k[0]+k[1]*T;}
+function rgAdd(x,y,n){if(!(n>0))return null;for(const p of RGOLD)if(Math.abs(p.x-x)<RG.merge&&Math.abs(p.y-y)<RG.merge){p.amt+=n;return p;}
+  if(RGOLD.length>=RG.max){const q=RGOLD.reduce((a,b)=>a.amt<=b.amt?a:b);q.amt+=n;return q;}const p={x:Math.round(x),y:Math.round(y),amt:n,t0:G.t,ph:R(0,6)};RGOLD.push(p);return p;}
+function rgDrop(u){if(!u||u.rgDone||!u.rgT||u.gone)return;u.rgDone=true;const n=rgPurse(u.rgT,u.champ)+(u.rgP||0);u.rgP=0;rgAdd(u.x+R(-8,8),u.y+R(-4,6),n);
+  G.rgDropped=(G.rgDropped||0)+n;sparkle(u.x,u.y,6);float(u.x,u.y-(u.champ?100:40),`💰 ${n} gold dropped`,'#ffd84a');}
+{const _s=spawnRaid;spawnRaid=function(){const res=_s.apply(this,arguments);const r=RAID.cur;if(r)for(const u of r.members){if(!u.rgT){u.rgT=r.tier||1;u.rgP=0;}}return res;};}
+{const _h=hurtUnit;hurtUnit=function(u,d,src){const was=u&&u.dead;const res=_h.apply(this,arguments);if(u&&u.rgT&&!was&&u.dead)rgDrop(u);return res;};}
+{const _e=eatUnit;eatUnit=function(u){const was=u&&u.dead;const res=_e.apply(this,arguments);if(u&&u.rgT&&!was&&u.dead)rgDrop(u);return res;};}
+function rgUpd(dt){for(const u of units)if(u.rgT&&u.dead&&!u.rgDone&&!u.gone)rgDrop(u); // any other way a raider falls
+  if(!RGOLD.length)return;
+  // only the player's dragon collects (low, like coins); the gold goes straight into the hoard (partGA sweeps D.gold)
+  if(D&&!D.dead&&D.alt<RG.alt)for(let i=RGOLD.length-1;i>=0;i--){const p=RGOLD[i];if(G.t-p.t0<.3)continue;if(d2(p.x,p.y,D.x,D.y)<RG.grab){RGOLD.splice(i,1);D.gold=(D.gold||0)+p.amt;
+    G.rgGot=(G.rgGot||0)+p.amt;float(p.x,p.y-30,`+${p.amt} raid gold → hoard`,'#ffe070');sparkle(p.x,p.y,8);if(typeof SFX!=='undefined')SFX.play('coin',p.x,p.y,.7);}}
+  // later raiding knights pick up sacks they pass by
+  const r=RAID.cur;if(r&&r.phase!=='warn')for(const u of r.members){if(u.dead||u.gone||u.raid!==r)continue;
+    for(let i=RGOLD.length-1;i>=0;i--){const p=RGOLD[i];if(Math.abs(p.x-u.x)<RG.pass&&Math.abs(p.y-u.y)<RG.pass&&d2(p.x,p.y,u.x,u.y)<RG.pass){RGOLD.splice(i,1);u.rgP=(u.rgP||0)+p.amt;
+      G.rgStolen=(G.rgStolen||0)+p.amt;float(u.x,u.y-50,`${u.champ?r.short:'A raider'} scoops up ${p.amt} gold!`,'#ff9a5a');if(typeof SFX!=='undefined')SFX.play('clink');}}}}
+{const _u=updParts;updParts=function(dt){const res=_u.apply(this,arguments);if(scene==='play'&&G&&!G.over)rgUpd(dt);return res;};}
+function drawRgSack(p){const sc=p.amt>=150?1.9:p.amt>=60?1.6:1.35;ctx.save();ctx.translate(p.x,p.y);ctx.scale(sc,sc);rgSackBody(p);ctx.restore();
+  if(D&&d2(p.x,p.y,D.x,D.y)<560)txt(`💰 ${p.amt}g`,p.x,p.y-20*sc-4,12,'#ffe070','center',true);}
+function rgSackBody(p){const x=0,y=0,b=Math.sin(G.t*3+p.ph)*.6,big=p.amt>=60;ell(x,y+3,big?15:12,5,'rgba(0,0,0,.3)');
+  for(let i=0;i<5;i++){const a=i*1.3+p.ph;ell(x+Math.cos(a)*(big?11:9),y+2+Math.sin(a)*3,3.4,1.8,i%2?'#e0a820':'#ffd84a');}
+  ell(x,y-4+b,big?8:6.5,big?8:6.5,'#a07a3a');ell(x,y-10+b,big?3.6:3,1.6,'#7a5a28');line(x-3,y-11+b,x+3,y-11+b,'#c9a43a',1.4);
+  ctx.fillStyle='#ffd23a';ctx.fillRect(x-1.5,y-5+b,3,3);if(Math.sin(G.t*4+p.ph)>.85)ell(x+4,y-8+b,1.5,1.5,'#fff');
+}
+{const _dc=drawCoins;drawCoins=function(){const res=_dc.apply(this,arguments);for(const p of RGOLD)drawRgSack(p);return res;};}
+// a raider carrying picked-up gold shows a little sack on its belt
+{const _dk=drawKnight;drawKnight=function(u){const res=_dk.apply(this,arguments);if(u.rgP>0&&!u.dead){ell(u.x+(u.face||1)*-7,u.y-6,3.6,3.2,'#a07a3a');ctx.fillStyle='#ffd23a';ctx.fillRect(u.x+(u.face||1)*-7-1,u.y-6.5,2,2);}return res;};}
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const res=_m.apply(this,arguments);try{if(RGOLD.length){const s=mmw/(WX1-WX0);ctx.fillStyle='#ffe070';
+  for(const p of RGOLD)ctx.fillRect(mmx+(p.x-WX0)*s-(big?2:1),mmy+(p.y-WY0)*s-(big?2:1),big?4:2,big?4:2);}}catch(e){}return res;};}
+{const _ng=newGame;newGame=function(){const res=_ng.apply(this,arguments);RGOLD=[];return res;};}
+{const _ss=svSnapshot;svSnapshot=function(){G.rgS=[];for(const p of RGOLD)G.rgS.push(p.x,p.y,p.amt);return _ss.apply(this,arguments);};}
+{const _sa=svApply;svApply=function(d){const res=_sa.apply(this,arguments);RGOLD=[];const S=d&&d.G&&d.G.rgS;if(Array.isArray(S))for(let i=0;i+2<S.length;i+=3)if(S[i+2]>0)RGOLD.push({x:S[i],y:S[i+1],amt:S[i+2],t0:-9,ph:R(0,6)});return res;};}
+
+// ======================= queue 78: an ALPHA GUARDIAN HIPPO at each savanna watering hole =======================
+// One big cartoony alpha hippo wallows in each watering hole (WHOLES). Territorial: if the dragon comes close on the ground or flying low,
+// it surfaces with a huge yawn and charges, chomping (-7 every 2 s), then wades back home once the dragon leaves or flies high.
+// It never fights the crocodiles and the crocs never hunt it (it is on no predator's menu, and it only ever targets the dragon).
+// Like the other alphas, a full-health hippo shrugs off a bite (and the shove stings it); wear it below 60% first, then it can be gulped.
+// Beaten or eaten: +250 points; a new alpha wades in after ~2 minutes when the dragon is away. Wild animals don't scale with castle level.
+const HP_A={hp:150,bite:7,cd:2,sp:88,wade:40,warn:200,leash:300,th:.6,pts:250,back:120};
+FAUNA.hippo={hp:HP_A.hp,sp:HP_A.sp,bite:HP_A.bite,aggro:0,cd:HP_A.cd,say:'Hippo CHOMP! -7',growl:'HRRUMPH!',zone:'savanna'};
+HEAL.hippo=50;FOOD.hippo=70;
+if(typeof HN_WHO!=='undefined')HN_WHO.hippo='The alpha hippo';
+let HIPPO_T=[0,0],HIPPOS=[null,null];
+function hpSpot(H){return{x:H.x+H.rx*.15,y:H.y+H.ry*.1};}
+function hpSpawn(i){const H=WHOLES[i],p=hpSpot(H);const u=mkUnit('animal',p.x,p.y,{species:'hippo',wild:true,zone:'savanna',hippo:1,hole:i,alpha:1,hp:HP_A.hp,maxHp:HP_A.hp,free:true,t:R(0,3),jt:0,
+  home:{x:H.x-H.rx,y:H.y-H.ry,w:H.rx*2,h:H.ry*2},face:rnd()<.5?1:-1,st:'wallow',cd:0,yawn:0,sub:1});units.push(u);return u;}
+function hpInit(){HIPPO_T=[0,0];HIPPOS=[];for(let i=0;i<WHOLES.length;i++)HIPPOS[i]=hpSpawn(i);}
+const hpD=(u,H)=>Math.max(0,Math.hypot((D.x-H.x)/H.rx,(D.y-H.y)/H.ry)-1)*Math.min(H.rx,H.ry); // dragon's distance past the hole's edge
+function hpUpd(u,dt){const H=WHOLES[u.hole],dd=dist(u,D),low=D.alt<.4&&!G.over&&!G.won,edge=hpD(u,H);u.cd=(u.cd||0)-dt;u.yawn=Math.max(0,(u.yawn||0)-dt);u.t-=dt;
+  const inHole=inWHole1(H,u.x,u.y,1);u.sub+=((inHole&&u.st!=='charge'?1:0)-u.sub)*Math.min(1,dt*3);
+  if(u.burn>0||u.bolted>0){u.bolted=Math.max(0,(u.bolted||0)-dt);u.st='home';} // fire makes it splash back home
+  const angry=low&&!(u.burn>0)&&(edge<HP_A.warn||(u.st==='charge'&&edge<HP_A.leash));
+  if(angry){if(u.st!=='charge'){u.st='charge';u.yawn=1.2;G.hpCharges=(G.hpCharges||0)+1;if(dd<1300)float(u.x,u.y-60,'HRRUMPH! The alpha hippo guards its watering hole!','#ffd0a0');puff(u.x,u.y,6,'rgba(200,230,255,',50,4);}
+    if(dd>44)moveTo(u,D.x,D.y,HP_A.sp,dt);else if(u.cd<=0){u.cd=HP_A.cd;u.yawn=.6;hurtDragon(HP_A.bite,'hippo');G.hpBites=(G.hpBites||0)+1;float(D.x+R(-20,20),D.y-90,FAUNA.hippo.say,'#ffb0a0');}
+    // never leaves its territory
+    const ex=Math.hypot((u.x-H.x)/H.rx,(u.y-H.y)/H.ry);const lim=1+HP_A.leash/Math.min(H.rx,H.ry);if(ex>lim){u.x=H.x+(u.x-H.x)*lim/ex;u.y=H.y+(u.y-H.y)*lim/ex;}
+    return;}
+  if(u.st==='charge'){u.st='home';if(dd<1300)float(u.x,u.y-50,'*grumble* The hippo wades back home','#d8e8ff');}
+  if(u.st==='home'){const p=hpSpot(H);if(moveTo(u,p.x,p.y,HP_A.wade,dt)||inWHole1(H,u.x,u.y,.6))u.st='wallow';return;}
+  // wallow: drift slowly around the middle of the pool, with the odd lazy yawn
+  if(!u.tgt||u.t<=0){u.t=R(3,7);const a=R(0,TAU),r=R(0,.45);u.tgt={x:H.x+Math.cos(a)*H.rx*r,y:H.y+Math.sin(a)*H.ry*r};if(rnd()<.25)u.yawn=1;}
+  if(moveTo(u,u.tgt.x,u.tgt.y,12,dt))u.tgt=null;u.anim=(u.anim||0)+dt*.4;}
+{const _uw=updWild;updWild=function(u,dt){if(u.species==='hippo'){hpUpd(u,dt);return;}return _uw.apply(this,arguments);};updWild._base=_uw._base;}
+// alpha rule: a full-health hippo can't be swallowed
+TOUGH.hippo={chk:u=>u.hp>u.maxHp*HP_A.th,hit:u=>{hurtUnit(u,10,'bite');u.yawn=.8;G.hpShrug=(G.hpShrug||0)+1;float(u.x,u.y-60,'Too big! Wear the alpha hippo down below 60% first','#ffd27a');}};
+function hpMgr(dt){if(!G||typeof WHOLES==='undefined')return;for(let i=0;i<WHOLES.length;i++){const u=HIPPOS[i];
+    if(u&&u.dead){HIPPOS[i]=null;HIPPO_T[i]=G.t+HP_A.back;G.stats.kPts=(G.stats.kPts||0)+HP_A.pts;G.hpBeaten=(G.hpBeaten||0)+1;puff(u.x,u.y,10,'rgba(200,230,255,',70,6);
+      float(u.x,u.y-70,`The alpha hippo is ${u.eaten?'gulped':'beaten'}! +${HP_A.pts}`,'#fff2c0');continue;}
+    if(!u&&G.t>=HIPPO_T[i]){const H=WHOLES[i];if(Math.hypot(D.x-H.x,D.y-H.y)>900){HIPPO_T[i]=0;HIPPOS[i]=hpSpawn(i);G.hpNew=(G.hpNew||0)+1;if(Math.hypot(D.x-H.x,D.y-H.y)<1800)float(H.x,H.y-90,'A new alpha hippo wades into the watering hole!','#fff2c0');}}}}
+{const _up=updParts;updParts=function(dt){const r=_up.apply(this,arguments);if(scene==='play'&&G&&!G.over)hpMgr(dt);return r;};}
+{const _ng=newGame;newGame=function(o){const r=_ng.apply(this,arguments);hpInit();return r;};}
+if(typeof REGION_SUB!=='undefined'&&REGION_SUB.savanna)REGION_SUB.savanna=REGION_SUB.savanna.replace('around the watering hole','around the watering holes, each guarded by an alpha hippo');
+// drawing: a big round lilac-grey hippo; half-submerged (eyes, ears, nostrils and back) while wallowing, fully out when it charges
+function drawHippo(u){const x=u.x,y=u.y,f=u.face||1,sub=clamp(u.sub||0,0,1),bob=Math.sin(G.t*1.4+u.id)*1.5,yw=u.yawn>0?Math.sin(Math.min(1,u.yawn)*Math.PI):0,sc=1.25;
+  const body='#8f7f9a',dk='#6c5d78',lt='#c9b3cf',pink='#f2a6b8';
+  const rp=(G.t*.5+u.id*.3)%1;ctx.strokeStyle=`rgba(220,240,255,${.5*(1-rp)*sub+.05})`;ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(x,y+3,30+26*rp,9+8*rp,0,0,TAU);ctx.stroke();
+  ctx.save();ctx.translate(x,y+bob*sub);ctx.scale(sc,sc);
+  if(sub<.5){ell(0,6,30,8,'rgba(0,0,0,.25)');for(const s of[-1,1])for(const k of[-14,12]){ell(k+s*3,4,5,7,dk);}}
+  // body (only the back shows in the water)
+  ctx.save();if(sub>=.5){ctx.beginPath();ctx.rect(-60,-60,120,58);ctx.clip();}
+  ell(-f*4,-8,28,17,body);ell(-f*6,-14,20,8,lt);
+  // head + muzzle (mouth opens in a big yawn)
+  const hx=f*22,hy=-12;ell(hx,hy,15,13,body);
+  if(yw>.05){poly([hx+f*6,hy+2,hx+f*30,hy-6-yw*14,hx+f*30,hy+12+yw*10,hx+f*6,hy+8],pink);ctx.fillStyle='#fff';for(const t of[-1,1])ctx.fillRect(hx+f*24-2,hy+(t<0?-5-yw*11:9+yw*7),4,5);}
+  ell(hx+f*14,hy+3,13,10,lt);ell(hx+f*20,hy-1,2.2,1.6,dk);ell(hx+f*14,hy-1,2.2,1.6,dk);
+  ctx.restore();
+  // eyes + ears always visible
+  ell(hx-f*2,hy-12,5,5,'#fff');ell(hx-f*1,hy-12,2.4,2.6,'#222');ell(hx-f*10,hy-15,4,5,dk);ell(hx-f*10,hy-15,2,2.5,pink);
+  // alpha crest: a little gold crown
+  poly([hx-f*8,hy-20,hx-f*6,hy-28,hx-f*3,hy-22,hx,hy-29,hx+f*2,hy-21],'#ffd23a');
+  ctx.restore();
+  if(sub>=.5){ctx.strokeStyle='rgba(225,245,255,.7)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(x,y-2,40,7,0,0,TAU);ctx.stroke();}
+  if(u.hp<u.maxHp&&!u.dead){const w=44;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(x-w/2,y-64,w,5);ctx.fillStyle=u.hp>u.maxHp*HP_A.th?'#e05050':'#ffd23a';ctx.fillRect(x-w/2,y-64,w*Math.max(0,u.hp/u.maxHp),5);}
+  if(!u.dead&&u.hp<=u.maxHp*HP_A.th){const t=G.t*3.2;for(let i=0;i<3;i++){const a=t+i*TAU/3;hnStar(x+f*22+Math.cos(a)*16,y-58+Math.sin(a)*4,3.2,i%2?'#ffe35a':'#fff7c0');}}}
+FAUNA_ART.add('hippo');
+{const _df=drawFauna;drawFauna=function(u){if(u.species==='hippo'){drawHippo(u);return;}return _df.apply(this,arguments);};}
+// ======================= queue 79: wrecking the ancient jungle temple also gives a PERMANENT +10 max fire (once per game) =======================
+// On top of the 100 gold. Only the first wreck in a game counts (the temple is back every level, but the flag G.jtFire carries over levels and
+// is in saves). The bonus goes into D.fireBonus (same pool as the nest-egg fire), so it carries over castle levels and is saved. Small bottom alert.
+const JT_FIRE=10;let JT_FCARRY=null;
+{const _o=onRuin;onRuin=function(s){const r=_o.apply(this,arguments);
+  if(s&&s.kind==='jtemple'&&!s._loading&&G&&!G.jtFire&&scene==='play'){G.jtFire=1;if(D.maxFire===undefined&&typeof fireInit==='function')fireInit();
+    D.fireBonus=(D.fireBonus||0)+JT_FIRE;D.maxFire=wfFireMax();D.fire=Math.min(D.maxFire,(D.fire||0)+JT_FIRE);D.fireOut=false;G.jtFireN=(G.jtFireN||0)+1;
+    boostAlert(`🔥 Max fire +${JT_FIRE}!`,`The ancient temple's ember power is yours · max fire now ${D.maxFire} (permanent)`);}
+  return r;};}
+{const _nl=nextLevel;nextLevel=function(){JT_FCARRY=G&&G.jtFire?1:0;try{return _nl.apply(this,arguments);}finally{JT_FCARRY=null;}};}
+{const _ng=newGame;newGame=function(){const c=JT_FCARRY;const r=_ng.apply(this,arguments);G.jtFire=c?1:0;return r;};}
+
+// ======================= (queue 80-89) ACHIEVEMENTS =======================
+// A list of (almost) everything the player can do. Nothing is hidden: locked entries show their name, a short how-to and (when the
+// thing gives an in-game reward) a reward hint whose numbers are read from the game's own constants. Unlocks are saved on this device
+// (localStorage 'dr_ach_v1', separate from save slots) and a small bottom boost alert pops when one is earned.
+const ACH_KEY='dr_ach_v1';
+const ACH={got:{},eat:{},ev:{},fresh:true,dirty:0,list:null,t:0,primed:false};
+(function(){try{const j=JSON.parse(localStorage.getItem(ACH_KEY)||'null');if(j&&typeof j==='object'){ACH.got=j.got||{};ACH.eat=j.eat||{};ACH.ev=j.ev||{};ACH.fresh=false;}}catch(e){}})();
+let achSaveTm=null;
+function achSave(){if(achSaveTm){clearTimeout(achSaveTm);achSaveTm=null;}try{localStorage.setItem(ACH_KEY,JSON.stringify({v:1,got:ACH.got,eat:ACH.eat,ev:ACH.ev}));}catch(e){}}
+function achSoon(){if(!achSaveTm)achSaveTm=setTimeout(achSave,500);}
+try{addEventListener('pagehide',achSave);}catch(e){}
+function achEv(k){if(!ACH.ev[k]){ACH.ev[k]=Date.now();achSave();}ACH.dirty=1;}
+const ACH_NOEAT={princess:1,king:1,shell:1};
+function achAte(k){if(!k||ACH_NOEAT[k])return;ACH.eat[k]=(ACH.eat[k]||0)+1;achSoon();ACH.dirty=1;}
+const achTA=k=>(TALLY&&TALLY.all&&TALLY.all[k])||0;
+const achPre=p=>{let n=0;if(TALLY&&TALLY.all)for(const k in TALLY.all)if(k.startsWith(p))n+=TALLY.all[k];return n;};
+const achG=k=>(G&&G[k])||0;
+const achPct=()=>{try{return typeof exploredPct==='function'&&typeof FOG!=='undefined'&&FOG?exploredPct():0;}catch(e){return 0;}};
+function achKeyU(u){if(typeof tfIsLeader==='function'&&tfIsLeader(u))return TF_L[u.species].key;return typeof tallyKeyU==='function'?tallyKeyU(u):u.species;}
+function achAlpha(u){if(!u)return;if(typeof tfIsLeader==='function'&&tfIsLeader(u))achEv('al_'+u.species);if(u.atAlpha)achEv('alat_'+u.species);if(u.hippo)achEv('al_hippo');}
+// eaten-only tracking for the region feasts (the tally counts eaten AND defeated, so it can't be used here)
+// anything the tally records while one of the eat actions is running was eaten (bite button, auto-eat, birds, sea creatures, eggs)
+ACH.eatD=0;
+{const _t=tallyAdd;tallyAdd=function(k){if(ACH.eatD>0)achAte(k);return _t.apply(this,arguments);};}
+{const _e=tryEat;tryEat=function(){ACH.eatD++;try{return _e.apply(this,arguments);}finally{ACH.eatD--;}};}
+{const _e=tryEatBird;tryEatBird=function(){ACH.eatD++;try{return _e.apply(this,arguments);}finally{ACH.eatD--;}};}
+{const _e=eatSea;eatSea=function(){ACH.eatD++;try{return _e.apply(this,arguments);}finally{ACH.eatD--;}};}
+{const _e=eatUnit;eatUnit=function(u){const was=!u||u.dead;ACH.eatD++;let r;try{r=_e.apply(this,arguments);}finally{ACH.eatD--;}if(u&&!was&&u.dead)achAlpha(u);return r;};}
+{const _h=hurtUnit;hurtUnit=function(u){const was=!u||u.dead;const r=_h.apply(this,arguments);if(u&&!was&&u.dead)achAlpha(u);return r;};}
+// event hooks: guardian eggs (85), trade goods lost at sea / on land (86), the wizard (81)
+{const _h=eggHatch;eggHatch=function(k){const r=_h.apply(this,arguments);achEv('egg'+k);return r;};}
+{const _h=wzDefeat;wzDefeat=function(){const r=_h.apply(this,arguments);achEv('wizard');return r;};}
+{const _h=hurtShip;hurtShip=function(s){const tr=s&&s.kind==='trade'&&s.state!=='sink'&&(s.w>0||s.st>0),st=s&&s.state;
+  const r=_h.apply(this,arguments);if(tr&&s.state==='sink')achEv(st==='unload'?'tradeLand':'tradeSea');return r;};}
+{const _w=wreckCart;wreckCart=function(c){const ld=c&&!c.wrecked&&c.trader&&(c.load||0)>0;const r=_w.apply(this,arguments);if(ld&&c.wrecked)achEv('tradeLand');return r;};}
+
+const ACH_SEC={goal:{n:'Castle, hoard & princess',i:'🏰',c:'#ffd24a'},dragon:{n:'Dragons & dragon eggs',i:'🐉',c:'#c89aff'},boss:{n:'Bosses & legends',i:'⚔',c:'#ff9a7a'},
+  alpha:{n:'Alpha guardians (first defeat)',i:'👑',c:'#ffe08a'},raid:{n:'Hoard raids & royal fleets',i:'🛡',c:'#9ad0ff'},kingdom:{n:"King William's kingdom",i:'👑',c:'#f0c070'},
+  explore:{n:'Exploring the map',i:'🗺',c:'#9ae0a0'},feast:{n:'Region feasts (eat every animal type)',i:'🍖',c:'#ffb070'},first:{n:'First encounters',i:'⭐',c:'#d0d0ff'}};
+function achBuild(){const L=[],A=(sec,id,name,how,ok,o)=>L.push(Object.assign({sec,id,name,how,ok},o||{}));
+  const n=(f,need)=>()=>[Math.min(f(),need),need];
+  // ---- goals (81: princess) ----
+  A('goal','gold1','Shiny!','Carry any gold back to your lair on Dragon Peak',()=>achG('stash')>0);
+  A('goal','hoard500','Treasure Hoard','Stash 500 gold in your lair',()=>achG('stash')>=500,{prog:n(()=>achG('stash'),500)});
+  A('goal','hoard2000',"Dragon's Fortune",'Stash 2000 gold in your lair',()=>achG('stash')>=2000,{prog:n(()=>achG('stash'),2000)});
+  A('goal','roof','Raise the Roof',"Smash the great keep's stone roof at Castle Aldric",()=>achTA('b:kroof')>0);
+  A('goal','princess','Royal Guest','Grab Princess Elizabeth from the keep (she is never hurt!)',()=>(TALLY.prAll||0)>0||!!(D&&D.princess));
+  A('goal','clear1','Castle Cleared','Fly Princess Elizabeth safely home to your lair',()=>achG('lvl')>=2||!!(G&&G.won),
+    {rew:()=>typeof RANSOM!=='undefined'?`the king pays a ransom of ${RANSOM.base} gold (+${RANSOM.perLvl} per castle level) · next castle level`:'next castle level'});
+  for(const v of[3,5,10])A('goal','lvl'+v,v===3?'Rising Terror':v===5?'Dread of the Realm':'Legend of the Realm',`Reach castle level ${v}`,()=>achG('lvl')>=v,{prog:n(()=>achG('lvl'),v)});
+  // ---- dragons (81, 85) ----
+  A('dragon','egg1','Egg Snack','Eat a dragon egg from the wild dragon nest in the Dragon Peaks',()=>achTA('wdegg')>0,{rew:()=>`+${WDN_FIRE} max fire per egg`});
+  A('dragon','egg10','Omelette Master','Eat 10 dragon eggs',()=>achTA('wdegg')>=10,{prog:n(()=>achTA('wdegg'),10),rew:()=>`+${WDN_FIRE} max fire per egg`});
+  A('dragon','wd1','Dragon Duel','Defeat a wild dragon in the Dragon Peaks',()=>achTA('wdragon')>0,{rew:()=>`+${WD_ST} max stamina per dragon`});
+  A('dragon','wd5','Dragon Champion','Defeat 5 wild dragons',()=>achTA('wdragon')>=5,{prog:n(()=>achTA('wdragon'),5),rew:()=>`+${WD_ST} max stamina per dragon`});
+  A('dragon','eggW','Light Egg Hatched','Carry the white egg from the Lumenspire Citadel (light lands) to your lair',()=>!!ACH.ev.eggW,
+    {rew:()=>`a white guardian dragon (${GDB.hp} health, more each castle level) that breathes ice for you`});
+  A('dragon','eggB','Dark Egg Hatched','Carry the black egg from the Doomforge Citadel (dark lands) to your lair',()=>!!ACH.ev.eggB,
+    {rew:()=>`a black guardian dragon (${GDB.hp} health, more each castle level) that throws lightning for you`});
+  A('dragon','glut','Glutton','Eat a whale\'s worth of food (watch the Glutton bar in the pause menu)',()=>(D&&D.glutN||0)>0,{rew:()=>`+${GLUT.gain} max health per whale's worth`});
+  // ---- bosses (81: wizard) ----
+  A('boss','wizard','Shield Breaker',"Break the Storm Wizard's magic shield on his isle",()=>!!ACH.ev.wizard||achG('nrWzWins')>0,{rew:()=>`+${WZ_GOLD} gold · the barrier to the Northern Realms opens`});
+  A('boss','wizEat','Wizard Snack','Gobble the dizzy wizard after breaking his shield',()=>achG('wzEatenN')>0||achTA('wizard')>0);
+  A('boss','hydra','Hydra Hunter','Defeat the 3-headed Hydra at its temple in the dark far west',()=>achG('hyWins')>0,{rew:()=>`+${HY_K.reward} max health`});
+  A('boss','griffin','Griffin Tamer','Defeat the Griffin who roams the light lands',()=>achG('grWins')>0,{rew:()=>`+${GR_K.reward} max health`});
+  A('boss','nessie','Loch Legend','Defeat Nessie in her dark loch in the northern ocean',()=>achG('nsWins')>0,{rew:()=>`+${NSK.reward} max health`});
+  A('boss','squid','Calamari','Defeat the giant squid (Kraken) far out at sea',()=>achTA('squid')>0,{rew:()=>`+${MH.feast} max health when you eat it`});
+  A('boss','octo','Eight Arms','Wear down a giant octopus until it is dazed, then gulp it',()=>achTA('octopus')>0,{rew:()=>`+${MH.octo} max health when you eat it`});
+  A('boss','worm','Worm Wrangler','Defeat the giant sand worm in the desert',()=>achTA('sandworm')>0,{rew:()=>`+${MH.feast} max health when you eat it`});
+  A('boss','medusa','Stone Cold','Defeat a Medusa in the Goblin Bogs (look away when her eyes glow)',()=>achTA('medusa')>0);
+  A('boss','cerberus','Good Doggo','Defeat a three-headed Cerberus in the dark north',()=>achTA('cerberus')>0);
+  A('boss','temple','Temple Wrecker','Wreck the ancient jungle temple',()=>achTA('b:jtemple')>0||achG('jtFire')>0,{rew:()=>`+${JT.gold} gold · +${JT_FIRE} max fire (once per game)`});
+  // ---- alphas (89): every alpha guardian type, first defeat; they all come back after a while ----
+  const ALN={lion:['Pride Leader','the male lion of a savanna pride'],wolf:['Pack Leader','a white alpha wolf in the Deepwood'],gorilla:['King of the Troop','a silverback gorilla in the jungle']};
+  for(const sp in TF_L){const L=TF_L[sp],nm=ALN[sp]||[L.label,L.label.toLowerCase()];
+    A('alpha','al_'+sp,nm[0],`Defeat ${nm[1]} (a new one takes over about ${TF_NEWLEADER}s after, once you fly away)`,()=>!!ACH.ev['al_'+sp]||achTA(L.key)>0,{rew:()=>`gulp him for +${L.heal} health`});}
+  A('alpha','al_hippo','Hippo Hero',`Defeat an alpha hippo at a savanna watering hole (a new one wades in about ${Math.round(HP_A.back/60)} min later)`,()=>!!ACH.ev.al_hippo||achG('hpBeaten')>0,{rew:()=>`+${HP_A.pts} points`});
+  for(const sp in AT){const a=AT[sp];A('alpha','alat_'+sp,sp==='troll'?'Troll Toppler':'Glade Guardian',`Defeat ${a.who.replace(/^The /,'the ')} at a ${a.n.toLowerCase()} (a new one arrives about ${AT_NEW}s later)`,()=>!!ACH.ev['alat_'+sp]);}
+  // ---- raids ----
+  A('raid','champ1','Hoard Defender','Beat a brave knight who comes to raid your hoard',()=>achPre('champ:')>0,{rew:()=>`he drops a sack of ${rgPurse(1,true)}+ gold (more each castle level)`});
+  A('raid','champ5','Dragon Keeper','Beat 5 hoard-raiding champions',()=>achPre('champ:')>=5,{prog:n(()=>achPre('champ:'),5),rew:()=>`a sack of ${rgPurse(1,true)}+ gold each`});
+  A('raid','sack','Finders Keepers','Pick up a gold sack dropped by a raiding knight',()=>achG('rgGot')>0||!!ACH.ev.sack);
+  A('raid','prince','Fleet Breaker',"Stop a prince's royal war fleet",()=>achPre('prince:')>0);
+  A('raid','warship','Admiral Snack','Sink a royal warship',()=>achTA('ship:warship')>0);
+  // ---- kingdom (86, 87) ----
+  A('kingdom','tradeSea','Stormy Waters','Sink a loaded trade ship at sea before it reaches the King\'s Quay',()=>!!ACH.ev.tradeSea,{rew:()=>`the king loses the cargo · no new order for ${KB.cool}s`});
+  A('kingdom','tradeLand','Dockside Ambush','Stop the goods on land: sink the trade ship at the quay or smash the cart unloading on shore',()=>!!ACH.ev.tradeLand,{rew:()=>`the king loses the cargo · no new order for ${KB.cool}s`});
+  A('kingdom','caravan','Caravan Raider',"Destroy Sandhaven's rich camel caravan in the desert",()=>achTA('richcaravan')>0,{rew:()=>`+${RCV.gold} gold`});
+  A('kingdom','gate','Gatecrasher','Break the castle gate',()=>achTA('b:gate')>0);
+  A('kingdom','barracks','Barracks Buster','Wreck the castle barracks',()=>achTA('b:barracks')>0);
+  A('kingdom','towers','Tower Toppler','Topple 3 castle or archer towers',()=>achTA('b:ctower')+achTA('b:wtower')+achTA('b:stower')>=3,{prog:n(()=>achTA('b:ctower')+achTA('b:wtower')+achTA('b:stower'),3)});
+  A('kingdom','lighthouse','Lights Out','Knock down the lighthouse',()=>achTA('b:lighthouse')>0);
+  A('kingdom','catapult','Siege Breaker','Wreck a catapult',()=>achTA('siege:catapult')>0);
+  A('kingdom','taxman','Tax Holiday','Stop a royal tax collector',()=>achTA('taxman')>0);
+  A('kingdom','knight','Shiny Snack','Defeat a knight',()=>achTA('knight')>0);
+  A('kingdom','army50','Army Scatterer',"Defeat 50 of King William's soldiers",()=>achSect('army')>=50,{prog:n(()=>achSect('army'),50)});
+  A('kingdom','crops','Crop Toaster','Burn 10 crop fields',()=>achTA('crop')>=10,{prog:n(()=>achTA('crop'),10)});
+  A('kingdom','trees','Lumber Jack','Knock down or burn 25 trees',()=>achTA('tree')>=25,{prog:n(()=>achTA('tree'),25)});
+  A('kingdom','carts','Highway Robbery','Wreck 5 carts on the roads',()=>achTA('cart')+achTA('supplycart')+achTA('tradecart')>=5,{prog:n(()=>achTA('cart')+achTA('supplycart')+achTA('tradecart'),5)});
+  // ---- exploring (82): 100% is reachable by flying everywhere ----
+  for(const v of[25,50,75,100])A('explore','ex'+v,v===100?'Cartographer':v===50?'Halfway There':v===25?'Scout':'Wide Wings',`Explore ${v}% of the map (the minimap fog clears as you fly)`,()=>achPct()>=v,{prog:n(achPct,v),unit:'%'});
+  A('explore','regions','Grand Tour','Visit every region of the world',()=>achRegMiss().length===0,{prog:()=>{const k=Object.keys(REGION_NAMES);return[k.length-achRegMiss().length,k.length];},
+    miss:()=>achRegMiss().map(k=>REGION_NAMES[k]).join(', ')});
+  // ---- region feasts (88): eaten only; never princess or king; alphas have their own achievements ----
+  const alK={};for(const sp in TF_L)alK[TF_L[sp].key]=1;
+  const FN={farm:['Farmyard Feast','Farmlands'],forest:['Deepwood Feast','the Deepwood'],water:['Lake & River Feast','the lake & rivers'],mount:['Mountain Feast','the hills & mountains'],
+    coast:['Seaside Feast','the coast & sea'],desert:['Desert Feast','the desert'],savanna:['Savanna Feast','the savanna'],jungle:['Jungle Feast','the jungle']};
+  for(const s of TALLY_SECT){if(!/^Animals · /.test(s.name)||!FN[s.id]||s.id==='drpeaks')continue;const f=FN[s.id];const keys=s.keys.filter(k=>!ACH_NOEAT[k[0]]&&!alK[k[0]]);
+    const miss=()=>keys.filter(k=>!(ACH.eat[k[0]]>0)).map(k=>k[1]);
+    A('feast','feast_'+s.id,f[0],`Eat at least one of every animal type in ${f[1]}`,()=>miss().length===0,{prog:()=>[keys.length-miss().length,keys.length],miss:()=>miss().join(', ')});}
+  // ---- first encounters (one per tally group) ----
+  for(const s of TALLY_SECT){if(/^Animals · /.test(s.name)||!s.keys.length||['champ','prince','other'].includes(s.id))continue;const ks=s.keys.map(k=>k[0]);
+    const lab=s.name.replace(/^[^·]*· /,'');let fid='first_'+s.id;while(L.some(d=>d.id===fid))fid+='_';const verb=s.id==='build'?'Destroy':s.id==='boats'?'Sink or wreck':'Gobble or defeat';A('first',fid,`First of: ${lab}`,`${verb} any of: ${s.keys.slice(0,5).map(k=>k[1].toLowerCase()).join(', ')}${s.keys.length>5?'…':''}`,()=>ks.some(k=>achTA(k)>0));}
+  return L;}
+function achSect(id){const s=TALLY_SECT.find(s=>s.id===id);if(!s)return 0;let n=0;for(const k of s.keys)n+=achTA(k[0]);return n;}
+function achRegMiss(){const v=(G&&G.visited)||{};return Object.keys(REGION_NAMES).filter(k=>!v[k]);}
+function achList(){return ACH.list||(ACH.list=achBuild());}
+function achCount(){const L=achList();return[L.filter(d=>ACH.got[d.id]).length,L.length];}
+function achSafe(f){try{return f();}catch(e){return null;}}
+function achCheck(silent){const L=achList(),nw=[];for(const d of L)if(!ACH.got[d.id]&&achSafe(d.ok)){ACH.got[d.id]=Date.now();nw.push(d);}
+  if(nw.length){achSave();if(!silent){const sh=nw.length>3?nw.slice(0,2):nw;for(const d of sh){const rw=d.rew&&achSafe(d.rew);boostAlert(`🏆 ${d.name}`,rw?`Achievement unlocked · 🎁 ${rw}`:`Achievement unlocked · ${d.how}`);}
+    if(nw.length>3)boostAlert(`🏆 +${nw.length-2} more achievements!`,'See them all in the pause menu → Achievements');}}
+  return nw;}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&G&&!G.over&&!paused){ACH.t-=dt;if(ACH.t<=0||ACH.dirty){ACH.t=.5;ACH.dirty=0;
+    if(!ACH.primed){ACH.primed=true;if(ACH.fresh){achCheck(true);ACH.fresh=false;achSave();}}achCheck(false);}}return r;};}
+function achTitleRow(){const[c,n]=achCount();return`🏆  Achievements (${c} of ${n})`;}
+
+// ---- the list screen (pause menu row + title row) ----
+let ACH_F=0;const ACH_FN=['All','Locked','Unlocked'];
+function achRows(){const R=[];let last=null;for(const d of achList()){const g=!!ACH.got[d.id];if(ACH_F===1&&g||ACH_F===2&&!g)continue;if(d.sec!==last){last=d.sec;R.push({h:1,s:ACH_SEC[d.sec]});}R.push({d,g});}return R;}
+function achLines(d){const out=[];const rw=d.rew&&achSafe(d.rew);if(rw)out.push(['rew','🎁 Reward: '+rw]);const m=d.miss&&achSafe(d.miss);if(m){const full=(d.sec==='explore'?'Not visited yet: ':'Still to eat: ')+m;
+    // long lists wrap onto up to 3 lines instead of being cut off
+    ctx.save();ctx.font=`${ACH_WRAP.fs}px Georgia`;const parts=full.split(', '),W=ACH_WRAP.tw-4,fit=t=>ctx.measureText(t).width<=W;let i=0;
+    for(let ln=0;ln<3&&i<parts.length;ln++){let cur=parts[i++];
+      while(i<parts.length){const left=parts.length-i-1,nx=cur+', '+parts[i];const tail=ln===2&&left>0?`, … +${left} more`:',';if(!fit(nx+tail))break;cur=nx;i++;}
+      const left=parts.length-i;out.push(['miss',cur+(left?(ln===2?`, … +${left} more`:','):'')]);}
+    ctx.restore();}return out;}
+const ACH_WRAP={tw:600,fs:12.5};
+function achRowH(r,touch){const lh=touch?17:15;return r.h?(touch?28:24):(touch?22:20)+lh*(1+achLines(r.d).length)+8;}
+function achFitTxt(s,x,y,maxW,size,col,bold){let fs=hudFit(s,maxW,size,bold);if(fs<9.5)fs=9.5;ctx.font=`${bold===false?'':'bold '}${fs}px Georgia`;if(ctx.measureText(s).width>maxW){while(s.length>6&&ctx.measureText(s+'…').width>maxW)s=s.slice(0,-1);s+='…';}txt(s,x,y,fs,col,'left',bold);}
+function achMaxScroll(rows,hs,listH){let s=rows.length,sum=0;while(s>0&&sum+hs[s-1]<=listH){sum+=hs[s-1];s--;}return Math.min(s,rows.length-1<0?0:rows.length-1);}
+function drawAchScreen(x0,W,S,ah,touch){const cx=x0+W/2,y0=S.t+8,H=ah-16;panel(x0,y0,W,H);ctx.fillStyle='rgba(30,18,8,.6)';ctx.fillRect(x0+1,y0+1,W-2,H-2);
+  const sm=W<520,[c,n]=achCount();txt('🏆  ACHIEVEMENTS',cx,y0+(sm?26:30),sm?19:24,'#ffd24a','center');
+  txt(`${c} of ${n} unlocked · saved on this device · showing: ${ACH_FN[ACH_F]}`,cx,y0+(sm?44:50),sm?11:13,'#fff','center',false);
+  const bx=x0+24,bw=W-48,byy=y0+(sm?52:58);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(bx,byy,bw,7);ctx.fillStyle='#ffd24a';ctx.fillRect(bx,byy,bw*(n?c/n:0),7);
+  ACH_WRAP.tw=W-(sm?40:50);ACH_WRAP.fs=sm?11:12.5;const top=byy+14,foot=touch?54:44,listH=H-(top-y0)-foot-(touch?0:20),rows=achRows(),hs=rows.map(r=>achRowH(r,touch)),mx=achMaxScroll(rows,hs,listH);
+  PM.scroll=clamp(PM.scroll|0,0,mx);PM._achMx=mx;let vis=0,acc=0;for(let i=PM.scroll;i<rows.length&&acc+hs[i]<=listH;i++){acc+=hs[i];vis++;}PM.vis=Math.max(1,vis);PM.rh=Math.max(20,acc/Math.max(1,vis));
+  PM.hit.push({x:x0,y:top,w:W,h:listH,list:1});
+  ctx.save();ctx.beginPath();ctx.rect(x0+2,top,W-4,listH+1);ctx.clip();let y=top;const lh=touch?17:15,tw=W-(sm?40:50);
+  for(let i=PM.scroll;i<rows.length&&y<top+listH;i++){const r=rows[i],h=hs[i];
+    if(r.h){ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(x0+6,y+2,W-28,h-4);ctx.fillStyle=r.s.c;ctx.fillRect(x0+6,y+2,4,h-4);txt(`${r.s.i}  ${r.s.n}`,x0+16,y+h-8,sm?12.5:14,r.s.c,'left');}
+    else{const d=r.d,g=r.g;ctx.fillStyle=g?'rgba(255,215,90,.10)':'rgba(0,0,0,.18)';ctx.fillRect(x0+8,y+3,W-30,h-6);
+      const pr=d.prog&&achSafe(d.prog);const right=g?'✔ unlocked':pr?`${pr[0]}${d.unit||''} / ${pr[1]}${d.unit||''}`:'locked';
+      const rs=sm?11:12.5;ctx.font=`bold ${rs}px Georgia`;const rwid=ctx.measureText(right).width;txt(right,x0+W-26,y+(touch?18:16),rs,g?'#9ef09a':'#d8cfc0','right');
+      achFitTxt(`${g?'🏆':'🔒'}  ${d.name}`,x0+16,y+(touch?18:16),W-60-rwid,sm?13:15,g?'#ffd24a':'#f2ece2',true);
+      let ly=y+(touch?18:16)+lh;achFitTxt(d.how,x0+20,ly,tw,sm?11:12.5,g?'#e8e2d6':'#cfc8bc',false);
+      for(const[k,s]of achLines(d)){ly+=lh;achFitTxt(s,x0+20,ly,tw,sm?11:12.5,k==='rew'?(g?'#ffd27a':'#e8c27a'):'#ffb0a0',false);}}
+    y+=h;}
+  ctx.restore();
+  if(mx>0){const sx=x0+W-10,th=Math.max(24,listH*PM.vis/rows.length),ty=top+(listH-th)*(PM.scroll/mx);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(sx,top,5,listH);ctx.fillStyle='#d9a64a';ctx.fillRect(sx,ty,5,th);}
+  const by=y0+H-foot+8,bh=foot-16,nb=4,gap=8,bw2=(W-24-gap*(nb-1))/nb,pg=Math.max(1,PM.vis-1);
+  pmBtn(x0+12,by,bw2,bh,'▲ Up',()=>{PM.scroll=Math.max(0,PM.scroll-pg);},false);
+  pmBtn(x0+12+(bw2+gap),by,bw2,bh,'▼ Down',()=>{PM.scroll=Math.min(mx,PM.scroll+pg);},false);
+  pmBtn(x0+12+2*(bw2+gap),by,bw2,bh,'Show: '+ACH_FN[ACH_F],()=>{ACH_F=(ACH_F+1)%3;PM.scroll=0;},false,'#ffe08a');
+  pmBtn(x0+12+3*(bw2+gap),by,bw2,bh,'◀ Back',achBack,false);
+  if(!touch)txt(`↑/↓ scroll · ←/→ page · Enter / A: show All / Locked / Unlocked · Esc / B: back`,cx,by-6,11,'#aaa','center',false);}
+function achBack(){if(PM.from==='title')pmClose();else{PM.scr='main';PM.sel=Math.max(0,PM_MAIN.findIndex(r=>r[1]==='ach'));}}
+function achOpen(from){if(from==='title'||!PM.on)pmOpen('ach',from);else{PM.scr='ach';PM.scroll=0;}ACH_F=0;}
+PM_MAIN.splice(Math.max(0,PM_MAIN.findIndex(r=>r[1]==='settings'))+1,0,['🏆  Achievements','ach']);
+{const _a=pmAct;pmAct=function(a){if(a==='ach'){PM.scr='ach';PM.scroll=0;ACH_F=0;return;}return _a.apply(this,arguments);};}
+{const _i=pmInput;pmInput=function(){if(PM.scr==='ach'&&!PM.confirm){const up=P('arrowup')||P('w'),dn=P('arrowdown')||P('s'),lf=P('arrowleft')||P('a'),rt=P('arrowright')||P('d'),ok=P('enter')||P(' ')||P('e'),back=P('escape')||P('p')||P('backspace');
+    const mx=PM._achMx||0,pg=Math.max(1,(PM.vis||5)-1);if(up)PM.scroll--;if(dn)PM.scroll++;if(lf||P('pageup'))PM.scroll-=pg;if(rt||P('pagedown'))PM.scroll+=pg;PM.scroll=clamp(PM.scroll,0,mx);
+    if(ok){ACH_F=(ACH_F+1)%3;PM.scroll=0;}else if(back)achBack();return true;}return _i.apply(this,arguments);};}
+{const _b=pmBack;pmBack=function(){if(PM.scr==='ach'&&!PM.confirm)return achBack();return _b.apply(this,arguments);};}
+{const _d=pmDragMove;pmDragMove=function(id,y,x){const d=PM.drag;if(PM.scr==='ach'&&d&&d.id===id&&!d.slider){PM.scroll=clamp(Math.round(d.sc-(y-d.y)/(PM.rh||40)),0,PM._achMx||0);return;}return _d.apply(this,arguments);};}
+{const _d=drawPM;drawPM=function(){if(PM.scr!=='ach')return _d.apply(this,arguments);
+  ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;PM.hit=[];ctx.fillStyle='rgba(6,4,10,.66)';ctx.fillRect(0,0,VW,VH);
+  const aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,720),x0=S.l+(aw-W)/2;drawAchScreen(x0,W,S,ah,touch);};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
@@ -9661,12 +9960,12 @@ function drawAnnounce(sm){if(!G.banner){UI.banner=null;return;}const b=G.banner,
   const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>bw-24?Math.max(8,Math.floor(f*(bw-24)/w)):f;};
   txt(b.text,bcx,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,bcx,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,bcx,by+50,fitF(b.extra,sm?12:14,false),'#ffc0a0','center',false);ctx.globalAlpha=1;}
 function center(lines,top){let y=top;for(const [s,size,col,bold] of lines){txt(s,VW/2,y,size,col,'center',bold);y+=size*1.45;}}
-let titleSel=0;const TITLE_N=4; // (item 50) Start · Mode · Settings · Load: volume, mute and graphics live in the Settings panel (partY)
+let titleSel=0;const TITLE_N=5; // (item 50) Start · Mode · Settings · Load: volume, mute and graphics live in the Settings panel (partY)
 function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,5,.66)';ctx.fillRect(0,0,VW,VH);
   const k=TOUCH.on?Math.min(1.2,VH/470,VW/900):Math.min(1,VH/920,VW/1000);ctx.setTransform(DPR*k,0,0,DPR*k,DPR*(VW-VW*k)/2,0);const W0=VW;TOUCH.tg={k,ox:(VW-VW*k)/2,cx:W0/2,y0:112};
   let y=46;txt("DRAGON'S RAMPAGE",W0/2,y+10,52,'#ff9a3a','center');txt('You are a full-grown dragon. Raid the castle, steal the gold, carry off Princess Elizabeth!',W0/2,y+40,17,'#f3dcb8','center',false);
   // menu
-  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`⚙  Settings:  ${AUD.muted?'sound MUTED':`music ${Math.round(AUD.music*100)}% · effects ${Math.round(AUD.sfx*100)}%`} · graphics ${GFX_Q.toUpperCase()}`,svHasAny()?'⟲  Continue / Load saved game':'⟲  Load saved game  (no saves yet)'];
+  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`⚙  Settings:  ${AUD.muted?'sound MUTED':`music ${Math.round(AUD.music*100)}% · effects ${Math.round(AUD.sfx*100)}%`} · graphics ${GFX_Q.toUpperCase()}`,svHasAny()?'⟲  Continue / Load saved game':'⟲  Load saved game  (no saves yet)',typeof achTitleRow==='function'?achTitleRow():'🏆  Achievements'];
   rows.forEach((r,i)=>{const s=titleSel===i;panel(W0/2-230,y+i*36,460,30);if(s){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y+i*36,460,30);}
     txt(r,W0/2,y+i*36+21,17,s?'#ffd24a':(i===1&&EASY)?'#9f9':i===3&&!svHasAny()?'#888':'#ddd','center');});
   if(TOUCH.on){y+=TITLE_N*36+16;txt('Tap a row to choose it · ⚙ Settings: volume, mute and graphics',W0/2,y,13,'#bbb','center',false);
@@ -9769,7 +10068,8 @@ function frameBody(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
   else if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(TITLE_N-1,titleSel+1);
     if(P('g'))setGfx(!GFX_HI);
     if(P('m')||((P('arrowleft')||P('arrowright')||P('a')||P('d'))&&titleSel===1)||(P('enter')&&titleSel===1))setEasy(!EASY);
-    if(P('enter')&&titleSel===3){pmOpen('load','title');}
+    if(P('enter')&&titleSel===4){pmOpen('ach','title');}
+    else if(P('enter')&&titleSel===3){pmOpen('load','title');}
     else if(P('enter')&&titleSel===2){pmOpen('settings','title');}
     else if((P('enter')&&titleSel===0)||P(' ')){scene='play';newGame();pressed={};}
     else{G.t+=dt;cam.x=1700+Math.sin(ts/9000)*700;cam.y=1900+Math.cos(ts/11000)*1300;cam.z=1;updFire(dt);updEconomy(dt);G.fc++;for(const u of units){const t=farTick(u,dt);if(!t)continue;if(u.type==='villager')updVillager(u,t);else if(u.type==='animal'){if(u.wild)updWild(u,t);else updAnimal(u,t);}}updBirds(dt);updParts(dt);}}

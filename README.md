@@ -274,7 +274,7 @@ A hoard attracts trouble. Raids come on a clock, not on gold growth: **5 minutes
 2. **March:** the champion rides out of the castle gate with an escort of foot soldiers. The escort carries heraldic flags and spears with pennants in the champion's colours. The party goes east along King William's road, then up the mountain trail to Dragon Peak, which takes about 45 seconds.
 3. **The champion** is a mini-boss. They are bigger, with a plume, a coloured tabard and a crested kite shield, and have a name tag and health bar overhead. Fire does only 60% damage to them. They can't be swallowed until they're below half health; they raise their shield.
 4. **Theft:** if the champion reaches the hoard, they grab a share of it that grows with the raid tier (see below; never the whole pile) and carry the sacks back to the castle. Loaded raiders walk home **slower**: the more gold they carry, the slower they go (about 92% speed with 100 gold, 78% with 300, down to 55% with 600 or more), and you can see the gold sacks bouncing on them (1 to 4 sacks by load). If they get through the gate, that gold is gone.
-5. **Victory:** defeat or eat the champion (a cartoon gulp), even on the way back, and the sacks drop: all the stolen gold goes automatically back into the lair pile with a '+N' pop. There is **no lump-sum gold bonus**: the only gold is what each knight was carrying (the stolen sacks; knights carry no other gold). You still get 300 + 150×raid points, and the *Raid defeated!* announcement shows every time, including when your guardians win without you (*"Your guardian dragons beat Sir …!"*).
+5. **Victory:** defeat or eat the champion (a cartoon gulp), even on the way back, and the sacks drop: all the stolen gold goes automatically back into the lair pile with a '+N' pop. There is **no lump-sum gold bonus**: the only gold is what each knight was carrying (the stolen sacks, which go straight back to the lair). Each knight also carries its own purse, which it drops on the ground when it falls; see *Raid knights drop gold*. You still get 300 + 150×raid points, and the *Raid defeated!* announcement shows every time, including when your guardians win without you (*"Your guardian dragons beat Sir …!"*).
 
 **Raid tiers (by hoard size):** the thresholds above still decide *when* a knight comes, and the 5-minute cooldown is unchanged. How *tough* the raid is depends on the size of your hoard at the moment the raid is announced: **Tier 1** under 250 gold, **Tier 2** from 250, **Tier 3** from 500, **Tier 4** from 1,000, then one more tier per extra 1,000 (2,000 = Tier 5, 3,000 = Tier 6...). The banner says so: *"Sir Gareth the Bold (Tier 3) rides for your hoard!"*
 
@@ -300,6 +300,7 @@ Controls are the usual ones: fire, stomp, and bite/eat (E, pad X, or the BITE bu
 
 ## The Ancient Jungle Temple
 On the east flank of **Mount Ember**, the jungle volcano in the far west of the Emerald Jungle, stands a stepped stone temple, overgrown with vines, with a gold-glinting shrine on top. It is **fire-proof** and too solid for most attacks: use **bites**, the **Q stomp** or **lava shots**. When it crumbles: KA-BOOM, stone blocks fly, and **+100 gold** goes straight to your lair. It is never rebuilt, but a new one stands every level. It has its own Tally line, and a world-map marker once you have seen it.
+- **Ember power (once per game):** the first time you wreck the temple you also get a **permanent +10 max fire** on top of the 100 gold, shown in the small alert at the bottom of the screen (*"🔥 Max fire +10!"*). It stacks with the nest-egg fire boosts, carries over every castle level and is kept in saves. Wrecking the temple again on later levels still gives the 100 gold, but no more fire. A new game resets it.
 
 ## Mount Ember (the second volcano)
 A second volcano, **Mount Ember**, smokes in the far south-west of the jungle. You can drink lava there just like at Mount Cinder (lava shots). It erupts now and then, raining embers that can set nearby jungle plants and trees alight and leaving lava puddles. Both volcanoes show on the world map. Trees, decorations and animals never spawn on its cone.
@@ -416,6 +417,8 @@ When the dragon threatens Castle Aldric (comes low within about 520 px of the ki
 Your bite **always deals damage**. If the target can be eaten, it is swallowed as before. If it can't be swallowed yet (a bear, elephant or bull at high health, a pack leader or silverback, a wild dragon, a whale, a raid champion, a prince, the sandworm and so on), it still takes bite damage: a jaw-snap ring flashes on it and a red **-N** shows the damage. The bite never takes a tough target below 1 HP, so you wear it down and then swallow it. King William and Princess Elizabeth can't be bitten.
 
 ## Kingdom watchtowers
+**Starting stock:** the kingdom starts with **100 wood and 20 stone** (it used to be 8 and 4). This applies to every new game **and to every new castle level**, because moving up a level rebuilds the kingdom from scratch. Loading a save restores whatever the kingdom had when you saved. The starting stock doesn't count toward watchtowers: they still need wood and stone *delivered by carts* during the level. It does let the villagers build carts and upgrade bridges to stone sooner.
+
 **Surplus rule (newer):** towers are only paid for from **surplus**. A wooden archer tower needs the castle's wood to be above the wood it would take to rebuild the *whole* kingdom; a stone crossbow (scorpion) tower needs the stone stock to be above the stone it would take to rebuild the whole kingdom *in stone* (whether or not it has turned to stone yet). Only the amount above the reserve is spent. Once the kingdom is at its tower maximum, stone surplus turns standing archer towers into crossbow towers, one at a time. The older rules below still apply on top.
 
 The kingdom builds two kinds of tower, but only after its worker carts have delivered a **big stockpile**. Nothing is built until **36 wood and stone in total** have been delivered to the storehouse during the current level. Undisturbed carts bring about 4–5 a minute, so the first tower goes up around **minute 8**, mid-game. Only cart-delivered material counts, not the starting stock or free resources. Each tower then spends a large cost from that delivered stock. The kingdom builds whichever type it has the materials for, and it picks the scorpion tower first when it can afford one.
@@ -525,11 +528,12 @@ Pick it in **Settings** (title screen or pause menu): LOW, MEDIUM or HIGH. **G**
 **Low** keeps the original flat look. It has no day/night cycle and is the fastest choice for old machines.
 
 ## Mini bosses grow with the castle level
-The king's castle gets about **+31% gate health per level** (260 + 80 a level). Mini bosses and the two fantasy citadels grow about **half as fast**, and the growth stops at castle level 8 to keep things kid-friendly:
-- **Health: +15% per castle level** (×1.15 at level 2, ×1.30 at 3, ×1.60 at 5, ×2.05 at level 8 and above).
-- **Damage to the dragon: +6% per castle level** (×1.06 at level 2, ×1.12 at 3, ×1.24 at 5, ×1.42 at level 8 and above).
+The king's castle gets about **+31% gate health per level** (260 + 80 a level). Mini bosses, the two fantasy citadels and your guardian dragons grow about **half as fast**, and they **keep growing at every level with no upper cap**:
+- **Health: +15% per castle level** (×1.15 at level 2, ×1.30 at 3, ×1.60 at 5, ×2.05 at 8, ×2.35 at 10, ×2.8 at 13, ×3.85 at 20, ×4.0 at 21).
+- **Damage to the dragon: +6% per castle level** (×1.06 at level 2, ×1.12 at 3, ×1.24 at 5, ×1.42 at 8, ×1.54 at 10, ×1.72 at 13, ×2.14 at 20, ×2.2 at 21).
 - **Who scales:** the giant squid (Kraken), the giant octopus, the sand worm, Nessie, the Hydra (each of its 3 heads), the Griffin, Cerberus, and every other dragon (wild and rival dragons). The Lumenspire (light) and Doomforge (dark) citadel towers and the realm's other magic ice and lightning towers scale the same way.
 - **Level 1 health:** squid 700, octopus 220, sand worm 270, Nessie 800, Hydra head 85, Griffin 420, Cerberus 90, wild dragon 110, ice tower 70, lightning tower 80.
+- **Raid balance holds at any level:** raid champions and your guardians both grow ×1.15 health per level, so one guardian still beats raids up to Tier 5 and two guardians up to Tier 8 at high castle levels too (checked at levels 12 and 20).
 - **Never scales:** the Storm Wizard (shield 300 at every level, lower on easy).
 - **Regular units don't scale:** soldiers, villagers, realm creatures (orcs, elves, trolls and the rest, including pack alphas) keep the same health at every level.
 
@@ -567,6 +571,66 @@ Permanent boosts (max-health feasts such as *"Max health up! (+50)"*, mini-boss 
   That is plenty of time to fly home and help.
 
 ## Raid gold and map-wide raid alerts
-- A beaten raid gives back only the gold its knights carried (the stolen sacks), with no lump-sum bonus.
+- A beaten raid gives back the gold its knights stole (the stolen sacks), with no lump-sum bonus. Each fallen knight also drops its own purse on the ground (see *Raid knights drop gold*).
 - Every raid announcement shows wherever your dragon is on the map, unlike regional news such as the north battle or trade ships, which only show nearby: *rides for your hoard*, *has stolen N gold*, *Raid defeated*, *escaped*.
 - A raid announcement keeps the screen for at least 2.6 s. Any other banner that arrives meanwhile shows right after it.
+
+## Raid knights drop gold
+- **Every raiding knight carries a purse** and drops it as a gold sack on the ground when it is defeated, whether your dragon or your guardian dragons beat it. Purse size grows with the raid tier: spear knights and archers carry **5 + 5×tier** gold, the champion **20 + 10×tier**:
+
+| Raid tier | Spear knight / archer | Champion |
+|---|---|---|
+| 1 | 10 | 30 |
+| 3 | 20 | 50 |
+| 5 | 30 | 70 |
+| 8 | 45 | 100 |
+| 12 | 65 | 140 |
+
+- **Only your dragon can collect it.** Fly low or land within reach of a sack to add it to your hoard (*"+N raid gold → hoard"*). Guardians don't pick it up, and flying high over a sack doesn't collect it.
+- **Uncollected gold is up for grabs.** Knights of a later raid that pass close to a sack on their way scoop it up (*"… scoops up N gold!"*) and carry it on their belt. Defeat that knight and it drops its purse plus everything it scooped up.
+- Sacks that land close together merge into one bigger sack, labelled with its amount, and show as gold dots on the map. Knights that escape take their purse with them. The champion's stolen lair gold still goes straight back to the lair as before.
+- Sacks on the ground are kept in saves and cleared by a new game.
+
+## Alpha hippos at the watering holes
+Each of the two savanna watering holes has its own **alpha hippo**: a big lilac-grey hippo with a little gold crown. It spends its time half-submerged in the middle of the pool, blowing ripples and giving the odd lazy yawn.
+- **It guards its pool.** If your dragon comes close **on the ground or flying low** (within about 200 px of the water's edge), it surfaces with a big yawn (*"HRRUMPH! The alpha hippo guards its watering hole!"*) and charges, chomping you for **7 damage every 2 s** (*"Hippo CHOMP!"*).
+- **It's a homebody.** It never chases you more than about 300 px from its pool. When you leave or fly high, it grumbles and wades back into the water.
+- **Hippos and crocodiles ignore each other.** The crocodile in the pool never hunts the hippo, and the hippo never fights the crocodile; they share the water peacefully.
+- **Too big to swallow at first.** While it has more than 60% of its health, a bite just makes it grumpy (*"Too big! Wear the alpha hippo down below 60% first"*) and costs it 10 HP. Wear it down with fire or bites; dizzy stars show when it's ready, and then you can gulp it.
+- **Reward:** beating or eating it gives **+250 points**. Eating it is a big meal (**70 food, 50 health**). After about **2 minutes**, once your dragon is well away, a new alpha wades into that pool.
+
+| Stat | Alpha hippo |
+|---|---|
+| Health | 150 (doesn't grow with the castle level, like other wild animals) |
+| Bite | 7 every 2 s (Easy mode lowers it, as with all damage) |
+| Charge speed | 88 (wading home: 40) |
+| Notices you | within ~200 px of the water, on the ground or flying low |
+| Leash | ~300 px from its pool |
+| Can be swallowed | below 60% health (90 HP) |
+| Reward | +250 points; 70 food / 50 health when eaten |
+| Comes back | ~2 min later |
+
+
+## Achievements
+Open **🏆 Achievements** from the title menu (it shows *N of 72* right on the button) or from the pause menu (between *Settings* and *Flip screen*). It's a scrollable list sized for touch: big **▲ Up / ▼ Down** buttons, drag or swipe to scroll, **Show: All / Locked / Unlocked** to filter, and **◀ Back**. On a keyboard: ↑/↓ scroll, ←/→ page, A cycles the filter, Esc/B goes back.
+- **Nothing is hidden.** Every locked achievement shows its name and a one-line how-to, so the list doubles as a guide to everything there is to do. Counters show progress (e.g. *260 / 500* gold, *3 / 10* eggs, *1% / 50%* explored).
+- **Reward hints.** Anything that gives an in-game reward shows a 🎁 line, even while locked: the bosses' *+50 max health*, the wizard's *+300 gold*, the temple's *+100 gold · +10 max fire (once per game)*, the rich caravan's *+20 gold*, dragon eggs' *+5 max fire*, wild dragons' *+5 max stamina*, the guardian egg hatchlings, trade-ship cooldowns, the hippo's *+250 points*, raid purses, and more. These numbers are read from the game's own settings, so they always match the game.
+- **Unlocking** shows a small alert at the bottom of the screen (*"🏆 Name — Achievement unlocked"* plus the reward). If several unlock at once you see two alerts and a *"+N more"* one.
+- **Saved on this device** (browser storage key `dr_ach_v1`), separately from save games: unlocks carry across new games, restarts and reloads, and never alert twice.
+
+What's in the list (72):
+- **Castle, hoard & princess:** first gold home, 500 / 2000 gold stashed, smashing the keep's roof, grabbing Princess Elizabeth (she is never harmed), flying her home (the ransom), castle levels 3, 5 and 10.
+- **Dragons & dragon eggs:** eat your first and 10th wild dragon egg, beat 1 and 5 wild dragons, carry home and hatch the **light (white) egg** from the Lumenspire Citadel and the **dark (black) egg** from the Doomforge Citadel (one achievement each, each hint names the guardian dragon you get), and the Glutton boost (eat a whale's worth of food).
+- **Bosses:** the wizard (defeat him, and gobble him), the hydra, griffin, Nessie, the giant squid, the giant octopus, the sand worm, Medusa, Cerberus, and wrecking the jungle temple.
+- **Alpha guardians (first defeat of each type):** the savanna pride's male lion, the Deepwood's white alpha wolf, the jungle's silverback gorilla, the alpha hippo, the white alpha troll and the alpha centaur. **Alphas come back:** a new lion, wolf or silverback takes over about 60 s after you fly away, a new hippo wades in about 2 minutes later, and a new troll or centaur alpha arrives about 75 s later, so you can always find one.
+- **Hoard raids & royal fleets:** beat a hoard-raiding champion (1 and 5), pick up a gold sack a raiding knight dropped, stop a prince's royal war fleet, sink a royal warship.
+- **Kingdom:** stop a royal **trade ship at sea**, and separately stop a trade ship **on land** (unloading at the quay, or its carts unloading on shore), destroy the **rich desert caravan** (*+20 gold*), break the castle gate, wreck the barracks, topple 3 towers, knock down the lighthouse, wreck a catapult, stop a tax collector, defeat a knight, defeat 50 of King William's soldiers, burn 10 crop fields, knock down or burn 25 trees, and wreck 5 carts.
+- **Exploring:** 25%, 50%, 75% and **100%** of the map (the minimap fog), and visiting every region (the list shows which regions you haven't seen yet). All of it is reachable by flying; the far north opens once the wizard's barrier falls.
+- **Region feasts:** one per region (Farmlands, Deepwood, lake & rivers, hills & mountains, coast & sea, desert, savanna, jungle) for **eating** at least one of every animal type that lives there. Each shows *eaten / total* and a *"Still to eat: …"* list. Only gulping counts, not burning or knocking out. The princess and the king never count, and alphas have their own achievements instead.
+- **First encounters:** one for each other group in the Dragon's Tally (people, the king's army, the desert army, the light and dark lands, boats and siege engines, buildings, and so on).
+
+| | |
+|---|---|
+| ![Achievements list](screenshots/286_achievements_list.png) | ![Achievements on a phone](screenshots/287_achievements_phone.png) |
+| ![Pause menu with Achievements](screenshots/288_achievements_pause_phone.png) | ![Region feasts with still-to-eat lists](screenshots/289_achievements_feasts.png) |
+| ![Alpha guardians](screenshots/290_achievements_alphas.png) | ![Achievement unlocked alert](screenshots/291_achievement_unlocked_alert.png) |

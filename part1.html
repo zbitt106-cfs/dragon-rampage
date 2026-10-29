@@ -129,7 +129,8 @@ function newGame(opt){opt=opt||{};const lvl=opt.lvl||1;
   seed=1337;
   G={lvl,bank:opt.bank||0,easy:EASY,dmgMul:EASY?.55:1,alarmMul:EASY?.75:1,waveMul:(EASY?.5:1)*(1+.25*(lvl-1)),gold:0,stash:0,won:false,wonT:0,spawnQ:[],spawnQT:0,gateOpenT:0,postT:0,hunterT:3,quipT:0,
      t:0,alarm:0,level:0,lastLevel:0,sinceDmg:99,waveNum:0,waveCD:0,reinforceT:0,banner:null,shake:0,
-     wood:8,stone:4,cartsPool:3,cartBuildT:0,spawnT:0,rebuildT:0,
+     wood:100,stone:20,cartsPool:3, // queue 77: the kingdom starts every game and every castle level with 100 wood and 20 stone
+    cartBuildT:0,spawnT:0,rebuildT:0,
      visited:{},region:null,regCand:null,regCandT:0,fc:0,patrolT:20,packAngry:{},faunaT:5,regBanner:null,
      stats:{regions:0,bridges:0,huts:0,barns:0,trees:0,crops:0,eaten:0,animals:0,knights:0,archers:0,siege:0,carts:0,piles:0,ships:0,pirates:0,squid:0,seaPts:0},score:0,over:false,overT:0,msg:null};
   D={x:LAIR.x,y:LAIR.y+150,vx:0,vy:0,ang:-Math.PI/2,alt:0,altT:0,mode:"ground",hp:EASY?360:220,maxHp:EASY?360:220,gold:0,princess:false,st:100,maxSt:100,
