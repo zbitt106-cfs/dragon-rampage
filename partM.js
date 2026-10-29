@@ -38,11 +38,10 @@ function onRelayout(){const ch=Math.abs(VW-_rlW)>2||Math.abs(VH-_rlH)>2;_rlW=VW;
   try{touchLayout();}catch(e){}}
 // title menu hit test (geometry mirrors drawTitle)
 function titleTap(x,y){{const f=flipBtn();if(Math.hypot(x-f.x,y-f.y)<f.r*1.25){setFlip(!FLIP);return true;}}const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
-  for(let i=0;i<6;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
-      if(i===5){pmOpen('load','title');return true;}if(i===0)pressed['enter']=true;else if(i===1||i===2)pressed['enter']=true;
-      else{const k=i===3?'music':'sfx';if(AUD.muted)toggleMute();else setVol(k,lx>g.cx+60?Math.min(1,AUD[k]+.1):lx<g.cx-60?Math.max(0,AUD[k]-.1):(AUD[k]>=1?0:AUD[k]+.1));if(k==='sfx')SFX.play('coin');}
+  for(let i=0;i<TITLE_N;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
+      if(i===3){pmOpen('load','title');return true;}if(i===2){pmOpen('settings','title');return true;}pressed['enter']=true;
       return true;}}
-  if(ly>g.y0+6*36+20){pressed['enter']=true;titleSel=0;}return true;}
+  if(ly>g.y0+TITLE_N*36+20){pressed['enter']=true;titleSel=0;}return true;}
 function onTouchStart(e){if(e.cancelable)e.preventDefault();TOUCH.on=true;TOUCH.lastTouch=Date.now();audio();try{if(!TOUCH.btns.length)touchLayout();}catch(_){}
   for(const t of e.changedTouches){const p=tpos(t);TOUCH.taps++;
     if(TOUCH.rot){TOUCH.rotOK=true;TOUCH.rot=false;continue;} // rotation locked? a tap on the hint plays on in portrait
@@ -59,10 +58,10 @@ function joyUpd(){const j=TOUCH.joy;if(!j){TOUCH.mx=TOUCH.my=0;return;}let dx=j.
   if(l>R){ // drag the base along so the stick never "sticks" at the rim
     j.ox+=dx*(1-R/l);j.oy+=dy*(1-R/l);dx=j.x-j.ox;dy=j.y-j.oy;}
   const m=Math.min(1,l/R);if(m<.12){TOUCH.mx=TOUCH.my=0;return;}const k=(m-.12)/.88/(Math.hypot(dx,dy)||1);TOUCH.mx=dx*k;TOUCH.my=dy*k;}
-function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){if(PM.on&&PM.drag){pmDragMove(t.identifier,tpos(t).y);continue;}const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
+function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){if(PM.on&&PM.drag){const q=tpos(t);pmDragMove(t.identifier,q.y,q.x);continue;}const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
 function onTouchEnd(e){e.preventDefault();for(const t of e.changedTouches){if(PM.drag&&PM.drag.id===t.identifier)PM.drag=null;const j=TOUCH.joy;if(j&&j.id===t.identifier){TOUCH.joy=null;joyUpd();}
     const b=TOUCH.held[t.identifier];if(b){delete TOUCH.held[t.identifier];if(b.hold&&!Object.values(TOUCH.held).some(o=>o.key===b.key))keys[b.key]=false;b.down=false;}}}
-cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900)return;audio();const p=toGame(e.clientX,e.clientY);
+cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900||Date.now()-(PM.mouseT||0)<600)return;audio();const p=toGame(e.clientX,e.clientY);
   if(PM.on&&scene==='title'){return;}if(scene==='title')titleTap(p.x,p.y);else if(TOUCH.rot){TOUCH.rotOK=true;TOUCH.rot=false;}}catch(_){}});
 cv.addEventListener('touchstart',onTouchStart,{passive:false});cv.addEventListener('touchmove',onTouchMove,{passive:false});
 cv.addEventListener('touchend',onTouchEnd,{passive:false});cv.addEventListener('touchcancel',onTouchEnd,{passive:false});
@@ -88,7 +87,7 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
     ctx.fillStyle='#ffd24a';ctx.beginPath();ctx.arc(0,62,6,0,TAU);ctx.fill();ctx.restore();
     txt('Rotate your phone',cx,cy+150,40,'#ffd24a','center');txt('Dragon\'s Rampage plays best in landscape',cx,cy+195,24,'#f3dcb8','center',false);
     txt('Rotation locked? Tap anywhere to play in portrait',cx,cy+240,20,'rgba(243,220,184,.75)','center',false);return;}
-  if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+6*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
+  if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+TITLE_N*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
     txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');}
   if(scene==='title'&&!PM.on){const f=flipBtn();ctx.globalAlpha=.8;ctx.fillStyle='#557';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=FLIP?'#ffd24a':'#fff';ctx.lineWidth=3;ctx.stroke();
     txt('\u27f3',f.x,f.y-4,22,'#fff','center',false);txt(FLIP?'FLIP ON':'FLIP',f.x,f.y+18,11,FLIP?'#ffd24a':'#fff','center');}

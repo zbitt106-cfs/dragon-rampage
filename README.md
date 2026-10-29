@@ -90,7 +90,14 @@ On iPhone, open the game in Safari, tap Share, then **Add to Home Screen**. It l
 | Mute / unmute music and sound | N | — |
 | Pause / restart | P or Esc / R | Start |
 
-The title screen also has **Music volume** and **Sound effects** rows (←/→ in 10% steps); the settings are saved in the browser.
+### Settings (title screen and pause menu)
+Pick **⚙ Settings** on the title screen (Start · Mode · Settings · Load) or **⚙ Settings: volume · mute · graphics** in the pause (II / Esc) menu. The panel has:
+- **Music volume** and **Sound effects volume** sliders (0–100%, 5% steps: drag or tap the bar, or ←/→ for 10%). The SFX slider plays a coin clink so you can hear the level. Moving a slider also un-mutes.
+- **Mute all sound** toggle (N still works anywhere).
+- **Graphics quality:** LOW (the simple flat look, fastest), MEDIUM (all the effects at a lower resolution, smoother on phones) or HIGH (shading, lighting, day and night, sharpest).
+- **Back** (Esc / B also goes back).
+
+Big touch targets, works in portrait, landscape and Flip 90°. Everything is saved on the device (`localStorage` keys `dr_audio`, `dr_gfxq`) and remembered after a reload.
 
 **DIVE STOMP:** press stomp while flying to fold your wings and plummet. The shockwave smashes wooden buildings flat and cracks stone (2.4 s cooldown, costs 6 stamina). A normal stomp also damages wood.
 
@@ -103,9 +110,9 @@ The title screen also has **Music volume** and **Sound effects** rows (←/→ i
 - The screen re-sizes after every rotation and toolbar change (iPhone Safari reports its new size late, so it re-measures a few times). The game loop keeps running even if one frame hits an error.
 - **Left thumb:** touch anywhere on the left half and drag. The joystick appears under your thumb.
 - **Right thumb:** **FIRE** (hold), **BITE**, **STOMP** (it reads DIVE while flying and does the crash dive stomp) and **FLY** (it reads LAND in the air). **MAP** and **II** (pause) sit on the left edge.
-- On the title screen, tap a row to change it. Tap the left or right side of a volume row to turn it down or up.
+- On the title screen, tap a row to choose it. In **Settings**, drag or tap a slider and tap the mute / graphics buttons.
 - The game keeps the HUD clear of the notch and home bar (safe areas), and draws on small screens at a larger logical size so everything fits. Sound unlocks on the first tap (iOS).
-- The first visit on a touch device defaults to Low graphics. It can be added to the home screen and runs full screen (PWA meta tags).
+- The first visit on a touch device defaults to Low graphics (change it in Settings). It can be added to the home screen and runs full screen (PWA meta tags).
 
 ## The world
 - The map is a large explorable kingdom (30,200 × 17,600 since the Northern Realms doubled it north) with 19 regions: Kingdom Farmlands, Castle Aldric (King William's castle), The Deepwood (with two hunters' cabins; a third stands in the Eastwood), Mirror Lake & the Silver River, Frostpeak Mountains, the hills and Stone Mine, the Southern Farmlands, the East March with the Eastwood and the Iron Crags (east, between Saltmere and the sea), the Sapphire Coast, Dragon's Roost (your lair, on the peak), the Scorching Sands desert (west), the Golden Savanna and the Emerald Jungle (far west, past the desert), the Dragon Peaks (far north-west) and, out east, three sea regions: The Sapphire Sea, The Lonely Lighthouse and The Kraken Deep.
@@ -129,7 +136,10 @@ The map doubles northward. A glowing **magic barrier** of crystal peaks runs alo
 ## Queue update (Oct 2026)
 - **Cerberus:** cartoony three-headed dogs roam the dark north (goblin and orc lands) in packs of 2–3. Each has a triple bite and a fast lunge, is fairly tough (90 hp) and hostile to the dragon. Once worn down it can be eaten (food 38). Cerberus also march in the dark armies and patrol Doomforge.
 - **The giant squid** still spawns in the Kraken Deep, well clear of the Wizard's Isle.
-- **Sand worm safe zones:** the worm only hunts a dragon that has **landed in open desert**. It gives a rumble-ripple warning first, then bursts up. Towns (within 750 px of a village, e.g. Sandhaven) and the oasis (its pool plus 260 px) are safe, and flying is always safe.
+- **Sand worm safe zones:** the worm only hunts a dragon that has **landed in open desert**. It gives a rumble-ripple warning first, then bursts up. Towns (within 750 px of a village, e.g. Sandhaven), the oasis (its pool plus 260 px) and **the desert road from Sandhaven to the king's castle** (within 140 px of it) are safe, and flying is always safe.
+- **The worm comes for every landing:** land anywhere in open desert outside those safe zones and the worm tunnels in from wherever it is (it relocates under the sand about 650 px away), with a **rumble… rumble** warning, screen shake and ripples racing in, then bursts up about 4–5 s later. Every landing, again and again, until you beat it (there is no more 150 s wait between worms).
+- **Beaten stays beaten:** defeat or eat the worm and *"The sand worm is beaten! The dunes are quiet now."* It stays gone through saves and new castle levels, and only comes back when you lose this dragon (a new game).
+- **Confined to the desert:** the worm never leaves the sand. Fly or walk off the desert (or into a safe zone) and a surfaced worm stops and sinks back down.
 - **No treasury cap:** the gold hoard has no upper limit. The HUD shortens big numbers (9999, 12.3k, 120k, 2.5M, 1.2B).
 - **Stone buildings:** when the kingdom has more than **100 stone**, it turns one wooden building into stone about **once per game minute**, spending stone each time. Stone buildings have grey walls and slate roofs, +60% health, take 40% of the fire damage and 60% of the other damage, and are saved. A rebuilt stone building stays stone if there is stone for it.
 - **Wild dragons land:** Dragon Peaks dragons land to fight when you are on the ground near them, walking, clawing and breathing fire, and take off again when you fly or when they are hurt. Grounded dragons are hit by ground attacks, airborne ones by air attacks.
@@ -305,8 +315,13 @@ One of Sandhaven's two camel caravans is a **rich caravan**: three colourful cam
 - **Escort:** exactly **10 desert soldiers** (turban, sand robe, scimitar and round shield) and **6 desert archers** (blue turban and a curved bow, which shoot from about 420 px), marching in formation: two files of soldiers flanking the camels, archers at the front, rear and sides.
 - **Desert troops are tougher** than the kingdom's regulars: desert soldier 35 HP (regular foot soldier 24), desert archer 32 HP (regular archer 22), and they hit 25% harder (5 instead of 4). HP still grows with the level.
 - **Sandhaven garrison:** 3 desert soldiers + 2 desert archers always guard the town, separate from the escort, fresh every level (and saved).
+- **The escort defends the caravan:** guards stay on a leash around the camels. When the dragon comes within 300 px of the caravan, the guards turn out and chase it, but never more than 380 px from the lead trader ("Back to the caravan!"); then they regroup into formation. In a test, a dragon landing next to the caravan drew guards at most 368 px away, and they regrouped to 156 px. (Before, guards could be pulled over 1000 px away.)
+- **Camel soldiers:** each caravan (the rich one and the ordinary one) has **2 camel riders** (desert soldiers riding camels, with swords) that keep to the caravan under the same leash rules, and **4 camel riders** guard Sandhaven every level. They are saved and have their own *Camel soldiers* Tally line.
 - **Predators:** lions, hyenas, big cats, wolves, bears, scorpions, snakes and the like that come near the caravan get chased off by the escort; the animal fights back, and once worn down it simply runs off (nobody is defeated for good). If the dragon attacks, the guards turn on the dragon first.
-- **Raid it:** take down the lead trader or the treasure camel and **+20 gold** goes to your lair. It comes back from Sandhaven about 75 s later, and fresh every level.
+- **Raid it:** take down the lead trader or the treasure camel and **+20 gold** goes to your lair, whether you catch it on the way to the castle or on the way back after it has paid the king.
+- **It pays the king:** every time the rich caravan reaches the castle gate, **+50** goes into the king's treasury.
+- **Respawn:** a raided rich caravan comes back from Sandhaven **10 minutes** later, quietly (no announcement). Fresh every level.
+- **Reward towers:** each time a caravan that has paid the king gets safely back to Sandhaven, Sandhaven raises a **sandstone tower** (blue and gold pennant) with a desert archer on top, in the desert around the town (never overlapping). Up to **5**. Towers can be burned down; the archer then joins the town guard, and the next caravan home rebuilds a ruined tower first. Towers are saved with the game and belong to the current castle level (a new level or new game starts with none). Tally: *Sandhaven towers*.
 - Surviving guards stay on as **Sandhaven's town guard**. When the kingdom musters (militia), desert soldiers and archers guard Sandhaven too.
 - Desert soldiers, desert archers and raided rich caravans have their own **Sandhaven** section in the Tally. The caravan and the town guard are saved.
 
@@ -494,7 +509,7 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 
 ## Graphics (High / Low)
 
-On the title screen, pick the **Graphics** row with ↑/↓ and switch it with ←/→ or Enter, or press **G** anywhere on the title screen. The setting is saved in the browser (`localStorage` key `dr_gfx`). High is the default.
+Pick it in **Settings** (title screen or pause menu): LOW, MEDIUM or HIGH. **G** on the title screen still toggles Low/High. The setting is saved in the browser (`localStorage` keys `dr_gfxq`, `dr_gfx`). High is the default on desktop, Low on a first touch visit. MEDIUM is High at a lower resolution.
 
 **High** ("cartoon realism"). All art is drawn in code, with no image files. Static art is cached in offscreen canvases.
 - Dragon: gradient-shaded body with a scale pattern, belly plates, back ridge spikes, veined and scalloped wings, horns, glowing eyes and claws. It casts a soft shadow that shrinks and fades the higher it flies, and a wavy reflection over water.

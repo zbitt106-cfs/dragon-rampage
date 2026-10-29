@@ -59,8 +59,8 @@ let _rsW=0,_rsH=0,_physW=0,_physH=0;
 function toGame(cx,cy){return FLIP?{x:cy/UIS,y:(_physW-cx)/UIS}:{x:cx/UIS,y:cy/UIS};}
 function resize(){const [pw,ph]=viewSize();_rsW=pw;_rsH=ph;_physW=pw;_physH=ph;const w=FLIP?ph:pw,h=FLIP?pw:ph;
   UIS=IS_TOUCH?Math.min(1,Math.max(.5,Math.min(w,h)/520)):1;
-  let hi=true;try{hi=GFX_HI;}catch(e){}
-  let dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);
+  let hi=true,gq='high';try{hi=GFX_HI;gq=GFX_Q;}catch(e){}
+  let dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);if(gq==='medium')dpr=Math.min(dpr,1); // graphics MEDIUM: 1x render resolution
   if(w*h*dpr*dpr>8e6)dpr=Math.sqrt(8e6/(w*h)); // stay far below iOS canvas memory limits
   VW=Math.round(w/UIS);VH=Math.round(h/UIS);DPR=dpr*UIS;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';
   cv.style.transformOrigin='0 0';cv.style.transform=FLIP?`translate(${pw}px,0) rotate(90deg)`:'';
@@ -1722,7 +1722,11 @@ function drawSeaMap(X,Y,big,q){for(const s of ships){if(s.state==='sink'||!seen(
 // ======================= GRAPHICS: "High" renderer (cartoon realism, all procedural, no assets) =======================
 // Toggle on the title screen (Graphics: HIGH / LOW). Low = the original flat look (fastest).
 let GFX_HI=(()=>{try{return localStorage.getItem('dr_gfx')!=='low';}catch(e){return true;}})();
-function setGfx(v){GFX_HI=(v===true||v==='high');try{localStorage.setItem('dr_gfx',GFX_HI?'high':'low');}catch(e){}}
+// (item 50) graphics QUALITY: high = all effects at full sharpness; medium = all effects at a lower render resolution (1x pixels: much less work on
+// phones / retina screens, same look on a 1x monitor); low = the original flat look (fastest). Kept in localStorage (dr_gfx + dr_gfxq).
+let GFX_Q=(()=>{try{if(localStorage.getItem('dr_gfx')==='low')return'low';return localStorage.getItem('dr_gfxq')==='medium'?'medium':'high';}catch(e){return GFX_HI?'high':'low';}})();
+function setGfxQ(q){q=q==='low'||q==='medium'?q:'high';const ch=q!==GFX_Q;GFX_Q=q;GFX_HI=q!=='low';try{localStorage.setItem('dr_gfx',GFX_HI?'high':'low');localStorage.setItem('dr_gfxq',q);}catch(e){}if(ch)try{resize();}catch(e){}}
+function setGfx(v){setGfxQ((v===true||v==='high')?(GFX_Q==='low'?'high':GFX_Q):'low');}
 const GX={lights:[],fires:[],chunks:new Map(),built:0,baked:new Set()};
 function mkCv(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
 function radialCv(r,stops){const c=mkCv(r*2,r*2),g=c.getContext('2d'),gr=g.createRadialGradient(r,r,0,r,r,r);for(const[o,col]of stops)gr.addColorStop(o,col);g.fillStyle=gr;g.fillRect(0,0,r*2,r*2);return c;}
@@ -3230,11 +3234,10 @@ function onRelayout(){const ch=Math.abs(VW-_rlW)>2||Math.abs(VH-_rlH)>2;_rlW=VW;
   try{touchLayout();}catch(e){}}
 // title menu hit test (geometry mirrors drawTitle)
 function titleTap(x,y){{const f=flipBtn();if(Math.hypot(x-f.x,y-f.y)<f.r*1.25){setFlip(!FLIP);return true;}}const g=TOUCH.tg;if(!g)return false;const lx=(x-g.ox)/g.k,ly=y/g.k;
-  for(let i=0;i<6;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
-      if(i===5){pmOpen('load','title');return true;}if(i===0)pressed['enter']=true;else if(i===1||i===2)pressed['enter']=true;
-      else{const k=i===3?'music':'sfx';if(AUD.muted)toggleMute();else setVol(k,lx>g.cx+60?Math.min(1,AUD[k]+.1):lx<g.cx-60?Math.max(0,AUD[k]-.1):(AUD[k]>=1?0:AUD[k]+.1));if(k==='sfx')SFX.play('coin');}
+  for(let i=0;i<TITLE_N;i++){const ry=g.y0+i*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=i;
+      if(i===3){pmOpen('load','title');return true;}if(i===2){pmOpen('settings','title');return true;}pressed['enter']=true;
       return true;}}
-  if(ly>g.y0+6*36+20){pressed['enter']=true;titleSel=0;}return true;}
+  if(ly>g.y0+TITLE_N*36+20){pressed['enter']=true;titleSel=0;}return true;}
 function onTouchStart(e){if(e.cancelable)e.preventDefault();TOUCH.on=true;TOUCH.lastTouch=Date.now();audio();try{if(!TOUCH.btns.length)touchLayout();}catch(_){}
   for(const t of e.changedTouches){const p=tpos(t);TOUCH.taps++;
     if(TOUCH.rot){TOUCH.rotOK=true;TOUCH.rot=false;continue;} // rotation locked? a tap on the hint plays on in portrait
@@ -3251,10 +3254,10 @@ function joyUpd(){const j=TOUCH.joy;if(!j){TOUCH.mx=TOUCH.my=0;return;}let dx=j.
   if(l>R){ // drag the base along so the stick never "sticks" at the rim
     j.ox+=dx*(1-R/l);j.oy+=dy*(1-R/l);dx=j.x-j.ox;dy=j.y-j.oy;}
   const m=Math.min(1,l/R);if(m<.12){TOUCH.mx=TOUCH.my=0;return;}const k=(m-.12)/.88/(Math.hypot(dx,dy)||1);TOUCH.mx=dx*k;TOUCH.my=dy*k;}
-function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){if(PM.on&&PM.drag){pmDragMove(t.identifier,tpos(t).y);continue;}const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
+function onTouchMove(e){e.preventDefault();for(const t of e.changedTouches){if(PM.on&&PM.drag){const q=tpos(t);pmDragMove(t.identifier,q.y,q.x);continue;}const j=TOUCH.joy;if(j&&j.id===t.identifier){const p=tpos(t);j.x=p.x;j.y=p.y;joyUpd();}}}
 function onTouchEnd(e){e.preventDefault();for(const t of e.changedTouches){if(PM.drag&&PM.drag.id===t.identifier)PM.drag=null;const j=TOUCH.joy;if(j&&j.id===t.identifier){TOUCH.joy=null;joyUpd();}
     const b=TOUCH.held[t.identifier];if(b){delete TOUCH.held[t.identifier];if(b.hold&&!Object.values(TOUCH.held).some(o=>o.key===b.key))keys[b.key]=false;b.down=false;}}}
-cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900)return;audio();const p=toGame(e.clientX,e.clientY);
+cv.addEventListener('click',e=>{try{if(Date.now()-TOUCH.lastTouch<900||Date.now()-(PM.mouseT||0)<600)return;audio();const p=toGame(e.clientX,e.clientY);
   if(PM.on&&scene==='title'){return;}if(scene==='title')titleTap(p.x,p.y);else if(TOUCH.rot){TOUCH.rotOK=true;TOUCH.rot=false;}}catch(_){}});
 cv.addEventListener('touchstart',onTouchStart,{passive:false});cv.addEventListener('touchmove',onTouchMove,{passive:false});
 cv.addEventListener('touchend',onTouchEnd,{passive:false});cv.addEventListener('touchcancel',onTouchEnd,{passive:false});
@@ -3280,7 +3283,7 @@ function drawTouch(){if(!TOUCH.on)return;ctx.setTransform(DPR,0,0,DPR,0,0);
     ctx.fillStyle='#ffd24a';ctx.beginPath();ctx.arc(0,62,6,0,TAU);ctx.fill();ctx.restore();
     txt('Rotate your phone',cx,cy+150,40,'#ffd24a','center');txt('Dragon\'s Rampage plays best in landscape',cx,cy+195,24,'#f3dcb8','center',false);
     txt('Rotation locked? Tap anywhere to play in portrait',cx,cy+240,20,'rgba(243,220,184,.75)','center',false);return;}
-  if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+6*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
+  if(scene==='title'&&TOUCH.portrait&&!PM.on){const g=TOUCH.tg,my=g?(g.y0+TITLE_N*36+60)*g.k:VH*.4,y=Math.max(my+60,VH*.55);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,y-46,VW,70);
     txt('\u25b6 Tap down here to start',VW/2,y,34,'#ffd24a','center');}
   if(scene==='title'&&!PM.on){const f=flipBtn();ctx.globalAlpha=.8;ctx.fillStyle='#557';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=FLIP?'#ffd24a':'#fff';ctx.lineWidth=3;ctx.stroke();
     txt('\u27f3',f.x,f.y-4,22,'#fff','center',false);txt(FLIP?'FLIP ON':'FLIP',f.x,f.y+18,11,FLIP?'#ffd24a':'#fff','center');}
@@ -3425,35 +3428,36 @@ function tallyRows(){const rows=[];for(const s of TALLY_SECT){if(!s.keys.length)
 
 // ================= the pause menu (also used on the title screen for Continue / Load) =================
 const PM={on:false,from:'pause',scr:'main',sel:0,scroll:0,confirm:null,msg:null,msgT:0,hit:[],drag:null,vis:10};
-const PM_MAIN=[['▶  Resume','resume'],["📜  Dragon's Tally",'tally'],['💾  Save Game','save'],['📂  Load Game','load'],['⟳  Flip screen 90°: OFF','flip'],['⟲  Restart (new game)','restart']];
+const PM_MAIN=[['▶  Resume','resume'],["📜  Dragon's Tally",'tally'],['💾  Save Game','save'],['📂  Load Game','load'],['⚙  Settings: volume · mute · graphics','settings'],['⟳  Flip screen 90°: OFF','flip'],['⟲  Restart (new game)','restart']];
 function pmFlipLabel(){for(const r of PM_MAIN)if(r[1]==='flip')r[0]='⟳  Flip screen 90°: '+(FLIP?'ON':'OFF');}pmFlipLabel();
 function pmOpen(scr,from){PM.on=true;PM.from=from||'pause';PM.scr=scr||'main';PM.sel=0;PM.scroll=0;PM.confirm=null;PM.msg=null;PM.drag=null;
   if(PM.scr==='load'){const L=svList();let b=-1,bt=0;L.forEach((s,i)=>{if(s.info&&s.info.when>bt){bt=s.info.when;b=i;}});PM.sel=Math.max(0,b);}}
 function pmClose(){PM.on=false;PM.confirm=null;PM.drag=null;}
 function pmSay(m){PM.msg=m;PM.msgT=performance.now();}
 function pmBack(){if(PM.confirm){PM.confirm=null;return;}if(PM.scr==='main'||PM.from==='title'){if(PM.from==='title')pmClose();else paused=false;return;}PM.scr='main';PM.sel={tally:1,save:2,load:3}[PM.scr]||0;PM.sel=0;}
-function pmAct(a){if(a==='flip'){setFlip(!FLIP);pmFlipLabel();pmSay(FLIP?'Screen flipped 90° (turn your phone)':'Screen back to normal');return;}if(a==='resume'){paused=false;pmClose();}else if(a==='tally'){PM.scr='tally';PM.scroll=0;}else if(a==='save'){PM.scr='save';PM.sel=0;}else if(a==='load'){PM.scr='load';PM.sel=0;}
+function pmAct(a){if(a==='flip'){setFlip(!FLIP);pmFlipLabel();pmSay(FLIP?'Screen flipped 90° (turn your phone)':'Screen back to normal');return;}if(a==='resume'){paused=false;pmClose();}else if(a==='tally'){PM.scr='tally';PM.scroll=0;}else if(a==='save'){PM.scr='save';PM.sel=0;}else if(a==='load'){PM.scr='load';PM.sel=0;}else if(a==='settings'){PM.scr='settings';PM.sel=0;}
   else if(a==='restart'){PM.confirm={q:'Restart and begin a brand-new game?',sub:'(Your saves and the all-time tally are kept.)',sel:1,yes:()=>{pmClose();newGame();paused=false;}};}}
 function pmTallyReset(){PM.confirm={q:"Reset the ALL-TIME Dragon's Tally?",sub:'Every all-time count goes back to 0. This cannot be undone.',sel:1,yes:()=>{tallyReset();pmSay('All-time tally reset.');}};}
 function pmSlotAct(i){const L=svList();
   if(PM.scr==='save'){const s=L[i+1];if(!s)return;const go=()=>{const ok=svWrite(s.key);pmSay(ok?`Saved to ${s.name}!`:'Could not save (storage is full or blocked).');};
     if(s.info)PM.confirm={q:`Overwrite ${s.name}?`,sub:svDesc(s.info),sel:1,yes:go};else go();}
   else{const s=L[i];if(!s)return;if(!s.raw){pmSay(`${s.name} is empty.`);return;}const res=svLoad(s.key);if(res===true){pmClose();paused=false;scene='play';showToast(`📂 Loaded ${s.name}`);}else pmSay(res);}}
-function pmRowsN(){return PM.scr==='main'?PM_MAIN.length:PM.scr==='save'?4:PM.scr==='load'?5:0;}
+function pmRowsN(){return PM.scr==='settings'?SET_ROWS.length:PM.scr==='main'?PM_MAIN.length:PM.scr==='save'?4:PM.scr==='load'?5:0;}
 function pmInput(){// returns true when the menu consumed this frame's input
   const up=P('arrowup')||P('w'),dn=P('arrowdown')||P('s'),lf=P('arrowleft')||P('a'),rt=P('arrowright')||P('d'),ok=P('enter')||P(' ')||P('e'),back=P('escape')||P('p')||P('backspace');
   if(PM.confirm){const c=PM.confirm;if(up||dn||lf||rt)c.sel=1-c.sel;if(ok){PM.confirm=null;if(c.sel===0)c.yes();}else if(back)PM.confirm=null;return true;}
   if(PM.scr==='main'){if(back||P('r'))return false;if(up)PM.sel=(PM.sel+PM_MAIN.length-1)%PM_MAIN.length;if(dn)PM.sel=(PM.sel+1)%PM_MAIN.length;if(ok)pmAct(PM_MAIN[PM.sel][1]);return true;}
   if(PM.scr==='tally'){const n=tallyRows().length,mx=Math.max(0,n-PM.vis);if(up)PM.scroll--;if(dn)PM.scroll++;if(lf||P('pageup'))PM.scroll-=PM.vis-1;if(rt||P('pagedown'))PM.scroll+=PM.vis-1;PM.scroll=clamp(PM.scroll,0,mx);
     if(ok||P('x'))pmTallyReset();else if(back){PM.scr='main';PM.sel=1;}return true;}
+  if(PM.scr==='settings')return setInput(up,dn,lf,rt,ok,back);
   const n=pmRowsN();if(up)PM.sel=(PM.sel+n-1)%n;if(dn)PM.sel=(PM.sel+1)%n;
   if(ok){if(PM.sel===n-1){if(PM.from==='title')pmClose();else{PM.sel=PM.scr==='save'?2:3;PM.scr='main';}}else pmSlotAct(PM.sel);}
   else if(back){if(PM.from==='title')pmClose();else{PM.sel=PM.scr==='save'?2:3;PM.scr='main';}}
   return true;}
 function pmTap(x,y,id){if(typeof hitBtn==='function'&&PM.from==='pause'&&!PM.confirm){const b=hitBtn(x,y);if(b&&b.key==='p'){if(PM.scr==='main')paused=false;else{PM.scr='main';PM.sel=0;}return true;}}
-  for(let i=PM.hit.length-1;i>=0;i--){const h=PM.hit[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){if(h.list){PM.drag={id,y,sc:PM.scroll};return true;}h.f();return true;}if(h.modal)return true;}
+  for(let i=PM.hit.length-1;i>=0;i--){const h=PM.hit[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){if(h.list){PM.drag={id,y,sc:PM.scroll};return true;}if(h.slider){PM.sel=SET_ROWS.indexOf(h.slider);PM.drag={id,slider:h.slider,tx:h.tx,tw:h.tw};setVolX(h.slider,(x-h.tx)/h.tw);return true;}h.f();return true;}if(h.modal)return true;}
   return true;}
-function pmDragMove(id,y){const d=PM.drag;if(!d||d.id!==id)return;const n=tallyRows().length;PM.scroll=clamp(Math.round(d.sc-(y-d.y)/(PM.rh||24)),0,Math.max(0,n-PM.vis));}
+function pmDragMove(id,y,x){const d=PM.drag;if(!d||d.id!==id)return;if(d.slider){if(x!=null)setVolX(d.slider,(x-d.tx)/d.tw);return;}const n=tallyRows().length;PM.scroll=clamp(Math.round(d.sc-(y-d.y)/(PM.rh||24)),0,Math.max(0,n-PM.vis));}
 function pmBtn(x,y,w,h,label,f,on,col){panel(x,y,w,h);if(on){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(x,y,w,h);}txt(label,x+w/2,y+h/2+6,Math.min(17,h*.45),on?'#ffd24a':(col||'#eee'),'center');PM.hit.push({x,y,w,h,f});}
 function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;PM.hit=[];
   ctx.fillStyle='rgba(6,4,10,.66)';ctx.fillRect(0,0,VW,VH);
@@ -3467,6 +3471,7 @@ function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;
     if(typeof drawGlutBar==='function')drawGlutBar(x0+30,y0+H-52,W-60,18);
     txt(touch?'Tap a choice · II resumes':'↑/↓ + Enter (A) choose · P / Esc / Start resume · R / Back restart',cx,y0+H-16,touch?13:12,'#bbb','center',false);}
   else if(PM.scr==='tally')drawTallyScreen(x0,W,S,ah,touch);
+  else if(PM.scr==='settings')drawSettings(x0,W,S,ah,touch);
   else drawSlots(x0,W,S,ah,touch);
   if(PM.msg&&performance.now()-PM.msgT<3500){ctx.font='bold 16px Georgia';const w=Math.min(aw-20,ctx.measureText(PM.msg).width+40);panel(cx-w/2,S.t+ah-58,w,38);txt(PM.msg,cx,S.t+ah-33,15,'#ffe28a','center');}
   if(PM.confirm){const c=PM.confirm,w=Math.min(aw-20,520),h=150,x=S.l+(aw-w)/2,y=S.t+(ah-h)/2;PM.hit.push({x:0,y:0,w:VW,h:VH,f:()=>{},modal:1});
@@ -3511,6 +3516,57 @@ function drawSlots(x0,W,S,ah,touch){const cx=x0+W/2,L=svList(),save=PM.scr==='sa
     else if(s.raw)txt('This save is from a different version.',x+12,y+rh-12,12,'#ffb080','left',false);});
   const by=y0+70+rows.length*(rh+6)+4,bh=touch?44:36;pmBtn(cx-110,by,220,bh,'◀ Back',()=>{if(PM.from==='title')pmClose();else{PM.scr='main';PM.sel=save?2:3;}},PM.sel===n-1);
   txt(touch?'Tap a slot':'↑/↓ + Enter (A) choose · Esc / B back',cx,by+bh+20,12,'#aaa','center',false);}
+
+// ================= (item 50) SETTINGS: music + sound-effects volume sliders, mute, graphics quality =================
+// Opened from the title screen (⚙ Settings row) and from the pause menu. Touch: big rows; drag or tap anywhere on a slider track (taps go through
+// toGame, so Flip 90° works); mouse: click / drag; keyboard & controller: ↑/↓ choose · ←/→ change · Enter toggle · Esc / B back.
+// Everything is saved in localStorage (dr_audio, dr_gfx, dr_gfxq), so it is remembered after a reload.
+const SET_ROWS=['music','sfx','mute','gfx','back'];
+const GFX_QS=['low','medium','high'],GFX_QN={low:'LOW',medium:'MEDIUM',high:'HIGH'};
+const GFX_QD={low:'LOW: the simple flat look · fastest',medium:'MEDIUM: all the effects at a lower resolution · smoother on phones',high:'HIGH: shading, lighting, day & night · sharpest'};
+let setPrevT=0;
+function setVolX(k,v,quiet){v=Math.round(clamp(v,0,1)*20)/20;AUD.muted=false;AUD[k]=v;audSave();audApply(); // moving a slider also un-mutes
+  if(k==='sfx'&&!quiet){const t=performance.now();if(t-setPrevT>150){setPrevT=t;try{SFX.play('coin');}catch(e){}}}}
+function setBack(){if(PM.from==='title')pmClose();else{PM.scr='main';PM.sel=Math.max(0,PM_MAIN.findIndex(r=>r[1]==='settings'));}}
+function setInput(up,dn,lf,rt,ok,back){const n=SET_ROWS.length;if(up)PM.sel=(PM.sel+n-1)%n;if(dn)PM.sel=(PM.sel+1)%n;
+  const k=SET_ROWS[PM.sel],d=lf?-1:rt?1:0;
+  if(k==='music'||k==='sfx'){if(d)setVolX(k,AUD[k]+d*.1);}
+  else if(k==='mute'){if(d||ok)toggleMute();}
+  else if(k==='gfx'){const i=GFX_QS.indexOf(GFX_Q);if(d)setGfxQ(GFX_QS[clamp(i+d,0,2)]);else if(ok)setGfxQ(GFX_QS[(i+1)%3]);}
+  else if(k==='back'&&ok){setBack();return true;}
+  if(back)setBack();return true;}
+function setRR(x,y,w,h,r){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);}
+function drawSettings(x0,W,S,ah,touch){const cx=x0+W/2,sm=W<520,gap=touch?10:8,bh=touch?46:36,foot=touch?16:30;
+  const rh=Math.max(36,Math.min(touch?56:46,Math.floor((ah-16-66-22-bh-foot-14)/4)-gap)),H=66+4*(rh+gap)+22+bh+foot+8,y0=S.t+Math.max(8,(ah-H)/2);
+  panel(x0,y0,W,H);ctx.fillStyle='rgba(30,18,8,.6)';ctx.fillRect(x0+1,y0+1,W-2,H-2);
+  txt('⚙  SETTINGS',cx,y0+34,24,'#ffd24a','center');txt('Saved on this device · remembered after a reload',cx,y0+54,11.5,'#bbb','center',false);
+  const lx=x0+14,lw=W-28,labW=sm?112:160,fs=sm?14:16,mut=AUD.muted;
+  SET_ROWS.slice(0,4).forEach((k,i)=>{const y=y0+66+i*(rh+gap),on=PM.sel===i,mid=y+rh/2;panel(lx,y,lw,rh);if(on){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(lx,y,lw,rh);}
+    PM.hit.push({x:lx,y,w:lw,h:rh,f:()=>{PM.sel=i;if(k==='mute')toggleMute();}});
+    const lab=k==='music'?'🎵  Music':k==='sfx'?(sm?'🔊  Effects':'🔊  Sound effects'):k==='mute'?(sm?'🔇  Mute':'🔇  Mute all sound'):'🖼  Graphics';
+    txt(lab,lx+12,mid+6,fs,on?'#ffd24a':'#fff','left');
+    const tx=lx+labW,right=lx+lw-12;
+    if(k==='music'||k==='sfx'){const vw=sm?52:64,tw=right-vw-tx-14,v=AUD[k],kr=touch?13:10;
+      setRR(tx,mid-5,tw,10,5);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fill();setRR(tx,mid-5,Math.max(10,tw*v),10,5);ctx.fillStyle=mut?'#77706a':'#ff9a2a';ctx.fill();
+      for(let j=1;j<10;j++){ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(tx+tw*j/10-.5,mid+8,1,4);}
+      ctx.beginPath();ctx.arc(tx+tw*v,mid,kr,0,TAU);ctx.fillStyle=mut?'#9a948c':'#ffd24a';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='#3a1a08';ctx.stroke();
+      txt(mut?'muted':Math.round(v*100)+'%',right,mid+6,fs,mut?'#aaa':'#fff','right');
+      PM.hit.push({x:tx-20,y,w:tw+40,h:rh,slider:k,tx,tw});}
+    else if(k==='mute'){const w=sm?96:120,h=Math.min(34,rh-12),x=right-w,yy=mid-h/2;setRR(x,yy,w,h,h/2);ctx.fillStyle=mut?'#a8322a':'#2f6a2a';ctx.fill();
+      ctx.beginPath();ctx.arc(mut?x+w-h/2:x+h/2,mid,h/2-4,0,TAU);ctx.fillStyle='#f4eadc';ctx.fill();
+      txt(mut?'ON':'OFF',mut?x+(w-h)/2:x+h+(w-h)/2,mid+5,14,'#fff','center');
+      txt(mut?'all sound is off':'sound is on',x-12,mid+5,sm?11:13,mut?'#ff9a8a':'#9f9','right',false);}
+    else{const n=3,g=6,sw=(right-tx-g*(n-1))/n,h=Math.min(38,rh-12);
+      GFX_QS.forEach((q,j)=>{const x=tx+j*(sw+g),yy=mid-h/2,sel=GFX_Q===q;setRR(x,yy,sw,h,8);ctx.fillStyle=sel?'#8a4a12':'rgba(0,0,0,.35)';ctx.fill();
+        ctx.lineWidth=sel?3:1.5;ctx.strokeStyle=sel?'#ffd24a':'rgba(255,255,255,.3)';ctx.stroke();txt(GFX_QN[q],x+sw/2,mid+5,sm?13:15,sel?'#ffd24a':'#ddd','center');
+        PM.hit.push({x,y,w:sw,h:rh,f:()=>{PM.sel=3;setGfxQ(q);}});});}});
+  const dy=y0+66+4*(rh+gap)+12;txt(GFX_QD[GFX_Q]||'',cx,dy,sm?11:12.5,'#bfe0ff','center',false);
+  const by=dy+10;pmBtn(cx-110,by,220,bh,'◀ Back',setBack,PM.sel===4);
+  if(!touch)txt('↑/↓ choose · ←/→ change · Enter toggle · Esc / B back · or click and drag  (N = mute, G = graphics anywhere)',cx,by+bh+20,11,'#aaa','center',false);}
+// mouse for the whole pause / title menu (desktop): click buttons, drag sliders and the tally list
+cv.addEventListener('mousedown',e=>{try{if(!PM.on||e.button!==0||Date.now()-TOUCH.lastTouch<900)return;audio();PM.mouseT=Date.now();const p=toGame(e.clientX,e.clientY);pmTap(p.x,p.y,'mouse');}catch(_){}});
+addEventListener('mousemove',e=>{try{if(PM.on&&PM.drag&&PM.drag.id==='mouse'){const p=toGame(e.clientX,e.clientY);pmDragMove('mouse',p.y,p.x);}}catch(_){}});
+addEventListener('mouseup',()=>{if(PM.drag&&PM.drag.id==='mouse')PM.drag=null;});
 // ================= partWK: WORKER RESPAWN - rebuilt work buildings get new workers who walk in from the nearest village =================
 const WK_FIRST=3,WK_GAP=9,WK_SPD=54;
 let WK=[];
@@ -6722,7 +6778,7 @@ const r_loot=u=>(u.raid&&u.raid.loot)||0;
 // after a while, and fresh every level. Surviving guards stay on as Sandhaven's town guard; during a kingdom-wide muster the town is guarded too.
 // desert troops are tougher than regular ones (regular foot soldier 24 HP / 4 dmg, archer 22 HP / 4 dmg): ~1.45x HP, 1.25x damage.
 // The rich caravan walks at 67% of its old pace with 10 desert soldiers + 6 desert archers in formation; Sandhaven keeps its own garrison (3 + 2).
-const RCV={cur:null,gold:20,respawn:75,first:6,sol:10,arc:6,solHp:35,arcHp:32,dmgMul:1.25,spd:.67,arcRange:420,wait:6,townCap:4,milN:[2,1],milCd:30,garSol:3,garArc:2,guardR:240,predDmg:5,predCd:1.35,arcCd:2};
+const RCV={cur:null,gold:20,respawn:600,first:6,sol:10,arc:6,solHp:35,arcHp:32,dmgMul:1.25,spd:.67,arcRange:420,wait:6,townCap:4,milN:[2,1],milCd:30,garSol:3,garArc:2,guardR:240,predDmg:5,predCd:1.35,arcCd:2,leash:380,threatR:300};
 function rcEnds(){return{a:{x:DTOWN.x+40,y:DTOWN.y+60},b:{x:GATE.x+60,y:GATE.y+70}};}
 function rcPath(){const e=rcEnds();let P=null;try{const q=scRoute(e.a,e.b);P=q&&q.P;}catch(_){P=null;}if(!P||P.length<2)P=[e.a,e.b];return P.map(p=>({x:p.x,y:p.y}));}
 function rcAlive(){const c=RCV.cur;return !!(c&&!c.done);}
@@ -6730,20 +6786,20 @@ function mkDSol(x,y,o){return mkUnit('knight',x,y,Object.assign({foot:true,dsol:
 function mkDArc(x,y,o){return mkUnit('archer',x,y,Object.assign({darch:true,hp:RCV.arcHp,maxHp:RCV.arcHp,dmgMul:RCV.dmgMul,shootT:R(1,3),born:G.t},o||{}));}
 function spawnRich(o){o=o||{};const P=o.path||rcPath(),ri=Math.max(0,Math.min(P.length-1,o.ri==null?0:o.ri)),dir=o.dir||1,p=o.x!=null?{x:o.x,y:o.y}:P[0];
   // keep the desert at two caravans: retire a plain one that is out of sight
-  const plain=units.filter(u=>u.carav&&u.type==='villager'&&!u.dead&&!u.rc);if(plain.length>=2){const v=plain.sort((a,b)=>dist(b,D)-dist(a,D))[0];if(dist(v,D)>900){for(const c of units)if(c.carav&&c.type==='animal'){let L=c;while(L&&L.type==='animal')L=L.leader;if(L===v){c.dead=c.gone=true;}}v.dead=v.gone=true;}}
-  const lead=spawnVillager(p.x,p.y,'trader',DTOWN.vi);Object.assign(lead,{carav:true,rc:1,rcLead:true,route:P,ri,rcDir:dir,shirt:'#7a1f6a',turban:1,hp:14,maxHp:14,rcWait:o.wait||0});
+  const plain=units.filter(u=>u.carav&&u.type==='villager'&&!u.dead&&!u.rc);if(plain.length>=2){const v=plain.sort((a,b)=>dist(b,D)-dist(a,D))[0];if(dist(v,D)>900){for(const c of units)if(c.carav&&c.type==='animal'){let L=c;while(L&&L.type==='animal')L=L.leader;if(L===v){c.dead=c.gone=true;}}for(const g of units)if(g.cvG&&g.escort===v)g.dead=g.gone=true;v.dead=v.gone=true;}}
+  const lead=spawnVillager(p.x,p.y,'trader',DTOWN.vi);Object.assign(lead,{carav:true,rc:1,rcLead:true,route:P,ri,rcDir:dir,shirt:'#7a1f6a',turban:1,hp:14,maxHp:14,rcWait:o.wait||0,rcPaid:!!o.paid});
   const t2=spawnVillager(p.x-20,p.y+16,'trader',DTOWN.vi);Object.assign(t2,{rc:1,rcF:lead,shirt:'#1f5a8a',turban:1,hp:12,maxHp:12});
   if(o.t2===false){t2.dead=t2.gone=true;}
   const pal=[['#c0392b','#f1c40f','#2e86c1'],['#8e44ad','#f39c12','#16a085'],['#d35400','#27ae60','#f1c40f']],camels=[];let prev=lead;
   const nc=o.camels==null?3:o.camels;for(let k=0;k<nc;k++){const c=mkUnit('animal',p.x-(k+1)*34,p.y,{species:'camel',carav:true,rc:1,rcPal:pal[k%3],leader:prev,hp:34,maxHp:34,face:1});if(k===0&&o.chest!==false)c.rcChest=true;units.push(c);camels.push(c);prev=c;}
-  const guards=[];const gl=o.guards||[...Array(RCV.sol)].map(()=>({k:'dsoldier'})).concat([...Array(RCV.arc)].map(()=>({k:'darcher'})));
-  gl.forEach((g,i)=>{const x=g.x!=null?g.x:p.x+R(-30,30),y=g.y!=null?g.y:p.y+R(-20,30);const u=g.k==='darcher'?mkDArc(x,y):mkDSol(x,y);if(g.hp)u.hp=g.hp;u.escort=lead;u.eo=[-1.6,1.6,-.6,.6][i%4];u.rcG=true;u.rcSlot=u.darch?gl.slice(0,i).filter(q=>q.k==='darcher').length:gl.slice(0,i).filter(q=>q.k!=='darcher').length;units.push(u);guards.push(u);});
+  const guards=[];const gl=o.guards||[...Array(RCV.sol)].map(()=>({k:'dsoldier'})).concat([...Array(RCV.arc)].map(()=>({k:'darcher'})),[...Array(RCV.camN)].map(()=>({k:'dcamel'})));
+  gl.forEach((g,i)=>{const x=g.x!=null?g.x:p.x+R(-30,30),y=g.y!=null?g.y:p.y+R(-20,30);const u=g.k==='darcher'?mkDArc(x,y):g.k==='dcamel'?mkDCam(x,y):mkDSol(x,y);if(g.hp)u.hp=g.hp;u.escort=lead;u.eo=[-1.6,1.6,-.6,.6][i%4];u.rcG=true;u.rcSlot=gl.slice(0,i).filter(q=>(q.k||'dsoldier')===(g.k||'dsoldier')).length;units.push(u);guards.push(u);});
   RCV.cur={lead,t2,camels,guards,done:false};G.rcSpawned=(G.rcSpawned||0)+1;return RCV.cur;}
 // the lead trader walks the road there and back again (rests at each end); the second trader follows him
 {const _c=updCaravan;updCaravan=function(u,dt){if(!u.rcLead||u.type!=='villager')return _c.apply(this,arguments);u.anim=(u.anim||0)+dt*4;
   const dd=dist(u,D);if(dd<200&&!G.over){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,75,dt);if(!u.yelp||G.t-u.yelp>6){u.yelp=G.t;float(u.x,u.y-30,['Guards! Protect the treasure!','Dragon! Hold the line!'][RI(0,1)],'#ffe0a0');}return true;}
   if(u.rcWait>0){u.rcWait-=dt;return true;}
-  const P=u.route,t=P[u.ri];if(!t)return true;u.rcHd=Math.atan2(t.y-u.y,t.x-u.x);if(moveTo(u,t.x,t.y,38*RCV.spd,dt)||dist(u,t)<16){const n=u.ri+u.rcDir;if(n<0||n>=P.length){u.rcDir=-u.rcDir;u.rcWait=RCV.wait;u.rcTrips=(u.rcTrips||0)+1;}else u.ri=n;}
+  const P=u.route,t=P[u.ri];if(!t)return true;u.rcHd=Math.atan2(t.y-u.y,t.x-u.x);if(moveTo(u,t.x,t.y,38*RCV.spd,dt)||dist(u,t)<16){const n=u.ri+u.rcDir;if(n<0||n>=P.length){if(n>=P.length)rcDeliver(u);else if(u.rcPaid)rcHome(u);u.rcDir=-u.rcDir;u.rcWait=RCV.wait;u.rcTrips=(u.rcTrips||0)+1;}else u.ri=n;}
   return true;};}
 {const _v=updVillager;updVillager=function(u,dt){if(u.rcF){const L=u.rcF;if(!L.dead){u.anim=(u.anim||0)+dt*4;const dd=dist(u,D);
     if(dd<200&&!G.over){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,75,dt);return;}
@@ -6754,7 +6810,7 @@ function spawnRich(o){o=o||{};const P=o.path||rcPath(),ri=Math.max(0,Math.min(P.
 // town guards (former caravan guards / muster guards) keep to Sandhaven: soldiers use the 'guard' post leash, archers a short leash of their own
 {const _a=updArcher;updArcher=function(u,dt){if(u.darch&&u.dguard&&!u.retreat){const dd=dist(u,D);if(dd>450||d2(u.x,u.y,u.px,u.py)>560){if(dist(u,{x:u.px,y:u.py})>10)moveTo(u,u.px,u.py,60,dt);u.anim+=dt*6;u.face=D.x>u.x?1:-1;u.shootT=Math.max(u.shootT,.6);return;}}return _a.apply(this,arguments);};}
 function rcTownPost(i){const a=i*2.1+.5,r=110+(i%3)*40;return{x:DTOWN.x+Math.cos(a)*r,y:DTOWN.y+Math.sin(a)*r*.7};}
-function rcMakeGuard(u,i){u.escort=null;u.rcG=false;u.dguard=true;const P=rcTownPost(i);u.px=P.x;u.py=P.y;if(u.dsol){u.post='guard';u.slot='d'+i;}}
+function rcMakeGuard(u,i){u.escort=null;u.rcG=false;u.dguard=true;const P=rcTownPost(i);u.px=P.x;u.py=P.y;u.pa=i*1.7;if(u.dsol){u.post='guard';u.slot='d'+i;}}
 function rcTownGuards(){return units.filter(u=>u.dguard&&!u.dead);}
 function rcRaided(why){const c=RCV.cur;if(!c||c.done)return;c.done=true;const L=c.lead,x=L.x,y=L.y;
   D.gold+=RCV.gold;G.rcRaids=(G.rcRaids||0)+1;G.stats.richCaravans=(G.stats.richCaravans||0)+1;if(typeof tallyAdd==='function')tallyAdd('richcaravan');
@@ -6808,13 +6864,13 @@ function drawDesertArcher(u){const x=u.x,y=u.y,f=u.face||1,bob=Math.sin(u.anim||
     if(u.rcChest){rect(x-8,y-45-b,16,10,'#7a4a1a');rect(x-8,y-45-b,16,3,'#a0662a');rect(x-8.5,y-41.5-b,17,1.4,'#e8c050');rect(x-1.5,y-42-b,3,4,'#e8c050');
       ell(x-4,y-46-b,2,1.4,'#ffd84a');ell(x+3,y-46.5-b,2,1.4,'#ffd84a');if(Math.sin(G.t*5)>.6)ell(x+R(-6,6),y-48-b,1.2,1.2,'#fff4b0');}}return r;};}
 // ---- save / load (units are not saved: snapshot the rich caravan and Sandhaven's town guard) ----
-{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);const c=RCV.cur,g=u=>({k:u.dsol?'dsoldier':'darcher',hp:Math.round(u.hp),x:Math.round(u.x),y:Math.round(u.y),garr:!!u.garr});
-  d.RCV={cur:c&&!c.done&&!c.lead.dead?{x:Math.round(c.lead.x),y:Math.round(c.lead.y),ri:c.lead.ri|0,dir:c.lead.rcDir||1,wait:+(c.lead.rcWait||0).toFixed(1),t2:!!(c.t2&&!c.t2.dead),
-    camels:c.camels.filter(k=>!k.dead).length,chest:c.camels.some(k=>k.rcChest&&!k.dead),guards:c.guards.filter(u=>!u.dead).map(g)}:null,town:rcTownGuards().map(u=>Object.assign(g(u),{mil:!!u.milG})),garDone:!!G.rcGar};return d;};}
+{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);const c=RCV.cur,g=u=>({k:u.dsol?'dsoldier':u.dcam?'dcamel':'darcher',hp:Math.round(u.hp),x:Math.round(u.x),y:Math.round(u.y),garr:!!u.garr});
+  d.RCV={cur:c&&!c.done&&!c.lead.dead?{x:Math.round(c.lead.x),y:Math.round(c.lead.y),ri:c.lead.ri|0,dir:c.lead.rcDir||1,wait:+(c.lead.rcWait||0).toFixed(1),paid:!!c.lead.rcPaid,t2:!!(c.t2&&!c.t2.dead),
+    camels:c.camels.filter(k=>!k.dead).length,chest:c.camels.some(k=>k.rcChest&&!k.dead),guards:c.guards.filter(u=>!u.dead).map(g)}:null,town:rcTownGuards().map(u=>Object.assign(g(u),{mil:!!u.milG})),garDone:!!G.rcGar,camGar:!!G.rcCamGar};return d;};}
 {const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);if(!d||!d.RCV)return r;
-  for(let i=units.length-1;i>=0;i--){const u=units[i];if(u.rc||u.dsol||u.darch)units.splice(i,1);}RCV.cur=null;
-  if(d.RCV.cur){const c=d.RCV.cur;spawnRich({x:c.x,y:c.y,ri:c.ri,dir:c.dir,wait:c.wait,t2:c.t2,camels:c.camels,chest:c.chest,guards:c.guards});G.rcSpawned=Math.max(0,(G.rcSpawned||1)-1);}
-  (d.RCV.town||[]).forEach((t,i)=>{const u=t.k==='darcher'?mkDArc(t.x,t.y):mkDSol(t.x,t.y);u.hp=t.hp||u.hp;if(t.mil)u.milG=true;if(t.garr)u.garr=true;rcMakeGuard(u,i);units.push(u);});G.rcGar=(d.RCV.town||[]).some(t=>t.garr)||!!d.RCV.garDone;
+  for(let i=units.length-1;i>=0;i--){const u=units[i];if(u.rc||u.dsol||u.darch||u.dcam)units.splice(i,1);}RCV.cur=null;
+  if(d.RCV.cur){const c=d.RCV.cur;spawnRich({x:c.x,y:c.y,ri:c.ri,dir:c.dir,wait:c.wait,paid:c.paid,t2:c.t2,camels:c.camels,chest:c.chest,guards:c.guards});G.rcSpawned=Math.max(0,(G.rcSpawned||1)-1);}
+  (d.RCV.town||[]).forEach((t,i)=>{const u=t.k==='darcher'?mkDArc(t.x,t.y):t.k==='dcamel'?mkDCam(t.x,t.y):mkDSol(t.x,t.y);u.hp=t.hp||u.hp;if(t.mil)u.milG=true;if(t.garr)u.garr=true;rcMakeGuard(u,i);units.push(u);});G.rcGar=(d.RCV.town||[]).some(t=>t.garr)||!!d.RCV.garDone;G.rcCamGar=(d.RCV.town||[]).some(t=>t.garr&&t.k==='dcamel')||!!d.RCV.camGar;
   return r;};}
 
 // ---- Sandhaven's standing garrison: 3 desert soldiers + 2 desert archers guard the town every level (separate from the caravan escort) ----
@@ -6823,11 +6879,117 @@ function rcGarrison(){if(G.rcGar||typeof DTOWN==='undefined')return;G.rcGar=true
   for(let k=0;k<RCV.garArc;k++){const P=rcTownPost(i);const u=mkDArc(P.x,P.y,{garr:true});rcMakeGuard(u,i++);units.push(u);}G.rcGarN=(G.rcGarN||0)+1;}
 // ---- the escort marches in formation: soldiers in two files of five down the flanks, archers paired at the front, rear and outer flanks ----
 const RC_FORM={sol:[[10,-30],[-20,-30],[-50,-30],[-80,-30],[-110,-30],[10,30],[-20,30],[-50,30],[-80,30],[-110,30]],arc:[[42,-16],[42,16],[-150,-16],[-150,16],[-50,-64],[-50,64]]};
-function rcSlotPos(k,L){const F=k.darch?RC_FORM.arc:RC_FORM.sol,s=F[(k.rcSlot||0)%F.length],a=L.rcHd||0,f=s[0],l=s[1];return{x:L.x+Math.cos(a)*f-Math.sin(a)*l,y:L.y+Math.sin(a)*f*.8+Math.cos(a)*l*.8};}
+function rcThreat(c){if(D.alt>=.6)return false;for(const u of [c.lead,c.t2,...c.camels])if(u&&!u.dead&&d2(u.x,u.y,D.x,D.y)<RCV.threatR)return true;return false;}
+RC_FORM.cam=[[-50,-100],[-50,100]];
+function rcSlotPos(k,L){const F=k.dcam?RC_FORM.cam:k.darch?RC_FORM.arc:RC_FORM.sol,s=F[(k.rcSlot||0)%F.length],a=L.rcHd||0,f=s[0],l=s[1];return{x:L.x+Math.cos(a)*f-Math.sin(a)*l,y:L.y+Math.sin(a)*f*.8+Math.cos(a)*l*.8};}
 {const _e=escortStep;escortStep=function(k,dt){const c=RCV.cur;if(!(k.rcG&&c&&!c.done&&k.escort===c.lead&&!c.lead.dead))return _e.apply(this,arguments);
   if(typeof gpGuardStep==='function'&&gpGuardStep(k,dt))return true;
-  const dd=dist(k,D);if(dd<260&&D.alt<.6)return false;if(k.darch&&dd<RCV.arcRange&&!G.over)return false;
-  const L=c.lead,T=rcSlotPos(k,L),dt2=dist(k,T);if(dt2>4)moveTo(k,T.x,T.y,dt2>120?80:Math.max(30,Math.min(60,dt2*2)),dt);k.face=L.face||1;k.born=G.t;k.retreat=false;return true;};}
+  // (item 51) the escort STAYS WITH THE CARAVAN: it fights the dragon when the dragon comes for the caravan (or right up to a guard), but a
+  // guard never chases more than RCV.leash from the lead trader: past that it breaks off and hurries back to its place in the formation.
+  const L=c.lead,dd=dist(k,D),thr=rcThreat(c);if(dist(k,L)>RCV.leash&&!k.rcBack){k.rcBack=true;if(!c.backSaid||G.t-c.backSaid>8){c.backSaid=G.t;if(dist(k,D)<1200)float(k.x,k.y-34,['Back to the caravan!','Guard the treasure, not the dragon!','Hold the formation!'][RI(0,2)],'#ffe0a0');}}
+  if(k.rcBack){const T=rcSlotPos(k,L);if(dist(k,T)<50)k.rcBack=false;else{moveTo(k,T.x,T.y,95,dt);k.face=T.x>k.x?1:-1;k.born=G.t;k.retreat=false;return true;}}
+  if(!G.over&&D.alt<.6&&(thr||dd<((k.darch||k.dcam)?RCV.arcRange:220)))return false;
+  const T=rcSlotPos(k,L),dt2=dist(k,T);if(dt2>4)moveTo(k,T.x,T.y,dt2>120?80:Math.max(30,Math.min(60,dt2*2)),dt);k.face=L.face||1;k.born=G.t;k.retreat=false;return true;};}
+
+// ================= (items 52/53) mounted CAMEL SOLDIERS: a desert rider on a camel with a scimitar and a recurve bow =================
+// They shoot when the dragon is at range or in the air, and ride in to slash when it is close on the ground (like the elf unicorn riders).
+// Every desert caravan (the rich one and the two plain ones) has 2 in its escort; Sandhaven's garrison has 4 that patrol around the town.
+Object.assign(RCV,{camHp:60,camN:2,camSp:150,camBow:400,camMelee:62,camSword:6,camArrow:4,camShotCd:1.9,camSlashCd:1.15,garCam:4,patrolR:250,townR:560,townLeash:700,camHeal:40});
+function mkDCam(x,y,o){return mkUnit('knight',x,y,Object.assign({dcam:true,post:'dcam',hp:RCV.camHp,maxHp:RCV.camHp,atk:0,dmgMul:RCV.dmgMul,shootT:R(.8,2),born:G.t,pa:R(0,TAU),cm:'sword'},o||{}));}
+function dcFight(u,dt){const dd=dist(u,D),ground=D.alt<DR.hitAltSword;u.atk-=dt;u.shootT-=dt;
+  if(ground&&dd<170){u.cm='sword';if(dd>RCV.camMelee*.8)moveTo(u,D.x,D.y,RCV.camSp,dt);if(dd<RCV.camMelee&&u.atk<=0){u.atk=RCV.camSlashCd;u.swing=.3;hurtDragon(RCV.camSword*(u.dmgMul||1),'sword');}}
+  else{u.cm='bow';if(dd>RCV.camBow*.85)moveTo(u,D.x,D.y,RCV.camSp*.8,dt);else if(dd<150){const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*30,u.y+Math.sin(a)*30,110,dt);}
+    if(dd<RCV.camBow&&u.shootT<=0){u.shootT=RCV.camShotCd;u.draw=.3;const T=dd/430,px=D.x+D.vx*T*.6,py=D.y+D.vy*T*.6,a=Math.atan2(py-u.y,px-u.x);
+      projs.push({kind:'arrow',x:u.x,y:u.y,z:18,vx:Math.cos(a)*430,vy:Math.sin(a)*430,tz:heightOf()+15,life:1.4,dmg:RCV.camArrow*(u.dmgMul||1),z0:18});G.camShots=(G.camShots||0)+1;}}
+  u.face=D.x>u.x?1:-1;}
+function updDCam(u,dt){u.anim=(u.anim||0)+dt*6;u.swing=Math.max(0,(u.swing||0)-dt);u.draw=Math.max(0,(u.draw||0)-dt);u.retreat=false;if(G.over)return;
+  // a plain caravan's riders whose trader is gone join Sandhaven's town guard
+  if(!u.escort&&!u.dguard){rcMakeGuard(u,rcTownGuards().length);u.cvG=false;}
+  if(u.dguard&&typeof DTOWN!=='undefined'){const T=DTOWN,far=dist(u,T)>RCV.townLeash;
+    if(!far&&(dist(D,T)<RCV.townR||dist(u,D)<260&&D.alt<.6)){dcFight(u,dt);return;}
+    u.pa=(u.pa||0)+dt*.12;const px=T.x+Math.cos(u.pa)*RCV.patrolR,py=T.y+Math.sin(u.pa)*RCV.patrolR*.7;u.cm='sword';moveTo(u,px,py,far?120:55,dt);return;}
+  dcFight(u,dt);}
+{const _k=updKnight;updKnight=function(u,dt){if(u.dcam){updDCam(u,dt);return;}return _k.apply(this,arguments);};}
+// plain caravans get 2 camel riders that keep to the caravan (same leash / threat rules as the rich caravan's escort, item 51)
+{const _s=spawnCaravan;spawnCaravan=function(){const n0=units.length,lead=_s.apply(this,arguments);if(lead&&typeof DTOWN!=='undefined'){lead.cvCam=units.slice(n0).filter(c=>c.species==='camel');
+    for(let i=0;i<RCV.camN;i++){const u=mkDCam(lead.x-40,lead.y+(i?46:-46),{escort:lead,cvG:true,cvSlot:i,eo:i?1.6:-1.6});units.push(u);}}return lead;};}
+function cvThreat(L){if(D.alt>=.6)return false;if(dist(L,D)<RCV.threatR)return true;for(const c of L.cvCam||[])if(!c.dead&&dist(c,D)<RCV.threatR)return true;return false;}
+function cvSlotPos(k,L){const t=L.route&&L.route[L.ri],a=t?Math.atan2(t.y-L.y,t.x-L.x):0,f=-40,l=k.cvSlot?50:-50;return{x:L.x+Math.cos(a)*f-Math.sin(a)*l,y:L.y+Math.sin(a)*f*.8+Math.cos(a)*l*.8};}
+{const _e=escortStep;escortStep=function(k,dt){if(!k.cvG)return _e.apply(this,arguments);const L=k.escort;if(!L||L.dead||!L.carav){k.escort=null;return false;}
+  const dd=dist(k,D);if(dist(k,L)>RCV.leash)k.rcBack=true;
+  if(k.rcBack){const T=cvSlotPos(k,L);if(dist(k,T)<50)k.rcBack=false;else{moveTo(k,T.x,T.y,120,dt);k.face=T.x>k.x?1:-1;k.anim=(k.anim||0)+dt*6;k.cm='sword';return true;}}
+  if(!G.over&&D.alt<.6&&(cvThreat(L)||dd<RCV.camBow))return false;
+  const T=cvSlotPos(k,L),d=dist(k,T);if(d>4)moveTo(k,T.x,T.y,d>120?90:Math.max(30,Math.min(60,d*2)),dt);k.anim=(k.anim||0)+dt*4;k.face=L.face||1;k.cm='sword';k.born=G.t;k.retreat=false;return true;};}
+// Sandhaven's 4 camel riders: part of the standing garrison, back every level (a separate flag so older saves get them too)
+{const _r=rcUpd;rcUpd=function(dt){_r.apply(this,arguments);if(G.over||G.rcCamGar||typeof DTOWN==='undefined')return;G.rcCamGar=true;
+  for(let k=0;k<RCV.garCam;k++){const P=rcTownPost(10+k);const u=mkDCam(P.x,P.y,{garr:true});rcMakeGuard(u,10+k);u.pa=k*TAU/RCV.garCam;units.push(u);}};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);G.rcCamGar=false;return r;};}
+// edible: rider + camel is a big meal
+{const _e=eatUnit;eatUnit=function(u){if(!u||!u.dcam)return _e.apply(this,arguments);const h=HEAL.knight;HEAL.knight=RCV.camHeal;try{_e.apply(this,arguments);}finally{HEAL.knight=h;}float(u.x,u.y-44,'Camel and rider? Gulp!','#ffd27a');};}
+{const _k=tallyKeyU;tallyKeyU=function(u){if(u&&u.dcam)return'dcamel';return _k.apply(this,arguments);};}
+{const S=TALLY_SECT.find(s=>s.id==='desert');if(S)S.keys.splice(2,0,['dcamel','Camel soldiers']);if(typeof TALLY_LABEL!=='undefined')TALLY_LABEL.dcamel='Camel soldiers';}
+function drawCamelRider(u){const x=u.x,y=u.y,f=u.face||1,w=Math.sin(u.anim||0),b=Math.abs(w)*1.2,burn=u.burn>0,fur=burn?'#f60':'#d4a464';
+  ell(x,y+2,17,4,'rgba(0,0,0,.25)');if(u.dguard)ell(x,y+2,19,5,'rgba(255,220,120,.25)');
+  for(const lx of[-9,-5,6,10])line(x+lx*f,y-14,x+lx*f+w*(lx<0?3:-3),y,'#b8874a',2.4);
+  ell(x,y-17-b,15,7,fur);ell(x-2*f,y-23-b,7,6,fur);line(x+12*f,y-18-b,x+17*f,y-30-b,fur,4.5);ell(x+20*f,y-31-b,5.5,3.2,fur);
+  ell(x+18.5*f,y-33-b,1,1,'#222');ell(x+24.5*f,y-30.5-b,1,.8,'#6a4a2a');line(x-15*f,y-18-b,x-17*f,y-12-b+w,'#b8874a',1.5); // eye, nose, tail
+  rect(x-10,y-26-b,17,6,'#b0302a');rect(x-10,y-22-b,17,1.5,'#f1c40f');for(let i=0;i<4;i++)ell(x-8+i*5,y-19.5-b,1,1,'#f1c40f'); // saddle blanket + tassels
+  const ry=y-27-b;line(x+f,ry,x+4*f,ry+6,'#5a4a3a',1.8);
+  poly([x-3.6,ry-10,x+3.6,ry-10,x+4.4,ry,x-4.4,ry],burn?'#f60':'#e2cfa0');rect(x-3.6,ry-6,7.2,1.3,'#b0302a');
+  ell(x,ry-12,2.5,2.5,'#c99a70');ell(x,ry-14,3.4,2.2,'#f4ecd8');ell(f*.8+x,ry-15.2,2.2,1.2,'#e8dcc0');rect(x-f*3.4-.4,ry-14,1,3,'#f4ecd8');
+  if(u.cm==='bow'){const bx=x+f*3;ctx.strokeStyle='#7a4a1a';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(bx,ry-13);ctx.quadraticCurveTo(bx+f*5,ry-11,bx+f*2.5,ry-7);ctx.quadraticCurveTo(bx+f*5,ry-3,bx,ry-1);ctx.stroke();line(bx-(u.draw>0?f*2:0),ry-7,bx,ry-13,'#eee',.6);line(bx-(u.draw>0?f*2:0),ry-7,bx,ry-1,'#eee',.6);rect(x-f*4-1,ry-11,2,6,'#8a5a2a');}
+  else{const sw=u.swing>0?-1.2:0;ctx.strokeStyle='#dfe4ea';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x+f*3,ry-7);ctx.quadraticCurveTo(x+f*(9+sw*-3),ry-11+sw*3,x+f*(8+sw*-4),ry-16+sw*5);ctx.stroke();rect(x+f*3-1,ry-7.6,2,1.4,'#c9a227');rect(x-f*4-1,ry-11,2,6,'#8a5a2a');}
+  if(u.hp<u.maxHp){rect(x-9,y-56-b,18,2,'#400');rect(x-9,y-56-b,18*u.hp/u.maxHp,2,'#e44');}}
+{const _d=drawKnight;drawKnight=function(u){if(u.dcam){drawCamelRider(u);return;}return _d.apply(this,arguments);};}
+
+// ================= (items 55/56) the rich caravan pays the KING: +50 gold into the treasury each time it reaches the castle-gate end =================
+// Once per arrival (when it turns round at the gate, not while it rests there), silently. The delivery never empties its own chest:
+// raid it before it gets there or on the way back to Sandhaven and the dragon still gets its 20 gold.
+RCV.deliver=50;
+function rcDeliver(u){if(!goldPiles||!goldPiles.length)return;const p=goldPiles.reduce((a,b)=>a.amt<=b.amt?a:b);p.amt+=RCV.deliver;G.rcDeliv=(G.rcDeliv||0)+1;G.rcTreasIn=(G.rcTreasIn||0)+RCV.deliver;u.rcPaid=true;}
+// ======================= item 57: SANDHAVEN REWARD TOWERS =======================
+// Every time the rich caravan gets all the way home to Sandhaven AFTER paying the king (not raided on the way), Sandhaven raises one
+// sandstone watchtower with a desert archer on top. Spots ring the village (never on a building), cap 5 standing towers; a destroyed
+// tower leaves rubble and the next reward rebuilds that spot first. Destroyable like the kingdom watchtowers (fire, stomps, slams...).
+// Like the kingdom's watchtowers they belong to the current castle level (saved with the game, a new level starts without them).
+KDEF.dtower={name:'Sandhaven tower',hp:200,gold:[1,3],pts:140,alarm:5,sz:30};COST.dtower=[0,0];STRUCT_NAME.dtower='Sandhaven tower';
+const DTW={max:5,archerWait:20};let DTW_SPOTS=null;
+const isDT=s=>!!s&&s.kind==='dtower';const dtTowers=()=>structures.filter(isDT);
+function dtSpots(){if(DTW_SPOTS)return DTW_SPOTS;const out=[];if(typeof DTOWN==='undefined')return out;
+  for(const r of[330,390,450])for(let k=0;k<10;k++){const a=k*TAU/10+(r===390?.3:r===450?.15:0),x=Math.round(DTOWN.x+Math.cos(a)*r),y=Math.round(DTOWN.y+Math.sin(a)*r*.8);
+    if(!inDesert(x,y)||(typeof inWater==='function'&&inWater(x,y)))continue;if(structures.some(s=>!isDT(s)&&d2(x,y,s.x,s.y)<95))continue;
+    if(typeof inOasis==='function'&&inOasis(x,y))continue;if(out.some(q=>d2(x,y,q.x,q.y)<230))continue;out.push({x,y});}
+  DTW_SPOTS=out;return out;}
+function dtAdd(x,y,st){const s=kAdd('dtower',x,y,DTOWN.vi,{dtw:1});s.state=st||'ok';s.build=1;s.hasGold=true;return s;}
+function rcHome(u){u.rcPaid=false;G.rcHome=(G.rcHome||0)+1;const T=dtTowers();
+  const ru=T.find(s=>s.state==='druin');let s=null;
+  if(ru){ru.state='ok';ru.hp=ru.maxHp;ru.fire=0;s=ru;}
+  else{if(T.length>=DTW.max){G.rcTowCap=(G.rcTowCap||0)+1;return null;}const p=dtSpots().find(q=>!T.some(t=>d2(t.x,t.y,q.x,q.y)<40));if(!p)return null;s=dtAdd(p.x,p.y);}
+  s.archT=DTW.archerWait;G.rcTowers=(G.rcTowers||0)+1;puff(s.x,s.y,14,'rgba(220,190,130,',120,10);
+  if(dist(s,D)<1200)float(s.x,s.y-150,'Sandhaven raises a new tower!','#ffe0a0');return s;}
+function dtArcher(s){const u=mkDArc(s.x,s.y+4,{post:'tower',slot:'dt',px:s.x,py:s.y+4,dtS:s,dlift:104});units.push(u);return u;}
+{const _r=rcUpd;rcUpd=function(dt){_r.apply(this,arguments);if(G.over)return;
+  for(const s of dtTowers())if(s.state==='ok'&&!units.some(u=>!u.dead&&u.dtS===s)){s.archT=(s.archT||0)+dt;if(s.archT>=DTW.archerWait){s.archT=0;dtArcher(s);}}};}
+// destroyed: rubble (the kingdom's builders leave it alone); its archer climbs down and joins the town guard
+{const _h=hurtStruct;hurtStruct=function(s,d){if(isDT(s)&&s.state==='druin')return;const r=_h.apply(this,arguments);
+  if(isDT(s)&&s.state==='ruin'){s.state='druin';s.fire=0;G.rcTowLost=(G.rcTowLost||0)+1;for(const u of units)if(u.dtS===s&&!u.dead){u.post=null;u.dtS=null;u.dlift=0;rcMakeGuard(u,rcTownGuards().length);}}return r;};}
+function drawDTower(s){const x=s.x,y=s.y;if(s.state==='druin'){rubble(x,y+4,30,1,(x*7+y)|0);return;}
+  ell(x+8,y+6,28,10,'rgba(0,0,0,.25)');
+  poly([x-19,y,x+19,y,x+15,y-96,x-15,y-96],'#d9b780');poly([x+6,y,x+19,y,x+15,y-96,x+5,y-96],'#c09a62');
+  for(let k=1;k<4;k++)line(x-18+k*.9,y-k*24,x+18-k*.9,y-k*24,'#b48c58',1.5);
+  rect(x-3,y-70,6,14,'#4a3020');rect(x-3,y-40,6,14,'#4a3020');rect(x-7,y-16,14,16,'#5a3a22');
+  rect(x-20,y-104,40,9,'#c9a46c');rect(x-20,y-104,40,3,'#e2c48e');for(let k=0;k<5;k++)rect(x-20+k*9,y-112,5,8,'#d9b780');
+  rect(x-1,y-150,2,38,'#5a4030');poly([x+1,y-150,x+18,y-144,x+1,y-138],'#2e86c1');poly([x+1,y-144,x+12,y-141,x+1,y-138],'#f1c40f');
+  if(s.fire>0)for(let i=0;i<3;i++)ell(x+R(-12,12),y-20-R(0,80),4,7,'rgba(255,150,40,.8)');
+  if(s.hp<s.maxHp){rect(x-22,y+12,44,4,'#400');rect(x-22,y+12,44*s.hp/s.maxHp,4,'#d33');}}
+{const _k=drawStructK;drawStructK=function(s){if(isDT(s)){drawDTower(s);return true;}return _k.apply(this,arguments);};}
+{const _p=drawPerson;drawPerson=function(u){if(u.dlift&&u.dtS&&u.dtS.state==='ok'){ctx.save();ctx.translate(0,-u.dlift);try{return _p.apply(this,arguments);}finally{ctx.restore();}}return _p.apply(this,arguments);};}
+// save / load (positions + health), a new level / new game starts without them
+{const _ss=svSnapshot;svSnapshot=function(){G.dtSave=dtTowers().map(s=>[s.x|0,s.y|0,s.state,Math.round(s.hp)].join(',')).join(';');return _ss.apply(this,arguments);};}
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);for(let i=structures.length-1;i>=0;i--)if(isDT(structures[i]))structures.splice(i,1);for(const u of units)if(u.dtS)u.dead=u.gone=true;DTW_SPOTS=null;
+  if(typeof G.dtSave==='string'&&G.dtSave)for(const q of G.dtSave.split(';')){const[x,y,st,hp]=q.split(',');const s=dtAdd(+x,+y,st==='druin'?'druin':'ok');s.hp=st==='druin'?0:Math.max(1,+hp||s.maxHp);}return r;};}
+{const _ng=newGame;newGame=function(){DTW_SPOTS=null;return _ng.apply(this,arguments);};}
+(function(){if(typeof TALLY_SECT==='undefined')return;const B=TALLY_SECT.find(q=>q.id==='build');if(!B)return;if(!B.keys.find(q=>q[0]==='b:dtower'))B.keys.push(['b:dtower','Sandhaven towers']);TALLY_LABEL['b:dtower']='Sandhaven towers';})();
 // ================= partGP: guards keep travellers safe from predators =================
 // The rich caravan's desert escort and the kingdom's road patrols take on predators (lions, wolves, bears, big cats, scorpions, snakes,
 // crocs, wild dragons...) that come near the caravan or a patrol on the road; the predator fights back, and once worn down it simply
@@ -9154,6 +9316,39 @@ function sp47Pre(){const dy=D.y+10,dn=SP47.done;
 // ---- 45. phone-landscape HUD: the region banner and the big announcement banner are drawn LAST, as the bottom slot of the HUD centre lane (part6 hudSlot), so it never covers a bar ----
 const HUD_BANNER_LAST=1;
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);ctx.setTransform(DPR,0,0,DPR,0,0);drawRegionBanner();if(!G.over&&!G.won&&!paused)drawAnnounce(VW<760);else UI.banner=null;};}
+// ======================= items 58-59: the sand worm hunts ANY landed dragon in open desert, but never leaves the sand =======================
+// 58: land anywhere in the desert away from Sandhaven (and the other towns) and the oasis, and after ~1 s on the ground the worm tunnels over
+//     from wherever it is: a rumble + shake + "the sand is moving" warning and ripples racing toward you (~5 s of fair warning) before it
+//     bursts up under you. This repeats every time until the worm is DEFEATED (eaten or beaten); then it STAYS BEATEN until the dragon is
+//     lost (like the Wizard/Hydra/Griffin/Nessie): no more respawns, kept across castle levels and saves, back on death / new game.
+// 60: the desert road between Sandhaven and the castle is safe too (like Sandhaven and the oasis).
+// 59: the worm is confined to the desert: it never moves off the sand, and once the dragon is off the sand it loses the scent, cannot bite,
+//     and an above-ground worm sinks back into the dunes.
+const WRM={land:1.0,tunnel:650,far:780,road:140};
+// 60: the desert road from Sandhaven to the king's castle (the caravan road) is a safe zone too: within WRM.road px of it
+let WRM_ROAD=null;function wormRoadD(x,y){if(!WRM_ROAD||WRM_ROAD.lvl!==G.lvl||WRM_ROAD.g!==G){try{WRM_ROAD={P:rcPath(),lvl:G.lvl,g:G};}catch(e){return 1e9;}}
+  const P=WRM_ROAD.P;let b=1e9;for(let i=0;i<P.length-1;i++){const a=P[i],c=P[i+1],vx=c.x-a.x,vy=c.y-a.y,L=vx*vx+vy*vy||1,t=clamp(((x-a.x)*vx+(y-a.y)*vy)/L,0,1);b=Math.min(b,Math.hypot(x-a.x-vx*t,y-a.y-vy*t));}return b;}
+{const _ws=wormSafe;wormSafe=function(x,y){return _ws(x,y)||(!inDesert(x,y)?'out':null)||(wormRoadD(x,y)<WRM.road?'road':null);};}
+function wormBeat(u){if(G.wormDown)return;G.wormDown=1;G.wormWins=(G.wormWins||0)+1;
+  float(u.x,u.y-140,'The sand worm is beaten! The dunes are quiet now.','#7aff8a');if(typeof showToast==='function')showToast('🪱 Sand worm beaten! It stays gone until you lose this dragon');}
+{const _h=hurtUnit;hurtUnit=function(u){const w=u&&u.species==='sandworm'&&!u.dead;const r=_h.apply(this,arguments);if(w&&(u.dead||u.hp<=0))wormBeat(u);return r;};}
+{const _e=eatUnit;eatUnit=function(u){const w=u&&u.species==='sandworm'&&!u.dead;const r=_e.apply(this,arguments);if(w&&u.dead)wormBeat(u);return r;};}
+{const _s=spawnWorm;spawnWorm=function(){if(G.wormDown)return null;return _s.apply(this,arguments);};}
+// until it is beaten there is always a worm (no 150 s gap, also right after loading a save)
+{const _d=updDesert;updDesert=function(dt){if(G&&!G.wormDown)G.wormFirst=0;return _d.apply(this,arguments);};}
+{const _nl=nextLevel;nextLevel=function(){const k={wormDown:G.wormDown,wormWins:G.wormWins};const r=_nl.apply(this,arguments);Object.assign(G,k);return r;};}
+function wormOpen(){return D.alt<.4&&!G.over&&!G.won&&inDesert(D.x,D.y)&&!wormSafe(D.x,D.y);}
+function wormTunnel(u){const a0=Math.atan2(u.y-D.y,u.x-D.x);for(let i=0;i<16;i++){const a=a0+(i%2?1:-1)*Math.ceil(i/2)*.4;for(const r of[WRM.tunnel,500,380]){const x=D.x+Math.cos(a)*r,y=D.y+Math.sin(a)*r;
+    if(ZONES.desert.ok(x,y)&&inDesert(x,y)&&!wormSafe(x,y)){u.x=x;u.y=y;u.tgt=null;u.hPrey=null;u.cd=Math.max(u.cd,1);G.wormTunnel=(G.wormTunnel||0)+1;return true;}}}return false;}
+{const _uw=updWorm;updWorm=function(u,dt){
+  if(u.ws==='under'&&wormOpen()){G.wrmLand=(G.wrmLand||0)+dt;
+    if(G.wrmLand>=WRM.land&&dist(u,D)>WRM.far&&(!u.tunT||G.t-u.tunT>3)&&wormTunnel(u)){u.tunT=G.t;}
+    const dd=dist(u,D);if(dd<750){if(!u.rumT||G.t-u.rumT>8){u.rumT=G.t;G.wormRumble=(G.wormRumble||0)+1;float(D.x,D.y-140,'Rumble… rumble… something big is under the sand!','#ffd090');
+        if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('worm',u.x,u.y,.35);}catch(e){}}G.shake=Math.max(G.shake,dd<300?3:1.5);}}
+  else if(D.alt>=.4||!inDesert(D.x,D.y))G.wrmLand=0;
+  // off the sand (or in a safe zone): an above-ground worm stops and sinks back down
+  if(u.ws==='up'&&wormSafe(D.x,D.y)){u.stuck=false;u.upT=Math.min(u.upT,.25);G.wormSink=(G.wormSink||0)+1;}
+  const ox=u.x,oy=u.y;const r=_uw.apply(this,arguments);if(!u.dead&&!inDesert(u.x,u.y)){u.x=ox;u.y=oy;G.wormClamp=(G.wormClamp||0)+1;}return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
@@ -9316,22 +9511,22 @@ function drawAnnounce(sm){if(!G.banner){UI.banner=null;return;}const b=G.banner,
   const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>bw-24?Math.max(8,Math.floor(f*(bw-24)/w)):f;};
   txt(b.text,bcx,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,bcx,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,bcx,by+50,fitF(b.extra,sm?12:14,false),'#ffc0a0','center',false);ctx.globalAlpha=1;}
 function center(lines,top){let y=top;for(const [s,size,col,bold] of lines){txt(s,VW/2,y,size,col,'center',bold);y+=size*1.45;}}
-let titleSel=0;
+let titleSel=0;const TITLE_N=4; // (item 50) Start · Mode · Settings · Load: volume, mute and graphics live in the Settings panel (partY)
 function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,5,.66)';ctx.fillRect(0,0,VW,VH);
   const k=TOUCH.on?Math.min(1.2,VH/470,VW/900):Math.min(1,VH/920,VW/1000);ctx.setTransform(DPR*k,0,0,DPR*k,DPR*(VW-VW*k)/2,0);const W0=VW;TOUCH.tg={k,ox:(VW-VW*k)/2,cx:W0/2,y0:112};
   let y=46;txt("DRAGON'S RAMPAGE",W0/2,y+10,52,'#ff9a3a','center');txt('You are a full-grown dragon. Raid the castle, steal the gold, carry off Princess Elizabeth!',W0/2,y+40,17,'#f3dcb8','center',false);
   // menu
-  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`Graphics:  ${GFX_HI?'HIGH (shading, lighting, day & night)':'LOW (fastest)'}   ◀ ▶`,`Music volume:  ${AUD.muted?'MUTED':volBar(AUD.music)}   ◀ ▶`,`Sound effects:  ${AUD.muted?'MUTED':volBar(AUD.sfx)}   ◀ ▶`,svHasAny()?'⟲  Continue / Load saved game':'⟲  Load saved game  (no saves yet)'];
+  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`⚙  Settings:  ${AUD.muted?'sound MUTED':`music ${Math.round(AUD.music*100)}% · effects ${Math.round(AUD.sfx*100)}%`} · graphics ${GFX_Q.toUpperCase()}`,svHasAny()?'⟲  Continue / Load saved game':'⟲  Load saved game  (no saves yet)'];
   rows.forEach((r,i)=>{const s=titleSel===i;panel(W0/2-230,y+i*36,460,30);if(s){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y+i*36,460,30);}
-    txt(r,W0/2,y+i*36+21,17,s?'#ffd24a':(i===1&&EASY)||(i===2&&GFX_HI)||(i>2&&i<5&&!AUD.muted)?'#9f9':i===5&&!svHasAny()?'#888':'#ddd','center');});
-  if(TOUCH.on){y+=232;txt('Tap a row to change it · tap ◀ / ▶ side of a volume row',W0/2,y,13,'#bbb','center',false);
+    txt(r,W0/2,y+i*36+21,17,s?'#ffd24a':(i===1&&EASY)?'#9f9':i===3&&!svHasAny()?'#888':'#ddd','center');});
+  if(TOUCH.on){y+=TITLE_N*36+16;txt('Tap a row to choose it · ⚙ Settings: volume, mute and graphics',W0/2,y,13,'#bbb','center',false);
     const T=['LEFT thumb: drag anywhere to move   ·   RIGHT thumb: FIRE (hold) · BITE (eat / grab) · STOMP · FLY',
       'STOMP while flying = crash DIVE STOMP · in water it becomes SCRATCH   ·   MAP and II (pause) on the left',
       'GOAL: grab the castle gold and Princess Elizabeth (north), carry them to your LAIR on Dragon Peak!'];
     y+=28;for(const t of T){txt(t,W0/2,y,15,'#e8d6c0','center',false);y+=24;}
     txt(Math.floor(performance.now()/500)%2?'Tap  ▶ Start game  to begin':'',W0/2,y+14,22,'#ffd24a','center');
     if(best)txt(`Best score: ${best}`,W0/2,y+40,14,'#ccc','center',false);ctx.setTransform(DPR,0,0,DPR,0,0);return;}
-  y+=228;txt('↑/↓ choose · Enter/A select · ←/→ toggle / volume · M = Easy mode (great for young players: no hunger) · G = graphics · N = mute',W0/2,y,12,'#bbb','center',false);
+  y+=TITLE_N*36+12;txt('↑/↓ choose · Enter/A select · ←/→ toggle · M = Easy mode (great for young players: no hunger) · G = graphics · N = mute',W0/2,y,12,'#bbb','center',false);
   // controls table
   const L=[['Move','WASD / Arrows','Left stick / D-pad'],['Breathe fire (hold) · uses the red FIRE bar','Space','A / Cross  or  RT'],['Eat · grab gold/Princess Elizabeth','E','X / Square'],
     ['Stomp · flying = crash DIVE STOMP · swimming = CLAW SCRATCH','Q / Shift','B / Circle'],['Take off / land (from high = DIVE SLAM)','F','Y / Triangle'],['World map','M','LB / L1'],['Mute / unmute music & sound','N','—'],['Pause / start','P / Esc · Enter','Start / Options'],['Restart (game over)','R','Back / Select / Share']];
@@ -9421,11 +9616,11 @@ function frame(ts){try{frameBody(ts);}catch(e){FRAME_ERRN++;if(!FRAME_ERR||FRAME
 function frameBody(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
   pollPad(dt);touchTick();if(P('n'))toggleMute();musicTick(dt);sfxTick(dt);
   if(scene==='title'&&PM.on){pmInput();pressed={};G.t+=dt;}
-  else if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(5,titleSel+1);
-    if(titleSel>=3){const k=titleSel===3?'music':'sfx',dv=(P('arrowleft')||P('a'))?-.1:(P('arrowright')||P('d'))?.1:P('enter')?(AUD[k]>=1?-1:.1):0;if(dv){setVol(k,AUD[k]+dv);if(k==='sfx')SFX.play('coin');}}
-    if(P('g')||((P('arrowleft')||P('arrowright')||P('a')||P('d')||P('enter'))&&titleSel===2))setGfx(!GFX_HI);
+  else if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(TITLE_N-1,titleSel+1);
+    if(P('g'))setGfx(!GFX_HI);
     if(P('m')||((P('arrowleft')||P('arrowright')||P('a')||P('d'))&&titleSel===1)||(P('enter')&&titleSel===1))setEasy(!EASY);
-    if(P('enter')&&titleSel===5){pmOpen('load','title');}
+    if(P('enter')&&titleSel===3){pmOpen('load','title');}
+    else if(P('enter')&&titleSel===2){pmOpen('settings','title');}
     else if((P('enter')&&titleSel===0)||P(' ')){scene='play';newGame();pressed={};}
     else{G.t+=dt;cam.x=1700+Math.sin(ts/9000)*700;cam.y=1900+Math.cos(ts/11000)*1300;cam.z=1;updFire(dt);updEconomy(dt);G.fc++;for(const u of units){const t=farTick(u,dt);if(!t)continue;if(u.type==='villager')updVillager(u,t);else if(u.type==='animal'){if(u.wild)updWild(u,t);else updAnimal(u,t);}}updBirds(dt);updParts(dt);}}
   else{ const used=PM.on&&PM.from==='pause'&&paused&&!G.over&&!G.won&&pmInput();

@@ -1,7 +1,11 @@
 // ======================= GRAPHICS: "High" renderer (cartoon realism, all procedural, no assets) =======================
 // Toggle on the title screen (Graphics: HIGH / LOW). Low = the original flat look (fastest).
 let GFX_HI=(()=>{try{return localStorage.getItem('dr_gfx')!=='low';}catch(e){return true;}})();
-function setGfx(v){GFX_HI=(v===true||v==='high');try{localStorage.setItem('dr_gfx',GFX_HI?'high':'low');}catch(e){}}
+// (item 50) graphics QUALITY: high = all effects at full sharpness; medium = all effects at a lower render resolution (1x pixels: much less work on
+// phones / retina screens, same look on a 1x monitor); low = the original flat look (fastest). Kept in localStorage (dr_gfx + dr_gfxq).
+let GFX_Q=(()=>{try{if(localStorage.getItem('dr_gfx')==='low')return'low';return localStorage.getItem('dr_gfxq')==='medium'?'medium':'high';}catch(e){return GFX_HI?'high':'low';}})();
+function setGfxQ(q){q=q==='low'||q==='medium'?q:'high';const ch=q!==GFX_Q;GFX_Q=q;GFX_HI=q!=='low';try{localStorage.setItem('dr_gfx',GFX_HI?'high':'low');localStorage.setItem('dr_gfxq',q);}catch(e){}if(ch)try{resize();}catch(e){}}
+function setGfx(v){setGfxQ((v===true||v==='high')?(GFX_Q==='low'?'high':GFX_Q):'low');}
 const GX={lights:[],fires:[],chunks:new Map(),built:0,baked:new Set()};
 function mkCv(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
 function radialCv(r,stops){const c=mkCv(r*2,r*2),g=c.getContext('2d'),gr=g.createRadialGradient(r,r,0,r,r,r);for(const[o,col]of stops)gr.addColorStop(o,col);g.fillStyle=gr;g.fillRect(0,0,r*2,r*2);return c;}

@@ -59,8 +59,8 @@ let _rsW=0,_rsH=0,_physW=0,_physH=0;
 function toGame(cx,cy){return FLIP?{x:cy/UIS,y:(_physW-cx)/UIS}:{x:cx/UIS,y:cy/UIS};}
 function resize(){const [pw,ph]=viewSize();_rsW=pw;_rsH=ph;_physW=pw;_physH=ph;const w=FLIP?ph:pw,h=FLIP?pw:ph;
   UIS=IS_TOUCH?Math.min(1,Math.max(.5,Math.min(w,h)/520)):1;
-  let hi=true;try{hi=GFX_HI;}catch(e){}
-  let dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);
+  let hi=true,gq='high';try{hi=GFX_HI;gq=GFX_Q;}catch(e){}
+  let dpr=Math.min(IS_TOUCH&&!hi?1.5:2,window.devicePixelRatio||1);if(gq==='medium')dpr=Math.min(dpr,1); // graphics MEDIUM: 1x render resolution
   if(w*h*dpr*dpr>8e6)dpr=Math.sqrt(8e6/(w*h)); // stay far below iOS canvas memory limits
   VW=Math.round(w/UIS);VH=Math.round(h/UIS);DPR=dpr*UIS;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';
   cv.style.transformOrigin='0 0';cv.style.transform=FLIP?`translate(${pw}px,0) rotate(90deg)`:'';

@@ -160,22 +160,22 @@ function drawAnnounce(sm){if(!G.banner){UI.banner=null;return;}const b=G.banner,
   const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>bw-24?Math.max(8,Math.floor(f*(bw-24)/w)):f;};
   txt(b.text,bcx,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,bcx,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,bcx,by+50,fitF(b.extra,sm?12:14,false),'#ffc0a0','center',false);ctx.globalAlpha=1;}
 function center(lines,top){let y=top;for(const [s,size,col,bold] of lines){txt(s,VW/2,y,size,col,'center',bold);y+=size*1.45;}}
-let titleSel=0;
+let titleSel=0;const TITLE_N=4; // (item 50) Start · Mode · Settings · Load: volume, mute and graphics live in the Settings panel (partY)
 function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,5,.66)';ctx.fillRect(0,0,VW,VH);
   const k=TOUCH.on?Math.min(1.2,VH/470,VW/900):Math.min(1,VH/920,VW/1000);ctx.setTransform(DPR*k,0,0,DPR*k,DPR*(VW-VW*k)/2,0);const W0=VW;TOUCH.tg={k,ox:(VW-VW*k)/2,cx:W0/2,y0:112};
   let y=46;txt("DRAGON'S RAMPAGE",W0/2,y+10,52,'#ff9a3a','center');txt('You are a full-grown dragon. Raid the castle, steal the gold, carry off Princess Elizabeth!',W0/2,y+40,17,'#f3dcb8','center',false);
   // menu
-  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`Graphics:  ${GFX_HI?'HIGH (shading, lighting, day & night)':'LOW (fastest)'}   ◀ ▶`,`Music volume:  ${AUD.muted?'MUTED':volBar(AUD.music)}   ◀ ▶`,`Sound effects:  ${AUD.muted?'MUTED':volBar(AUD.sfx)}   ◀ ▶`,svHasAny()?'⟲  Continue / Load saved game':'⟲  Load saved game  (no saves yet)'];
+  y=y+66;const rows=['▶  Start game',`Mode:  ${EASY?'EASY (more health, fewer attackers, no hunger)':'NORMAL'}   ◀ ▶`,`⚙  Settings:  ${AUD.muted?'sound MUTED':`music ${Math.round(AUD.music*100)}% · effects ${Math.round(AUD.sfx*100)}%`} · graphics ${GFX_Q.toUpperCase()}`,svHasAny()?'⟲  Continue / Load saved game':'⟲  Load saved game  (no saves yet)'];
   rows.forEach((r,i)=>{const s=titleSel===i;panel(W0/2-230,y+i*36,460,30);if(s){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y+i*36,460,30);}
-    txt(r,W0/2,y+i*36+21,17,s?'#ffd24a':(i===1&&EASY)||(i===2&&GFX_HI)||(i>2&&i<5&&!AUD.muted)?'#9f9':i===5&&!svHasAny()?'#888':'#ddd','center');});
-  if(TOUCH.on){y+=232;txt('Tap a row to change it · tap ◀ / ▶ side of a volume row',W0/2,y,13,'#bbb','center',false);
+    txt(r,W0/2,y+i*36+21,17,s?'#ffd24a':(i===1&&EASY)?'#9f9':i===3&&!svHasAny()?'#888':'#ddd','center');});
+  if(TOUCH.on){y+=TITLE_N*36+16;txt('Tap a row to choose it · ⚙ Settings: volume, mute and graphics',W0/2,y,13,'#bbb','center',false);
     const T=['LEFT thumb: drag anywhere to move   ·   RIGHT thumb: FIRE (hold) · BITE (eat / grab) · STOMP · FLY',
       'STOMP while flying = crash DIVE STOMP · in water it becomes SCRATCH   ·   MAP and II (pause) on the left',
       'GOAL: grab the castle gold and Princess Elizabeth (north), carry them to your LAIR on Dragon Peak!'];
     y+=28;for(const t of T){txt(t,W0/2,y,15,'#e8d6c0','center',false);y+=24;}
     txt(Math.floor(performance.now()/500)%2?'Tap  ▶ Start game  to begin':'',W0/2,y+14,22,'#ffd24a','center');
     if(best)txt(`Best score: ${best}`,W0/2,y+40,14,'#ccc','center',false);ctx.setTransform(DPR,0,0,DPR,0,0);return;}
-  y+=228;txt('↑/↓ choose · Enter/A select · ←/→ toggle / volume · M = Easy mode (great for young players: no hunger) · G = graphics · N = mute',W0/2,y,12,'#bbb','center',false);
+  y+=TITLE_N*36+12;txt('↑/↓ choose · Enter/A select · ←/→ toggle · M = Easy mode (great for young players: no hunger) · G = graphics · N = mute',W0/2,y,12,'#bbb','center',false);
   // controls table
   const L=[['Move','WASD / Arrows','Left stick / D-pad'],['Breathe fire (hold) · uses the red FIRE bar','Space','A / Cross  or  RT'],['Eat · grab gold/Princess Elizabeth','E','X / Square'],
     ['Stomp · flying = crash DIVE STOMP · swimming = CLAW SCRATCH','Q / Shift','B / Circle'],['Take off / land (from high = DIVE SLAM)','F','Y / Triangle'],['World map','M','LB / L1'],['Mute / unmute music & sound','N','—'],['Pause / start','P / Esc · Enter','Start / Options'],['Restart (game over)','R','Back / Select / Share']];
@@ -265,11 +265,11 @@ function frame(ts){try{frameBody(ts);}catch(e){FRAME_ERRN++;if(!FRAME_ERR||FRAME
 function frameBody(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
   pollPad(dt);touchTick();if(P('n'))toggleMute();musicTick(dt);sfxTick(dt);
   if(scene==='title'&&PM.on){pmInput();pressed={};G.t+=dt;}
-  else if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(5,titleSel+1);
-    if(titleSel>=3){const k=titleSel===3?'music':'sfx',dv=(P('arrowleft')||P('a'))?-.1:(P('arrowright')||P('d'))?.1:P('enter')?(AUD[k]>=1?-1:.1):0;if(dv){setVol(k,AUD[k]+dv);if(k==='sfx')SFX.play('coin');}}
-    if(P('g')||((P('arrowleft')||P('arrowright')||P('a')||P('d')||P('enter'))&&titleSel===2))setGfx(!GFX_HI);
+  else if(scene==='title'){if(P('arrowup')||P('w'))titleSel=Math.max(0,titleSel-1);if(P('arrowdown')||P('s'))titleSel=Math.min(TITLE_N-1,titleSel+1);
+    if(P('g'))setGfx(!GFX_HI);
     if(P('m')||((P('arrowleft')||P('arrowright')||P('a')||P('d'))&&titleSel===1)||(P('enter')&&titleSel===1))setEasy(!EASY);
-    if(P('enter')&&titleSel===5){pmOpen('load','title');}
+    if(P('enter')&&titleSel===3){pmOpen('load','title');}
+    else if(P('enter')&&titleSel===2){pmOpen('settings','title');}
     else if((P('enter')&&titleSel===0)||P(' ')){scene='play';newGame();pressed={};}
     else{G.t+=dt;cam.x=1700+Math.sin(ts/9000)*700;cam.y=1900+Math.cos(ts/11000)*1300;cam.z=1;updFire(dt);updEconomy(dt);G.fc++;for(const u of units){const t=farTick(u,dt);if(!t)continue;if(u.type==='villager')updVillager(u,t);else if(u.type==='animal'){if(u.wild)updWild(u,t);else updAnimal(u,t);}}updBirds(dt);updParts(dt);}}
   else{ const used=PM.on&&PM.from==='pause'&&paused&&!G.over&&!G.won&&pmInput();

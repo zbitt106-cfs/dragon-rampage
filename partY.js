@@ -60,35 +60,36 @@ function tallyRows(){const rows=[];for(const s of TALLY_SECT){if(!s.keys.length)
 
 // ================= the pause menu (also used on the title screen for Continue / Load) =================
 const PM={on:false,from:'pause',scr:'main',sel:0,scroll:0,confirm:null,msg:null,msgT:0,hit:[],drag:null,vis:10};
-const PM_MAIN=[['▶  Resume','resume'],["📜  Dragon's Tally",'tally'],['💾  Save Game','save'],['📂  Load Game','load'],['⟳  Flip screen 90°: OFF','flip'],['⟲  Restart (new game)','restart']];
+const PM_MAIN=[['▶  Resume','resume'],["📜  Dragon's Tally",'tally'],['💾  Save Game','save'],['📂  Load Game','load'],['⚙  Settings: volume · mute · graphics','settings'],['⟳  Flip screen 90°: OFF','flip'],['⟲  Restart (new game)','restart']];
 function pmFlipLabel(){for(const r of PM_MAIN)if(r[1]==='flip')r[0]='⟳  Flip screen 90°: '+(FLIP?'ON':'OFF');}pmFlipLabel();
 function pmOpen(scr,from){PM.on=true;PM.from=from||'pause';PM.scr=scr||'main';PM.sel=0;PM.scroll=0;PM.confirm=null;PM.msg=null;PM.drag=null;
   if(PM.scr==='load'){const L=svList();let b=-1,bt=0;L.forEach((s,i)=>{if(s.info&&s.info.when>bt){bt=s.info.when;b=i;}});PM.sel=Math.max(0,b);}}
 function pmClose(){PM.on=false;PM.confirm=null;PM.drag=null;}
 function pmSay(m){PM.msg=m;PM.msgT=performance.now();}
 function pmBack(){if(PM.confirm){PM.confirm=null;return;}if(PM.scr==='main'||PM.from==='title'){if(PM.from==='title')pmClose();else paused=false;return;}PM.scr='main';PM.sel={tally:1,save:2,load:3}[PM.scr]||0;PM.sel=0;}
-function pmAct(a){if(a==='flip'){setFlip(!FLIP);pmFlipLabel();pmSay(FLIP?'Screen flipped 90° (turn your phone)':'Screen back to normal');return;}if(a==='resume'){paused=false;pmClose();}else if(a==='tally'){PM.scr='tally';PM.scroll=0;}else if(a==='save'){PM.scr='save';PM.sel=0;}else if(a==='load'){PM.scr='load';PM.sel=0;}
+function pmAct(a){if(a==='flip'){setFlip(!FLIP);pmFlipLabel();pmSay(FLIP?'Screen flipped 90° (turn your phone)':'Screen back to normal');return;}if(a==='resume'){paused=false;pmClose();}else if(a==='tally'){PM.scr='tally';PM.scroll=0;}else if(a==='save'){PM.scr='save';PM.sel=0;}else if(a==='load'){PM.scr='load';PM.sel=0;}else if(a==='settings'){PM.scr='settings';PM.sel=0;}
   else if(a==='restart'){PM.confirm={q:'Restart and begin a brand-new game?',sub:'(Your saves and the all-time tally are kept.)',sel:1,yes:()=>{pmClose();newGame();paused=false;}};}}
 function pmTallyReset(){PM.confirm={q:"Reset the ALL-TIME Dragon's Tally?",sub:'Every all-time count goes back to 0. This cannot be undone.',sel:1,yes:()=>{tallyReset();pmSay('All-time tally reset.');}};}
 function pmSlotAct(i){const L=svList();
   if(PM.scr==='save'){const s=L[i+1];if(!s)return;const go=()=>{const ok=svWrite(s.key);pmSay(ok?`Saved to ${s.name}!`:'Could not save (storage is full or blocked).');};
     if(s.info)PM.confirm={q:`Overwrite ${s.name}?`,sub:svDesc(s.info),sel:1,yes:go};else go();}
   else{const s=L[i];if(!s)return;if(!s.raw){pmSay(`${s.name} is empty.`);return;}const res=svLoad(s.key);if(res===true){pmClose();paused=false;scene='play';showToast(`📂 Loaded ${s.name}`);}else pmSay(res);}}
-function pmRowsN(){return PM.scr==='main'?PM_MAIN.length:PM.scr==='save'?4:PM.scr==='load'?5:0;}
+function pmRowsN(){return PM.scr==='settings'?SET_ROWS.length:PM.scr==='main'?PM_MAIN.length:PM.scr==='save'?4:PM.scr==='load'?5:0;}
 function pmInput(){// returns true when the menu consumed this frame's input
   const up=P('arrowup')||P('w'),dn=P('arrowdown')||P('s'),lf=P('arrowleft')||P('a'),rt=P('arrowright')||P('d'),ok=P('enter')||P(' ')||P('e'),back=P('escape')||P('p')||P('backspace');
   if(PM.confirm){const c=PM.confirm;if(up||dn||lf||rt)c.sel=1-c.sel;if(ok){PM.confirm=null;if(c.sel===0)c.yes();}else if(back)PM.confirm=null;return true;}
   if(PM.scr==='main'){if(back||P('r'))return false;if(up)PM.sel=(PM.sel+PM_MAIN.length-1)%PM_MAIN.length;if(dn)PM.sel=(PM.sel+1)%PM_MAIN.length;if(ok)pmAct(PM_MAIN[PM.sel][1]);return true;}
   if(PM.scr==='tally'){const n=tallyRows().length,mx=Math.max(0,n-PM.vis);if(up)PM.scroll--;if(dn)PM.scroll++;if(lf||P('pageup'))PM.scroll-=PM.vis-1;if(rt||P('pagedown'))PM.scroll+=PM.vis-1;PM.scroll=clamp(PM.scroll,0,mx);
     if(ok||P('x'))pmTallyReset();else if(back){PM.scr='main';PM.sel=1;}return true;}
+  if(PM.scr==='settings')return setInput(up,dn,lf,rt,ok,back);
   const n=pmRowsN();if(up)PM.sel=(PM.sel+n-1)%n;if(dn)PM.sel=(PM.sel+1)%n;
   if(ok){if(PM.sel===n-1){if(PM.from==='title')pmClose();else{PM.sel=PM.scr==='save'?2:3;PM.scr='main';}}else pmSlotAct(PM.sel);}
   else if(back){if(PM.from==='title')pmClose();else{PM.sel=PM.scr==='save'?2:3;PM.scr='main';}}
   return true;}
 function pmTap(x,y,id){if(typeof hitBtn==='function'&&PM.from==='pause'&&!PM.confirm){const b=hitBtn(x,y);if(b&&b.key==='p'){if(PM.scr==='main')paused=false;else{PM.scr='main';PM.sel=0;}return true;}}
-  for(let i=PM.hit.length-1;i>=0;i--){const h=PM.hit[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){if(h.list){PM.drag={id,y,sc:PM.scroll};return true;}h.f();return true;}if(h.modal)return true;}
+  for(let i=PM.hit.length-1;i>=0;i--){const h=PM.hit[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){if(h.list){PM.drag={id,y,sc:PM.scroll};return true;}if(h.slider){PM.sel=SET_ROWS.indexOf(h.slider);PM.drag={id,slider:h.slider,tx:h.tx,tw:h.tw};setVolX(h.slider,(x-h.tx)/h.tw);return true;}h.f();return true;}if(h.modal)return true;}
   return true;}
-function pmDragMove(id,y){const d=PM.drag;if(!d||d.id!==id)return;const n=tallyRows().length;PM.scroll=clamp(Math.round(d.sc-(y-d.y)/(PM.rh||24)),0,Math.max(0,n-PM.vis));}
+function pmDragMove(id,y,x){const d=PM.drag;if(!d||d.id!==id)return;if(d.slider){if(x!=null)setVolX(d.slider,(x-d.tx)/d.tw);return;}const n=tallyRows().length;PM.scroll=clamp(Math.round(d.sc-(y-d.y)/(PM.rh||24)),0,Math.max(0,n-PM.vis));}
 function pmBtn(x,y,w,h,label,f,on,col){panel(x,y,w,h);if(on){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(x,y,w,h);}txt(label,x+w/2,y+h/2+6,Math.min(17,h*.45),on?'#ffd24a':(col||'#eee'),'center');PM.hit.push({x,y,w,h,f});}
 function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;PM.hit=[];
   ctx.fillStyle='rgba(6,4,10,.66)';ctx.fillRect(0,0,VW,VH);
@@ -102,6 +103,7 @@ function drawPM(){ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;
     if(typeof drawGlutBar==='function')drawGlutBar(x0+30,y0+H-52,W-60,18);
     txt(touch?'Tap a choice · II resumes':'↑/↓ + Enter (A) choose · P / Esc / Start resume · R / Back restart',cx,y0+H-16,touch?13:12,'#bbb','center',false);}
   else if(PM.scr==='tally')drawTallyScreen(x0,W,S,ah,touch);
+  else if(PM.scr==='settings')drawSettings(x0,W,S,ah,touch);
   else drawSlots(x0,W,S,ah,touch);
   if(PM.msg&&performance.now()-PM.msgT<3500){ctx.font='bold 16px Georgia';const w=Math.min(aw-20,ctx.measureText(PM.msg).width+40);panel(cx-w/2,S.t+ah-58,w,38);txt(PM.msg,cx,S.t+ah-33,15,'#ffe28a','center');}
   if(PM.confirm){const c=PM.confirm,w=Math.min(aw-20,520),h=150,x=S.l+(aw-w)/2,y=S.t+(ah-h)/2;PM.hit.push({x:0,y:0,w:VW,h:VH,f:()=>{},modal:1});
@@ -146,3 +148,54 @@ function drawSlots(x0,W,S,ah,touch){const cx=x0+W/2,L=svList(),save=PM.scr==='sa
     else if(s.raw)txt('This save is from a different version.',x+12,y+rh-12,12,'#ffb080','left',false);});
   const by=y0+70+rows.length*(rh+6)+4,bh=touch?44:36;pmBtn(cx-110,by,220,bh,'◀ Back',()=>{if(PM.from==='title')pmClose();else{PM.scr='main';PM.sel=save?2:3;}},PM.sel===n-1);
   txt(touch?'Tap a slot':'↑/↓ + Enter (A) choose · Esc / B back',cx,by+bh+20,12,'#aaa','center',false);}
+
+// ================= (item 50) SETTINGS: music + sound-effects volume sliders, mute, graphics quality =================
+// Opened from the title screen (⚙ Settings row) and from the pause menu. Touch: big rows; drag or tap anywhere on a slider track (taps go through
+// toGame, so Flip 90° works); mouse: click / drag; keyboard & controller: ↑/↓ choose · ←/→ change · Enter toggle · Esc / B back.
+// Everything is saved in localStorage (dr_audio, dr_gfx, dr_gfxq), so it is remembered after a reload.
+const SET_ROWS=['music','sfx','mute','gfx','back'];
+const GFX_QS=['low','medium','high'],GFX_QN={low:'LOW',medium:'MEDIUM',high:'HIGH'};
+const GFX_QD={low:'LOW: the simple flat look · fastest',medium:'MEDIUM: all the effects at a lower resolution · smoother on phones',high:'HIGH: shading, lighting, day & night · sharpest'};
+let setPrevT=0;
+function setVolX(k,v,quiet){v=Math.round(clamp(v,0,1)*20)/20;AUD.muted=false;AUD[k]=v;audSave();audApply(); // moving a slider also un-mutes
+  if(k==='sfx'&&!quiet){const t=performance.now();if(t-setPrevT>150){setPrevT=t;try{SFX.play('coin');}catch(e){}}}}
+function setBack(){if(PM.from==='title')pmClose();else{PM.scr='main';PM.sel=Math.max(0,PM_MAIN.findIndex(r=>r[1]==='settings'));}}
+function setInput(up,dn,lf,rt,ok,back){const n=SET_ROWS.length;if(up)PM.sel=(PM.sel+n-1)%n;if(dn)PM.sel=(PM.sel+1)%n;
+  const k=SET_ROWS[PM.sel],d=lf?-1:rt?1:0;
+  if(k==='music'||k==='sfx'){if(d)setVolX(k,AUD[k]+d*.1);}
+  else if(k==='mute'){if(d||ok)toggleMute();}
+  else if(k==='gfx'){const i=GFX_QS.indexOf(GFX_Q);if(d)setGfxQ(GFX_QS[clamp(i+d,0,2)]);else if(ok)setGfxQ(GFX_QS[(i+1)%3]);}
+  else if(k==='back'&&ok){setBack();return true;}
+  if(back)setBack();return true;}
+function setRR(x,y,w,h,r){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);}
+function drawSettings(x0,W,S,ah,touch){const cx=x0+W/2,sm=W<520,gap=touch?10:8,bh=touch?46:36,foot=touch?16:30;
+  const rh=Math.max(36,Math.min(touch?56:46,Math.floor((ah-16-66-22-bh-foot-14)/4)-gap)),H=66+4*(rh+gap)+22+bh+foot+8,y0=S.t+Math.max(8,(ah-H)/2);
+  panel(x0,y0,W,H);ctx.fillStyle='rgba(30,18,8,.6)';ctx.fillRect(x0+1,y0+1,W-2,H-2);
+  txt('⚙  SETTINGS',cx,y0+34,24,'#ffd24a','center');txt('Saved on this device · remembered after a reload',cx,y0+54,11.5,'#bbb','center',false);
+  const lx=x0+14,lw=W-28,labW=sm?112:160,fs=sm?14:16,mut=AUD.muted;
+  SET_ROWS.slice(0,4).forEach((k,i)=>{const y=y0+66+i*(rh+gap),on=PM.sel===i,mid=y+rh/2;panel(lx,y,lw,rh);if(on){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(lx,y,lw,rh);}
+    PM.hit.push({x:lx,y,w:lw,h:rh,f:()=>{PM.sel=i;if(k==='mute')toggleMute();}});
+    const lab=k==='music'?'🎵  Music':k==='sfx'?(sm?'🔊  Effects':'🔊  Sound effects'):k==='mute'?(sm?'🔇  Mute':'🔇  Mute all sound'):'🖼  Graphics';
+    txt(lab,lx+12,mid+6,fs,on?'#ffd24a':'#fff','left');
+    const tx=lx+labW,right=lx+lw-12;
+    if(k==='music'||k==='sfx'){const vw=sm?52:64,tw=right-vw-tx-14,v=AUD[k],kr=touch?13:10;
+      setRR(tx,mid-5,tw,10,5);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fill();setRR(tx,mid-5,Math.max(10,tw*v),10,5);ctx.fillStyle=mut?'#77706a':'#ff9a2a';ctx.fill();
+      for(let j=1;j<10;j++){ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(tx+tw*j/10-.5,mid+8,1,4);}
+      ctx.beginPath();ctx.arc(tx+tw*v,mid,kr,0,TAU);ctx.fillStyle=mut?'#9a948c':'#ffd24a';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='#3a1a08';ctx.stroke();
+      txt(mut?'muted':Math.round(v*100)+'%',right,mid+6,fs,mut?'#aaa':'#fff','right');
+      PM.hit.push({x:tx-20,y,w:tw+40,h:rh,slider:k,tx,tw});}
+    else if(k==='mute'){const w=sm?96:120,h=Math.min(34,rh-12),x=right-w,yy=mid-h/2;setRR(x,yy,w,h,h/2);ctx.fillStyle=mut?'#a8322a':'#2f6a2a';ctx.fill();
+      ctx.beginPath();ctx.arc(mut?x+w-h/2:x+h/2,mid,h/2-4,0,TAU);ctx.fillStyle='#f4eadc';ctx.fill();
+      txt(mut?'ON':'OFF',mut?x+(w-h)/2:x+h+(w-h)/2,mid+5,14,'#fff','center');
+      txt(mut?'all sound is off':'sound is on',x-12,mid+5,sm?11:13,mut?'#ff9a8a':'#9f9','right',false);}
+    else{const n=3,g=6,sw=(right-tx-g*(n-1))/n,h=Math.min(38,rh-12);
+      GFX_QS.forEach((q,j)=>{const x=tx+j*(sw+g),yy=mid-h/2,sel=GFX_Q===q;setRR(x,yy,sw,h,8);ctx.fillStyle=sel?'#8a4a12':'rgba(0,0,0,.35)';ctx.fill();
+        ctx.lineWidth=sel?3:1.5;ctx.strokeStyle=sel?'#ffd24a':'rgba(255,255,255,.3)';ctx.stroke();txt(GFX_QN[q],x+sw/2,mid+5,sm?13:15,sel?'#ffd24a':'#ddd','center');
+        PM.hit.push({x,y,w:sw,h:rh,f:()=>{PM.sel=3;setGfxQ(q);}});});}});
+  const dy=y0+66+4*(rh+gap)+12;txt(GFX_QD[GFX_Q]||'',cx,dy,sm?11:12.5,'#bfe0ff','center',false);
+  const by=dy+10;pmBtn(cx-110,by,220,bh,'◀ Back',setBack,PM.sel===4);
+  if(!touch)txt('↑/↓ choose · ←/→ change · Enter toggle · Esc / B back · or click and drag  (N = mute, G = graphics anywhere)',cx,by+bh+20,11,'#aaa','center',false);}
+// mouse for the whole pause / title menu (desktop): click buttons, drag sliders and the tally list
+cv.addEventListener('mousedown',e=>{try{if(!PM.on||e.button!==0||Date.now()-TOUCH.lastTouch<900)return;audio();PM.mouseT=Date.now();const p=toGame(e.clientX,e.clientY);pmTap(p.x,p.y,'mouse');}catch(_){}});
+addEventListener('mousemove',e=>{try{if(PM.on&&PM.drag&&PM.drag.id==='mouse'){const p=toGame(e.clientX,e.clientY);pmDragMove('mouse',p.y,p.x);}}catch(_){}});
+addEventListener('mouseup',()=>{if(PM.drag&&PM.drag.id==='mouse')PM.drag=null;});

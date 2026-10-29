@@ -1906,3 +1906,36 @@ function sp47Pre(){const dy=D.y+10,dn=SP47.done;
 // ---- 45. phone-landscape HUD: the region banner and the big announcement banner are drawn LAST, as the bottom slot of the HUD centre lane (part6 hudSlot), so it never covers a bar ----
 const HUD_BANNER_LAST=1;
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);ctx.setTransform(DPR,0,0,DPR,0,0);drawRegionBanner();if(!G.over&&!G.won&&!paused)drawAnnounce(VW<760);else UI.banner=null;};}
+// ======================= items 58-59: the sand worm hunts ANY landed dragon in open desert, but never leaves the sand =======================
+// 58: land anywhere in the desert away from Sandhaven (and the other towns) and the oasis, and after ~1 s on the ground the worm tunnels over
+//     from wherever it is: a rumble + shake + "the sand is moving" warning and ripples racing toward you (~5 s of fair warning) before it
+//     bursts up under you. This repeats every time until the worm is DEFEATED (eaten or beaten); then it STAYS BEATEN until the dragon is
+//     lost (like the Wizard/Hydra/Griffin/Nessie): no more respawns, kept across castle levels and saves, back on death / new game.
+// 60: the desert road between Sandhaven and the castle is safe too (like Sandhaven and the oasis).
+// 59: the worm is confined to the desert: it never moves off the sand, and once the dragon is off the sand it loses the scent, cannot bite,
+//     and an above-ground worm sinks back into the dunes.
+const WRM={land:1.0,tunnel:650,far:780,road:140};
+// 60: the desert road from Sandhaven to the king's castle (the caravan road) is a safe zone too: within WRM.road px of it
+let WRM_ROAD=null;function wormRoadD(x,y){if(!WRM_ROAD||WRM_ROAD.lvl!==G.lvl||WRM_ROAD.g!==G){try{WRM_ROAD={P:rcPath(),lvl:G.lvl,g:G};}catch(e){return 1e9;}}
+  const P=WRM_ROAD.P;let b=1e9;for(let i=0;i<P.length-1;i++){const a=P[i],c=P[i+1],vx=c.x-a.x,vy=c.y-a.y,L=vx*vx+vy*vy||1,t=clamp(((x-a.x)*vx+(y-a.y)*vy)/L,0,1);b=Math.min(b,Math.hypot(x-a.x-vx*t,y-a.y-vy*t));}return b;}
+{const _ws=wormSafe;wormSafe=function(x,y){return _ws(x,y)||(!inDesert(x,y)?'out':null)||(wormRoadD(x,y)<WRM.road?'road':null);};}
+function wormBeat(u){if(G.wormDown)return;G.wormDown=1;G.wormWins=(G.wormWins||0)+1;
+  float(u.x,u.y-140,'The sand worm is beaten! The dunes are quiet now.','#7aff8a');if(typeof showToast==='function')showToast('🪱 Sand worm beaten! It stays gone until you lose this dragon');}
+{const _h=hurtUnit;hurtUnit=function(u){const w=u&&u.species==='sandworm'&&!u.dead;const r=_h.apply(this,arguments);if(w&&(u.dead||u.hp<=0))wormBeat(u);return r;};}
+{const _e=eatUnit;eatUnit=function(u){const w=u&&u.species==='sandworm'&&!u.dead;const r=_e.apply(this,arguments);if(w&&u.dead)wormBeat(u);return r;};}
+{const _s=spawnWorm;spawnWorm=function(){if(G.wormDown)return null;return _s.apply(this,arguments);};}
+// until it is beaten there is always a worm (no 150 s gap, also right after loading a save)
+{const _d=updDesert;updDesert=function(dt){if(G&&!G.wormDown)G.wormFirst=0;return _d.apply(this,arguments);};}
+{const _nl=nextLevel;nextLevel=function(){const k={wormDown:G.wormDown,wormWins:G.wormWins};const r=_nl.apply(this,arguments);Object.assign(G,k);return r;};}
+function wormOpen(){return D.alt<.4&&!G.over&&!G.won&&inDesert(D.x,D.y)&&!wormSafe(D.x,D.y);}
+function wormTunnel(u){const a0=Math.atan2(u.y-D.y,u.x-D.x);for(let i=0;i<16;i++){const a=a0+(i%2?1:-1)*Math.ceil(i/2)*.4;for(const r of[WRM.tunnel,500,380]){const x=D.x+Math.cos(a)*r,y=D.y+Math.sin(a)*r;
+    if(ZONES.desert.ok(x,y)&&inDesert(x,y)&&!wormSafe(x,y)){u.x=x;u.y=y;u.tgt=null;u.hPrey=null;u.cd=Math.max(u.cd,1);G.wormTunnel=(G.wormTunnel||0)+1;return true;}}}return false;}
+{const _uw=updWorm;updWorm=function(u,dt){
+  if(u.ws==='under'&&wormOpen()){G.wrmLand=(G.wrmLand||0)+dt;
+    if(G.wrmLand>=WRM.land&&dist(u,D)>WRM.far&&(!u.tunT||G.t-u.tunT>3)&&wormTunnel(u)){u.tunT=G.t;}
+    const dd=dist(u,D);if(dd<750){if(!u.rumT||G.t-u.rumT>8){u.rumT=G.t;G.wormRumble=(G.wormRumble||0)+1;float(D.x,D.y-140,'Rumble… rumble… something big is under the sand!','#ffd090');
+        if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('worm',u.x,u.y,.35);}catch(e){}}G.shake=Math.max(G.shake,dd<300?3:1.5);}}
+  else if(D.alt>=.4||!inDesert(D.x,D.y))G.wrmLand=0;
+  // off the sand (or in a safe zone): an above-ground worm stops and sinks back down
+  if(u.ws==='up'&&wormSafe(D.x,D.y)){u.stuck=false;u.upT=Math.min(u.upT,.25);G.wormSink=(G.wormSink||0)+1;}
+  const ox=u.x,oy=u.y;const r=_uw.apply(this,arguments);if(!u.dead&&!inDesert(u.x,u.y)){u.x=ox;u.y=oy;G.wormClamp=(G.wormClamp||0)+1;}return r;};}
