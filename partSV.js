@@ -37,13 +37,20 @@ function svLoad(key){let d;try{d=JSON.parse(localStorage.getItem(key)||'null');}
   if(!d.v||d.v<SAVE_MIN)return'That save is from an older version of the game and can\'t be loaded, sorry! Start a fresh rampage instead.';
   if(d.v>SAVE_V)return'That save is from a newer version of the game. Reload the page to update, then try again.';
   if(!d.G||!d.D||!Array.isArray(d.S))return'That save is missing data and could not be loaded, sorry!';
-  try{svApply(d);return true;}catch(e){console.warn('load failed',e);newGame();return'Something went wrong loading that save, so a new game was started instead.';}}
+  try{svApply(d);svToLair();return true;}catch(e){console.warn('load failed',e);newGame();return'Something went wrong loading that save, so a new game was started instead.';}}
+// every load starts the dragon at its lair spawn point, landed, still and safe, exactly where newGame puts it.
+// A carried egg goes back to its citadel nest (the egg hook already resets G.nrEggW/B), a carried princess back to her tower.
+let svD0=null;const SV_POSE=['x','y','vx','vy','ang','alt','altT','mode','swim','overWater','landDust','crashCD','cruise','crA','crT','crLava','nrKb','nrSlowT','webT','stompT','eatT','walkT','hurt','breath','mdStone','flapT'];
+function svToLair(){const z=svD0||{x:LAIR.x,y:LAIR.y+150,vx:0,vy:0,ang:-Math.PI/2,alt:0,altT:0,mode:'ground'};
+  for(const k of SV_POSE)if(k in z)D[k]=z[k];D.x=LAIR.x;D.y=LAIR.y+150;D.vx=0;D.vy=0;D.alt=0;D.altT=0;D.mode='ground';D.princess=false;D.nrEgg=null;
+  cam.x=D.x;cam.y=D.y;svD0=null;}
 function svApply(d){
   setEasy(!!d.easy);if(typeof setGfx==='function'&&typeof d.gfx==='boolean'&&d.gfx!==GFX_HI)setGfx(d.gfx);
   TALLY_KEEP=true;newGame({lvl:d.lvl||1,bank:d.G.bank||0});scene='play';
   for(const k in d.G)G[k]=d.G[k];G.over=false;G.won=false;G.banner=null;G.msg=null;G.spawnQ=[];G.regBanner=null;
-  Object.assign(D,d.D);D.vx=0;D.vy=0;
-  Object.assign(PR,d.PR||{});if(PR.state!=='carried')D.princess=false;
+  svD0=Object.assign({},D);Object.assign(D,d.D);D.vx=0;D.vy=0;
+  // a princess who was being carried goes back to her tower (a fresh newGame PR): loads always start at the lair (svToLair)
+  const prWas=d.PR&&d.PR.state;if(prWas!=='carried')Object.assign(PR,d.PR||{});D.princess=false;D.quip=null;
   // buildings, bridges, wells, the gate, the castle and the keep roof
   const used=new Set();
   d.S.forEach((r,i)=>{let s=structures[i];if(!s||used.has(s)||s.kind!==r.kind||Math.abs(s.x-r.x)>3||Math.abs(s.y-r.y)>3){s=null;let bd=300*300;for(const t of structures){if(used.has(t)||t.kind!==r.kind)continue;const q=d2(t.x,t.y,r.x,r.y);if(q<bd){bd=q;s=t;}}}
@@ -58,7 +65,7 @@ function svApply(d){
   wkLoad(d.WK);
   // live enemies are not saved: guards and waves re-muster from the wanted level and wave timers
   G.waveCD=Math.max(G.waveCD||0,8);G.spawnQT=0;
-  if(d.tally){TALLY.game=d.tally.g||{};TALLY.prGame=d.tally.pr||0;}if(PR.state==='carried'||PR.state==='lair')G._prCap=1;
+  if(d.tally){TALLY.game=d.tally.g||{};TALLY.prGame=d.tally.pr||0;}if(prWas==='carried'||prWas==='lair')G._prCap=1;
   GAME_PLAYT=d.playT||0;svAutoT=0;
   cam.x=D.x;cam.y=D.y;G.banner={text:'Game loaded',sub:`${svWhen(d.when)}  ·  Castle level ${G.lvl}`,t:2.5};}
 function svAuto(){if(scene==='play'&&!G.over&&!G.won&&G.t>3){svWrite('dr_save_auto');svAutoT=0;}}
