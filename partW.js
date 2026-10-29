@@ -155,10 +155,10 @@ function updWorld(dt){
   // soft world edges: the far ocean and the northern peaks gently push the dragon back
   const push=(v,a,b)=>v<a?(a-v):v>b?(b-v):0;const px=push(D.x,WX0+220,WX1-220),py=push(D.y,WY0+260,WY1-220);
   if(px||py){D.x+=px*2*dt;D.y+=py*2*dt;if(!G.edgeMsgT||G.t-G.edgeMsgT>6){G.edgeMsgT=G.t;float(D.x,D.y-90,D.y<WY0+400?'The frozen Northern Wastes stretch on forever...':D.x<WX0+400?'Endless crags block the way':'The open sea stretches forever...','#cfe8ff');}}}
-function drawRegionBanner(){const b=G.regBanner;if(!b)return;const al=clamp(Math.min(b.t,3.2-b.t)*2.5,0,1),sm=VW<760;ctx.globalAlpha=al;const y=(sm?150:132)+(typeof gateBroken==='function'&&gateBroken()&&!sm?26:0)+(typeof raidHudOn==='function'&&raidHudOn()&&!sm?24:0);
-  const name=REGION_NAMES[b.k];ctx.font=`bold ${sm?18:26}px Georgia`;const w=Math.max(ctx.measureText(name).width+70,sm?260:380),rcx=Math.max(VW/2,(typeof UI!=='undefined'&&UI.col?UI.col.x+UI.col.w+8:0)+w/2); // shifted right if needed to clear the left HUD column
+function drawRegionBanner(){const b=G.regBanner;if(!b)return;const al=clamp(Math.min(b.t,3.2-b.t)*2.5,0,1),sm=VW<760;ctx.globalAlpha=al;
+  const name=REGION_NAMES[b.k];ctx.font=`bold ${sm?18:26}px Georgia`;const H=b.first?74:58,S=hudSlot('banner',Math.max(ctx.measureText(name).width+70,sm?260:380),H,240),w=S.w,rcx=S.cx,y=S.y+30; // a slot in the HUD centre lane (clear of the vitals column, minimap and every bar)
   ctx.fillStyle='rgba(20,24,40,.72)';ctx.fillRect(rcx-w/2,y-30,w,b.first?74:58);ctx.strokeStyle='rgba(255,215,120,.7)';ctx.strokeRect(rcx-w/2+.5,y-29.5,w-1,(b.first?74:58)-1);
-  txt(`~ ${name} ~`,rcx,y,sm?18:26,'#ffe6a0','center');txt(REGION_SUB[b.k],rcx,y+20,sm?11:13,'#ddd','center',false);if(b.first)txt('New region discovered! +100',rcx,y+38,sm?11:13,'#9fffa8','center');ctx.globalAlpha=1;}
+  {const t1=`~ ${name} ~`,t2=REGION_SUB[b.k]||'',t3='New region discovered! +100';txt(t1,rcx,y,hudFit(t1,w-12,sm?18:26),'#ffe6a0','center');txt(t2,rcx,y+20,hudFit(t2,w-12,sm?11:13,false),'#ddd','center',false);if(b.first)txt(t3,rcx,y+38,hudFit(t3,w-12,sm?11:13),'#9fffa8','center');}ctx.globalAlpha=1;}
 // cheap far simulation: units far from the dragon think 1/8 as often (with the saved-up time)
 function farTick(u,dt){if(Math.abs(u.x-D.x)<1700&&Math.abs(u.y-D.y)<1300)return dt;u.acc=(u.acc||0)+dt;if(u.slot8===undefined)u.slot8=RI(0,7);
   if(((G.fc+u.slot8)&7)!==0)return 0;const a=Math.min(u.acc,.4);u.acc=0;return a;}

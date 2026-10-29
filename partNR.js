@@ -645,8 +645,8 @@ function wzDraw(){const t=wzTop(),x=t.x,y=t.y+20;
   if(WZB.on&&WZB.koT<=0&&WZB.maxHp){const w=90,y0=t.y-90;rect(x-w/2,y0,w,6,'rgba(0,0,0,.5)');rect(x-w/2,y0,w*WZB.hp/WZB.maxHp,6,'#b48aff');}}
 {const _cf=drawCrashFx;drawCrashFx=function(){const r=_cf.apply(this,arguments);nrDrawFx();return r;};}
 // screen boss bar
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!WZB.on||G.nrOpen||!WZB.maxHp)return;const w=Math.min(420,VW*.6),x=(VW-w)/2,y=VW<760?118:84;
-  rect(x-2,y-2,w+4,14,'rgba(20,10,40,.75)');rect(x,y,w*Math.max(0,WZB.hp)/WZB.maxHp,10,'#a87aff');txt('🛡️ Storm Wizard\'s magic shield'+(EASY?' (easy)':''),VW/2,y-6,13,'#e8dcff','center');};}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!WZB.on||G.nrOpen||!WZB.maxHp)return;const S=hudSlot('wizard',Math.min(424,VW*.6+4),32),w=S.w-4,x=S.x+2,y=S.y+20,lab='🛡️ Storm Wizard\'s magic shield'+(EASY?' (easy)':'');
+  rect(x-2,y-2,w+4,14,'rgba(20,10,40,.75)');rect(x,y,w*Math.max(0,WZB.hp)/WZB.maxHp,10,'#a87aff');txt(lab,S.cx,S.y+13,hudFit(lab,S.w,13),'#e8dcff','center');};}
 // ======================= magic turret towers =======================
 // Light lands: elven crystal towers shoot ice bolts (damage + a brief slow). Dark lands: orc spiked storm towers shoot lightning (short charge-up, then a zap).
 // They guard the castles, the border and the key villages, shoot the dragon and enemy-faction soldiers, can be burned/bitten down, and magically rebuild.
@@ -1054,8 +1054,8 @@ function mdDraw(){if(Math.abs(MDL.x-cam.x)>VW/cam.z/2+700||Math.abs(MDL.y-cam.y)
   return _te.apply(this,arguments);};}
 {const _f=nrDrawFx;nrDrawFx=function(){mdDraw();return _f.apply(this,arguments);};}
 // boss bar (fixed width, items 19/20): total head health, plus how many heads are up
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!HYD.on||mdDown()||!HYD.heads.length)return;const w=Math.min(380,VW*.55),x=(VW-w)/2,y=VW<760?150:118,up=HYD.heads.filter(hyAlive).length;
-  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,hyHpNow())/Math.max(1,hyMaxHp()),12,'#4fc39a');txt(`🐉 Hydra · ${up}/${HYD.heads.length} heads up`,VW/2,y+10,11,'#fff','center');};}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!HYD.on||mdDown()||!HYD.heads.length)return;const S=hudSlot('hydra',Math.min(384,VW*.55+4),16),w=S.w-4,x=S.x+2,y=S.y+2,up=HYD.heads.filter(hyAlive).length,lab=`🐉 Hydra · ${up}/${HYD.heads.length} heads up`;
+  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,hyHpNow())/Math.max(1,hyMaxHp()),12,'#4fc39a');txt(lab,S.cx,y+10,hudFit(lab,S.w-6,11),'#fff','center');};}
 {const _t=nrTick;nrTick=function(dt){_t(dt);hyUpd(dt);};}
 // ---- Medusa, now a REGULAR dark-side creature: a few roam the Goblin Bogs (far west); she can march with the dark armies. Snake-hair nips up close and a short,
 // telegraphed stone gaze: if you are facing her when her eyes flash you turn grey and slow for 1.2 s (never deadly). Normal health bar, edible like any creature. ----
@@ -1098,9 +1098,9 @@ function eggCarryDraw(){const h=heightOf(),a=D.ang,s=.85+.25*D.alt,x=D.x-Math.co
   ctx.globalAlpha=.35+.2*p;ell(x,y-14*s,30*s,32*s,W?'#ffffff':'#6a3aff');ctx.globalAlpha=1;
   for(const sd of[-1,1])line(x+sd*14,y-30*s,x+sd*9*s,y-12*s,'#5a4030',3);
   nrEggArt(x,y,D.nrEgg,s);for(const sd of[-1,1]){ell(x+sd*9*s,y-12*s,4,3,'#3a2a20');}G.eggDrawn=G.fc;}
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!D.nrEgg)return;const W=D.nrEgg==='W',x=VW/2,y=(VW<760?150:118)+(HYD.on&&!mdDown()?22:0)+(WZB.on&&!G.nrOpen?22:0);
-  rect(x-104,y-2,208,24,'rgba(0,0,0,.55)');ell(x-88,y+11,7,9,W?'#f4f4fa':'#1e1a26');ell(x-88,y+11,8.5,10.5,W?'rgba(255,255,255,.35)':'rgba(140,90,255,.45)');
-  txt(W?'Carrying the WHITE egg → lair':'Carrying the BLACK egg → lair',x+8,y+15,11,'#fff2c0','center');G.eggHud=G.fc;};}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!D.nrEgg)return;const W=D.nrEgg==='W',S=hudSlot('egg',208,24),y=S.y+2,lab=W?'Carrying the WHITE egg → lair':'Carrying the BLACK egg → lair';
+  rect(S.x,S.y,S.w,24,'rgba(0,0,0,.55)');ell(S.x+16,y+11,7,9,W?'#f4f4fa':'#1e1a26');ell(S.x+16,y+11,8.5,10.5,W?'rgba(255,255,255,.35)':'rgba(140,90,255,.45)');
+  txt(lab,S.x+28+(S.w-30)/2,y+15,hudFit(lab,S.w-32,11),'#fff2c0','center');G.eggHud=G.fc;};}
 // ---- 19/20. no HUD bar grows with its max: the health bar keeps the same fixed width as the others (fill = hp/maxHp, numbers as text) ----
 hpBarW=function(){return 230;};
 // saving mid-fight keeps the Hydra's heads (cut / burnt) - they are written to G before the snapshot
@@ -1580,10 +1580,13 @@ function grDraw(){const x=grDown()?G.grX:GR.x,y=grDown()?G.grY:GR.y;if(x==null||
   if(!GR.on)return;grArt(x,y,GR.face,GR.alt,{ko:GR.koT>0,anim:GR.anim,swipe:GR.swipeT>0,hit:G.t-GR.hitT<.12,tele:GR.act&&GR.act.ph==='tele'});G.grDrawn=G.fc;}
 {const _f=nrDrawFx;nrDrawFx=function(){const r=_f.apply(this,arguments);grDraw();return r;};}
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!GR.on||grDown()||!GR.maxHp)return;if(Math.hypot(D.x-GR.x,D.y-GR.y)>900&&!(G.t-GR.lastD<6))return;
-  const w=Math.min(380,VW*.55),x=(VW-w)/2,y=(VW<760?150:118)+(HYD.on&&!mdDown()?22:0);
-  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,GR.hp)/GR.maxHp,12,'#e0b050');txt(`🦅 Griffin · ${Math.ceil(GR.hp)}/${GR.maxHp}${GR.alt>.5?' · flying':''}`,VW/2,y+10,11,'#fff','center');G.grBar=G.fc;};}
+  const S=hudSlot('griffin',Math.min(384,VW*.55+4),16),w=S.w-4,x=S.x+2,y=S.y+2,lab=`🦅 Griffin · ${Math.ceil(GR.hp)}/${GR.maxHp}${GR.alt>.5?' · flying':''}`;
+  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,GR.hp)/GR.maxHp,12,'#e0b050');txt(lab,S.cx,y+10,hudFit(lab,S.w-6,11),'#fff','center');G.grBar=G.fc;};}
 {const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{if(big&&!grDown()&&GR.on){const s=mmw/(WX1-WX0);ell(mmx+(GR.x-WX0)*s,mmy+(GR.y-WY0)*s,4,4,'#e0b050');txt('🦅 Griffin',mmx+(GR.x-WX0)*s+7,mmy+(GR.y-WY0)*s+4,10,'#fff0c0','left');}}catch(e){}return r;};}
 {const _nl=nextLevel;nextLevel=function(){const k={grDown:G.grDown,grWins:G.grWins,grEaten:G.grEaten,grX:G.grX,grY:G.grY,grWp:G.grWp,grHpGain:G.grHpGain};const r=_nl.apply(this,arguments);Object.assign(G,k);GR.on=false;GR.act=null;return r;};}
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);GR.on=false;GR.koT=0;GR.act=null;GR.foe=null;GR.mode='walk';GR.alt=0;return r;};}
 // after a load: re-read his place/health from G
 {const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);GR.on=false;GR.act=null;GR.koT=0;HYD.on=false;HYD.P=[];return r;};}
+// ---- 45. phone-landscape HUD: the region banner and the big announcement banner are drawn LAST, as the bottom slot of the HUD centre lane (part6 hudSlot), so it never covers a bar ----
+const HUD_BANNER_LAST=1;
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);ctx.setTransform(DPR,0,0,DPR,0,0);drawRegionBanner();if(!G.over&&!G.won&&!paused)drawAnnounce(VW<760);else UI.banner=null;};}

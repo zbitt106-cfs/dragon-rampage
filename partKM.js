@@ -123,9 +123,9 @@ function kmDrawTool(u,x,y,f,bob){const st=u.poke>0?4:0,r=u.arm,hy=y-9+bob*.3;
 {const _d=drawWorld;drawWorld=function(){_d.apply(this,arguments);if(!kmProjs.length)return;const z=cam.z;ctx.save();ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));drawKmProjs();ctx.restore();};}
 // HUD: ringing bell + armed count under the wanted bar
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!G.milOn)return;const ring=(G.kmBell||0)>0,sw=ring?Math.sin(G.t*14)*.4:0;
-  const w=330,x=VW/2-w/2,y=88;ctx.fillStyle='rgba(90,14,10,.78)';ctx.fillRect(x,y,w,22);ctx.strokeStyle='rgba(255,200,120,.7)';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,21);
+  const S=hudSlot('militia',330,22),w=S.w,x=S.x,y=S.y;ctx.fillStyle='rgba(90,14,10,.78)';ctx.fillRect(x,y,w,22);ctx.strokeStyle='rgba(255,200,120,.7)';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,21);
   ctx.save();ctx.translate(x+16,y+11);ctx.rotate(sw);txt('🔔',0,5,14,'#ffe28a','center');ctx.restore();
-  txt(`The whole kingdom takes up arms! · ${G.kmArmed||0} armed`,x+w/2+8,y+15,12,'#ffe0b0','center');};}
+  {const lab=`The whole kingdom takes up arms! · ${G.kmArmed||0} armed`;txt(lab,x+w/2+12,y+15,hudFit(lab,w-34,12),'#ffe0b0','center');}};}
 {const _up=update;update=function(dt){_up.apply(this,arguments);if(scene==='play'){if(G.kmBell>0)G.kmBell-=dt;if(kmProjs.length)updKmProjs(dt);}};}
 {const _ng=newGame;newGame=function(){kmProjs=[];return _ng.apply(this,arguments);};}
 SFX_DEF.bell=(a,B,o,t)=>{osc(a,o,t,'sine',880,0,1.4,.35,.004);osc(a,o,t,'sine',1320,0,.9,.15,.004);osc(a,o,t,'triangle',440,0,1.6,.18,.004);return 1.5;};

@@ -98,10 +98,10 @@ const _drawKnightRD=drawKnight;drawKnight=function(u){if(u.champ){drawChampion(u
 // ---- HUD + map ----
 function raidStatus(){const r=RAID.cur;if(!r)return'';if(r.phase==='warn')return`${r.name} marches out in ${Math.ceil(r.t)}s`;const ch=r.champ,m=ch?Math.round(Math.hypot(ch.x-HX(),ch.y-HY())/10):0;
   const esc=r.members.filter(u=>u.raidEsc&&!u.dead).length;return r.phase==='flee'?`${r.short} runs for the castle with ${r.loot} gold! · ${Math.round(dist(ch,GATE)/10)} m to the gate`:`${r.short} + ${esc} spear${esc===1?'':'s'} marching on your hoard · ${m} m away`;}
-const _drawHUDRD=drawHUD;drawHUD=function(){_drawHUDRD();if(!raidHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760,y=sm?(typeof TOUCH!=='undefined'&&TOUCH.on?120:56):10+94+(typeof gateBroken==='function'&&gateBroken()?24:0),w=uiCenterW(Math.min(VW-20,440));
-  const pl=.75+.25*Math.sin(G.t*5),r=RAID.cur;ctx.fillStyle=`rgba(60,30,8,${.85*pl})`;ctx.fillRect(VW/2-w/2,y,w,20);ctx.strokeStyle=r.trim||'#ffd23a';ctx.lineWidth=1.5;ctx.strokeRect(VW/2-w/2+.5,y+.5,w-1,19);
-  ctx.fillStyle=r.col;ctx.fillRect(VW/2-w/2+3,y+3,14,14);drawCrest(VW/2-w/2+10,y+10,1.2,r.crest,r.trim);
-  txt(`⚔ HOARD RAID: ${raidStatus()}`,VW/2+8,y+14,sm?10:11,'#ffe8b0','center');};
+const _drawHUDRD=drawHUD;drawHUD=function(){_drawHUDRD();if(!raidHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760,S=hudSlot('raid',Math.min(VW-20,440),20),y=S.y,w=S.w,X=S.x,lab=`⚔ HOARD RAID: ${raidStatus()}`;
+  const pl=.75+.25*Math.sin(G.t*5),r=RAID.cur;ctx.fillStyle=`rgba(60,30,8,${.85*pl})`;ctx.fillRect(X,y,w,20);ctx.strokeStyle=r.trim||'#ffd23a';ctx.lineWidth=1.5;ctx.strokeRect(X+.5,y+.5,w-1,19);
+  ctx.fillStyle=r.col;ctx.fillRect(X+3,y+3,14,14);drawCrest(X+10,y+10,1.2,r.crest,r.trim);
+  txt(lab,X+20+(w-22)/2,y+14,hudFit(lab,w-26,sm?10:11),'#ffe8b0','center');};
 const _drawMapRD=drawMap;drawMap=function(mmx,mmy,mmw,big){_drawMapRD(mmx,mmy,mmw,big);const r=RAID.cur;if(!r||!r.champ||r.champ.dead)return;const s=mmw/(WX1-WX0),X=mmx+(r.champ.x-WX0)*s,Y=mmy+(r.champ.y-WY0)*s,pl=Math.sin(Date.now()/180)>0;
   for(const u of r.members)if(u.raidEsc&&!u.dead){ctx.fillStyle=r.col;ctx.fillRect(mmx+(u.x-WX0)*s-1,mmy+(u.y-WY0)*s-1,2,2);}
   const h=big?16:9;ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(X,Y);ctx.lineTo(X,Y-h);ctx.stroke();ctx.fillStyle=pl?r.col:r.trim;ctx.fillRect(X,Y-h,big?10:6,big?7:4);

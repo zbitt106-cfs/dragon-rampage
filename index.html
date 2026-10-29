@@ -404,10 +404,10 @@ function updWorld(dt){
   // soft world edges: the far ocean and the northern peaks gently push the dragon back
   const push=(v,a,b)=>v<a?(a-v):v>b?(b-v):0;const px=push(D.x,WX0+220,WX1-220),py=push(D.y,WY0+260,WY1-220);
   if(px||py){D.x+=px*2*dt;D.y+=py*2*dt;if(!G.edgeMsgT||G.t-G.edgeMsgT>6){G.edgeMsgT=G.t;float(D.x,D.y-90,D.y<WY0+400?'The frozen Northern Wastes stretch on forever...':D.x<WX0+400?'Endless crags block the way':'The open sea stretches forever...','#cfe8ff');}}}
-function drawRegionBanner(){const b=G.regBanner;if(!b)return;const al=clamp(Math.min(b.t,3.2-b.t)*2.5,0,1),sm=VW<760;ctx.globalAlpha=al;const y=(sm?150:132)+(typeof gateBroken==='function'&&gateBroken()&&!sm?26:0)+(typeof raidHudOn==='function'&&raidHudOn()&&!sm?24:0);
-  const name=REGION_NAMES[b.k];ctx.font=`bold ${sm?18:26}px Georgia`;const w=Math.max(ctx.measureText(name).width+70,sm?260:380),rcx=Math.max(VW/2,(typeof UI!=='undefined'&&UI.col?UI.col.x+UI.col.w+8:0)+w/2); // shifted right if needed to clear the left HUD column
+function drawRegionBanner(){const b=G.regBanner;if(!b)return;const al=clamp(Math.min(b.t,3.2-b.t)*2.5,0,1),sm=VW<760;ctx.globalAlpha=al;
+  const name=REGION_NAMES[b.k];ctx.font=`bold ${sm?18:26}px Georgia`;const H=b.first?74:58,S=hudSlot('banner',Math.max(ctx.measureText(name).width+70,sm?260:380),H,240),w=S.w,rcx=S.cx,y=S.y+30; // a slot in the HUD centre lane (clear of the vitals column, minimap and every bar)
   ctx.fillStyle='rgba(20,24,40,.72)';ctx.fillRect(rcx-w/2,y-30,w,b.first?74:58);ctx.strokeStyle='rgba(255,215,120,.7)';ctx.strokeRect(rcx-w/2+.5,y-29.5,w-1,(b.first?74:58)-1);
-  txt(`~ ${name} ~`,rcx,y,sm?18:26,'#ffe6a0','center');txt(REGION_SUB[b.k],rcx,y+20,sm?11:13,'#ddd','center',false);if(b.first)txt('New region discovered! +100',rcx,y+38,sm?11:13,'#9fffa8','center');ctx.globalAlpha=1;}
+  {const t1=`~ ${name} ~`,t2=REGION_SUB[b.k]||'',t3='New region discovered! +100';txt(t1,rcx,y,hudFit(t1,w-12,sm?18:26),'#ffe6a0','center');txt(t2,rcx,y+20,hudFit(t2,w-12,sm?11:13,false),'#ddd','center',false);if(b.first)txt(t3,rcx,y+38,hudFit(t3,w-12,sm?11:13),'#9fffa8','center');}ctx.globalAlpha=1;}
 // cheap far simulation: units far from the dragon think 1/8 as often (with the saved-up time)
 function farTick(u,dt){if(Math.abs(u.x-D.x)<1700&&Math.abs(u.y-D.y)<1300)return dt;u.acc=(u.acc||0)+dt;if(u.slot8===undefined)u.slot8=RI(0,7);
   if(((G.fc+u.slot8)&7)!==0)return 0;const a=Math.min(u.acc,.4);u.acc=0;return a;}
@@ -3131,10 +3131,10 @@ const _drawKnightRD=drawKnight;drawKnight=function(u){if(u.champ){drawChampion(u
 // ---- HUD + map ----
 function raidStatus(){const r=RAID.cur;if(!r)return'';if(r.phase==='warn')return`${r.name} marches out in ${Math.ceil(r.t)}s`;const ch=r.champ,m=ch?Math.round(Math.hypot(ch.x-HX(),ch.y-HY())/10):0;
   const esc=r.members.filter(u=>u.raidEsc&&!u.dead).length;return r.phase==='flee'?`${r.short} runs for the castle with ${r.loot} gold! · ${Math.round(dist(ch,GATE)/10)} m to the gate`:`${r.short} + ${esc} spear${esc===1?'':'s'} marching on your hoard · ${m} m away`;}
-const _drawHUDRD=drawHUD;drawHUD=function(){_drawHUDRD();if(!raidHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760,y=sm?(typeof TOUCH!=='undefined'&&TOUCH.on?120:56):10+94+(typeof gateBroken==='function'&&gateBroken()?24:0),w=uiCenterW(Math.min(VW-20,440));
-  const pl=.75+.25*Math.sin(G.t*5),r=RAID.cur;ctx.fillStyle=`rgba(60,30,8,${.85*pl})`;ctx.fillRect(VW/2-w/2,y,w,20);ctx.strokeStyle=r.trim||'#ffd23a';ctx.lineWidth=1.5;ctx.strokeRect(VW/2-w/2+.5,y+.5,w-1,19);
-  ctx.fillStyle=r.col;ctx.fillRect(VW/2-w/2+3,y+3,14,14);drawCrest(VW/2-w/2+10,y+10,1.2,r.crest,r.trim);
-  txt(`⚔ HOARD RAID: ${raidStatus()}`,VW/2+8,y+14,sm?10:11,'#ffe8b0','center');};
+const _drawHUDRD=drawHUD;drawHUD=function(){_drawHUDRD();if(!raidHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760,S=hudSlot('raid',Math.min(VW-20,440),20),y=S.y,w=S.w,X=S.x,lab=`⚔ HOARD RAID: ${raidStatus()}`;
+  const pl=.75+.25*Math.sin(G.t*5),r=RAID.cur;ctx.fillStyle=`rgba(60,30,8,${.85*pl})`;ctx.fillRect(X,y,w,20);ctx.strokeStyle=r.trim||'#ffd23a';ctx.lineWidth=1.5;ctx.strokeRect(X+.5,y+.5,w-1,19);
+  ctx.fillStyle=r.col;ctx.fillRect(X+3,y+3,14,14);drawCrest(X+10,y+10,1.2,r.crest,r.trim);
+  txt(lab,X+20+(w-22)/2,y+14,hudFit(lab,w-26,sm?10:11),'#ffe8b0','center');};
 const _drawMapRD=drawMap;drawMap=function(mmx,mmy,mmw,big){_drawMapRD(mmx,mmy,mmw,big);const r=RAID.cur;if(!r||!r.champ||r.champ.dead)return;const s=mmw/(WX1-WX0),X=mmx+(r.champ.x-WX0)*s,Y=mmy+(r.champ.y-WY0)*s,pl=Math.sin(Date.now()/180)>0;
   for(const u of r.members)if(u.raidEsc&&!u.dead){ctx.fillStyle=r.col;ctx.fillRect(mmx+(u.x-WX0)*s-1,mmy+(u.y-WY0)*s-1,2,2);}
   const h=big?16:9;ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(X,Y);ctx.lineTo(X,Y-h);ctx.stroke();ctx.fillStyle=pl?r.col:r.trim;ctx.fillRect(X,Y-h,big?10:6,big?7:4);
@@ -4079,9 +4079,9 @@ function kmDrawTool(u,x,y,f,bob){const st=u.poke>0?4:0,r=u.arm,hy=y-9+bob*.3;
 {const _d=drawWorld;drawWorld=function(){_d.apply(this,arguments);if(!kmProjs.length)return;const z=cam.z;ctx.save();ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));drawKmProjs();ctx.restore();};}
 // HUD: ringing bell + armed count under the wanted bar
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!G.milOn)return;const ring=(G.kmBell||0)>0,sw=ring?Math.sin(G.t*14)*.4:0;
-  const w=330,x=VW/2-w/2,y=88;ctx.fillStyle='rgba(90,14,10,.78)';ctx.fillRect(x,y,w,22);ctx.strokeStyle='rgba(255,200,120,.7)';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,21);
+  const S=hudSlot('militia',330,22),w=S.w,x=S.x,y=S.y;ctx.fillStyle='rgba(90,14,10,.78)';ctx.fillRect(x,y,w,22);ctx.strokeStyle='rgba(255,200,120,.7)';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,21);
   ctx.save();ctx.translate(x+16,y+11);ctx.rotate(sw);txt('🔔',0,5,14,'#ffe28a','center');ctx.restore();
-  txt(`The whole kingdom takes up arms! · ${G.kmArmed||0} armed`,x+w/2+8,y+15,12,'#ffe0b0','center');};}
+  {const lab=`The whole kingdom takes up arms! · ${G.kmArmed||0} armed`;txt(lab,x+w/2+12,y+15,hudFit(lab,w-34,12),'#ffe0b0','center');}};}
 {const _up=update;update=function(dt){_up.apply(this,arguments);if(scene==='play'){if(G.kmBell>0)G.kmBell-=dt;if(kmProjs.length)updKmProjs(dt);}};}
 {const _ng=newGame;newGame=function(){kmProjs=[];return _ng.apply(this,arguments);};}
 SFX_DEF.bell=(a,B,o,t)=>{osc(a,o,t,'sine',880,0,1.4,.35,.004);osc(a,o,t,'sine',1320,0,.9,.15,.004);osc(a,o,t,'triangle',440,0,1.6,.18,.004);return 1.5;};
@@ -4335,7 +4335,7 @@ const _drawCrashFxPR=drawCrashFx;drawCrashFx=function(){_drawCrashFxPR();const c
     ell(x+7,y+bb*.5,7,5,'#8a5a2a');line(x+1,y+bb*.5,x+13,y+bb*.5,'#5a3a1a',1.2);ell(x,y-6+bb,5,5,'#f0c8a0');ctx.fillStyle='#9aa2ac';ctx.beginPath();ctx.arc(x,y-7+bb,5.4,Math.PI,0);ctx.fill();
     line(x-5,y-3+bb,x-10,y-12+Math.sin(G.t*14+w.ph)*4,'#9aa2ac',2.2);ctx.globalAlpha=1;}};
 // HUD: boss bar at the top of the screen
-function princeHudRect(){const sm=VW<760,tch=typeof TOUCH!=='undefined'&&TOUCH.on,y=sm?(tch?120:56):104+(typeof gateBroken==='function'&&gateBroken()?24:0),w=uiCenterW(Math.min(VW-20,sm?420:520));return{x:VW/2-w/2,y,w,h:sm?30:34};}
+function princeHudRect(){const sm=VW<760;if(PRN.hudR&&PRN.hudN===HUDL.n)return PRN.hudR;const S=hudSlot('prince',Math.min(VW-20,sm?420:520),sm?30:34,220);PRN.hudN=HUDL.n;return PRN.hudR={x:S.x,y:S.y,w:S.w,h:S.h};} // a slot in the HUD centre lane
 const _drawHUDPR=drawHUD;drawHUD=function(){_drawHUDPR();if(!princeHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);
   const c=PRN.cur,B=princeHudRect(),sm=VW<760,pl=.8+.2*Math.sin(G.t*4);ctx.fillStyle=`rgba(28,14,38,${.88*pl+.08})`;ctx.fillRect(B.x,B.y,B.w,B.h);ctx.strokeStyle=c.trim;ctx.lineWidth=2;ctx.strokeRect(B.x+1,B.y+1,B.w-2,B.h-2);
   ctx.fillStyle=c.col;ctx.fillRect(B.x+4,B.y+4,B.h-8,B.h-8);drawCrest(B.x+B.h/2,B.y+B.h/2,sm?1.5:1.8,c.crest,c.trim);
@@ -6300,7 +6300,7 @@ const LA={last:null};
 function laHide(){return scene!=='play'||!G||!D||G.over||G.won||paused||G.bigMap;}
 function laDragonScreen(){const h=typeof heightOf==='function'?heightOf():0;return{x:(D.x-cam.x)*cam.z+VW/2,y:(D.y-h*.5-cam.y)*cam.z+VH/2};}
 function laLairOnScreen(){const sx=(LAIR.x-cam.x)*cam.z+VW/2,sy=(LAIR.y-cam.y)*cam.z+VH/2,m=30;return sx>m&&sx<VW-m&&sy>m&&sy<VH-m;}
-function laBlocked(x,y,pad){if(typeof UI!=='undefined')for(const r of [UI.col,UI.mm])if(r&&x>r.x-pad&&x<r.x+r.w+pad&&y>r.y-pad&&y<r.y+r.h+pad)return true;if(typeof TOUCH!=='undefined'&&TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(Math.hypot(x-b.x,y-b.y)<b.r+pad)return true;return false;}
+function laBlocked(x,y,pad){if(typeof UI!=='undefined')for(const r of [UI.col,UI.mm,...(UI.boxes||[])])if(r&&x>r.x-pad&&x<r.x+r.w+pad&&y>r.y-pad&&y<r.y+r.h+pad)return true;if(typeof TOUCH!=='undefined'&&TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(Math.hypot(x-b.x,y-b.y)<b.r+pad)return true;return false;}
 function laSpot(){const sm=VW<760,S=typeof SAFE!=='undefined'?SAFE:{l:0,r:0,t:0,b:0},M=sm?20:24;
   // pinned to the screen border in the lair's direction (from screen centre), small margin, clear of HUD + touch buttons
   const top=(TOUCH&&TOUCH.on?118:sm?96:140)+S.t+(typeof princeHudOn==='function'&&princeHudOn()?(sm?36:30):0),bot=VH-S.b-M-(TOUCH&&TOUCH.on?0:14),lft=S.l+M,rgt=VW-S.r-M;
@@ -7893,8 +7893,8 @@ function wzDraw(){const t=wzTop(),x=t.x,y=t.y+20;
   if(WZB.on&&WZB.koT<=0&&WZB.maxHp){const w=90,y0=t.y-90;rect(x-w/2,y0,w,6,'rgba(0,0,0,.5)');rect(x-w/2,y0,w*WZB.hp/WZB.maxHp,6,'#b48aff');}}
 {const _cf=drawCrashFx;drawCrashFx=function(){const r=_cf.apply(this,arguments);nrDrawFx();return r;};}
 // screen boss bar
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!WZB.on||G.nrOpen||!WZB.maxHp)return;const w=Math.min(420,VW*.6),x=(VW-w)/2,y=VW<760?118:84;
-  rect(x-2,y-2,w+4,14,'rgba(20,10,40,.75)');rect(x,y,w*Math.max(0,WZB.hp)/WZB.maxHp,10,'#a87aff');txt('🛡️ Storm Wizard\'s magic shield'+(EASY?' (easy)':''),VW/2,y-6,13,'#e8dcff','center');};}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!WZB.on||G.nrOpen||!WZB.maxHp)return;const S=hudSlot('wizard',Math.min(424,VW*.6+4),32),w=S.w-4,x=S.x+2,y=S.y+20,lab='🛡️ Storm Wizard\'s magic shield'+(EASY?' (easy)':'');
+  rect(x-2,y-2,w+4,14,'rgba(20,10,40,.75)');rect(x,y,w*Math.max(0,WZB.hp)/WZB.maxHp,10,'#a87aff');txt(lab,S.cx,S.y+13,hudFit(lab,S.w,13),'#e8dcff','center');};}
 // ======================= magic turret towers =======================
 // Light lands: elven crystal towers shoot ice bolts (damage + a brief slow). Dark lands: orc spiked storm towers shoot lightning (short charge-up, then a zap).
 // They guard the castles, the border and the key villages, shoot the dragon and enemy-faction soldiers, can be burned/bitten down, and magically rebuild.
@@ -8302,8 +8302,8 @@ function mdDraw(){if(Math.abs(MDL.x-cam.x)>VW/cam.z/2+700||Math.abs(MDL.y-cam.y)
   return _te.apply(this,arguments);};}
 {const _f=nrDrawFx;nrDrawFx=function(){mdDraw();return _f.apply(this,arguments);};}
 // boss bar (fixed width, items 19/20): total head health, plus how many heads are up
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!HYD.on||mdDown()||!HYD.heads.length)return;const w=Math.min(380,VW*.55),x=(VW-w)/2,y=VW<760?150:118,up=HYD.heads.filter(hyAlive).length;
-  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,hyHpNow())/Math.max(1,hyMaxHp()),12,'#4fc39a');txt(`🐉 Hydra · ${up}/${HYD.heads.length} heads up`,VW/2,y+10,11,'#fff','center');};}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!HYD.on||mdDown()||!HYD.heads.length)return;const S=hudSlot('hydra',Math.min(384,VW*.55+4),16),w=S.w-4,x=S.x+2,y=S.y+2,up=HYD.heads.filter(hyAlive).length,lab=`🐉 Hydra · ${up}/${HYD.heads.length} heads up`;
+  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,hyHpNow())/Math.max(1,hyMaxHp()),12,'#4fc39a');txt(lab,S.cx,y+10,hudFit(lab,S.w-6,11),'#fff','center');};}
 {const _t=nrTick;nrTick=function(dt){_t(dt);hyUpd(dt);};}
 // ---- Medusa, now a REGULAR dark-side creature: a few roam the Goblin Bogs (far west); she can march with the dark armies. Snake-hair nips up close and a short,
 // telegraphed stone gaze: if you are facing her when her eyes flash you turn grey and slow for 1.2 s (never deadly). Normal health bar, edible like any creature. ----
@@ -8346,9 +8346,9 @@ function eggCarryDraw(){const h=heightOf(),a=D.ang,s=.85+.25*D.alt,x=D.x-Math.co
   ctx.globalAlpha=.35+.2*p;ell(x,y-14*s,30*s,32*s,W?'#ffffff':'#6a3aff');ctx.globalAlpha=1;
   for(const sd of[-1,1])line(x+sd*14,y-30*s,x+sd*9*s,y-12*s,'#5a4030',3);
   nrEggArt(x,y,D.nrEgg,s);for(const sd of[-1,1]){ell(x+sd*9*s,y-12*s,4,3,'#3a2a20');}G.eggDrawn=G.fc;}
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!D.nrEgg)return;const W=D.nrEgg==='W',x=VW/2,y=(VW<760?150:118)+(HYD.on&&!mdDown()?22:0)+(WZB.on&&!G.nrOpen?22:0);
-  rect(x-104,y-2,208,24,'rgba(0,0,0,.55)');ell(x-88,y+11,7,9,W?'#f4f4fa':'#1e1a26');ell(x-88,y+11,8.5,10.5,W?'rgba(255,255,255,.35)':'rgba(140,90,255,.45)');
-  txt(W?'Carrying the WHITE egg → lair':'Carrying the BLACK egg → lair',x+8,y+15,11,'#fff2c0','center');G.eggHud=G.fc;};}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!D.nrEgg)return;const W=D.nrEgg==='W',S=hudSlot('egg',208,24),y=S.y+2,lab=W?'Carrying the WHITE egg → lair':'Carrying the BLACK egg → lair';
+  rect(S.x,S.y,S.w,24,'rgba(0,0,0,.55)');ell(S.x+16,y+11,7,9,W?'#f4f4fa':'#1e1a26');ell(S.x+16,y+11,8.5,10.5,W?'rgba(255,255,255,.35)':'rgba(140,90,255,.45)');
+  txt(lab,S.x+28+(S.w-30)/2,y+15,hudFit(lab,S.w-32,11),'#fff2c0','center');G.eggHud=G.fc;};}
 // ---- 19/20. no HUD bar grows with its max: the health bar keeps the same fixed width as the others (fill = hp/maxHp, numbers as text) ----
 hpBarW=function(){return 230;};
 // saving mid-fight keeps the Hydra's heads (cut / burnt) - they are written to G before the snapshot
@@ -8828,13 +8828,16 @@ function grDraw(){const x=grDown()?G.grX:GR.x,y=grDown()?G.grY:GR.y;if(x==null||
   if(!GR.on)return;grArt(x,y,GR.face,GR.alt,{ko:GR.koT>0,anim:GR.anim,swipe:GR.swipeT>0,hit:G.t-GR.hitT<.12,tele:GR.act&&GR.act.ph==='tele'});G.grDrawn=G.fc;}
 {const _f=nrDrawFx;nrDrawFx=function(){const r=_f.apply(this,arguments);grDraw();return r;};}
 {const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!GR.on||grDown()||!GR.maxHp)return;if(Math.hypot(D.x-GR.x,D.y-GR.y)>900&&!(G.t-GR.lastD<6))return;
-  const w=Math.min(380,VW*.55),x=(VW-w)/2,y=(VW<760?150:118)+(HYD.on&&!mdDown()?22:0);
-  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,GR.hp)/GR.maxHp,12,'#e0b050');txt(`🦅 Griffin · ${Math.ceil(GR.hp)}/${GR.maxHp}${GR.alt>.5?' · flying':''}`,VW/2,y+10,11,'#fff','center');G.grBar=G.fc;};}
+  const S=hudSlot('griffin',Math.min(384,VW*.55+4),16),w=S.w-4,x=S.x+2,y=S.y+2,lab=`🦅 Griffin · ${Math.ceil(GR.hp)}/${GR.maxHp}${GR.alt>.5?' · flying':''}`;
+  rect(x-2,y-2,w+4,16,'rgba(0,0,0,.6)');rect(x,y,w*Math.max(0,GR.hp)/GR.maxHp,12,'#e0b050');txt(lab,S.cx,y+10,hudFit(lab,S.w-6,11),'#fff','center');G.grBar=G.fc;};}
 {const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{if(big&&!grDown()&&GR.on){const s=mmw/(WX1-WX0);ell(mmx+(GR.x-WX0)*s,mmy+(GR.y-WY0)*s,4,4,'#e0b050');txt('🦅 Griffin',mmx+(GR.x-WX0)*s+7,mmy+(GR.y-WY0)*s+4,10,'#fff0c0','left');}}catch(e){}return r;};}
 {const _nl=nextLevel;nextLevel=function(){const k={grDown:G.grDown,grWins:G.grWins,grEaten:G.grEaten,grX:G.grX,grY:G.grY,grWp:G.grWp,grHpGain:G.grHpGain};const r=_nl.apply(this,arguments);Object.assign(G,k);GR.on=false;GR.act=null;return r;};}
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);GR.on=false;GR.koT=0;GR.act=null;GR.foe=null;GR.mode='walk';GR.alt=0;return r;};}
 // after a load: re-read his place/health from G
 {const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);GR.on=false;GR.act=null;GR.koT=0;HYD.on=false;HYD.P=[];return r;};}
+// ---- 45. phone-landscape HUD: the region banner and the big announcement banner are drawn LAST, as the bottom slot of the HUD centre lane (part6 hudSlot), so it never covers a bar ----
+const HUD_BANNER_LAST=1;
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);ctx.setTransform(DPR,0,0,DPR,0,0);drawRegionBanner();if(!G.over&&!G.won&&!paused)drawAnnounce(VW<760);else UI.banner=null;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
@@ -8904,10 +8907,30 @@ let MAPLB=null;// when set (big world map), every label's box is recorded so reg
 function lbBox(s,x,y,size,align){const w=ctx.measureText(s).width,x0=align==='center'?x-w/2:align==='right'?x-w:x;return{x0:x0-2,y0:y-size,x1:x0+w+2,y1:y+3};}
 const lbHit=(b,L)=>L.some(o=>b.x0<o.x1&&b.x1>o.x0&&b.y0<o.y1&&b.y1>o.y0);
 function txt(s,x,y,size,col,align,bold){ctx.font=`${bold===false?'':'bold '}${size}px Georgia`;ctx.textAlign=align||'left';if(MAPLB)MAPLB.push(lbBox(s,x,y,size,align||'left'));ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillText(s,x+1.5,y+1.5);ctx.fillStyle=col||'#fff';ctx.fillText(s,x,y);}
-function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
+// ---------- HUD centre lane (item 45): every top-centre widget (WANTED panel, concern pill, gate warning, raid/prince/boss bars, egg note,
+// militia bell, region banner) asks hudSlot() for a box. Boxes stack downwards with a gap, never wider than the free lane between the left
+// vitals column and the minimap (below the minimap the lane runs to the right edge), so nothing overlaps or touches at any screen size.
+// UI.boxes records every widget box (local HUD px, inside the safe area) for the hudlay overlap test and the lair arrow.
+const HUDL={x0:270,x1:700,xr:950,mmB:0,y:10,gap:6,obs:[],n:0};
+function hudBox(k,x,y,w,h){if(!UI.boxes)UI.boxes=[];UI.boxes.push({k,x,y,w,h});}
+function hudSpan(y,h){const L=HUDL;let a=L.x0,b=y<L.mmB?L.x1:L.xr;for(const o of L.obs)if(y<o.y+o.h+L.gap&&y+h+L.gap>o.y){if(o.x+o.w/2>VW/2)b=Math.min(b,o.x-L.gap);else a=Math.max(a,o.x+o.w+L.gap);}return[a,b];}
+function hudLaneW(){const [a,b]=hudSpan(HUDL.y,72);return b-a;}
+// fit a label into a width: shrink the font (down to 8 px) rather than let it spill out of its box
+function hudFit(s,maxW,size,bold){for(;size>8;size--){ctx.font=`${bold===false?'':'bold '}${size}px Georgia`;if(ctx.measureText(s).width<=maxW)break;}return size;}
+function hudSlot(k,want,h,minW){const L=HUDL;minW=Math.min(want,minW||160);if(L.y<L.mmB&&hudSpan(L.y,h)[1]-hudSpan(L.y,h)[0]<minW)L.y=Math.max(L.y,L.mmB+L.gap); // too tight beside the minimap: drop below it
+  const [x0,x1]=hudSpan(L.y,h),w=Math.max(40,Math.min(want,x1-x0)),x=Math.max(x0,Math.min(VW/2-w/2,x1-w)),y=L.y;L.y+=h+L.gap;hudBox(k,x,y,w,h);return{x,y,w,h,cx:x+w/2};}
+function hudMMGeom(sm){const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000)),room=Math.floor(VW/2-(sm?210:260)-20),mm0=Math.max(120,Math.min(base,room,Math.round((sm||TOUCH.on?104:150)*(WX1-WX0)/(WY1-WY0)))),mmCap=TOUCH.on&&VH<520?Math.max(56,VH*0.12):1e9,mmw=Math.min(mm0,Math.round(mmCap*(WX1-WX0)/(WY1-WY0))),mmh=mmw*(WY1-WY0)/(WX1-WX0); // short landscape phones: cap the minimap height (the world got taller with the Northern Realms) so the region banner stays clear of the touch buttons
+  let mx0=VW-mmw-8,my0=8;
+  // phones with rounded screen corners (any safe-area inset): keep the map's outer corner out of the ~55 pt corner curve
+  if(typeof TOUCH!=='undefined'&&TOUCH.on&&SAFE.t+SAFE.r+SAFE.b+SAFE.l>0){const need=56/UIS,gr=SAFE.r+5,gt=SAFE.t+5;if(gr<need&&gt<need){if(need-gr<=need-gt)mx0-=need-gr;else my0+=need-gt;}}
+  ctx.font='10px Georgia';const capW=Math.ceil(ctx.measureText(`Explored ${exploredPct()}%  ·  M: map`).width)+4,mmL=Math.min(mx0-3,mx0+mmw-capW); // caption may be wider than a small map
+  return{mx0,my0,mmw,mmh,mmL};}
+function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;UI.boxes=[];
   // dragon vitals + mode
   // phones: no fire gauge here (the FIRE button's ring + number shows it); a compact lava counter takes that row only while there are lava shots
-  const tch=typeof TOUCH!=='undefined'&&TOUCH.on,lvR=tch&&D.lava>0,fb=tch?(lvR?18:0):18,hy=(G.easy?0:18)+fb,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),104+hy);UI.fireGauge=!tch;UI.lavaRow=lvR?{x:20,y:76,w:230,h:14}:null;txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
+  const tch=typeof TOUCH!=='undefined'&&TOUCH.on,lvR=tch&&D.lava>0,fb=tch?(lvR?18:0):18,hy=(G.easy?0:18)+fb,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),104+hy);
+  const MMG=hudMMGeom(sm);HUDL.x0=10+Math.max(250,hbw+20)+10;HUDL.x1=MMG.mmL-10;HUDL.xr=VW-10;HUDL.mmB=MMG.my0-3+MMG.mmh+6+12+3+4;HUDL.y=10;HUDL.n++;
+  HUDL.obs=[];if(TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(b.x-SAFE.l>VW*.35)HUDL.obs.push({x:b.x-SAFE.l-b.r,y:b.y-SAFE.t-b.r,w:2*b.r,h:2*b.r}); // right-hand touch buttons (FIRE/BITE/STOMP/FLY)UI.fireGauge=!tch;UI.lavaRow=lvR?{x:20,y:76,w:230,h:14}:null;txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
   bar(20,36,hbw,16,D.hp/D.maxHp,D.hp/D.maxHp<.3?'#e33':'#c0302a',`Health ${Math.ceil(D.hp)}/${D.maxHp}`);
   bar(20,58,230,14,D.st/D.maxSt,D.mode==='air'&&D.st<25?(Math.floor(G.t*4)%2?'#f0a020':'#a06010'):'#e0b030',`Stamina ${Math.ceil(D.st)}`);
   if(!tch){if(typeof drawFireBar==='function')drawFireBar(20,76,230,14);} // FIRE meter, right under stamina (desktop)
@@ -8921,18 +8944,19 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   txt(air?(D.alt<.95?'⇧ TAKING OFF…':'⇧ FLYING'):(D.swim?'≈ SWIMMING (slower)':D.alt>0.02?'⇩ LANDING…':'⇩ ON THE GROUND'),30,97+hy,14,air?'#cfe6ff':'#f2dcb0');
   txt(air?'F: land':'F: take off',242,97+hy,11,'#ddd','right',false);
   // wanted meter
-  const mw=Math.min(380,VW-560>0?380:VW-300),mx=VW/2-mw/2,my=10;if(!sm){panel(mx-10,my,mw+20,72);
-  txt('WANTED  ·  ALARM',VW/2,my+18,13,'#f0c070','center');
+  const cmpW=sm||hudLaneW()<260; // no room for the full WANTED panel: compact bar in the left column instead
+  if(!cmpW){const WS=hudSlot('wanted',400,72,260),mw=WS.w-20,mx=WS.x+10,my=WS.y,cx=WS.cx;panel(mx-10,my,mw+20,72);
+  txt('WANTED  ·  ALARM',cx,my+18,13,'#f0c070','center');
   const f=G.alarm/100;rect(mx,my+26,mw,18,'#2a1a12');const gr=ctx.createLinearGradient(mx,0,mx+mw,0);gr.addColorStop(0,'#6c6');gr.addColorStop(.35,'#ee3');gr.addColorStop(.65,'#f80');gr.addColorStop(1,'#e22');
   ctx.fillStyle=gr;ctx.fillRect(mx,my+26,mw*f,18);ctx.strokeStyle='#000';ctx.strokeRect(mx,my+26,mw,18);
   const names=['Foot','Knights','Archers','Mounted','Siege','Militia'];THRESH.forEach((t,i)=>{const tx=mx+mw*t/100;line(tx,my+22,tx,my+48,G.alarm>=t?'#fff':'#999',2);
     txt(names[i],tx,my+62,10,G.alarm>=t?'#ffd080':'#999','center',G.alarm>=t);});
   txt(`Level ${G.level}: ${LEVEL_NAMES[G.level]}`,mx+mw,my+18,11,'#fff','right',false);
   if(G.sinceDmg>6&&G.alarm>0)txt(coolMul()>1.4?'cooling fast…':'cooling…',mx,my+18,11,'#9cf','left',false);
-  {const c=concern();panel(VW/2-100,my+74,200,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}`,VW/2,my+86,10,c.col,'center',false);}
+  {const c=concern(),S=hudSlot('concern',200,17);panel(S.x,S.y,S.w,17);txt(`Kingdom: ${c.name} concern  ×${c.k.toFixed(2)}`,S.cx,S.y+12,10,c.col,'center',false);}
   if(gateBroken()){const s=gateStruct(),[cw,cs]=COST.gate,st=s.state==='building'?`rebuilding ${Math.round(s.build*100)}%`:s.paid||s.builder?'engineers on the way':G.t-(s.ruinT||0)<GATE_REBUILD_WAIT?'rubble settling':(G.wood<cw||G.stone<cs)?`needs ${cw} wood + ${cs} stone`:'awaiting engineers';
-    const pl=.75+.25*Math.sin(G.t*4);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(VW/2-190,my+94,380,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(VW/2-189.5,my+94.5,379,19);
-    txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller`,VW/2,my+108,11,'#ffd8b0','center');}
+    const pl=.75+.25*Math.sin(G.t*4),S=hudSlot('gate',380,20);ctx.fillStyle=`rgba(90,20,10,${.8*pl})`;ctx.fillRect(S.x,S.y,S.w,20);ctx.strokeStyle='#ff9a6a';ctx.lineWidth=1;ctx.strokeRect(S.x+.5,S.y+.5,S.w-1,19);
+    txt(`⚠ Gate destroyed: waves delayed ×${GATE_SLOW} & smaller`,S.cx,S.y+14,S.w<330?9:11,'#ffd8b0','center');}
   if(G.level>0&&Math.floor(G.t*2)%2)txt('⚠',mx+mw*f,my+41,13,'#fff','center');}
   // small screens: the compact wanted bar is drawn in the left column, under the resources (below)
   // LEFT COLUMN under the vitals: CASTLE LV (+ damage note) -> resources -> (small screens) wanted bar -> lava badge (partV)
@@ -8940,13 +8964,10 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   panel(10,cy,colW,28);txt(`CASTLE LV ${G.lvl}`,20,cy+18,12,'#ffd84a'); // princess status + lair-hoard lines removed from the HUD (castle level stays)
   const cs=musterSlow();if(cs>1.05)txt(`damaged: waves ${Math.round((cs-1)*100)}% slower`,10+colW-8,cy+18,10,'#ffc080','right',false);
   cy+=32;cy+=drawStockPill(10,cy,colW)+4; // resources: wood, stone, kingdom gold, the dragon's hoard
-  if(sm){panel(10,cy,colW,26);rect(16,cy+6,(colW-12)*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,cy+18,11);cy+=30;}
-  UI.colY=cy;UI.col={x:10,y:10,w:colW,h:cy-4-10};
+  if(cmpW){panel(10,cy,colW,26);rect(16,cy+6,(colW-12)*G.alarm/100,14,'#e44');txt(`Wanted Lv ${G.level}`,20,cy+18,11);cy+=30;}
+  UI.colY=cy;UI.col={k:'vitals',x:10,y:10,w:colW,h:cy-4-10};UI.boxes.push(UI.col);
   // minimap: top-right corner (inside the safe area: drawHUD runs in withSafe), shrunk if needed to stay clear of the centred WANTED / boss bars
-  {const base=Math.round((sm||TOUCH.on?150:230)*Math.min(1.36,(WX1-WX0)/20000)),room=Math.floor(VW/2-(sm?210:260)-20),mm0=Math.max(120,Math.min(base,room,Math.round((sm||TOUCH.on?104:150)*(WX1-WX0)/(WY1-WY0)))),mmCap=TOUCH.on&&VH<520?Math.max(56,VH*0.12):1e9,mmw=Math.min(mm0,Math.round(mmCap*(WX1-WX0)/(WY1-WY0))),mmh=mmw*(WY1-WY0)/(WX1-WX0); // short landscape phones: cap the minimap height (the world got taller with the Northern Realms) so the region banner stays clear of the touch buttons
-    let mx0=VW-mmw-8,my0=8;
-    // phones with rounded screen corners (any safe-area inset): keep the map's outer corner out of the ~55 pt corner curve
-    if(typeof TOUCH!=='undefined'&&TOUCH.on&&SAFE.t+SAFE.r+SAFE.b+SAFE.l>0){const need=56/UIS,gr=SAFE.r+5,gt=SAFE.t+5;if(gr<need&&gt<need){if(need-gr<=need-gt)mx0-=need-gr;else my0+=need-gt;}}drawMap(mx0,my0,mmw,false);UI.mm={x:mx0-3,y:my0-3,w:mmw+6,h:mmh+6+12};}
+  {const {mx0,my0,mmw,mmh}=MMG;drawMap(mx0,my0,mmw,false);const mmL=MMG.mmL;UI.mm={k:'minimap',x:mmL,y:my0-3,w:mx0+mmw+3-mmL,h:mmh+6+12+3};UI.boxes.push(UI.mm);}
   if(G.bigMap){const bw=Math.min(VW-80,(VH-120)*(WX1-WX0)/(WY1-WY0));ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);drawMap(VW/2-bw/2,70,bw,true);
     txt(`WORLD MAP  ·  explored ${exploredPct()}%  ·  regions found ${Object.keys(G.visited).length}/${Object.keys(REGION_NAMES).length}  ·  M / LB to close`,VW/2,52,16,'#ffd24a','center');}
   if(false){const mmw=0,mmh=0,mmx=0,mmy=0,s=1;
@@ -8959,26 +8980,25 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;
   ell(mmx+CABIN.x*s,mmy+CABIN.y*s,3,3,'#7c4');if(PR.state==='tower')ell(mmx+PR.x*s,mmy+PR.y*s,3,3,'#f6c');
   ell(mmx+D.x*s,mmy+D.y*s,4,4,Math.floor(G.t*4)%2?'#f33':'#ff0');
   ctx.strokeStyle='rgba(255,255,255,.6)';ctx.strokeRect(mmx+(cam.x-VW/2/cam.z)*s,mmy+(cam.y-VH/2/cam.z)*s,VW/cam.z*s,VH/cam.z*s);}
-  drawRegionBanner();
+  if(typeof HUD_BANNER_LAST==='undefined')drawRegionBanner();
   // edge arrows for hunters approaching off-screen
   // (the lair guide arrow is drawn by partLA, on top of every HUD layer)
   for(const u of units){if(u.dead||u.post||(u.type!=='knight'&&u.type!=='archer'))continue;const sx=(u.x-cam.x)*cam.z+VW/2,sy=(u.y-cam.y)*cam.z+VH/2;
     if(sx>0&&sx<VW&&sy>0&&sy<VH)continue;let ex=clamp(sx,14,VW-14),ey=clamp(sy,130,VH-14);const a=Math.atan2(sy-VH/2,sx-VW/2);
-    for(const r of [UI.col,UI.mm])if(r&&ex>r.x-8&&ex<r.x+r.w+8&&ey>r.y-8&&ey<r.y+r.h+8){if(ey<r.y+r.h+8&&r.y+r.h+14<VH-14)ey=r.y+r.h+14;} // keep clear of the left column / minimap
+    for(const r of [UI.col,UI.mm,...(UI.boxes||[])])if(r&&ex>r.x-8&&ex<r.x+r.w+8&&ey>r.y-8&&ey<r.y+r.h+8){if(ey<r.y+r.h+8&&r.y+r.h+14<VH-14)ey=r.y+r.h+14;} // keep clear of the left column / minimap
     ctx.save();ctx.translate(ex,ey);ctx.rotate(a);poly([8,0,-6,-6,-6,6],u.type==='knight'?'rgba(80,160,255,.85)':'rgba(80,255,80,.85)');ctx.restore();}
   // banner
-  if(G.banner){const b=G.banner,al=clamp(Math.min(b.t,4.5-b.t)*2,0,1);ctx.globalAlpha=al;
-    // keep the banner clear of the left HUD column: below it on desktop, beside it (column edge -> right edge) on touch screens
-    const cb=(UI.colY||0)+(D.lava>0?32:D.lavaCD>0?26:0);let by=VH*0.26,bx0=0;if(by-46<cb+6){if(TOUCH.on)bx0=UI.col?UI.col.x+UI.col.w+8:0;else by=cb+52;}if(UI.mm&&bx0+0<UI.mm.x+UI.mm.w&&by-46<UI.mm.y+UI.mm.h+4)by=UI.mm.y+UI.mm.h+50; // and below the top-right minimap
-    const bw=VW-bx0,bcx=bx0+bw/2;UI.banner={x:bx0,y:by-46,w:bw,h:b.extra?104:86};
-    ctx.fillStyle='rgba(60,0,0,.75)';ctx.fillRect(bx0,by-46,bw,b.extra?104:86);
-    const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>bw-24?Math.max(10,Math.floor(f*(bw-24)/w)):f;};
-    txt(b.text,bcx,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,bcx,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,bcx,by+50,fitF(b.extra,sm?12:14,false),'#ffc0a0','center',false);ctx.globalAlpha=1;}
-  else UI.banner=null;
+  if(typeof HUD_BANNER_LAST==='undefined')drawAnnounce(sm); // phones/desktop: drawn last as a HUD centre-lane slot (q.js)
   // controls reminder
   if(!sm&&!TOUCH.on)txt(GPAD.connected?'Stick move · A/RT fire · Y fly/land · X eat/grab · B stomp/dive/scratch · LB map · Start pause':'WASD move · Space fire · F fly/land · E eat/grab · Q stomp/dive/scratch · M map · P pause',14,VH-12,12,'rgba(255,255,255,.75)','left',false);
   if(!sm&&!TOUCH.on&&!G.over&&!G.won)txt(D.princess?'Goal: carry Princess Elizabeth to your LAIR (follow the gold arrow)':'Goal: raid the castle (south) for gold & the princess (E/X)',VW/2,VH-12,13,'#ffe8a0','center');
   if(G.over)drawOver();else if(G.won)drawWon();if(paused&&!G.over&&!G.won)drawPause();}
+// big announcement banner (G.banner): the next HUD centre-lane slot, so it sits under every bar instead of across them (item 45)
+function drawAnnounce(sm){if(!G.banner){UI.banner=null;return;}const b=G.banner,al=clamp(Math.min(b.t,4.5-b.t)*2,0,1),H=b.extra?104:86;
+  const S=hudSlot('announce',VW-20,H,300),bx0=S.x,bw=S.w,bcx=S.cx,by=S.y+46;UI.banner={x:bx0,y:S.y,w:bw,h:H};ctx.globalAlpha=al;
+  ctx.fillStyle='rgba(60,0,0,.75)';ctx.fillRect(bx0,S.y,bw,H);
+  const fitF=(s,f,bold)=>{ctx.font=`${bold?'bold ':''}${f}px Georgia`;const w=ctx.measureText(s).width;return w>bw-24?Math.max(8,Math.floor(f*(bw-24)/w)):f;};
+  txt(b.text,bcx,by,fitF(b.text,sm?26:40,true),'#ffd24a','center');txt(b.sub,bcx,by+28,fitF(b.sub,sm?13:17,false),'#fff','center',false);if(b.extra)txt(b.extra,bcx,by+50,fitF(b.extra,sm?12:14,false),'#ffc0a0','center',false);ctx.globalAlpha=1;}
 function center(lines,top){let y=top;for(const [s,size,col,bold] of lines){txt(s,VW/2,y,size,col,'center',bold);y+=size*1.45;}}
 let titleSel=0;
 function drawTitle(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='rgba(10,5,5,.66)';ctx.fillRect(0,0,VW,VH);

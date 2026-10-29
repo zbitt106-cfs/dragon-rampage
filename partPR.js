@@ -214,7 +214,7 @@ const _drawCrashFxPR=drawCrashFx;drawCrashFx=function(){_drawCrashFxPR();const c
     ell(x+7,y+bb*.5,7,5,'#8a5a2a');line(x+1,y+bb*.5,x+13,y+bb*.5,'#5a3a1a',1.2);ell(x,y-6+bb,5,5,'#f0c8a0');ctx.fillStyle='#9aa2ac';ctx.beginPath();ctx.arc(x,y-7+bb,5.4,Math.PI,0);ctx.fill();
     line(x-5,y-3+bb,x-10,y-12+Math.sin(G.t*14+w.ph)*4,'#9aa2ac',2.2);ctx.globalAlpha=1;}};
 // HUD: boss bar at the top of the screen
-function princeHudRect(){const sm=VW<760,tch=typeof TOUCH!=='undefined'&&TOUCH.on,y=sm?(tch?120:56):104+(typeof gateBroken==='function'&&gateBroken()?24:0),w=uiCenterW(Math.min(VW-20,sm?420:520));return{x:VW/2-w/2,y,w,h:sm?30:34};}
+function princeHudRect(){const sm=VW<760;if(PRN.hudR&&PRN.hudN===HUDL.n)return PRN.hudR;const S=hudSlot('prince',Math.min(VW-20,sm?420:520),sm?30:34,220);PRN.hudN=HUDL.n;return PRN.hudR={x:S.x,y:S.y,w:S.w,h:S.h};} // a slot in the HUD centre lane
 const _drawHUDPR=drawHUD;drawHUD=function(){_drawHUDPR();if(!princeHudOn()||G.over||G.won)return;ctx.setTransform(DPR,0,0,DPR,0,0);
   const c=PRN.cur,B=princeHudRect(),sm=VW<760,pl=.8+.2*Math.sin(G.t*4);ctx.fillStyle=`rgba(28,14,38,${.88*pl+.08})`;ctx.fillRect(B.x,B.y,B.w,B.h);ctx.strokeStyle=c.trim;ctx.lineWidth=2;ctx.strokeRect(B.x+1,B.y+1,B.w-2,B.h-2);
   ctx.fillStyle=c.col;ctx.fillRect(B.x+4,B.y+4,B.h-8,B.h-8);drawCrest(B.x+B.h/2,B.y+B.h/2,sm?1.5:1.8,c.crest,c.trim);
