@@ -1713,34 +1713,34 @@ function b3DrawBat(b){const x=b.x,y=b.y-b.z,w=Math.sin(b.flap),c='#3a2846',c2='#
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);B3.flocks.length=0;if(B3.homes)for(const h of B3.homes){h.on=false;h.n=0;h.lost=0;h.rt=0;}return r;};}
 {const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);B3.flocks.length=0;if(B3.homes)for(const h of B3.homes){h.on=false;h.n=0;}for(const b of birds)if(b.b3){b.dead=true;b.gone=1;}return r;};}
 // ======================= queue 41-44 (batch 3, piece 2): MERMAIDS, SUNBATHERS ON ROCKS & ICE, and NESSIE =======================
-//  41/42 mermaids (light side, family-friendly): they swim in the eastern sea south of the wind wall (the northern fantasy ocean round the
-//     Wizard's isle, never on the isle itself) and along the light dwarf coast north of the wall. Most dive away from the dragon; brave ones
+//  41/42 mermaids (light side, family-friendly): (QUEUE 93) they ALL swim north of the magic wind wall, in the northern sea along the
+//     light dwarf coast (never south of the wall, never on the Wizard's isle). Most dive away from the dragon; brave ones
 //     (guards) defend with a splash or a trident poke (small damage) and also poke dark creatures that come near the water.
 //     Edible while surfaced like a light unit; fire only reaches them while they are surfaced.
-//  43  some sunbathe (lying back, tail flicking) on sea rocks, ice floes (new: there were none) and the dwarf-coast beaches; when the dragon
+//  43  some sunbathe (lying back, tail flicking) on sea rocks, ice floes and the dwarf-coast beaches - all north of the wall (QUEUE 93); when the dragon
 //     comes close they slide into the sea and dive.
 //     (Not done: the purple/elven lands have no rivers or lakes and the elven realm has no coast, so there are no river/lake mermaids.)
 //  44  NESSIE, the Loch Ness monster: a friendly-looking green plesiosaur mini boss with her own dark loch-water patch in the northern ocean,
-//     south of the wind wall and clear of the Wizard's isle and the Kraken Deep. She lurks, surfaces and dives (like the Kraken), and attacks
+//     NORTH of the wind wall (QUEUE 93; was south of it) and clear of the Wizard's isle and the Kraken Deep. She lurks, surfaces and dives (like the Kraken), and attacks
 //     with a neck lunge/bite, a tail slap and a wave splash. Boss bar (fixed width). Beating her gives +50 MAX HEALTH. She STAYS BEATEN UNTIL
 //     THE DRAGON IS DEFEATED (like the Wizard/Hydra/Griffin, not the Kraken's 240 s respawn); her health and beaten state are saved with G.
 const MMK={swim:4,near:1400,far:2600,hp:40,food:14,heal:10,pts:60,guard:.35,bask:380};
 const MM={list:[],spots:null,t:0,id:0,stats:{}};
-const NSZ={x:9950,y:-2120,rx:620,ry:330};
+const NSZ={x:9700,y:-3500,rx:620,ry:330}; // QUEUE 93/99: north of the magic wind wall, in the SOUTHERN part of the light (dwarf-coast) fantasy ocean (was 9950,-2120, south of the wall)
 const NSK={reward:50,lunge:9,tail:7,wave:6};
 const NS={on:false,x:NSZ.x,y:NSZ.y,sub:1,st:'lurk',t:0,hp:0,maxHp:0,act:null,cd:0,face:1,waves:[],hitT:-9,lastD:-99};
 function mmSt(k){MM.stats[k]=(MM.stats[k]||0)+1;}
 function nsIn(x,y,s){s=s||1;const a=(x-NSZ.x)/(NSZ.rx*s),b=(y-NSZ.y)/(NSZ.ry*s);return a*a+b*b<1;}
 function mmSouth(x,y){return y>nrEdge(x)+110&&y<-150&&x>coastX(y)+60;}
 function mmNorth(x,y){return y<nrEdge(x)-150&&y>nrDarkY(x)+300&&x>coastX(y)+60&&x<coastX(y)+2600;}
-function mmRegion(x,y){if(x<WX0+200||x>WX1-200||!inSea(x,y)||inDeep(x,y))return false;if(Math.hypot(x-WZ.x,y-WZ.y)<WZ.r+320||nsIn(x,y,1.25))return false;return mmSouth(x,y)||mmNorth(x,y);}
+function mmRegion(x,y){if(x<WX0+200||x>WX1-200||!inSea(x,y)||inDeep(x,y))return false;if(Math.hypot(x-WZ.x,y-WZ.y)<WZ.r+320||nsIn(x,y,1.25))return false;return mmNorth(x,y);} // QUEUE 93: north of the wind wall only
 function mmRng(s){return ()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648;};}
 function mmSpots(){if(MM.spots)return MM.spots;const r=mmRng(4242),S=[];
   const add=(k,x,y,sx,sy)=>{if(S.some(o=>Math.hypot(o.x-x,o.y-y)<380))return false;S.push({k,x,y,sx,sy,rt:0,who:null,seed:r()*9});return true;};
-  // sea rocks south of the wall (along the east coast)
-  for(let i=0,n=0;i<60&&n<8;i++){const y=-2450+r()*2250,x=coastX(y)+180+r()*800;if(mmRegion(x,y)&&mmRegion(x+120,y)&&add('rock',x,y,x+110,y+30))n++;}
-  // ice floes: a few drifting just south of the wind wall, more in the cold northern sea
-  for(let i=0,n=0;i<60&&n<3;i++){const x=coastX(-2500)+300+r()*2000,y=nrEdge(x)+150+r()*140;if(mmRegion(x,y)&&add('ice',x,y,x+130,y+40))n++;}
+  // sea rocks in the northern sea, north of the wall (QUEUE 93: they used to be south of it, along the east coast)
+  for(let i=0,n=0;i<90&&n<8;i++){const y=-6200+r()*3000,x=coastX(y)+180+r()*900;if(mmRegion(x,y)&&mmRegion(x+120,y)&&add('rock',x,y,x+110,y+30))n++;}
+  // ice floes: a few drifting just NORTH of the wind wall (QUEUE 93: was just south of it), more in the cold northern sea
+  for(let i=0,n=0;i<60&&n<3;i++){const x=coastX(-3100)+300+r()*2000,y=nrEdge(x)-220-r()*160;if(mmRegion(x,y)&&add('ice',x,y,x+130,y+40))n++;}
   for(let i=0,n=0;i<90&&n<8;i++){const y=-6400+r()*3300,x=coastX(y)+260+r()*1300;if(mmRegion(x,y)&&add('ice',x,y,x+130,y+40))n++;}
   // dwarf-coast beaches (light shore of the northern sea)
   for(let i=0,n=0;i<60&&n<5;i++){const y=-6200+r()*3000,cx=coastX(y),x=cx-45;const rl=nrRealm(cx-220,y);if(!inSea(x,y)&&inSea(cx+140,y)&&rl&&NR_LIGHT.has(rl)&&add('beach',x,y,cx+150,y))n++;}
@@ -1881,9 +1881,12 @@ function nsDraw(){if(!nsIn(cam.x,cam.y,6))return;
     const T=G.t;for(let i=0;i<3;i++){const k=(T*.6+i/3)%1;txt('z',x+70+k*40,y-90-k*60,12+k*10,`rgba(255,255,255,${1-k})`,'center');}
     if(Math.hypot(x-D.x,y-D.y)<380&&!(G.nsHintT>G.t)){G.nsHintT=G.t+7;float(x,y-160,'Nessie is having a nap. Shh!','#a8ffb8');}return;}
   if(!NS.on)return;const A=NS.act;nsArt(NS.x,NS.y,NS.face,NS.sub,{tele:A&&A.ph==='tele',bite:A&&A.k==='lunge'&&A.ph==='hit',tail:A&&A.k==='tail',ko:NS.koT>0,hit:G.t-NS.hitT<.12});G.nsDrawn=G.fc;}
+// QUEUE 97: the loch is ONE soft radial gradient (dark heart fading to clear at the rim, no rings or hard edges) on every graphics setting
+function nsLochPaint(){ctx.save();ctx.translate(NSZ.x,NSZ.y);ctx.scale(1,NSZ.ry/NSZ.rx);const R=NSZ.rx*1.25,g=ctx.createRadialGradient(0,0,0,0,0,R);
+  g.addColorStop(0,'rgba(6,26,40,.5)');g.addColorStop(.45,'rgba(8,32,50,.4)');g.addColorStop(.75,'rgba(10,40,60,.18)');g.addColorStop(1,'rgba(10,40,60,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,R,0,TAU);ctx.fill();ctx.restore();}
 // loch patch (darker, deeper water) + rocks/ice + mermaids drawn on the ground layer
 {const _df=drawFlora;drawFlora=function(x0,y0,x1,y1){const r=_df.apply(this,arguments);try{
-  if(NSZ.x+NSZ.rx*1.2>x0&&NSZ.x-NSZ.rx*1.2<x1&&NSZ.y+NSZ.ry*1.2>y0&&NSZ.y-NSZ.ry*1.2<y1){ell(NSZ.x,NSZ.y,NSZ.rx*1.08,NSZ.ry*1.08,'rgba(10,40,60,.18)');ell(NSZ.x,NSZ.y,NSZ.rx,NSZ.ry,'rgba(8,34,52,.32)');ell(NSZ.x,NSZ.y,NSZ.rx*.7,NSZ.ry*.7,'rgba(6,26,40,.22)');
+  if(NSZ.x+NSZ.rx*1.2>x0&&NSZ.x-NSZ.rx*1.2<x1&&NSZ.y+NSZ.ry*1.2>y0&&NSZ.y-NSZ.ry*1.2<y1){nsLochPaint();
     if(NS.on&&NS.sub>.5&&!nsDown()){ctx.globalAlpha=.35*(NS.sub);ell(NS.x,NS.y,110,34,'#123a2a');ell(NS.x+NS.face*120,NS.y-6,30,14,'#123a2a');ctx.globalAlpha=1;}}
   for(const s of mmSpots())if(s.x>x0-150&&s.x<x1+150&&s.y>y0-100&&s.y<y1+100){if(s.k==='rock')mmRock(s);else if(s.k==='ice')mmIce(s);}
   for(const m of MM.list)if(!m.dead)mmDraw(m);}catch(e){if(!MM.err){MM.err=String(e);}}return r;};}
@@ -2387,3 +2390,200 @@ PM_MAIN.splice(Math.max(0,PM_MAIN.findIndex(r=>r[1]==='settings'))+1,0,['🏆  A
 {const _d=drawPM;drawPM=function(){if(PM.scr!=='ach')return _d.apply(this,arguments);
   ctx.setTransform(DPR,0,0,DPR,0,0);const S=SAFE,touch=TOUCH.on;PM.hit=[];ctx.fillStyle='rgba(6,4,10,.66)';ctx.fillRect(0,0,VW,VH);
   const aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,720),x0=S.l+(aw-W)/2;drawAchScreen(x0,W,S,ah,touch);};}
+
+// ======================= queue 93: Nessie and ALL mermaids (sunbathers too) live north of the magic wind wall and stay there =======================
+// mmRegion is north-only, the rocks / ice floes moved north, Nessie's loch moved to NSZ (9800,-3900). Old saves: a Nessie position (G.nsX/nsY) outside the new
+// loch snaps back to its centre on load and on spawn; any mermaid that ends up south of the wall line (e.g. pushed by a slide) is quietly removed and respawns north.
+function mmNorthOK(x,y){return y<nrEdge(x)-60;}
+function nsFixPos(){if(G&&G.nsX!=null&&!nsIn(G.nsX,G.nsY,1)){G.nsX=NSZ.x;G.nsY=NSZ.y;G.nsMoved=(G.nsMoved||0)+1;}}
+{const _i=nsInit;nsInit=function(){nsFixPos();return _i.apply(this,arguments);};}
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);try{nsFixPos();}catch(e){}return r;};}
+{const _sp=mmSpawner;mmSpawner=function(dt){const r=_sp.apply(this,arguments);for(const m of MM.list)if(!m.dead&&!mmNorthOK(m.x,m.y)){m.dead=true;if(m.spot){m.spot.who=null;m.spot.rt=2;}mmSt('southCull');}MM.list=MM.list.filter(m=>!m.dead);return r;};}
+// ======================= queue 94/95: every beaten mini boss is edible; everyone is edible EXCEPT King William, Princess Elizabeth and your own guardian dragons =======================
+// Audit (see README "Everyone is on the menu"): Kraken (dazed), octopus (dazed), sand worm (surfaced), Hydra, Griffin, Wizard, Cerberus/Medusa/trolls/cyclopes (dizzy KO),
+// wild dragons, alphas, princes (<30%), raid champions (<50%) were already edible once worn down. NEW: Nessie - once beaten she naps in her loch and can be gulped in one
+// big cartoony GULP (food 90, +60 HP), after which she is gone until the dragon is defeated (like her beaten state). The eat puff is now a soft white cloud (no red).
+// Hard safety net: King William (isKing / isKingArmor), Princess Elizabeth (princess / isPrincess) and guardian dragons (GD, never in units) can never be swallowed.
+const NSE={heal:60,food:90,r:210};
+function nsNoKing(u){return !!(u&&(u.isKing||u.isKingArmor||u.king||u.princess||u.isPrincess||u.gd||u.guardian));}
+{const _bt=biteTargets;biteTargets=function(){const T=_bt.apply(this,arguments);if(typeof KA!=='undefined'&&KA.peek)return T;return T.filter(u=>!nsNoKing(u));};}
+{const _eu=eatUnit;eatUnit=function(u){if(nsNoKing(u)){D.eatCD=Math.max(D.eatCD||0,.6);if(u.isKing||u.isKingArmor)float(u.x,u.y-60,'CLANG! The king is NOT a snack!','#ffd27a');return;}return _eu.apply(this,arguments);};}
+function nsEdible(){return nsDown()&&!G.nsEaten&&scene==='play';}
+function nsEat(){const x=G.nsX!=null?G.nsX:NSZ.x,y=G.nsY!=null?G.nsY:NSZ.y;G.nsEaten=1;G.nsEatN=(G.nsEatN||0)+1;D.eatCD=.9;D.eatT=.4;
+  D.hp=Math.min(D.maxHp,D.hp+NSE.heal);D.healFx=1;D.st=Math.min(D.maxSt,D.st+20);try{feed(NSE.heal);}catch(e){}try{glutEat(NSE.food);}catch(e){}try{tallyAdd('nessie');}catch(e){}
+  puff(x,y-30,18,'rgba(235,250,245,',120,12);sparkle(D.x,D.y-heightOf(),22);G.shake=Math.max(G.shake||0,6);try{if(typeof SFX!=='undefined')SFX.chomp(3);}catch(e){}
+  float(x,y-150,'GULP! Nessie, swallowed whole!','#a8ffb8');float(D.x+R(-10,10),D.y-heightOf()-70,`+${NSE.heal} HP`,'#6dff7a');showToast('🦕 GULP! You swallowed the sleepy Nessie in one go!');}
+{const _te=tryEat;tryEat=function(){if(nsEdible()&&!(D.eatCD>0)&&D.alt<.6){const p=mmMouth(),x=G.nsX!=null?G.nsX:NSZ.x,y=G.nsY!=null?G.nsY:NSZ.y;
+    if(Math.hypot(p.x-x,p.y-y)<NSE.r||Math.hypot(D.x-x,D.y-y)<NSE.r*.8){nsEat();return;}}return _te.apply(this,arguments);};}
+{const _d=nsDraw;nsDraw=function(){if(nsDown()&&G.nsEaten)return;return _d.apply(this,arguments);};}
+{const _nl=nextLevel;nextLevel=function(){const e=G.nsEaten,n=G.nsEatN;const r=_nl.apply(this,arguments);if(G.nsDown){G.nsEaten=e;G.nsEatN=n;}return r;};}
+if(typeof TALLY_LABEL!=='undefined'){TALLY_LABEL.nessie='Nessie';const s=TALLY_SECT.find(q=>q.id==='coast');if(s&&!s.keys.some(k=>k[0]==='nessie'))s.keys.push(['nessie','Nessie']);}
+// ======================= queue 96: no mountains on the wizard's isle =======================
+// The old northern mountain range scatter (partW) left 4 grey 'peak' crags on the isle, overlapping the tower. They are flattened into plain isle ground (kept in DECOR as
+// 'wzflat' so saved plant-state indices never shift) and the minimap paints the isle as island ground (sand rim + violet heart) with the tower dot.
+function wzPeakOnIsle(o){return o.k==='peak'&&Math.hypot(o.x-WZ.x,(o.y-WZ.y)*1.2)<WZ.r+(o.w||200)*.55+40;}
+function wzFlatten(){let n=0;for(const o of DECOR)if(wzPeakOnIsle(o)){o.k='wzflat';n++;}G&&(G.wzFlat=(G.wzFlat||0)+n);return n;}
+{const _dd=drawDecor;drawDecor=function(o){if(o.k==='peak'&&!o.wzc){o.wzc=1;if(wzPeakOnIsle(o))o.k='wzflat';}if(o.k==='wzflat')return;return _dd.apply(this,arguments);};}
+if(typeof drawDecorHi==='function'){const _dh=drawDecorHi;drawDecorHi=function(o){if(o.k==='peak'&&!o.wzc){o.wzc=1;if(wzPeakOnIsle(o))o.k='wzflat';}if(o.k==='wzflat')return;return _dh.apply(this,arguments);};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);try{wzFlatten();}catch(e){}return r;};}
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);try{wzFlatten();}catch(e){}return r;};}
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),px=mmx+(WZ.x-WX0)*s,py=mmy+(WZ.y-WY0)*s,rx=Math.max(2,WZ.r*s),ry=rx/1.2;
+  ell(px,py,rx,ry,'#d8c89a');ell(px,py,rx*.78,ry*.78,'#8a6cc0');ell(px,py,Math.max(1.2,rx*.22),Math.max(1.2,rx*.22),'#4a3a78');}catch(e){}return r;};}
+// ======================= queue 100-104: the DARK WIZARD of Cinder Isle =======================
+// A volcano island in the northern DARK ocean (east of the cyclops lands, north of the dark/light divide). The Dark Wizard hovers over the crater inside a magic shield
+// with the Storm Wizard's rules: the shield IS his health bar, every hit on the volcano, his obsidian spire or on him drains it, and the spire can only be smashed after he is beaten.
+// ~1.75x the Storm Wizard (525 shield vs 300) and he never level-scales (101). Attacks (kid-friendly, cartoony):
+//  - LAVA SHOTS: 5 glowing blobs (13 dmg each vs ice 9). Dragon fire does NOT melt them (unlike ice spikes); they just fizzle into steam when they land.
+//  - ERUPTION: the volcano blasts smoke + fire; an expanding fire ring knocks the dragon back harder than the wind (1300 vs 1100) for 6 dmg (wind: 1).
+//  - PURPLE LIGHTNING: telegraphed ring, then a purple bolt (8 dmg vs 6, radius 95 vs 90).
+// Beaten (104): stays beaten for good - saved, kept through level-ups (only a brand-new game after losing the dragon resets him). Reward: +50 max health, +400 gold,
+// his volcano unlocks for lava drinking and the LAVA SHOT is upgraded at EVERY volcano (102/103): a dark-purple TRIPLE shot (spread 0.14 rad) with +50% splash damage.
+const DWV={x:9700,y:-9000,r:250,H:170,drinkR:190,name:'Cinder Isle'},DW_HP=525,DW_DMG={lava:13,erupt:6,bolt:8},DW_KB=1300,DW_GOLD=400,DW_GAIN=50,DW_SPIRE=520;
+const DWL={n:3,spread:.14,mul:1.5};
+const DWB={on:false,hp:0,maxHp:0,cd:2,spell:0,shots:[],marks:[],erupts:[],koT:0,said:0,hitT:0,cast:0,stats:{lava:0,bolt:0,erupt:0}};
+function onDwIsle(x,y){const dx=x-DWV.x,dy=(y-DWV.y)*1.2;return dx*dx+dy*dy<DWV.r*DWV.r;}
+{const _o=onWzIsle;onWzIsle=function(x,y){return _o(x,y)||onDwIsle(x,y);};}
+{const _nc=nrCol;nrCol=function(x,y,wx,wy,n){if(onDwIsle(x,y)){const r=Math.hypot(x-DWV.x,(y-DWV.y)*1.2)/DWV.r;return r>.82?nrMix([150,138,126],[124,112,104],n):nrMix([70,60,64],[92,78,82],n);}return _nc.apply(this,arguments);};}
+{const _rk=regionKey;regionKey=function(x,y){if(y<0&&onDwIsle(x,y))return'dwisle';return _rk(x,y);};}
+REGION_NAMES.dwisle='Cinder Isle';REGION_SUB.dwisle='The Dark Wizard guards his volcano - break his magic shield';REGION_LABEL.dwisle=[DWV.x,DWV.y-320];
+function dwDown(){return !!(G&&G.dwDown);}
+function dwTop(){return{x:DWV.x,y:DWV.y-DWV.H-70+Math.sin((G?G.t:0)*2)*6};}
+function dwSpire(){return{x:DWV.x+150,y:DWV.y+40};}
+function dwStart(){DWB.on=true;if(!DWB.maxHp){DWB.maxHp=Math.round(DW_HP*(EASY?.7:1));DWB.hp=G.dwHp>0?Math.min(G.dwHp,DWB.maxHp):DWB.maxHp;}DWB.cd=1.4;
+  if(!DWB.said){DWB.said=1;showToast('🧙‍♂️ The Dark Wizard: "My volcano is mine, little lizard!"');}}
+function dwHurt(d,how){if(!DWB.on||DWB.koT>0||dwDown()||d<=0)return;DWB.hp-=d;DWB.hitT=G.t;G.dwHp=Math.max(1,Math.round(DWB.hp));G.dwHits=(G.dwHits||0)+1;
+  if(rnd()<.12){const t=dwTop();float(t.x+R(-30,30),t.y-40,how==='bite'?'Hey! Not my shield!':'Grr! My shield!','#e0c8ff');}
+  if(DWB.hp<=0){DWB.hp=0;DWB.koT=2;DWB.shots=[];DWB.marks=[];DWB.erupts=[];const t=dwTop();float(t.x,t.y-50,'Dizzy Dark Wizard!','#ffe28a');}}
+function dwCast(){const k=DWB.spell++%3,t=dwTop();DWB.cast=.5;
+  if(k===0){const a0=Math.atan2(D.y-DWV.y,D.x-DWV.x),dd=Math.hypot(D.x-DWV.x,D.y-DWV.y);for(let i=0;i<5;i++){const a=a0+(i-2)*.14,sp=400,T=Math.max(.5,dd/sp);
+      DWB.shots.push({x:DWV.x,y:DWV.y,z:DWV.H+70,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,vz:(heightOf()-DWV.H-70)/T,t:0,T:T+.6});}float(t.x,t.y-30,'Lava shots!','#ffb060');DWB.stats.lava++;}
+  else if(k===1){DWB.marks.push({x:D.x+D.vx*.35,y:D.y+D.vy*.35,t:1});float(t.x,t.y-30,'Purple lightning!','#e0a8ff');DWB.stats.bolt++;}
+  else{DWB.erupts.push({r:40,t:0,hit:0});float(DWV.x,DWV.y-DWV.H-20,'ERUPTION!','#ff9a4a');DWB.stats.erupt++;G.shake=Math.max(G.shake||0,4);
+    puff(DWV.x,DWV.y-DWV.H,12,'rgba(90,80,90,',120,14);for(let i=0;i<14;i++)LEMBERS.push({x:DWV.x+R(-30,30),y:DWV.y+R(-10,10),z:DWV.H,vx:R(-180,180),vy:R(-120,120),vz:R(160,340),t:R(.6,1.1)});}}
+function dwUpd(dt){if(!G||G.over)return;const dd=Math.hypot(D.x-DWV.x,D.y-DWV.y);
+  if(dwDown()){DWB.on=false;return;}
+  if(DWB.koT>0){DWB.koT-=dt;if(DWB.koT<=0)dwDefeat();return;}
+  if(!DWB.on){if(dd<1400&&!G.won)dwStart();else return;}
+  if(dd>2600){DWB.on=false;DWB.shots=[];DWB.marks=[];DWB.erupts=[];return;}
+  if(DWB.cast>0)DWB.cast-=dt;DWB.cd-=dt;if(DWB.cd<=0&&!G.won){DWB.cd=EASY?2.8:2.0;dwCast();}
+  for(const s of DWB.shots){s.t+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.z=Math.max(0,s.z+s.vz*dt);
+    if(!s.done&&Math.hypot(D.x-s.x,D.y-s.y)<44&&Math.abs(s.z-heightOf())<70){s.done=1;hurtDragon(DW_DMG.lava,'lava');float(D.x,D.y-heightOf()-80,'Lava shot!','#ffb060');G.dwLavaHits=(G.dwLavaHits||0)+1;}
+    if(!s.done&&s.t>s.T){s.done=1;puff(s.x,s.y,4,'rgba(230,230,240,',60,8);}}
+  for(const m of DWB.marks){m.t-=dt;if(m.t<=0&&!m.done){m.done=1;m.flash=.28;if(Math.hypot(D.x-m.x,D.y-m.y)<95){hurtDragon(DW_DMG.bolt,'lightning');float(D.x,D.y-heightOf()-80,'ZZAP!','#e0a8ff');G.dwBoltHits=(G.dwBoltHits||0)+1;}G.shake=Math.max(G.shake||0,3);}if(m.flash>0)m.flash-=dt;}
+  for(const w of DWB.erupts){w.t+=dt;w.r=40+860*Math.min(1,w.t/1.5);if(!w.hit&&Math.abs(dd-w.r)<70){w.hit=1;hurtDragon(DW_DMG.erupt,'erupt');const a=Math.atan2(D.y-DWV.y,D.x-DWV.x);
+      D.nrKb={vx:Math.cos(a)*DW_KB,vy:Math.sin(a)*DW_KB*.8,t:.7};float(D.x,D.y-heightOf()-80,'KABOOM! Blown back!','#ff9a4a');G.dwKb=(G.dwKb||0)+1;}}
+  DWB.shots=DWB.shots.filter(s=>!s.done);DWB.marks=DWB.marks.filter(m=>!m.done||m.flash>0);DWB.erupts=DWB.erupts.filter(w=>w.t<1.6);}
+function dwDefeat(){DWB.on=false;G.dwDown=1;G.dwHp=0;G.dwWins=(G.dwWins||0)+1;G.lavaUp=1;const t=dwTop();puff(t.x,t.y,14,'rgba(200,160,255,',90,10);sparkle(t.x,t.y,22);
+  D.gold=(D.gold||0)+DW_GOLD;D.hpBonus=(D.hpBonus||0)+DW_GAIN;D.maxHp+=DW_GAIN;D.hp=D.maxHp;D.healFx=1;float(t.x,t.y-40,`+${DW_GOLD} gold`,'#ffd84a');
+  boostAlert('🌋 Purple TRIPLE lava shot!',`Dark Wizard beaten · +${DW_GAIN} max health · 3 purple globs, +${Math.round((DWL.mul-1)*100)}% damage each, at every volcano`);
+  try{achEv('dwizard');}catch(e){}try{horn();}catch(e){}}
+// hits on him / his volcano / his spire all drain the shield
+function dwNear(x,y,r){return Math.hypot(x-DWV.x,(y-DWV.y)*1.2)<DWV.r*.6+(r||0)||Math.hypot(x-dwSpire().x,y-dwSpire().y)<60+(r||0);}
+function dwSpireUp(){return !(G&&G.dwSpireDown);}
+function dwSpireHurt(d){if(!dwDown()||!dwSpireUp()||d<=0)return;G.dwSpireHp=(G.dwSpireHp==null?DW_SPIRE:G.dwSpireHp)-d;const s=dwSpire();
+  if(G.dwSpireHp<=0){G.dwSpireDown=1;G.dwSpireHp=0;puff(s.x,s.y-60,16,'rgba(110,90,130,',120,14);D.gold=(D.gold||0)+100;float(s.x,s.y-120,'The obsidian spire crumbles! +100 gold','#ffd84a');}}
+function dwHit(d,how){if(dwDown())dwSpireHurt(d);else if(DWB.on)dwHurt(d,how);}
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);if(Math.abs(ox-DWV.x)<900&&Math.abs(oy-DWV.y)<900){const s=dwSpire();
+    if(!dwDown()&&(inFire(DWV.x,DWV.y,ox,oy)||inFire(DWV.x,DWV.y-60,ox,oy)||inFire(s.x,s.y,ox,oy)))dwHurt(DR.fireDps*.55*dt,'fire');
+    else if(dwDown()&&dwSpireUp()&&inFire(s.x,s.y,ox,oy))dwSpireHurt(DR.fireDps*.5*dt);}return r;};}
+{const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);if(dwNear(x,y,LAVA_CFG.splashR))dwHit(dwDown()?70:35,'lava');return r;};}
+{const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);if(dwNear(D.x,D.y,DR.stompR))dwHit(dwDown()?DR.stompDmg*1.6:20,'stomp');return r;};}
+{const _ds=diveSlam;diveSlam=function(){const r=_ds.apply(this,arguments);if(dwNear(D.x,D.y,160))dwHit(dwDown()?110:40,'stomp');return r;};}
+{const _cs=clawScratch;clawScratch=function(){const r=_cs.apply(this,arguments);if(r!==false&&D.alt<.45&&dwNear(D.x+Math.cos(D.ang)*80,D.y+Math.sin(D.ang)*80,90))dwHit(dwDown()?30:12,'claw');return r;};}
+// eating: bite the shield while he is up; once beaten he lies dizzy on the crater rim and can be gulped (food 30, +40 HP)
+function dwEatSpot(){return{x:DWV.x-40,y:DWV.y-DWV.H*.55};}
+function dwEdible(){return dwDown()&&!G.dwEaten&&scene==='play';}
+{const _te=tryEat;tryEat=function(){if(!(D.eatCD>0)){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
+    if(dwEdible()&&Math.min(Math.hypot(D.x-DWV.x,D.y-DWV.y),Math.hypot(mx-DWV.x,my-DWV.y))<200){const sp=dwEatSpot(),heal=40;G.dwEaten=1;G.dwEatenN=(G.dwEatenN||0)+1;D.eatCD=.6;D.eatT=.3;
+      D.hp=Math.min(D.maxHp,D.hp+heal);D.healFx=.8;try{feed(heal);}catch(e){}try{glutEat(30);}catch(e){}try{tallyAdd('dwizard');}catch(e){}G.stats.eaten=(G.stats.eaten||0)+1;
+      puff(sp.x,sp.y,14,'rgba(220,200,255,',90,10);sparkle(sp.x,sp.y,16);float(sp.x,sp.y-40,'GULP! The Dark Wizard (+'+heal+')','#ffe28a');showToast('🧙‍♂️ Gulp! The Dark Wizard is gone for good');
+      try{SFX.play('gulp',sp.x,sp.y,1);}catch(e){}try{achEv('dwEat');}catch(e){}return;}
+    if(DWB.on&&DWB.koT<=0&&!dwDown()&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<210){D.eatCD=.6;dwHurt(14,'bite');float(D.x,D.y-90,'Chomp the shield!','#e0c8ff');return;}}
+  return _te.apply(this,arguments);};}
+{const _t=nrTick;nrTick=function(dt){_t(dt);if(scene==='play'&&G)dwUpd(dt);};}
+// ---- 102: his volcano is drinkable once he is beaten; the triple purple lava shot at every volcano ----
+function nearDW(){return dwDown()&&D&&D.mode==='ground'&&D.alt<.3&&!D.swim&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60;}
+{const _n=nearLava;nearLava=function(){return _n.apply(this,arguments)||nearDW();};}
+{const _l=lavaDrink;lavaDrink=function(){if(nearDW()){const ox=VOLC.x,oy=VOLC.y;VOLC.x=DWV.x;VOLC.y=DWV.y;try{const r=_l.apply(this,arguments);if(r)G.dwDrinks=(G.dwDrinks||0)+1;return r;}finally{VOLC.x=ox;VOLC.y=oy;}}
+  if(!dwDown()&&D&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60&&D.alt<.3&&!(G.dwLockT>G.t)){G.dwLockT=G.t+3;float(D.x,D.y-90,'The Dark Wizard\'s shield keeps you from the lava!','#e0c8ff');}
+  return _l.apply(this,arguments);};}
+{const _lf=lavaFire;lavaFire=function(dt){const n0=LGLOBS.length;const r=_lf.apply(this,arguments);if(G&&G.lavaUp&&LGLOBS.length===n0+1){const g=LGLOBS[n0];g.dw=1;
+    const sp=Math.hypot(g.vx,g.vy),a=Math.atan2(g.vy,g.vx);for(const k of[-1,1]){const b=a+k*DWL.spread;LGLOBS.push(Object.assign({},g,{vx:Math.cos(b)*sp,vy:Math.sin(b)*sp,rot:R(0,TAU)}));}G.dwTriple=(G.dwTriple||0)+1;}return r;};}
+let DWL_MUL=1;
+{const _ls=lavaSplash;lavaSplash=function(x,y){const g=LGLOBS.find(q=>q.dw&&q.dead&&q.x===x&&q.y===y);if(!g)return _ls.apply(this,arguments);DWL_MUL=DWL.mul;const p0=LPUDDLES.length;
+  try{return _ls.apply(this,arguments);}finally{DWL_MUL=1;for(let i=p0;i<LPUDDLES.length;i++)LPUDDLES[i].dw=1;G.dwSplash=(G.dwSplash||0)+1;}};}
+{const _hu=hurtUnit;hurtUnit=function(u,d){if(DWL_MUL!==1)arguments[1]=d*DWL_MUL;return _hu.apply(this,arguments);};}
+{const _hs=hurtStruct;hurtStruct=function(s,d){if(DWL_MUL!==1)arguments[1]=d*DWL_MUL;return _hs.apply(this,arguments);};}
+if(typeof hurtShip==='function'){const _h=hurtShip;hurtShip=function(s,d){if(DWL_MUL!==1)arguments[1]=d*DWL_MUL;return _h.apply(this,arguments);};}
+if(typeof hurtSiege==='function'){const _h=hurtSiege;hurtSiege=function(g,d){if(DWL_MUL!==1)arguments[1]=d*DWL_MUL;return _h.apply(this,arguments);};}
+{const _h=nrbHurt;nrbHurt=function(o,d){if(DWL_MUL!==1)arguments[1]=d*DWL_MUL;return _h.apply(this,arguments);};}
+// purple globs (drawn by us, the classic drawer skips them)
+{const _dl=drawLavaAir;drawLavaAir=function(){const P=LGLOBS.filter(g=>g.dw);if(P.length)LGLOBS=LGLOBS.filter(g=>!g.dw);try{_dl.apply(this,arguments);}finally{if(P.length)LGLOBS=LGLOBS.concat(P);}
+  for(const g of P){const sy=g.y-g.z;ell(g.x,g.y,10,5,'rgba(0,0,0,.25)');if(GFX_HI){ctx.globalCompositeOperation='lighter';const gg=ctx.createRadialGradient(g.x,sy,2,g.x,sy,26);gg.addColorStop(0,'rgba(200,120,255,.7)');gg.addColorStop(1,'rgba(120,0,200,0)');ctx.fillStyle=gg;ctx.beginPath();ctx.arc(g.x,sy,26,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';}
+    ctx.fillStyle='#4a1470';ctx.beginPath();ctx.arc(g.x,sy,11,0,TAU);ctx.fill();ctx.fillStyle='#9a3ad8';ctx.beginPath();ctx.arc(g.x-2,sy-2,7.5,0,TAU);ctx.fill();ctx.fillStyle='#f0c8ff';ctx.beginPath();ctx.arc(g.x-4,sy-4,3,0,TAU);ctx.fill();
+    ctx.strokeStyle='#22082e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(g.x,sy,11,0,TAU);ctx.stroke();}};}
+// ---- drawing: soft shallows (no hard edge), volcano cone, obsidian spire, the wizard, his spells, shield, HUD bar, map ----
+function dwGround(){const x=DWV.x,y=DWV.y,r=DWV.r;ctx.save();ctx.translate(x,y);ctx.scale(1,1/1.2);const g=ctx.createRadialGradient(0,0,r*.85,0,0,r*1.7);
+  g.addColorStop(0,'rgba(120,150,160,.45)');g.addColorStop(1,'rgba(60,90,130,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r*1.7,0,TAU);ctx.fill();
+  const a=ctx.createRadialGradient(0,0,r*.2,0,0,r*.9);a.addColorStop(0,'rgba(64,54,60,.95)');a.addColorStop(.7,'rgba(84,72,76,.85)');a.addColorStop(1,'rgba(110,98,92,0)');ctx.fillStyle=a;ctx.beginPath();ctx.arc(0,0,r*.9,0,TAU);ctx.fill();ctx.restore();}
+function dwVolcano(){const x=DWV.x,y=DWV.y,H=DWV.H,t=G.t,pl=.5+.5*Math.sin(t*2.6),hot=!dwDown()||true;
+  ell(x,y+6,150,34,'rgba(0,0,0,.22)');poly([x-150,y,x-36,y-H,x+36,y-H,x+150,y],'#4a3c44');poly([x-150,y,x-36,y-H,x-6,y-H,x-60,y],'#5c4c54');
+  for(const k of[-1,1])poly([x+k*10,y-H+4,x+k*24,y-H*.55,x+k*14,y-H*.3,x+k*6,y-H*.6],`rgba(255,${110+pl*60|0},40,.85)`);
+  ell(x,y-H,36,10,'#2a1a20');ell(x,y-H+1,28,7,`rgba(255,${120+pl*80|0},40,1)`);if(GFX_HI){ctx.globalCompositeOperation='lighter';ell(x,y-H-6,50,18,`rgba(255,120,40,${.12+.1*pl})`);ctx.globalCompositeOperation='source-over';}
+  if(dwSpireUp()){const s=dwSpire(),hf=G.dwSpireHp!=null&&dwDown()?G.dwSpireHp/DW_SPIRE:1;poly([s.x-26,s.y,s.x-14,s.y-120,s.x,s.y-150,s.x+14,s.y-120,s.x+26,s.y],'#1e1626');poly([s.x-14,s.y-120,s.x,s.y-150,s.x,s.y],'#34283e');
+    ell(s.x,s.y-104,6,8,`rgba(200,120,255,${.6+.4*pl})`);if(dwDown()&&hf<1){rect(s.x-30,s.y-170,60,5,'#300');rect(s.x-30,s.y-170,60*hf,5,'#b48aff');}}
+  else{const s=dwSpire();ell(s.x,s.y,34,12,'#2a2030');ell(s.x-10,s.y-6,12,8,'#3a2e44');ell(s.x+12,s.y-4,10,6,'#3a2e44');}}
+{const _df=drawFlora;drawFlora=function(x0,y0,x1,y1){const r=_df.apply(this,arguments);try{if(DWV.x+500>x0&&DWV.x-500<x1&&DWV.y+400>y0&&DWV.y-400<y1){dwGround();dwVolcano();}}catch(e){if(!DWB.err)DWB.err=String(e);}return r;};}
+function dwWizard(x,y,ko){const c=DWB.cast>0;if(ko){ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(G.t*9)*.2);ctx.translate(-x,-y);}
+  poly([x-12,y,x+12,y,x+4,y-32,x-4,y-32],'#2a1438');for(let i=0;i<4;i++)txt('✦',x-6+i*4,y-8-i*6,6,'#d8a0ff','center',false);
+  ell(x,y-36,6,6,'#d8c0b0');poly([x-6,y-30,x+6,y-30,x+2,y-14,x-2,y-14],'#9a9aa8');poly([x-11,y-39,x+11,y-39,x+3,y-66],'#1a0a26');ell(x,y-39,12,3,'#1a0a26');
+  line(x+12,y+2,x+14,y-48,'#3a2a2a',2.4);ell(x+14,y-52,c?7:5,c?7:5,c?'#ffd0a0':'#ff7a2a');if(GFX_HI||c)ell(x+14,y-52,c?18:11,c?18:11,'rgba(255,140,60,.3)');
+  ell(x+2,y-37,1.2,1.2,'#ffcc33');ell(x-2,y-37,1.2,1.2,'#ffcc33');
+  if(ko){ctx.restore();for(let i=0;i<3;i++){const an=G.t*5+i*TAU/3;txt('★',x+Math.cos(an)*14,y-72+Math.sin(an)*4,11,'#ffe060','center');}}}
+function dwDrawFx(){if(Math.abs(cam.x-DWV.x)>2600||Math.abs(cam.y-DWV.y)>2200)return;const t=dwTop();
+  if(!dwDown()){if(!(DWB.koT>0))ell(t.x,t.y+8,26,7,'rgba(255,120,40,.25)');dwWizard(t.x,t.y,DWB.koT>0);
+    const f=DWB.maxHp?Math.max(0,DWB.hp)/DWB.maxHp:1,p=.5+.5*Math.sin(G.t*2.4),hit=DWB.hitT&&G.t-DWB.hitT<.25,cy=DWV.y-DWV.H*.6,rx=190,ry=DWV.H*.95;
+    ctx.save();ctx.globalAlpha=.25+.75*f;ell(DWV.x,cy,rx,ry,`rgba(170,90,230,${(hit?.22:.08)+.05*p})`);ctx.strokeStyle=hit?'rgba(255,255,255,.9)':`rgba(210,150,255,${.35+.25*p})`;ctx.lineWidth=hit?4:2.5;
+    ctx.beginPath();ctx.ellipse(DWV.x,cy,rx,ry,0,0,TAU);ctx.stroke();ctx.restore();}
+  else if(!G.dwEaten){const sp=dwEatSpot();ctx.save();ctx.translate(sp.x,sp.y);ctx.rotate(1.2);ctx.translate(-sp.x,-sp.y);dwWizard(sp.x,sp.y,false);ctx.restore();
+    for(let i=0;i<3;i++){const a=G.t*5+i*TAU/3;txt('★',sp.x+Math.cos(a)*14,sp.y-40+Math.sin(a)*4,11,'#ffe060','center');}
+    if(Math.hypot(sp.x-D.x,sp.y-D.y)<300&&!(G.dwHintT>G.t)){G.dwHintT=G.t+6;float(sp.x,sp.y-70,'Dizzy Dark Wizard - gobble him up!','#ffe28a');}}
+  for(const s of DWB.shots){const Y=s.y-s.z;ell(s.x,s.y,7,2.5,'rgba(0,0,0,.18)');if(GFX_HI)ell(s.x,Y,18,18,'rgba(255,120,30,.25)');ell(s.x,Y,10,10,'#d8400c');ell(s.x-2,Y-2,6,6,'#ffb040');ell(s.x-3,Y-3,2.5,2.5,'#fff0a0');}
+  for(const m of DWB.marks){if(!m.done){const q=1-m.t;ctx.strokeStyle=`rgba(210,140,255,${.4+.5*q})`;ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.beginPath();ctx.ellipse(m.x,m.y,75,47,0,0,TAU);ctx.stroke();ctx.setLineDash([]);ell(m.x,m.y,75*q,47*q,'rgba(200,120,255,.18)');}
+    else if(m.flash>0){let px=m.x+R(-10,10),py=m.y-700;for(let i=0;i<8;i++){const nx=m.x+R(-30,30)*(1-i/8),ny=py+88;line(px,py,nx,ny,'#f4e0ff',5);line(px,py,nx,ny,'#a050ff',2);px=nx;py=ny;}ell(m.x,m.y,55,32,'rgba(220,170,255,.5)');}}
+  for(const w of DWB.erupts){const q=w.t/1.5;ctx.strokeStyle=`rgba(255,140,60,${.75*(1-Math.min(1,q))})`;ctx.lineWidth=10*(1-Math.min(1,q))+2;ctx.beginPath();ctx.ellipse(DWV.x,DWV.y,w.r,w.r*.62,0,0,TAU);ctx.stroke();
+    if(GFX_HI||G.fc%2===0)for(let i=0;i<8;i++){const an=i*TAU/8+w.t;ell(DWV.x+Math.cos(an)*w.r,DWV.y+Math.sin(an)*w.r*.62,14,9,`rgba(110,100,110,${.5*(1-Math.min(1,q))})`);}}}
+{const _f=nrDrawFx;nrDrawFx=function(){const r=_f.apply(this,arguments);try{dwDrawFx();}catch(e){if(!DWB.err)DWB.err=String(e);}return r;};}
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!DWB.on||dwDown()||!DWB.maxHp)return;const S=hudSlot('dwizard',Math.min(424,VW*.6+4),32),w=S.w-4,x=S.x+2,y=S.y+20,lab='🛡️ Dark Wizard\'s magic shield'+(EASY?' (easy)':'');
+  rect(x-2,y-2,w+4,14,'rgba(30,8,30,.75)');rect(x,y,w*Math.max(0,DWB.hp)/DWB.maxHp,10,'#c060ff');txt(lab,S.cx,S.y+13,hudFit(lab,S.w,13),'#f0dcff','center');G.dwBar=G.fc;};}
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{if(big){const s=mmw/(WX1-WX0),px=mmx+(DWV.x-WX0)*s,py=mmy+(DWV.y-WY0)*s;ell(px,py,4,4,dwDown()?'#c8a0e0':'#a040e0');txt(dwDown()?'🌋 Cinder Isle (yours)':'🌋 Dark Wizard',px+7,py+4,10,'#f0d8ff','left');}}catch(e){}return r;};}
+// ---- saves / levels (101: fixed strength; 103/104: beaten + lava upgrade kept through level-ups) ----
+function dwReset(){Object.assign(DWB,{on:false,hp:0,maxHp:0,cd:2,spell:0,shots:[],marks:[],erupts:[],koT:0,said:0,cast:0});}
+{const _ng=newGame;newGame=function(opt){const lv=opt&&opt.lvl>1&&G,k=lv?{dwDown:G.dwDown,dwWins:G.dwWins,lavaUp:G.lavaUp,dwEaten:G.dwEaten,dwEatenN:G.dwEatenN,dwSpireDown:G.dwSpireDown,dwSpireHp:G.dwSpireHp,dwHp:G.dwHp}:null;
+  const r=_ng.apply(this,arguments);dwReset();if(k)for(const q in k)if(k[q]!==undefined)G[q]=k[q];return r;};}
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);dwReset();return r;};}
+if(typeof tallyAddSect==='function')tallyAddSect('nrdark','Northern Realms · Dark lands','👹','#9ad06a',[['dwizard','Dark Wizard']]);
+{const _ab=achBuild;achBuild=function(){const L=_ab.apply(this,arguments),i=L.findIndex(a=>a.id==='wizEat'),A=(id,name,how,ok,o)=>Object.assign({sec:'boss',id,name,how,ok},o||{});
+  L.splice(i<0?L.length:i+1,0,A('dwizard','Volcano Tamer',"Break the Dark Wizard's shield on his volcano isle in the dark northern sea",()=>!!ACH.ev.dwizard||achG('dwWins')>0,
+      {rew:()=>`+${DW_GAIN} max health, +${DW_GOLD} gold · purple TRIPLE lava shot at every volcano (+${Math.round((DWL.mul-1)*100)}% damage each) · his volcano unlocks`}),
+    A('dwEat','Spicy Snack','Gobble the dizzy Dark Wizard after breaking his shield',()=>!!ACH.ev.dwEat||achG('dwEatenN')>0));return L;};}
+{const _w=wzClearFloes;wzClearFloes=function(){_w();if(OC&&OC.floes)OC.floes=OC.floes.filter(f=>Math.hypot(f.x-DWV.x,(f.y-DWV.y)*1.2)>DWV.r+Math.max(f.rx,f.ry)+250);};}
+// ======================= queue 98: the weather turns stormier near the Wizard's Isle =======================
+// Intensity ramps smoothly with distance to the isle (0 beyond ~3200, full inside ~600) and softens to 35% once the Storm Wizard is beaten.
+// Screen overlay only: a dark blue-grey wash + vignette, choppy darker water tint, slanted rain streaks (30 on LOW, 90 on HIGH), and a soft harmless lightning
+// flash every ~5-11 s with a quiet, delayed distant rumble. No damage, nothing scary.
+const STORM={s:0,flash:0,next:6,thunder:-1,flashes:0};
+function stormLevel(){if(!D||!G)return 0;const d=Math.hypot(D.x-WZ.x,D.y-WZ.y),s=clamp(1-(d-600)/2600,0,1);return s*s*(3-2*s)*(G.nrOpen?.35:1);}
+{const _t=nrTick;nrTick=function(dt){_t(dt);if(scene!=='play'||!G)return;const tgt=stormLevel();STORM.s+=(tgt-STORM.s)*Math.min(1,dt*1.5);
+  if(STORM.flash>0)STORM.flash-=dt;if(STORM.thunder>0){STORM.thunder-=dt;if(STORM.thunder<=0){STORM.thunder=-1;try{SFX.play('stomp',D.x,D.y,.18*STORM.s);}catch(e){}}}
+  STORM.next-=dt;if(STORM.next<=0){STORM.next=R(5,11);if(STORM.s>.45&&!G.nrOpen||STORM.s>.3&&rnd()<.3){STORM.flash=.35;STORM.flashes++;STORM.thunder=R(.8,1.8);}}};}
+function drawStorm(){const s=STORM.s;if(scene!=='play'||s<.02)return;const W=VW,H=VH,t=G.t;
+  ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle=`rgba(22,28,48,${.28*s})`;ctx.fillRect(0,0,W,H);
+  {const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(10,12,26,0)');g.addColorStop(1,`rgba(10,12,26,${.45*s})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+  const n=Math.round((GFX_HI?90:30)*s);ctx.strokeStyle=`rgba(200,215,240,${.25+.2*s})`;ctx.lineWidth=1.2;ctx.beginPath();
+  for(let i=0;i<n;i++){const ph=(i*0.6180339)%1,sp=900+(i%7)*60,x=((ph*W*1.3+t*260)%(W*1.3))-W*.15,y=((i*137.5+t*sp)%(H+60))-30;ctx.moveTo(x,y);ctx.lineTo(x-7,y+22);}ctx.stroke();
+  if(STORM.flash>0)ctx.fillStyle=`rgba(235,240,255,${.22*s*Math.min(1,STORM.flash/.35)*(Math.sin(STORM.flash*40)>-.3?1:.4)})`,ctx.fillRect(0,0,W,H);
+  ctx.restore();}
+{const _h=drawHUD;drawHUD=function(){try{drawStorm();}catch(e){if(!STORM.err)STORM.err=String(e);}return _h.apply(this,arguments);};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);STORM.s=0;STORM.flash=0;return r;};}

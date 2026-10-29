@@ -157,15 +157,54 @@ The map doubles northward. A glowing **magic barrier** of crystal peaks runs alo
 - **Fairies (light lands):** small glowing fairies with a sparkle trail flutter around the elven glowing trees, sacred glades and hobbit flower beds. They flee, dart and dodge (a bite misses about a third of the time). A brave one may give a tiny pixie-dust sting (−1). You can gulp one (small snack, sparkle puff). Fire makes them go *poof*. A glade that loses fairies gets new ones after a while, when the dragon is away.
 - **Vampire bats (dark lands):** cartoony purple bats with red eyes (no gore) swarm around goblin and orc caves, the cyclops cave, dark towers and burnt trees. They fly erratically and swoop in for a small nibble (−1), then a tiny red-sparkle heal for the bat. Edible, hurt by fire, and they come back over time. They don't join the dark armies.
 - **Seagulls (seas and coasts):** small flocks circle over the southern sea, the northern sea on both sides of the wind wall, the shorelines, the dock, the lighthouse and passing trade and fishing ships (they follow the ship). Flocks land on the dock, the lighthouse rocks and beaches, and scatter with a squawk when the dragon comes close. Edible and hurt by fire. Only a few flocks exist at once, near the dragon, so performance stays within budget.
-- **Mermaids (light side):** family-friendly mermaids swim in the northern ocean south of the wind wall (around the Wizard's isle, never on it) and along the light dwarf coast north of the wall. Most dive away from the dragon. Brave ones defend with a splash or a trident poke (small damage), and they also poke dark creatures that come near the water. You can only bite or burn them while they're surfaced. There are no river or lake mermaids, because the purple and elven lands have no rivers or lakes and the elven realm has no coast.
-- **Sunbathers on rocks and ice:** some mermaids lie back on sea rocks, the new ice floes (11 of them, on both sides of the wall) and the dwarf-coast beaches, flicking their tails. When the dragon comes close they slide into the sea and dive.
-- **Nessie, the Loch Ness Monster (mini boss):** a friendly-looking green plesiosaur with her own dark loch patch in the northern ocean, clear of the Wizard's isle and the Kraken Deep. She lurks, surfaces and dives, and attacks with a neck lunge, a tail slap and a wave splash. She has a fixed-width boss bar, and her health grows gently with the castle level (800, +15% a level). Beating her gives **+50 max health**. She **stays beaten until the dragon dies**: that carries through the next level and save/load, and a new game resets it. Her health and beaten state are saved.
+- **Mermaids (light side):** family-friendly mermaids all swim **north of the magic wind wall**, in the light fantasy ocean along the dwarf coast (none south of the wall any more; old saves move them north on load). Most dive away from the dragon. Brave ones defend with a splash or a trident poke (small damage), and they also poke dark creatures that come near the water. You can only bite or burn them while they're surfaced. There are no river or lake mermaids, because the purple and elven lands have no rivers or lakes and the elven realm has no coast.
+- **Sunbathers on rocks and ice:** some mermaids lie back on sea rocks, the ice floes (11 of them, all north of the wall) and the dwarf-coast beaches, flicking their tails. When the dragon comes close they slide into the sea and dive.
+- **Nessie, the Loch Ness Monster (mini boss):** a friendly-looking green plesiosaur with her own loch in the **southern part of the light fantasy ocean, north of the wind wall** (about x 9700, y −3500), clear of the Kraken Deep. Old saves that had her south of the wall move her there on load. Her loch is one soft gradient, a darker heart fading smoothly to open water with no rings or hard edges. Once beaten she naps there and can be gulped down in one big cartoony GULP (food 90, +60 HP), then she is gone until the dragon is defeated. She lurks, surfaces and dives, and attacks with a neck lunge, a tail slap and a wave splash. She has a fixed-width boss bar, and her health grows gently with the castle level (800, +15% a level). Beating her gives **+50 max health**. She **stays beaten until the dragon dies**: that carries through the next level and save/load, and a new game resets it. Her health and beaten state are saved.
 - **No movement-state row:** the health panel no longer has the flying / grounded / swimming row or the "F: take off / F: land" bar, on any device. The dragon's wings and the water show its state, and the FLY button, the F key and the controls help still cover taking off and landing. The panel now ends right under the last bar, and the CASTLE LV and resources panels move up to close the gap.
 - **No griffin "· flying" label:** the Griffin's boss bar just shows its name and health now, because you can see it flying. The other boss bars never had a flying or ground label.
 - **Dragon no longer hidden by set pieces:** when the dragon walks or lands near the Temple of the Hydra, the temple floor and pool are drawn under it, and the pillars, the Hydra, a grounded or dizzy Griffin, Nessie and dizzy units are depth-sorted with the dragon. Anything behind the dragon is drawn first, anything in front of it is drawn after. When flying, the dragon is always on top.
 - **HUD title restored:** a line-break slip in the phone-landscape HUD update (item 45) had commented out the "THE DRAGON" title on the health panel. It's back.
 - **Alpha trolls and centaurs:** 3 **troll caves** in the dark north, each home to a white alpha troll with 3–4 regular trolls, and 3 **sacred glades** in the light north, each home to a silver-and-gold alpha centaur with 3–4 regular centaurs. They follow the lion and white-wolf alpha rules: they defend the turf, the alpha's call rallies the band (+12% damage, +8% speed, 10% less damage taken, 10 s, orange glow), helpers refill about every 40 s, and a new alpha takes over about 75 s after one is beaten. An alpha can only be eaten once worn below 80%. A few regular trolls and centaurs still roam freely. From level 4 an alpha may lead its band in the big armies and goes home afterwards.
 - **Wizard's tower and magic shield:** while the wizard is alive, his tower is invulnerable. Every attack on the tower or on him (fire, lava, stomp, claw, dive, bite) drains his **magic shield** instead, shown as a shimmering bubble that fades as it drops. When the shield breaks he is beaten, goes dizzy and can be eaten (it counts as food). His tower can then be burned or smashed into rubble. He, his tower and his shield return when your dragon is defeated.
+
+- **Wizard's Isle, flat:** the wizard's island has no mountains any more, just sand and his tower, on the world and the minimap/big map.
+- **Soft boss waters:** the Kraken Deep now fades in over about 840 px instead of a hard seam, and Nessie's loch is a single smooth gradient (see the shots below).
+- **Storm near the Wizard's Isle:** the weather turns stormier the closer you fly to the isle. It starts about 3,200 px out and builds smoothly: a gentle blue-grey dimming, a soft edge vignette, light rain streaks, and every 5–11 s a soft lightning flash with quiet thunder. Strength 0 far away, about 0.18 at 2,500 px, 0.72 at 1,500 px and 1.0 on the isle; once the Storm Wizard is beaten it calms to 35%. On **LOW** graphics there are only 30 rain streaks (90 on HIGH), and the flash is capped at 22% brightness so it's never scary.
+
+| Nessie & mermaids north of the wall | Wizard's Isle (no mountains) |
+|---|---|
+| ![](screenshots/294_nessie_mermaids_north.png) | ![](screenshots/295_wizard_isle_no_mountains.png) |
+| Kraken Deep edge, before | Kraken Deep edge, after |
+| ![](screenshots/296_before_deep_edge.png) | ![](screenshots/297_after_deep_edge.png) |
+| Nessie's loch, before (rings) | Nessie's loch, after (soft) |
+| ![](screenshots/298_before_nessie_loch.png) | ![](screenshots/299_after_nessie_loch.png) |
+| Storm near the isle | Lightning flash |
+| ![](screenshots/300_storm_near_wizard_isle.png) | ![](screenshots/301_storm_lightning_flash.png) |
+
+## Everyone is on the menu (except three)
+Every creature, villager, soldier, animal and mini boss can be eaten once it's worn down or beaten, with a soft white puff and a GULP (no gore). Mini bosses: the Kraken and the giant octopus (dazed), the sand worm (surfaced), the Hydra, the Griffin, the Storm Wizard, the Dark Wizard, Cerberus, Medusa, trolls and cyclopes (dizzy), wild dragons, alphas, princes (under 30%), raid champions (under 50%) and now **Nessie** (beaten). Only three can **never** be eaten: **King William**, **Princess Elizabeth** (she is carried, never harmed) and **your own lair guardian dragons** (they're on your side). A bite at the king just goes *CLANG!*
+
+## The Dark Wizard of Cinder Isle (northern dark ocean)
+On **Cinder Isle**, a small ash-grey volcano island in the northern dark ocean (about x 9700, y −9000), the **Dark Wizard** guards his own volcano.
+- **Magic shield:** the same rules as the Storm Wizard: every hit (fire, lava, stomp, dive, claw, bite) drains his shield, and his obsidian spire is invulnerable until he is beaten. Shield **525** (1.75× the Storm Wizard's 300); it does **not** grow with the castle level. Easy mode: ×0.7.
+- **Spells** (every 2 s, Easy 2.8 s), starting when you come within 1,400 px:
+  - **Lava shots:** 5 lava blobs, 13 damage each. These never melt in water.
+  - **Eruption:** his volcano erupts in a ring that grows to 900 px over 1.5 s: 6 damage and a strong knockback (stronger than the wind wall's push).
+  - **Purple lightning:** a purple mark appears for 1 s, then the bolt hits for 8 damage.
+- **Beat him:** +400 gold, **+50 max health**, a full heal, the *Volcano Tamer* achievement and a horn. He lies dizzy and can be eaten (+40 HP, *Spicy Snack* achievement). His spire can then be smashed for +100 gold.
+- **He stays beaten** through every level-up and save/load; he never respawns in that game. Starting a new game (after your dragon is defeated) brings him back, like the Storm Wizard.
+
+## Purple TRIPLE lava (Dark Wizard reward)
+Beating the Dark Wizard unlocks **his volcano for lava drinking** (20 shots, like the others; before that his shield keeps you away) and upgrades lava at **every** volcano (Mount Cinder, Mount Ember and Cinder Isle). A small alert announces it: *"🌋 Purple TRIPLE lava shot!"*.
+- Each lava press now lobs **3 dark-purple globs** (straight ahead and ±8°) for the cost of **1 lava**.
+- Each glob does **+50% damage**: units 30 → 45 (wet units 25 → 37.5), stone buildings 55 → 82.5, wooden buildings 60 → 90, ships 70 → 105, siege engines 70 → 105. Cooling puddles are unchanged (2 per tick).
+- The upgrade is saved and kept through every level-up. Like the Dark Wizard's beaten state, it resets only on a new game.
+
+| Volcano fight | Eruption |
+|---|---|
+| ![](screenshots/302_dark_wizard_volcano_fight.png) | ![](screenshots/303_dark_wizard_eruption.png) |
+| Beaten: triple lava unlocked | Purple triple lava shot |
+| ![](screenshots/304_dark_wizard_beaten_alert.png) | ![](screenshots/305_purple_triple_lava_shot.png) |
 
 ## Wanted tiers and the MILITIA
 The WANTED meter rises as you cause damage and cools down faster the farther you are from where the trouble was. Wild animals never raise it. The kingdom's response grows in tiers:
@@ -379,12 +418,27 @@ At castle level 5, 10, 15 and so on, a named **prince** comes for the dragon. A 
 His soldiers get tougher per tier too (foot 26 HP +6, knights 48 +8, archers 20 +4, cavalry 85 +10). Easy mode gives the prince 25% less health and 2 fewer soldiers.
 
 ## King William's trade ships
-When something is wrecked and the stockpile can't cover the rebuild, **King William buys exactly the shortfall** of wood and/or stone from castle gold at a fair rate (4 gold per wood, 6 per stone). He never buys for watchtowers or to stockpile, and never twice at once.
+When something is wrecked and the stockpile can't cover the rebuild, **King William orders a shipload of wood and/or stone worth 25% of the castle treasury** (at 4 gold per wood, 6 per stone; split evenly by value when both are needed, and only the goods the rebuild needs). The shipload always covers at least the shortfall and is worth at least 40 gold; if 25% isn't enough for that he still buys the shortfall, if the treasury can cover it. He never buys for watchtowers, and never twice at once.
+- *Before:* each ship brought exactly the shortfall, e.g. 6 wood + 6 stone (60 gold) for a wrecked gate with an empty storehouse. *Now:* with 1,400 gold in the treasury the same gate gets a 348-gold shipload of 42 wood + 30 stone; with 2,400 gold, 73 wood + 51 stone (598 gold). (Briefly, item 90 had ships carry 2.5× the shortfall; item 91 replaced that with the treasury rule before release.)
+- **Bigger shipments get bigger escorts** (by the shipload's gold value). The banner names the tier and escort:
+
+| Tier | Shipload value | Trade ship HP | Escort per cart | Escort warships |
+|---|---|---|---|---|
+| Small | under 100 gold | 130 | 3 foot guards (2 each when there are two carts) | none |
+| Medium | 100–249 | 180 | 4 guards + 1 archer (3 + 1 with two carts) | none |
+| Large | 250–499 | 240 | 5 guards + 2 archers (4 + 2) | 1 |
+| Grand | 500+ | 320 | 6 guards + 3 archers (5 + 3) | 2 |
+
+- **Royal escort warships** (green sails, 200 HP) keep station beside the trade ship; their deck archers loose arrows at a dragon within range. Once the cargo is ashore (or sunk) they sail home. Sinking one doesn't spill the cargo. It's tallied as *Royal escort warships*. Cart archers stand off and shoot when the dragon comes near.
+
+| Grand shipment with 2 escort warships | Grand shipment's carts and guards at the quay |
+|---|---|
+| ![](screenshots/292_trade_ship_grand_escort.png) | ![](screenshots/293_trade_carts_grand_guards.png) |
 - A banner announces *"A trade ship approaches with King William's lumber/stone!"*, a horn sounds, and a gold map marker follows the ship. The banner and horn only play while the dragon is south of the northern fantasy lands; up north the ship still sails, silently.
 - The ship sails in from the south edge of the map to the **King's Quay** (a royal dock on the shore below the castle), unloads, and sails home.
-- At the quay the goods go onto a **cart escorted by foot soldiers** (3 guards, or 2 each for two carts) that drives to the castle storehouse.
+- At the quay the goods go onto a **cart escorted by soldiers** (see the tiers above) that drives to the castle storehouse.
 - **Sink the ship or smash the cart** and the goods are lost (tallied as *Royal trade ship* / *Royal trade cart*). After a cooldown the king re-buys only if the rebuild still needs it and the treasury can afford it.
-- Ships, carts and guards in transit are saved and restored.
+- Ships, carts, guards and archers in transit are saved and restored, with their tier. Escort warships are re-launched beside a loaded ship.
 
 ## King William
 Castle Aldric belongs to **King William**. He stands in the castle courtyard with a gold name tag, and when the dragon comes close he shouts orders, starting with *King William: "Guards! Protect Princess Elizabeth!"*. While you carry the princess away, he calls for her rescue. He can't be eaten or hurt. His name is used in the raid and prince announcements (*"… vows before King William to claim the dragon's hoard!"*), the ransom banner, the prince's march, the tax collectors (*"King William's taxes! Begone!"*), the militia (*"By order of King William!"*) and the castle label.
@@ -612,16 +666,16 @@ Each of the two savanna watering holes has its own **alpha hippo**: a big lilac-
 
 
 ## Achievements
-Open **🏆 Achievements** from the title menu (it shows *N of 72* right on the button) or from the pause menu (between *Settings* and *Flip screen*). It's a scrollable list sized for touch: big **▲ Up / ▼ Down** buttons, drag or swipe to scroll, **Show: All / Locked / Unlocked** to filter, and **◀ Back**. On a keyboard: ↑/↓ scroll, ←/→ page, A cycles the filter, Esc/B goes back.
+Open **🏆 Achievements** from the title menu (it shows *N of 74* right on the button) or from the pause menu (between *Settings* and *Flip screen*). It's a scrollable list sized for touch: big **▲ Up / ▼ Down** buttons, drag or swipe to scroll, **Show: All / Locked / Unlocked** to filter, and **◀ Back**. On a keyboard: ↑/↓ scroll, ←/→ page, A cycles the filter, Esc/B goes back.
 - **Nothing is hidden.** Every locked achievement shows its name and a one-line how-to, so the list doubles as a guide to everything there is to do. Counters show progress (e.g. *260 / 500* gold, *3 / 10* eggs, *1% / 50%* explored).
 - **Reward hints.** Anything that gives an in-game reward shows a 🎁 line, even while locked: the bosses' *+50 max health*, the wizard's *+300 gold*, the temple's *+100 gold · +10 max fire (once per game)*, the rich caravan's *+20 gold*, dragon eggs' *+5 max fire*, wild dragons' *+5 max stamina*, the guardian egg hatchlings, trade-ship cooldowns, the hippo's *+250 points*, raid purses, and more. These numbers are read from the game's own settings, so they always match the game.
 - **Unlocking** shows a small alert at the bottom of the screen (*"🏆 Name — Achievement unlocked"* plus the reward). If several unlock at once you see two alerts and a *"+N more"* one.
 - **Saved on this device** (browser storage key `dr_ach_v1`), separately from save games: unlocks carry across new games, restarts and reloads, and never alert twice.
 
-What's in the list (72):
+What's in the list (74):
 - **Castle, hoard & princess:** first gold home, 500 / 2000 gold stashed, smashing the keep's roof, grabbing Princess Elizabeth (she is never harmed), flying her home (the ransom), castle levels 3, 5 and 10.
 - **Dragons & dragon eggs:** eat your first and 10th wild dragon egg, beat 1 and 5 wild dragons, carry home and hatch the **light (white) egg** from the Lumenspire Citadel and the **dark (black) egg** from the Doomforge Citadel (one achievement each, each hint names the guardian dragon you get), and the Glutton boost (eat a whale's worth of food).
-- **Bosses:** the wizard (defeat him, and gobble him), the hydra, griffin, Nessie, the giant squid, the giant octopus, the sand worm, Medusa, Cerberus, and wrecking the jungle temple.
+- **Bosses:** the wizard (defeat him, and gobble him), the Dark Wizard (*Volcano Tamer*, with a 🎁 *+400 gold · +50 max health · purple triple lava* hint, and *Spicy Snack* for eating him), the hydra, griffin, Nessie, the giant squid, the giant octopus, the sand worm, Medusa, Cerberus, and wrecking the jungle temple.
 - **Alpha guardians (first defeat of each type):** the savanna pride's male lion, the Deepwood's white alpha wolf, the jungle's silverback gorilla, the alpha hippo, the white alpha troll and the alpha centaur. **Alphas come back:** a new lion, wolf or silverback takes over about 60 s after you fly away, a new hippo wades in about 2 minutes later, and a new troll or centaur alpha arrives about 75 s later, so you can always find one.
 - **Hoard raids & royal fleets:** beat a hoard-raiding champion (1 and 5), pick up a gold sack a raiding knight dropped, stop a prince's royal war fleet, sink a royal warship.
 - **Kingdom:** stop a royal **trade ship at sea**, and separately stop a trade ship **on land** (unloading at the quay, or its carts unloading on shore), destroy the **rich desert caravan** (*+20 gold*), break the castle gate, wreck the barracks, topple 3 towers, knock down the lighthouse, wreck a catapult, stop a tax collector, defeat a knight, defeat 50 of King William's soldiers, burn 10 crop fields, knock down or burn 25 trees, and wreck 5 carts.

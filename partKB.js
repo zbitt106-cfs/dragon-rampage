@@ -3,7 +3,7 @@
 // Never for watchtowers (they are only ever built from cart-delivered stock: bought goods don't count toward the tower budget), never to stockpile.
 // The goods come by TRADE SHIP from the southern sea edge to the King's Quay (announced: banner, horn, map marker), then by a
 // GUARDED CART along the roads to the storehouse. Sink the ship or smash the cart and the goods (and the gold) are lost. Saved with the game.
-const KB={rate:{wood:4,stone:6},check:3,cool:25,quayX:2400,guards:3,unload:2.5,ship:{hp:130,sp:58,crew:3,r:50},last:null};
+const KB={rate:{wood:4,stone:6},share:.25,minGold:40,check:3,cool:25,quayX:2400,guards:3,unload:2.5,ship:{hp:130,sp:58,crew:3,r:50},last:null};
 function kbNeed(){ // the first ruin the masons would rebuild that is blocked ONLY by stock (same order and waits as the rebuild loop)
   for(const s of [...structures].sort((a,b)=>(b.kind==='bridge')-(a.kind==='bridge'))){
     if(s.state!=='ruin'||s.builder||s.paid||s.kind==='wtower')continue;
@@ -22,26 +22,44 @@ function kbQuay(){if(KB.q)return KB.q;const x=KB.quayX,yS=(typeof shoreAt==='fun
 SHIPK.trade={hp:KB.ship.hp,sp:KB.ship.sp,crew:KB.ship.crew,r:KB.ship.r,gold:0};
 if(typeof SHIP_NM!=='undefined')SHIP_NM.trade='Royal trade ships';
 SC_SRC.trader={kind:'wood',yard:null,park:()=>kbQuay().land,job:'trader',name:"the King's Quay"};
+// QUEUE 91: each order is worth 25% of the treasury (at the KB rates), split evenly by value between the goods the rebuild needs.
+// Sensible minimum: always at least the shortfall, and at least KB.minGold (40 gold) of goods. If the treasury can't cover that, he buys the bare shortfall (old rule) or nothing.
+function kbOrder(need,have){const nw=need.w>0,ns=need.st>0,rw=KB.rate.wood,rs=KB.rate.stone;if(!nw&&!ns)return null;
+  let budget=Math.max(Math.floor(have*KB.share),KB.minGold);let w=need.w,st=need.st,base=w*rw+st*rs;
+  if(budget>base){const ex=budget-base;if(nw&&ns){w+=Math.floor(ex/2/rw);st+=Math.floor(ex/2/rs);}else if(nw)w+=Math.floor(ex/rw);else st+=Math.floor(ex/rs);
+    let left=budget-(w*rw+st*rs);if(ns&&left>=rs){const k=Math.floor(left/rs);st+=k;left-=k*rs;}if(nw&&left>=rw)w+=Math.floor(left/rw);}
+  let cost=w*rw+st*rs;if(cost>have){w=need.w;st=need.st;cost=base;}if(cost<=0||cost>have)return null;return{w,st,cost,val:Math.max(cost,cost===base?0:budget)};} // val: the nominal order value (whole crates can't always hit it exactly) - picks the escort tier
+// QUEUE 92: the bigger the shipment (by gold value), the bigger its escort
+const KB_TIERS=[{n:1,name:'Small',min:0,hp:130,guards:3,archers:0,war:0},{n:2,name:'Medium',min:100,hp:180,guards:4,archers:1,war:0},
+  {n:3,name:'Large',min:250,hp:240,guards:5,archers:2,war:1},{n:4,name:'Grand',min:500,hp:320,guards:6,archers:3,war:2}];
+function kbTier(v){let t=KB_TIERS[0];for(const x of KB_TIERS)if(v>=x.min)t=x;return t;}
+function kbTierN(n){return KB_TIERS[Math.max(0,Math.min(KB_TIERS.length-1,(n|0)-1))];}
+function kbValue(w,st){return (w|0)*KB.rate.wood+(st|0)*KB.rate.stone;}
+function kbEscortTxt(t,two){const g=t.guards-(two?1:0);return `${g} guard${g>1?'s':''}${t.archers?' + '+t.archers+' archer'+(t.archers>1?'s':''):''} per cart${t.war?'  ·  '+t.war+' escort warship'+(t.war>1?'s':''):''}`;}
 function kbWhat(w,st){return [w?`${w} wood`:'',st?`${st} stone`:''].filter(Boolean).join(' and ');}
 function kbGoods(w,st){return w&&st?'lumber and stone':w?'lumber':'stone';}
-function kbSpawnShip(w,st,o){o=o||{};const q=kbQuay();let sx=o.x!=null?o.x:q.x+R(-160,160),sy=o.y!=null?o.y:WY1-170;
+function kbSpawnShip(w,st,o){o=o||{};const q=kbQuay();const T=o.tier?kbTierN(o.tier):kbTier(kbValue(w,st));let sx=o.x!=null?o.x:q.x+R(-160,160),sy=o.y!=null?o.y:WY1-170;
   if(o.x==null)for(let t=0;t<40&&!inSea(sx,sy);t++)sy-=40;
-  const s={kind:'trade',trade:true,w:w|0,st:st|0,x:sx,y:sy,ang:o.ang!=null?o.ang:-Math.PI/2,sp:KB.ship.sp,hp:o.hp!=null?o.hp:KB.ship.hp,maxHp:KB.ship.hp,r:KB.ship.r,crew:KB.ship.crew,
-    fire:0,fireT:0,state:o.state||'sail',wp:null,cd:0,cd2:0,t:0,id:rnd(),bob:R(0,TAU),unT:o.unT!=null?o.unT:KB.unload,anchor:{x:q.anchor.x,y:q.anchor.y}};ships.push(s);return s;}
+  const s={kind:'trade',trade:true,w:w|0,st:st|0,x:sx,y:sy,ang:o.ang!=null?o.ang:-Math.PI/2,sp:KB.ship.sp,hp:o.hp!=null?Math.min(o.hp,T.hp):T.hp,maxHp:T.hp,tier:T.n,r:KB.ship.r,crew:KB.ship.crew,
+    fire:0,fireT:0,state:o.state||'sail',wp:null,cd:0,cd2:0,t:0,id:rnd(),bob:R(0,TAU),unT:o.unT!=null?o.unT:KB.unload,anchor:{x:q.anchor.x,y:q.anchor.y}};ships.push(s);if(T.war&&s.state!=='home'&&typeof kbEscorts==='function')kbEscorts(s,T.war);return s;}
 function kbSpawn(kind,n,o){o=o||{};const c=scSpawn('trader',{load:n,st:o.st||'go',s:o.s||0,noDrv:o.noDrv,noHorse:o.noHorse});c.kind=kind;c.trader=true;c.load=n;if(c.drv)c.drv.shirt='#2a6a5a';
-  if(!o.noGuards)kbGuards(c,o.guards!=null?o.guards:KB.guards);return c;}
+  if(!o.noGuards){kbGuards(c,o.guards!=null?o.guards:KB.guards);if(o.archers)kbArchers(c,o.archers);}c.tier=o.tier||1;return c;}
+function kbArchers(c,n){for(let i=0;i<n;i++){const a=R(0,TAU),k=mkUnit('archer',c.x+Math.cos(a)*30,c.y+Math.sin(a)*18,{hp:22,maxHp:22,shootT:R(1,3),escort:c,eo:[1,-1,0][i%3]*1.4,born:G.t,kbGuard:1,kbArch:1});units.push(k);}}
 // a few foot soldiers march beside each cart (partK escortStep); they fight if the dragon comes close
 function kbGuards(c,n){if(!Object.getOwnPropertyDescriptor(c,'dead'))Object.defineProperty(c,'dead',{get(){return this.wrecked||this.gone;},configurable:true});
   const G_=[];for(let i=0;i<n;i++){const a=R(0,TAU),k=mkUnit('knight',c.x+Math.cos(a)*26,c.y+Math.sin(a)*16,{hp:24,maxHp:24,atk:0,foot:true,colr:'#2f8a6a',escort:c,eo:[-1,1,0,-1,1][i%5]*(i>2?1.8:1),born:G.t,kbGuard:1});units.push(k);G_.push(k);}
   return G_;}
 function kbGuardsOf(c){return units.filter(u=>!u.dead&&u.kbGuard&&u.escort===c);}
+function kbFootOf(c){return kbGuardsOf(c).filter(u=>!u.kbArch).length;}
+function kbArchOf(c){return kbGuardsOf(c).filter(u=>u.kbArch).length;}
 function kbBuy(){if(!storeUp()||kbBusy()||G.t<(G.kbCoolT||0))return false;const need=kbNeed();if(!need)return false;
-  const cost=need.w*KB.rate.wood+need.st*KB.rate.stone,have=castleTreasury();if(cost<=0||have<cost)return false;
-  const paid=kbSpendGold(cost);G.kbSpent=(G.kbSpent||0)+paid;G.kbBuys=(G.kbBuys||0)+1;
-  const what=kbWhat(need.w,need.st);KB.last={kind:need.s.kind,w:need.w,st:need.st,cost:paid};
-  kbSpawnShip(need.w,need.st);G.kbShipsSent=(G.kbShipsSent||0)+1;
+  const have=castleTreasury(),ord=kbOrder(need,have);if(!ord)return false;
+  const paid=kbSpendGold(ord.cost);G.kbSpent=(G.kbSpent||0)+paid;G.kbBuys=(G.kbBuys||0)+1;
+  const what=kbWhat(ord.w,ord.st),T=kbTier(ord.val),two=ord.w>0&&ord.st>0;
+  KB.last={kind:need.s.kind,w:ord.w,st:ord.st,needW:need.w,needSt:need.st,cost:paid,treasury:have,tier:T.n};
+  kbSpawnShip(ord.w,ord.st,{tier:T.n});G.kbShipsSent=(G.kbShipsSent||0)+1;
   float(STORE_DOOR.x,STORE_DOOR.y-70,`King William grudgingly pays ${paid} gold for ${what}`,'#ffe08a');
-  if(kbSay()){G.banner={text:`A trade ship approaches with King William's ${kbGoods(need.w,need.st)}!`,sub:`${what} sailing for the King's Quay, then by guarded cart to the castle storehouse  ·  sink it or smash the cart!`,t:4.5};
+  if(kbSay()){G.banner={text:`A trade ship approaches with King William's ${kbGoods(need.w,need.st)}!`,sub:`${T.name} shipment: ${what}  ·  ${kbEscortTxt(T,two)}  ·  sink it or smash the cart!`,t:4.5};
   if(typeof showToast==='function')showToast(`⛵ Royal trade ship sighted: ${what}`);
   if(typeof SFX!=='undefined')SFX.play('princeHorn');G.kbHorn=(G.kbHorn||0)+1;}else G.kbQuiet=(G.kbQuiet||0)+1;return true;}
 // QUEUE 31: the trade ship is only ANNOUNCED (banner, toast, horn) while the dragon is south of the northern fantasy lands; up north it still sails, silently
@@ -58,7 +76,7 @@ function updTradeShip(s,dt){s.t+=dt;s.bob+=dt;if(s.state==='sink'){if(s.fire)s.f
       if(d2(s.x,s.y,s.anchor.x,s.anchor.y)<30){s.state='unload';s.unT=KB.unload;float(s.x,s.y-80,"The trade ship ties up at the King's Quay",'#ffe08a');}}
     if((G.fc&7)===0)ripples.push({x:s.x-Math.cos(s.ang)*s.r,y:s.y-Math.sin(s.ang)*s.r,t:.3});return;}
   if(s.state==='unload'){s.unT-=dt;if(s.unT<=0){kbUnload(s);s.state='home';}}}
-function kbUnload(s){const q=kbQuay(),two=s.w>0&&s.st>0,g=two?2:KB.guards;if(s.w>0)kbSpawn('wood',s.w,{guards:g});if(s.st>0)kbSpawn('stone',s.st,{guards:g,s:two?-90:0});G.kbLanded=(G.kbLanded||0)+1;
+function kbUnload(s){const q=kbQuay(),two=s.w>0&&s.st>0,T=kbTierN(s.tier||1),g=T.guards-(two?1:0),o={guards:g,archers:T.archers,tier:T.n};if(s.w>0)kbSpawn('wood',s.w,o);if(s.st>0)kbSpawn('stone',s.st,Object.assign({},o,{s:two?-90:0}));G.kbLanded=(G.kbLanded||0)+1;
   float(q.land.x,q.land.y-50,`Dockhands load ${kbWhat(s.w,s.st)} onto a guarded cart`,'#ffe08a');s.w=0;s.st=0;}
 {const _u=updShip;updShip=function(s,dt){if(s&&s.kind==='trade'){updTradeShip(s,dt);return;}return _u.apply(this,arguments);};}
 {const _h=hurtShip;hurtShip=function(s,d,src){const tr=s&&s.kind==='trade'&&s.state!=='sink',had=tr&&(s.w>0||s.st>0);const r=_h.apply(this,arguments);
@@ -92,21 +110,56 @@ if(typeof TALLY_SECT!=='undefined'){const B=TALLY_SECT.find(s=>s.id==='boats');i
 // save / load: trade ships + carts in transit stored as flat strings
 {const _ss=scSave;scSave=function(){return _ss.apply(this,arguments).filter(a=>a.src!=='trader');};}
 if(typeof svSnapshot==='function'){const _sn=svSnapshot;svSnapshot=function(){const o=_sn.apply(this,arguments);
-    o.KBS=kbShips().filter(s=>s.state!=='home'||s.w||s.st).map(s=>[Math.round(s.x),Math.round(s.y),Math.round(s.hp),s.state,s.w,s.st,(+s.ang).toFixed(2),(+s.unT||0).toFixed(1)].join(',')).join(';');
-    o.KB=kbTraders().map(c=>[c.kind,c.load|0,c.st,Math.round(c.s),scAlive(c.drv)?1:0,scAlive(c.horse)&&!c.horse.loose?1:0,kbGuardsOf(c).length].join(',')).join(';');return o;};
+    o.KBS=kbShips().filter(s=>s.state!=='home'||s.w||s.st).map(s=>[Math.round(s.x),Math.round(s.y),Math.round(s.hp),s.state,s.w,s.st,(+s.ang).toFixed(2),(+s.unT||0).toFixed(1),s.tier||1].join(',')).join(';');
+    o.KB=kbTraders().map(c=>[c.kind,c.load|0,c.st,Math.round(c.s),scAlive(c.drv)?1:0,scAlive(c.horse)&&!c.horse.loose?1:0,kbFootOf(c),kbArchOf(c),c.tier||1].join(',')).join(';');return o;};
   const _ap=svApply;svApply=function(d){const r=_ap.apply(this,arguments);try{
       for(const c of kbTraders()){c.wrecked=true;c.t=0;for(const u of [c.drv,c.horse])if(u){u.dead=true;u.gone=true;}}
       for(let i=carts.length-1;i>=0;i--)if(carts[i].trader)carts.splice(i,1);
       for(const u of units)if(u.kbGuard){u.dead=true;u.gone=true;}
-      ships=ships.filter(s=>s.kind!=='trade');
+      ships=ships.filter(s=>s.kind!=='trade'&&s.kind!=='kbwar');
       if(!structures.some(s=>s.kind==='dock'&&s.royal)){const q=kbQuay();const s=structures.find(s=>s.kind==='dock'&&Math.abs(s.x-q.x)<4&&Math.abs(s.y-q.y)<4);if(s)s.royal=1;else kAdd('dock',q.x,q.y,-1,{royal:1});}
-      if(d.KBS)for(const e of String(d.KBS).split(';')){const [x,y,hp,st,w,s_,a,u]=e.split(',');if(!(+hp>0))continue;
-        kbSpawnShip(+w,+s_,{x:+x,y:+y,hp:+hp,state:['sail','unload','home'].includes(st)?st:'sail',ang:+a,unT:+u});}
-      const ts=String(d.KB||'');if(ts&&ts.indexOf('|')<0)for(const e of ts.split(';')){const [k,n,st,s,dr,ho,gn]=e.split(',');if(!(+n>0)&&st!=='back')continue;const S=['go','wait','back'].includes(st)?st:'go';
-        const c=kbSpawn(k==='stone'?'stone':'wood',+n||0,{st:S==='wait'?'go':S,noDrv:dr==='0',noHorse:ho==='0',guards:gn!=null?+gn:KB.guards});if(S==='back')c.R=scRoute(STORE_DOOR,SC_SRC.trader.park());
+      if(d.KBS)for(const e of String(d.KBS).split(';')){const [x,y,hp,st,w,s_,a,u,ti]=e.split(',');if(!(+hp>0))continue;
+        kbSpawnShip(+w,+s_,{x:+x,y:+y,hp:+hp,state:['sail','unload','home'].includes(st)?st:'sail',ang:+a,unT:+u,tier:ti!=null?+ti:1});}
+      const ts=String(d.KB||'');if(ts&&ts.indexOf('|')<0)for(const e of ts.split(';')){const [k,n,st,s,dr,ho,gn,an,ti]=e.split(',');if(!(+n>0)&&st!=='back')continue;const S=['go','wait','back'].includes(st)?st:'go';
+        const c=kbSpawn(k==='stone'?'stone':'wood',+n||0,{st:S==='wait'?'go':S,noDrv:dr==='0',noHorse:ho==='0',guards:gn!=null?+gn:KB.guards,archers:an!=null?+an:0,tier:ti!=null?+ti:1});if(S==='back')c.R=scRoute(STORE_DOOR,SC_SRC.trader.park());
         c.st=S;c.s=S==='wait'?c.R.len:Math.max(0,Math.min(c.R.len,+s||0));scPlace(c,0,true);for(const g of kbGuardsOf(c)){const a=R(0,TAU);g.x=c.x+Math.cos(a)*26;g.y=c.y+Math.sin(a)*16;}}}catch(e){console.error(e);}return r;};}
 // the trader cart: green awning so you can tell it from the kingdom's own supply carts
 {const _dc=drawSupplyCart;drawSupplyCart=function(c){_dc.apply(this,arguments);if(c.trader&&!c.wrecked){const x=c.x,y=c.y,w=Math.abs(Math.cos(c.ang||0))*12+5;
   rect(x-w-5,y-22,2*w+10,3,'#2f8a6a');for(let i=0;i<4;i++)rect(x-w-5+i*(2*w+10)/4,y-22,(2*w+10)/8,3,'#e8e0c0');line(x-w-4,y-19,x-w-4,y-10,'#5a3a1c',1.5);line(x+w+4,y-19,x+w+4,y-10,'#5a3a1c',1.5);}};}
 // bought wood is for the rebuild: no new mine carts from it while the masons pick it up
 {const _e=updEconomy;updEconomy=function(dt){if(G.kbHoldT>0){G.kbHoldT-=dt;G.cartBuildT=Math.max(G.cartBuildT||0,.5);}return _e.apply(this,arguments);};}
+
+// ===== QUEUE 92: royal escort warships for Large (1) and Grand (2) trade shipments =====
+// They keep station beside the trade ship, their deck archers loose arrows at a dragon within range, and they sail home once the cargo is ashore or lost.
+SHIPK.kbwar={hp:200,sp:66,crew:0,r:58,gold:0};if(typeof SHIP_NM!=='undefined')SHIP_NM.kbwar='Royal escort warships';
+const KBW={col:'#2a6a5a',trim:'#ffd23a',crest:'crown',short:'King William',range:480,dmg:3};
+function kbEscorts(t,n){for(let i=0;i<n;i++){const side=i%2?-1:1,s={kind:'kbwar',x:t.x+side*130,y:t.y+70,ang:t.ang,sp:SHIPK.kbwar.sp,hp:SHIPK.kbwar.hp,maxHp:SHIPK.kbwar.hp,r:SHIPK.kbwar.r,crew:0,
+  fire:0,fireT:0,state:'sail',cd:R(.5,1.5),cd2:0,t:0,id:rnd(),bob:R(0,TAU),guard:t,side,war:KBW,cargo:['archer','archer'],wp:null};
+  if(!inSea(s.x,s.y)){s.x=t.x;s.y=t.y+120;}ships.push(s);}G.kbEscortsSent=(G.kbEscortsSent||0)+n;}
+function kbEscortShips(t){return ships.filter(s=>s.kind==='kbwar'&&s.state!=='sink'&&(!t||s.guard===t));}
+function updKbWar(s,dt){s.t+=dt;s.bob+=dt;if(s.state==='sink'){if(s.fire)s.fire=Math.max(0,s.fire-dt);return;}
+  if(s.fire){s.fireT+=dt;hurtShip(s,6*dt,'fire');if(s.state==='sink')return;if(s.fireT>7){s.fire=0;s.fireT=0;float(s.x,s.y-70,'The escort crew douse the flames!','#cfe8ff');}
+    if(Math.abs(s.x-D.x)<1900&&rnd()<dt*14)flame(s.x+R(-s.r*.5,s.r*.5),s.y+R(-8,8),R(10,30));}
+  const t=s.guard,live=t&&ships.includes(t)&&t.state!=='sink'&&t.state!=='home'&&(t.w>0||t.st>0);
+  if(!live&&s.state!=='home'){s.state='home';s.cargo=[];}
+  let tx,ty;if(s.state==='home'){tx=s.x;ty=WY1+200;}else{tx=t.x+s.side*130;ty=t.y+(t.state==='unload'?40:70);}
+  const dd=Math.hypot(tx-s.x,ty-s.y),a=Math.atan2(ty-s.y,tx-s.x);
+  if(s.state==='home'||dd>18){s.ang+=angDiff(a,s.ang)*Math.min(1,1.8*dt);const sp=s.state==='home'?s.sp:Math.min(s.sp*1.15,Math.max(20,dd*1.2)),nx=s.x+Math.cos(s.ang)*sp*dt,ny=s.y+Math.sin(s.ang)*sp*dt;
+    if(s.state==='home'||inSea(nx,ny)&&d2(nx,ny,LH.x,LH.y)>LH.r+s.r){s.x=nx;s.y=ny;}}
+  if(s.state==='home'&&s.y>WY1-90){s.state='sink';s.t=99;s.gone=true;return;}
+  if(s.state!=='home'){s.cd-=dt;if(s.cd<=0&&!G.over&&d2(s.x,s.y,D.x,D.y)<KBW.range){s.cd=R(1.1,1.7);G.kbWarVolleys=(G.kbWarVolleys||0)+1;
+    for(let i=0;i<2;i++){const ox=s.x+R(-20,20),oy=s.y+R(-12,6),b=Math.atan2(D.y-oy,D.x-ox)+R(-.07,.07);projs.push({kind:'arrow',x:ox,y:oy-10,z:22,vx:Math.cos(b)*440,vy:Math.sin(b)*440,tz:heightOf()+15,life:1.4,dmg:KBW.dmg,z0:22});}
+    if(!s.yell||G.t-s.yell>9){s.yell=G.t;float(s.x,s.y-80,['Protect the King\'s cargo!','Archers, loose!','For King William!'][RI(0,2)],'#ffe08a');}}}
+  if((G.fc&7)===0)ripples.push({x:s.x-Math.cos(s.ang)*s.r,y:s.y-Math.sin(s.ang)*s.r,t:.3});}
+{const _u=updShip;updShip=function(s,dt){if(s&&s.kind==='kbwar'){updKbWar(s,dt);return;}return _u.apply(this,arguments);};}
+{const _d=drawShip;drawShip=function(s){if(s&&s.kind==='kbwar'){if(s.state==='sink'&&s.gone)return;drawWarship(s);if(s.state!=='sink'&&s.state!=='home'&&Math.abs(s.x-D.x)<900)txt('⚓ Royal escort',s.x,s.y-s.r-52,10,'#bfffe0','center',true);return;}return _d.apply(this,arguments);};}
+{const _h=hurtShip;hurtShip=function(s,d,src){if(!s||s.kind!=='kbwar')return _h.apply(this,arguments);if(s.state==='sink')return;const r=_h.apply(this,arguments);
+  if(s.state==='sink'){s.cargo=[];G.kbEscortsSunk=(G.kbEscortsSunk||0)+1;G.stats.seaPts=(G.stats.seaPts||0)+70;float(s.x,s.y-95,'A royal escort warship sinks! Its sailors row for shore.','#ffd84a');}return r;};}
+// the map: escorts as small green rings
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const sc=mmw/(WX1-WX0);for(const s of kbEscortShips()){if(s.state==='home')continue;ctx.strokeStyle='#2fdc9a';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(mmx+(s.x-WX0)*sc,mmy+(s.y-WY0)*sc,big?7:4,0,TAU);ctx.stroke();}}catch(e){}return r;};}
+// archers in a cart escort shoot from a little further out
+{const _e=escortStep;escortStep=function(k,dt){if(k.kbArch&&k.escort&&!k.escort.dead&&dist(k,D)<380&&!G.over)return false;return _e.apply(this,arguments);};}
+// save / load: escorts are re-launched beside a loaded Large/Grand ship that is still sailing in or unloading
+if(typeof svApply==='function'){const _ap=svApply;svApply=function(d){const r=_ap.apply(this,arguments);try{ships=ships.filter(s=>s.kind!=='kbwar');
+  for(const t of kbShips())if(t.state!=='home'&&(t.w||t.st)){const T=kbTierN(t.tier||1);if(T.war)kbEscorts(t,T.war);}}catch(e){console.error(e);}return r;};}
+if(typeof TALLY_SECT!=='undefined'){const B=TALLY_SECT.find(s=>s.id==='boats');if(B&&!B.keys.some(k=>k[0]==='ship:kbwar')){const i=B.keys.findIndex(k=>k[0]==='ship:trade');B.keys.splice(i+1,0,['ship:kbwar','Royal escort warships']);}TALLY_LABEL['ship:kbwar']='Royal escort warships';}

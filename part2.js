@@ -128,7 +128,7 @@ function updHunger(dt){if(G.easy||G.over||G.won){D.hunger=D.maxHunger;D.starveT=
   else D.starveT=0;}
 function eatUnit(u){if(u.type==='sea'){eatSea(u);return;}u.dead=true;u.eaten=true;dropCarry(u);const heal=Math.round((u.type==='animal'?HEAL[u.species]:u.mounted?HEAL.cavalry:HEAL[u.type])||10);if(u.patrol)patrolHit(u);
   const got=Math.min(heal,D.maxHp-D.hp);D.hp=Math.min(D.maxHp,D.hp+heal);D.st=Math.min(D.maxSt,D.st+8);D.healFx=.6;feed(heal);
-  puff(u.x,u.y,6,'rgba(170,40,40,',60,5);sparkle(D.x,D.y-heightOf(),14);
+  puff(u.x,u.y,6,'rgba(245,240,228,',60,5);sparkle(D.x,D.y-heightOf(),14);
   float(D.x+R(-10,10),D.y-heightOf()-70,`+${heal} HP`,'#6dff7a');
   if(u.type==='animal'){G.stats.animals++;if(u.species==='cougar'){G.stats.cougars=(G.stats.cougars||0)+1;float(u.x,u.y-50,'Mountain lion! +120 pts','#ffd27a');}if(!isWild(u))addAlarm(2.5,u.x,u.y);float(u.x,u.y-20,'Chomp!','#ffd27a');}
   else{G.stats.eaten++;addAlarm(u.type==='villager'?6:3);float(u.x,u.y-20,u.mounted?'Horse and rider? Gulp!':u.type==='knight'?'Crunchy knight!':'Gulp!','#ffd27a');if(u.type==='archer')G.stats.archers++;if(u.type==='knight')G.stats.knights++;}}
