@@ -90,7 +90,8 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;UI.boxes=[]
   // phones: no fire gauge here (the FIRE button's ring + number shows it); a compact lava counter takes that row only while there are lava shots
   const tch=typeof TOUCH!=='undefined'&&TOUCH.on,lvR=tch&&D.lava>0,fb=tch?(lvR?18:0):18,hy=(G.easy?0:18)+fb,hbw=typeof hpBarW==='function'?hpBarW():230;panel(10,10,Math.max(250,hbw+20),104+hy);
   const MMG=hudMMGeom(sm);HUDL.x0=10+Math.max(250,hbw+20)+10;HUDL.x1=MMG.mmL-10;HUDL.xr=VW-10;HUDL.mmB=MMG.my0-3+MMG.mmh+6+12+3+4;HUDL.y=10;HUDL.n++;
-  HUDL.obs=[];if(TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(b.x-SAFE.l>VW*.35)HUDL.obs.push({x:b.x-SAFE.l-b.r,y:b.y-SAFE.t-b.r,w:2*b.r,h:2*b.r}); // right-hand touch buttons (FIRE/BITE/STOMP/FLY)UI.fireGauge=!tch;UI.lavaRow=lvR?{x:20,y:76,w:230,h:14}:null;txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
+  HUDL.obs=[];if(TOUCH.on&&TOUCH.btns)for(const b of TOUCH.btns)if(b.x-SAFE.l>VW*.35)HUDL.obs.push({x:b.x-SAFE.l-b.r,y:b.y-SAFE.t-b.r,w:2*b.r,h:2*b.r}); // right-hand touch buttons (FIRE/BITE/STOMP/FLY)
+  UI.fireGauge=!tch;UI.lavaRow=lvR?{x:20,y:76,w:230,h:14}:null;txt('THE DRAGON'+(G.easy?'  ·  EASY MODE':''),20,28,13,'#f0c070');
   bar(20,36,hbw,16,D.hp/D.maxHp,D.hp/D.maxHp<.3?'#e33':'#c0302a',`Health ${Math.ceil(D.hp)}/${D.maxHp}`);
   bar(20,58,230,14,D.st/D.maxSt,D.mode==='air'&&D.st<25?(Math.floor(G.t*4)%2?'#f0a020':'#a06010'):'#e0b030',`Stamina ${Math.ceil(D.st)}`);
   if(!tch){if(typeof drawFireBar==='function')drawFireBar(20,76,230,14);} // FIRE meter, right under stamina (desktop)
