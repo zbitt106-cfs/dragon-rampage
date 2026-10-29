@@ -1,7 +1,7 @@
 // ================= partRK: HOARD RAID TIERS - the raiding champion scales with the lair gold when the raid is announced =================
 // Tier 1 at 100 gold, 2 at 250, 3 at 500, 4 at 1000, then +1 per extra 1000 (2000 = 5, 3000 = 6, ...).
-// Triggers and cooldown are unchanged (RAID_THR 100/200/350/550/850 then +400, x1.4 on Easy; 300s / 420s Easy cooldown):
-// the THRESHOLD decides WHEN a raid comes, the HOARD at announcement decides HOW STRONG it is.
+// Timing: a raid comes every 300s (420s on Easy) after the previous one ends, gold growth or not, whenever the hoard holds
+// at least 100 gold (140 on Easy); the HOARD at announcement decides HOW STRONG it is.
 // Gentle scaling, headcount capped at 8 escorts (9 bodies) so phones stay smooth.
 const RK={cap:8,spearCap:6,archCap:3};
 function raidTier(g){g=Math.floor(g||0);if(g<100)return 0;if(g<250)return 1;if(g<500)return 2;if(g<1000)return 3;return 4+Math.floor((g-1000)/1000);}

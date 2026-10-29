@@ -3037,6 +3037,7 @@ const RAID_COLS=[['#c8282e','#ffd23a','lion'],['#2a4fb8','#f4f4f4','star'],['#2f
 const RAID_THR=[100,200,350,550,850],RAID_CD=300,RAID_CD_EASY=420,RAID_WARN=8; // cooldown = seconds of play time after a raid ends
 let RAID={n:0,thr:0,cd:0,cur:null},RAID_NAME_I=Math.floor(Math.random()*RAID_NAMES.length),RAID_COL_I=Math.floor(Math.random()*8);
 function raidThreshold(i){const e=G.easy?1.4:1;return Math.round((i<RAID_THR.length?RAID_THR[i]:RAID_THR[RAID_THR.length-1]+(i-RAID_THR.length+1)*400)*e);}
+function raidMinGold(){return raidThreshold(0);} // the minimum hoard that draws a raid: 100 gold (140 on Easy) = Tier 1
 function raidActive(){return !!RAID.cur;}
 function raidHudOn(){return !!RAID.cur&&scene==='play';}
 function startRaidWarning(){const n=RAID.n,name=RAID_NAMES[RAID_NAME_I%RAID_NAMES.length];RAID_NAME_I++;const c=RAID_COLS[(RAID_COL_I++)%RAID_COLS.length];
@@ -3081,7 +3082,7 @@ function raidChampDown(u,eaten){const r=u.raid;if(!r||RAID.cur!==r||r.done)retur
   if(typeof SFX!=='undefined')SFX.play('fanfare');showToast(`🏆 Raid beaten: +${back+bonus} gold`);endRaid(true);}
 function endRaid(won){const r=RAID.cur;for(const u of r.members)if(!u.dead){u.raid=null;if(u.raidEsc&&!won){}if(u.raidEsc)u.retreat=!won?true:u.retreat;}RAID.cur=null;RAID.n++;RAID.cd=G.easy?RAID_CD_EASY:RAID_CD;}
 function updRaids(dt){if(scene!=='play'||!G||G.over||G.won)return;const r=RAID.cur;if(!r)RAID.cd=Math.max(0,RAID.cd-dt);
-  if(!r){while(RAID.thr<RAID.n)RAID.thr++;if(RAID.cd<=0&&G.stash>=raidThreshold(RAID.thr)){RAID.thr++;while(G.stash>=raidThreshold(RAID.thr))RAID.thr++;startRaidWarning();}return;} // one raid at a time: crossing several thresholds never queues extra raids
+  if(!r){if(RAID.cd<=0&&G.stash>=raidMinGold()){RAID.thr=Math.max(RAID.thr,RAID.n+1);startRaidWarning();}return;} // a raid every RAID_CD seconds (after the last one ends) as long as the hoard holds the minimum; the tier comes from the hoard at announcement (partRK)
   if(r.phase==='warn'){r.t-=dt;if(r.t<=0)spawnRaid();return;}
   if(r.champ&&r.champ.dead&&!r.done){if(r.champ.gone)return;raidChampDown(r.champ,!!r.champ.eaten);}}
 // ---- hooks ----
@@ -3144,8 +3145,8 @@ if(!SFX_DEF.fanfare)SFX_DEF.fanfare=(a,B,o,t)=>{[0,4,7,12].forEach((st,i)=>{cons
 
 // pause-menu line: when the next hoard raid can come
 function raidCdLine(){if(!G||!RAID)return'';const r=RAID.cur;if(r)return r.phase==='warn'?'🛡 A hoard raid is about to march!':'🛡 A hoard raid is under way';
-  const need=raidThreshold(RAID.thr);if(RAID.cd>0){const s=Math.ceil(RAID.cd);return`🛡 Next raid possible in ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}  ·  when your hoard reaches ${need} gold`;}
-  return G.stash>=need?'🛡 Next raid possible now':`🛡 Next raid possible now  ·  when your hoard reaches ${need} gold`;}
+  const need=raidMinGold();if(RAID.cd>0){const s=Math.ceil(RAID.cd);return`🛡 Next raid in ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}${G.stash>=need?'':`  ·  if your hoard holds ${need} gold`}`;}
+  return G.stash>=need?'🛡 Next raid any moment now':`🛡 Next raid as soon as your hoard holds ${need} gold`;}
 // ---- partTR: raid TROPHIES - each beaten champion's banner is planted around the hoard (kept for the whole session) ----
 let TROPHIES=[];
 function trophySlot(i){// ring around the pile, filling from the back outwards, then a wider second ring
@@ -6430,9 +6431,11 @@ function kbBuy(){if(!storeUp()||kbBusy()||G.t<(G.kbCoolT||0))return false;const 
   const what=kbWhat(need.w,need.st);KB.last={kind:need.s.kind,w:need.w,st:need.st,cost:paid};
   kbSpawnShip(need.w,need.st);G.kbShipsSent=(G.kbShipsSent||0)+1;
   float(STORE_DOOR.x,STORE_DOOR.y-70,`King William grudgingly pays ${paid} gold for ${what}`,'#ffe08a');
-  G.banner={text:`A trade ship approaches with King William's ${kbGoods(need.w,need.st)}!`,sub:`${what} sailing for the King's Quay, then by guarded cart to the castle storehouse  ·  sink it or smash the cart!`,t:4.5};
+  if(kbSay()){G.banner={text:`A trade ship approaches with King William's ${kbGoods(need.w,need.st)}!`,sub:`${what} sailing for the King's Quay, then by guarded cart to the castle storehouse  ·  sink it or smash the cart!`,t:4.5};
   if(typeof showToast==='function')showToast(`⛵ Royal trade ship sighted: ${what}`);
-  if(typeof SFX!=='undefined')SFX.play('princeHorn');G.kbHorn=(G.kbHorn||0)+1;return true;}
+  if(typeof SFX!=='undefined')SFX.play('princeHorn');G.kbHorn=(G.kbHorn||0)+1;}else G.kbQuiet=(G.kbQuiet||0)+1;return true;}
+// QUEUE 31: the trade ship is only ANNOUNCED (banner, toast, horn) while the dragon is south of the northern fantasy lands; up north it still sails, silently
+function kbSay(){return !(typeof nrInNorth==='function'&&G&&D&&nrInNorth(D.x,D.y));}
 function kbLose(why){G.kbLost=(G.kbLost||0)+1;G.kbCoolT=G.t+KB.cool;G.kbLostWhy=why;}
 // the trade ship: sails straight in, unloads onto carts at the quay, then sails away off the south edge
 function updTradeShip(s,dt){s.t+=dt;s.bob+=dt;if(s.state==='sink'){if(s.fire)s.fire=Math.max(0,s.fire-dt);return;}
@@ -6656,8 +6659,8 @@ const TXE_K=u=>u.type==='archer'?'archer':u.mounted?'cavalry':u.foot?'foot':'kni
   return r;};}
 // ================= partRK: HOARD RAID TIERS - the raiding champion scales with the lair gold when the raid is announced =================
 // Tier 1 at 100 gold, 2 at 250, 3 at 500, 4 at 1000, then +1 per extra 1000 (2000 = 5, 3000 = 6, ...).
-// Triggers and cooldown are unchanged (RAID_THR 100/200/350/550/850 then +400, x1.4 on Easy; 300s / 420s Easy cooldown):
-// the THRESHOLD decides WHEN a raid comes, the HOARD at announcement decides HOW STRONG it is.
+// Timing: a raid comes every 300s (420s on Easy) after the previous one ends, gold growth or not, whenever the hoard holds
+// at least 100 gold (140 on Easy); the HOARD at announcement decides HOW STRONG it is.
 // Gentle scaling, headcount capped at 8 escorts (9 bodies) so phones stay smooth.
 const RK={cap:8,spearCap:6,archCap:3};
 function raidTier(g){g=Math.floor(g||0);if(g<100)return 0;if(g<250)return 1;if(g<500)return 2;if(g<1000)return 3;return 4+Math.floor((g-1000)/1000);}
@@ -7247,7 +7250,7 @@ function dgUpd(dt){const R2=DG.awareR*DG.awareR,dx0=D.x,dy0=D.y;for(const u of u
 // Beyond the Frostpeak range lies a fantasy land in two bands.
 //  Light band (south):  the Hobbit Shire (west) · the Elven realm of Lumeria (centre: purple grass, glowing trees, unicorns, centaurs, satyrs, minotaurs) · the Dwarf Holds (east)
 //  Dark band (north):   the Goblin Bogs (west) · the Orc Warlands (centre) · the Cyclops Highlands (east) - with trolls, wyverns, giant scorpions & spiders (glowing red eyes)
-// The dark side raids south with small vanguards and every 5 minutes marches a big army to the border; the light side patrols its own lands and only ever DEFENDS.
+// The dark side raids south with small vanguards and every 3 minutes marches a big army to the border; the light side patrols its own lands and only ever DEFENDS.
 // Everything is cartoony: defeated creatures go dizzy and puff away. Creatures spawn lazily around the dragon only (perf).
 function nrEdge(x){return -2750+90*Math.sin(x/500)+40*Math.sin(x/170);}         // north of this line = the Northern Realms
 function nrDarkY(x){return -7000+180*Math.sin(x/650)+70*Math.sin(x/210);}       // light band south of it, dark band north of it
@@ -7624,7 +7627,9 @@ function nrKeepOut(){for(const u of units){if(u.dead||u.nr||u.princess||u.nsea)c
   const r=_af.apply(this,arguments);for(const u of NRU)if(u.dash>0&&u.burn>0&&NRS[u.species].dash)u.burn=0;return r;};}
 // ======================= the faction war: patrols, vanguard raids, the 5-minute army march =======================
 // Squads are abstract (cheap) while far from the dragon and become real units when it comes near.
-const NR_WAR_T=300;
+const NR_WAR_T=180; // QUEUE 30: the big dark-vs-light march every 3 minutes (was 5)
+// QUEUE 30: the big battle's announcements (toasts + horn) only show while the dragon is in the northern realms; elsewhere it happens silently
+function nrWarSay(m,h){if(!(G&&D&&nrInNorth(D.x,D.y))){G.nrWarQuiet=(G.nrWarQuiet||0)+1;return false;}showToast(m);if(h)try{horn();}catch(e){}return true;}
 let NRQ=[]; // squads
 function nrStr(sp){const S=NRS[sp];return S.dm?S.hp/(S.armor||1)*(S.horn?S.dm+S.horn*.3:S.dm)/S.cd*(S.rng?1.2:1):0;}
 function nrArmySize(l){return Math.min(46,16+4*((l||nrLvl())-1));}
@@ -7660,7 +7665,7 @@ const NR_PATROL_ROADS=[['Silverleaf','Starwood'],['Moonglade','Emberforge'],['Br
 function nrUpdWar(dt){if(!G||G.over||G.won)return;
   const ka=typeof KA!=='undefined'&&KA&&['suit','charge','fight','dizzy'].includes(KA.phase); // the war pauses while King William fights
   if(!ka){G.nrWarT=(G.nrWarT||0)+dt;G.nrVanT=(G.nrVanT===undefined?50:G.nrVanT)-dt;}
-  // --- the big march every 5 minutes ---
+  // --- the big march every 3 minutes ---
   if(!ka&&G.nrWarT>=NR_WAR_T&&!NRQ.some(q=>q.kind==='army')){G.nrWarT=0;nrMarch();}
   // --- vanguard raids ---
   if(!ka&&G.nrVanT<=0){G.nrVanT=R(45,75);if(NRQ.filter(q=>q.kind==='van').length<2)nrVanguard();}
@@ -7689,7 +7694,7 @@ function nrMarch(){const n=nrArmySize(),dk=nrDarkMix(n),lt=nrLightMix(n,dk);
   const A=nrMkSq('army','D',dk,nrRoute('DC','BF').map((p,i,a)=>i===a.length-1?{x:NR_BF.x,y:NR_BF.y-90}:p),{homeT:'DC',at:'BF'});
   const B=nrMkSq('army','L',lt,nrRoute('LC','BF').map((p,i,a)=>i===a.length-1?{x:NR_BF.x,y:NR_BF.y+90}:p),{homeT:'LC',at:'BF'});
   A.foe=B;B.foe=A;G.nrBattles=(G.nrBattles||0)+1;G.nrArmy={d:dk.length,l:lt.length,t:G.t};
-  showToast(`📯 The dark army marches out of the Doomforge Citadel! (${dk.length} strong) — the Lumenspire Citadel sends ${lt.length} defenders to the border`);try{horn();}catch(e){}}
+  nrWarSay(`📯 The dark army marches out of the Doomforge Citadel! (${dk.length} strong) — the Lumenspire Citadel sends ${lt.length} defenders to the border`,1);}
 function nrBattle(dt){const A=NRQ.find(q=>q.kind==='army'&&q.side==='D'&&!q.dead),B=NRQ.find(q=>q.kind==='army'&&q.side==='L'&&!q.dead);
   if(!A&&!B)return;
   if(A&&B&&A.st==='battle'&&B.st==='battle'){A.bt=(A.bt||0)+dt;
@@ -7697,7 +7702,7 @@ function nrBattle(dt){const A=NRQ.find(q=>q.kind==='army'&&q.side==='D'&&!q.dead
     else{ // when real, the soldiers actually fight: nudge both blocks together
       A.x+=(B.x-A.x)*Math.min(1,dt*.3)*.5;B.x+=(A.x-B.x)*Math.min(1,dt*.3)*.5;}
     const aL=A.mem.length,bL=B.mem.length;
-    if(!aL||!bL||A.bt>120){const lightWon=!aL||A.bt>120;showToast(lightWon?'🛡️ The light army holds the border! The dark survivors flee back to the Doomforge Citadel':'⚔️ The dark army broke through... the light army falls back to the Lumenspire Citadel');
+    if(!aL||!bL||A.bt>120){const lightWon=!aL||A.bt>120;nrWarSay(lightWon?'🛡️ The light army holds the border! The dark survivors flee back to the Doomforge Citadel':'⚔️ The dark army broke through... the light army falls back to the Lumenspire Citadel');
       G.nrLastWin=lightWon?'L':'D';if(aL)nrSqHome(A);if(bL)nrSqHome(B);if(!lightWon&&aL){A.st='van';A.kind='van';A.st='go';A.route=nrRoute('BF','Silverleaf');A.pi=0;A.at='Silverleaf';}}}
   else if(A&&!B&&A.st==='battle'){A.kind='van';A.st='go';A.route=nrRoute('BF','Silverleaf');A.pi=0;A.at='Silverleaf';}
   else if(B&&!A&&B.st==='battle')nrSqHome(B);}
@@ -8585,7 +8590,7 @@ function atFx(u,F,draw){if(!ATFX){const a=document.createElement('canvas'),b=doc
     for(const u of atBand(t))if(u.atAlpha)nrGone(u);t.away=sq;const V=atVar(sp,1,0);sq.mem.push({sp,hp:Math.round(V.hp*nrHpMul()),atAlpha:t.i+1});
     for(let i=0;i<RI(1,2);i++)sq.mem.push({sp,hp:Math.round(NRS[sp].hp*nrHpMul())});G.atDrafted=(G.atDrafted||0)+1;
     msg.push(side==='D'?'🪨 a white alpha troll leads its trolls':'🌿 an alpha centaur leads its centaurs');}
-  if(msg.length)G.atToast={t:G.t+2.5,m:'📯 Also marching: '+msg.join(' and ')+' into battle!'};
+  if(msg.length&&nrInNorth(D.x,D.y))G.atToast={t:G.t+2.5,m:'📯 Also marching: '+msg.join(' and ')+' into battle!'};
   return r;};}
 {const _mz=nrMaterialize;nrMaterialize=function(sq){const had=sq.units;const r=_mz.apply(this,arguments);if(!had&&sq.units)for(const u of sq.units)if(u.mem&&u.mem.atAlpha){const hp=u.mem.hp;atMakeAlpha(u);u.hp=Math.min(u.maxHp,hp);u.atFrom=u.mem.atAlpha;}return r;};}
 // ---- 25 + 26. The Wizard's tower: INVULNERABLE while the Storm Wizard is alive (fire, lava and stomps do nothing). Once he is defeated (G.nrOpen) it can be

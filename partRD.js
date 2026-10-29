@@ -4,6 +4,7 @@ const RAID_COLS=[['#c8282e','#ffd23a','lion'],['#2a4fb8','#f4f4f4','star'],['#2f
 const RAID_THR=[100,200,350,550,850],RAID_CD=300,RAID_CD_EASY=420,RAID_WARN=8; // cooldown = seconds of play time after a raid ends
 let RAID={n:0,thr:0,cd:0,cur:null},RAID_NAME_I=Math.floor(Math.random()*RAID_NAMES.length),RAID_COL_I=Math.floor(Math.random()*8);
 function raidThreshold(i){const e=G.easy?1.4:1;return Math.round((i<RAID_THR.length?RAID_THR[i]:RAID_THR[RAID_THR.length-1]+(i-RAID_THR.length+1)*400)*e);}
+function raidMinGold(){return raidThreshold(0);} // the minimum hoard that draws a raid: 100 gold (140 on Easy) = Tier 1
 function raidActive(){return !!RAID.cur;}
 function raidHudOn(){return !!RAID.cur&&scene==='play';}
 function startRaidWarning(){const n=RAID.n,name=RAID_NAMES[RAID_NAME_I%RAID_NAMES.length];RAID_NAME_I++;const c=RAID_COLS[(RAID_COL_I++)%RAID_COLS.length];
@@ -48,7 +49,7 @@ function raidChampDown(u,eaten){const r=u.raid;if(!r||RAID.cur!==r||r.done)retur
   if(typeof SFX!=='undefined')SFX.play('fanfare');showToast(`🏆 Raid beaten: +${back+bonus} gold`);endRaid(true);}
 function endRaid(won){const r=RAID.cur;for(const u of r.members)if(!u.dead){u.raid=null;if(u.raidEsc&&!won){}if(u.raidEsc)u.retreat=!won?true:u.retreat;}RAID.cur=null;RAID.n++;RAID.cd=G.easy?RAID_CD_EASY:RAID_CD;}
 function updRaids(dt){if(scene!=='play'||!G||G.over||G.won)return;const r=RAID.cur;if(!r)RAID.cd=Math.max(0,RAID.cd-dt);
-  if(!r){while(RAID.thr<RAID.n)RAID.thr++;if(RAID.cd<=0&&G.stash>=raidThreshold(RAID.thr)){RAID.thr++;while(G.stash>=raidThreshold(RAID.thr))RAID.thr++;startRaidWarning();}return;} // one raid at a time: crossing several thresholds never queues extra raids
+  if(!r){if(RAID.cd<=0&&G.stash>=raidMinGold()){RAID.thr=Math.max(RAID.thr,RAID.n+1);startRaidWarning();}return;} // a raid every RAID_CD seconds (after the last one ends) as long as the hoard holds the minimum; the tier comes from the hoard at announcement (partRK)
   if(r.phase==='warn'){r.t-=dt;if(r.t<=0)spawnRaid();return;}
   if(r.champ&&r.champ.dead&&!r.done){if(r.champ.gone)return;raidChampDown(r.champ,!!r.champ.eaten);}}
 // ---- hooks ----
@@ -111,5 +112,5 @@ if(!SFX_DEF.fanfare)SFX_DEF.fanfare=(a,B,o,t)=>{[0,4,7,12].forEach((st,i)=>{cons
 
 // pause-menu line: when the next hoard raid can come
 function raidCdLine(){if(!G||!RAID)return'';const r=RAID.cur;if(r)return r.phase==='warn'?'🛡 A hoard raid is about to march!':'🛡 A hoard raid is under way';
-  const need=raidThreshold(RAID.thr);if(RAID.cd>0){const s=Math.ceil(RAID.cd);return`🛡 Next raid possible in ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}  ·  when your hoard reaches ${need} gold`;}
-  return G.stash>=need?'🛡 Next raid possible now':`🛡 Next raid possible now  ·  when your hoard reaches ${need} gold`;}
+  const need=raidMinGold();if(RAID.cd>0){const s=Math.ceil(RAID.cd);return`🛡 Next raid in ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}${G.stash>=need?'':`  ·  if your hoard holds ${need} gold`}`;}
+  return G.stash>=need?'🛡 Next raid any moment now':`🛡 Next raid as soon as your hoard holds ${need} gold`;}

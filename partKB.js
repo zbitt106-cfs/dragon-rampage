@@ -41,9 +41,11 @@ function kbBuy(){if(!storeUp()||kbBusy()||G.t<(G.kbCoolT||0))return false;const 
   const what=kbWhat(need.w,need.st);KB.last={kind:need.s.kind,w:need.w,st:need.st,cost:paid};
   kbSpawnShip(need.w,need.st);G.kbShipsSent=(G.kbShipsSent||0)+1;
   float(STORE_DOOR.x,STORE_DOOR.y-70,`King William grudgingly pays ${paid} gold for ${what}`,'#ffe08a');
-  G.banner={text:`A trade ship approaches with King William's ${kbGoods(need.w,need.st)}!`,sub:`${what} sailing for the King's Quay, then by guarded cart to the castle storehouse  ·  sink it or smash the cart!`,t:4.5};
+  if(kbSay()){G.banner={text:`A trade ship approaches with King William's ${kbGoods(need.w,need.st)}!`,sub:`${what} sailing for the King's Quay, then by guarded cart to the castle storehouse  ·  sink it or smash the cart!`,t:4.5};
   if(typeof showToast==='function')showToast(`⛵ Royal trade ship sighted: ${what}`);
-  if(typeof SFX!=='undefined')SFX.play('princeHorn');G.kbHorn=(G.kbHorn||0)+1;return true;}
+  if(typeof SFX!=='undefined')SFX.play('princeHorn');G.kbHorn=(G.kbHorn||0)+1;}else G.kbQuiet=(G.kbQuiet||0)+1;return true;}
+// QUEUE 31: the trade ship is only ANNOUNCED (banner, toast, horn) while the dragon is south of the northern fantasy lands; up north it still sails, silently
+function kbSay(){return !(typeof nrInNorth==='function'&&G&&D&&nrInNorth(D.x,D.y));}
 function kbLose(why){G.kbLost=(G.kbLost||0)+1;G.kbCoolT=G.t+KB.cool;G.kbLostWhy=why;}
 // the trade ship: sails straight in, unloads onto carts at the quay, then sails away off the south edge
 function updTradeShip(s,dt){s.t+=dt;s.bob+=dt;if(s.state==='sink'){if(s.fire)s.fire=Math.max(0,s.fire-dt);return;}

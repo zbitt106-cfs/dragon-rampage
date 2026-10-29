@@ -2,7 +2,7 @@
 // Beyond the Frostpeak range lies a fantasy land in two bands.
 //  Light band (south):  the Hobbit Shire (west) · the Elven realm of Lumeria (centre: purple grass, glowing trees, unicorns, centaurs, satyrs, minotaurs) · the Dwarf Holds (east)
 //  Dark band (north):   the Goblin Bogs (west) · the Orc Warlands (centre) · the Cyclops Highlands (east) - with trolls, wyverns, giant scorpions & spiders (glowing red eyes)
-// The dark side raids south with small vanguards and every 5 minutes marches a big army to the border; the light side patrols its own lands and only ever DEFENDS.
+// The dark side raids south with small vanguards and every 3 minutes marches a big army to the border; the light side patrols its own lands and only ever DEFENDS.
 // Everything is cartoony: defeated creatures go dizzy and puff away. Creatures spawn lazily around the dragon only (perf).
 function nrEdge(x){return -2750+90*Math.sin(x/500)+40*Math.sin(x/170);}         // north of this line = the Northern Realms
 function nrDarkY(x){return -7000+180*Math.sin(x/650)+70*Math.sin(x/210);}       // light band south of it, dark band north of it
@@ -379,7 +379,9 @@ function nrKeepOut(){for(const u of units){if(u.dead||u.nr||u.princess||u.nsea)c
   const r=_af.apply(this,arguments);for(const u of NRU)if(u.dash>0&&u.burn>0&&NRS[u.species].dash)u.burn=0;return r;};}
 // ======================= the faction war: patrols, vanguard raids, the 5-minute army march =======================
 // Squads are abstract (cheap) while far from the dragon and become real units when it comes near.
-const NR_WAR_T=300;
+const NR_WAR_T=180; // QUEUE 30: the big dark-vs-light march every 3 minutes (was 5)
+// QUEUE 30: the big battle's announcements (toasts + horn) only show while the dragon is in the northern realms; elsewhere it happens silently
+function nrWarSay(m,h){if(!(G&&D&&nrInNorth(D.x,D.y))){G.nrWarQuiet=(G.nrWarQuiet||0)+1;return false;}showToast(m);if(h)try{horn();}catch(e){}return true;}
 let NRQ=[]; // squads
 function nrStr(sp){const S=NRS[sp];return S.dm?S.hp/(S.armor||1)*(S.horn?S.dm+S.horn*.3:S.dm)/S.cd*(S.rng?1.2:1):0;}
 function nrArmySize(l){return Math.min(46,16+4*((l||nrLvl())-1));}
@@ -415,7 +417,7 @@ const NR_PATROL_ROADS=[['Silverleaf','Starwood'],['Moonglade','Emberforge'],['Br
 function nrUpdWar(dt){if(!G||G.over||G.won)return;
   const ka=typeof KA!=='undefined'&&KA&&['suit','charge','fight','dizzy'].includes(KA.phase); // the war pauses while King William fights
   if(!ka){G.nrWarT=(G.nrWarT||0)+dt;G.nrVanT=(G.nrVanT===undefined?50:G.nrVanT)-dt;}
-  // --- the big march every 5 minutes ---
+  // --- the big march every 3 minutes ---
   if(!ka&&G.nrWarT>=NR_WAR_T&&!NRQ.some(q=>q.kind==='army')){G.nrWarT=0;nrMarch();}
   // --- vanguard raids ---
   if(!ka&&G.nrVanT<=0){G.nrVanT=R(45,75);if(NRQ.filter(q=>q.kind==='van').length<2)nrVanguard();}
@@ -444,7 +446,7 @@ function nrMarch(){const n=nrArmySize(),dk=nrDarkMix(n),lt=nrLightMix(n,dk);
   const A=nrMkSq('army','D',dk,nrRoute('DC','BF').map((p,i,a)=>i===a.length-1?{x:NR_BF.x,y:NR_BF.y-90}:p),{homeT:'DC',at:'BF'});
   const B=nrMkSq('army','L',lt,nrRoute('LC','BF').map((p,i,a)=>i===a.length-1?{x:NR_BF.x,y:NR_BF.y+90}:p),{homeT:'LC',at:'BF'});
   A.foe=B;B.foe=A;G.nrBattles=(G.nrBattles||0)+1;G.nrArmy={d:dk.length,l:lt.length,t:G.t};
-  showToast(`📯 The dark army marches out of the Doomforge Citadel! (${dk.length} strong) — the Lumenspire Citadel sends ${lt.length} defenders to the border`);try{horn();}catch(e){}}
+  nrWarSay(`📯 The dark army marches out of the Doomforge Citadel! (${dk.length} strong) — the Lumenspire Citadel sends ${lt.length} defenders to the border`,1);}
 function nrBattle(dt){const A=NRQ.find(q=>q.kind==='army'&&q.side==='D'&&!q.dead),B=NRQ.find(q=>q.kind==='army'&&q.side==='L'&&!q.dead);
   if(!A&&!B)return;
   if(A&&B&&A.st==='battle'&&B.st==='battle'){A.bt=(A.bt||0)+dt;
@@ -452,7 +454,7 @@ function nrBattle(dt){const A=NRQ.find(q=>q.kind==='army'&&q.side==='D'&&!q.dead
     else{ // when real, the soldiers actually fight: nudge both blocks together
       A.x+=(B.x-A.x)*Math.min(1,dt*.3)*.5;B.x+=(A.x-B.x)*Math.min(1,dt*.3)*.5;}
     const aL=A.mem.length,bL=B.mem.length;
-    if(!aL||!bL||A.bt>120){const lightWon=!aL||A.bt>120;showToast(lightWon?'🛡️ The light army holds the border! The dark survivors flee back to the Doomforge Citadel':'⚔️ The dark army broke through... the light army falls back to the Lumenspire Citadel');
+    if(!aL||!bL||A.bt>120){const lightWon=!aL||A.bt>120;nrWarSay(lightWon?'🛡️ The light army holds the border! The dark survivors flee back to the Doomforge Citadel':'⚔️ The dark army broke through... the light army falls back to the Lumenspire Citadel');
       G.nrLastWin=lightWon?'L':'D';if(aL)nrSqHome(A);if(bL)nrSqHome(B);if(!lightWon&&aL){A.st='van';A.kind='van';A.st='go';A.route=nrRoute('BF','Silverleaf');A.pi=0;A.at='Silverleaf';}}}
   else if(A&&!B&&A.st==='battle'){A.kind='van';A.st='go';A.route=nrRoute('BF','Silverleaf');A.pi=0;A.at='Silverleaf';}
   else if(B&&!A&&B.st==='battle')nrSqHome(B);}
@@ -1340,7 +1342,7 @@ function atFx(u,F,draw){if(!ATFX){const a=document.createElement('canvas'),b=doc
     for(const u of atBand(t))if(u.atAlpha)nrGone(u);t.away=sq;const V=atVar(sp,1,0);sq.mem.push({sp,hp:Math.round(V.hp*nrHpMul()),atAlpha:t.i+1});
     for(let i=0;i<RI(1,2);i++)sq.mem.push({sp,hp:Math.round(NRS[sp].hp*nrHpMul())});G.atDrafted=(G.atDrafted||0)+1;
     msg.push(side==='D'?'🪨 a white alpha troll leads its trolls':'🌿 an alpha centaur leads its centaurs');}
-  if(msg.length)G.atToast={t:G.t+2.5,m:'📯 Also marching: '+msg.join(' and ')+' into battle!'};
+  if(msg.length&&nrInNorth(D.x,D.y))G.atToast={t:G.t+2.5,m:'📯 Also marching: '+msg.join(' and ')+' into battle!'};
   return r;};}
 {const _mz=nrMaterialize;nrMaterialize=function(sq){const had=sq.units;const r=_mz.apply(this,arguments);if(!had&&sq.units)for(const u of sq.units)if(u.mem&&u.mem.atAlpha){const hp=u.mem.hp;atMakeAlpha(u);u.hp=Math.min(u.maxHp,hp);u.atFrom=u.mem.atAlpha;}return r;};}
 // ---- 25 + 26. The Wizard's tower: INVULNERABLE while the Storm Wizard is alive (fire, lava and stomps do nothing). Once he is defeated (G.nrOpen) it can be
