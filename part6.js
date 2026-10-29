@@ -102,8 +102,7 @@ function drawHUD(){ctx.setTransform(DPR,0,0,DPR,0,0);const sm=VW<760;UI.boxes=[]
     if(st){ctx.strokeStyle=`rgba(255,60,60,${pl})`;ctx.lineWidth=2;ctx.strokeRect(37,77+fb,214,16);
       if(!G.over&&!G.won)txt('⚠ STARVING! Eat a villager or animal! ⚠',VW/2,VH*.30,VW<760?18:24,`rgba(255,${Math.round(90+90*pl)},${Math.round(60+60*pl)},1)`,'center');}}
   const air=D.mode==='air';rect(20,78+hy,230,28,air?'#2a4a7a':'#4a3a22');
-  // (item 46) no FLYING / ON THE GROUND label - the dragon's wings already show it; only the swim note + the F hint stay
-  if(!air&&D.swim)txt('≈ SWIMMING (slower)',30,97+hy,14,'#f2dcb0');
+  // (items 46/48) no movement-state text (FLYING / ON THE GROUND / SWIMMING) - the wings and the water already show it; only the F hint stays
   txt(air?'F: land':'F: take off',242,97+hy,11,'#ddd','right',false);
   // wanted meter
   const cmpW=sm||hudLaneW()<260; // no room for the full WANTED panel: compact bar in the left column instead
