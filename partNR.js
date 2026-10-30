@@ -2928,9 +2928,9 @@ FAUNA_ART.add('elephant');
 // ======================= queue 130: every jungle temple ruin piece can be smashed for 5 gold =======================
 // The pieces: the 3 overgrown "ancient ruins" sites in the jungle (4 pillars + 1 lintel each = 15) and the rubble of the
 // wrecked ancient jungle temple (14 rubble blocks + 1 leaning broken pillar = 15, only once the temple is wrecked).
-// A bite (on the ground), a stomp or a claw rake smashes a piece: +5 gold each. Stone, so fire alone never breaks them.
+// A bite (on the ground), a stomp or a claw rake smashes a piece: no gold per piece (queue 167a); a WHOLE ruins site pays 10 gold, the temple pays 100 on wreck. Stone, so fire alone never breaks them.
 // Pieces are back every level (like the temple); smashed pieces are remembered in saves (G.rp130).
-const RP130={gold:5,perSite:5,rubble:14,biteR:55,clawR:120};
+const RP130={gold:0,siteGold:10,perSite:5,rubble:14,biteR:55,clawR:120};
 const RP_PILL=[-.3,-.1,.12,.3];
 function rpSiteN(){return RUINS.length*RP130.perSite;}
 function rpTotal(){return rpSiteN()+RP130.rubble+1;}
@@ -2943,14 +2943,19 @@ function rpPieces(){const P=[];RUINS.forEach((q,si)=>{const w=q.w;RP_PILL.forEac
   for(let i=0;i<RP130.rubble;i++){const a=i*2.1,r=20+(i*37%60);P.push({i:b+i,kind:'rubble',x:tx+Math.cos(a)*r,y:ty+Math.sin(a)*r*.4});}
   P.push({i:b+RP130.rubble,kind:'tpillar',x:tx-23,y:ty-5});return P;}
 function rpLive(p){if(rpDead(p.i))return false;if(p.kind==='rubble'||p.kind==='tpillar'){const t=jtS();return !!(t&&t.state==='ruin');}return true;}
-function rpSmash(p,how){if(!rpLive(p))return false;rpSet(p.i);D.gold=(D.gold||0)+RP130.gold;G.rpGold=(G.rpGold||0)+RP130.gold;G.rpN=(G.rpN||0)+1;if(typeof tallyAdd==='function')tallyAdd('rpStone');
-  float(p.x,p.y-50,`Smash! +${RP130.gold} gold`,'#ffd84a');puff(p.x,p.y-14,10,'rgba(170,165,140,',110,10);
+function rpSmash(p,how){if(!rpLive(p))return false;rpSet(p.i);G.rpN=(G.rpN||0)+1;if(typeof tallyAdd==='function')tallyAdd('rpStone');
+  float(p.x,p.y-50,'Smash!','#e8e0c0');puff(p.x,p.y-14,10,'rgba(170,165,140,',110,10);
   if(p.site===undefined)for(let k=0;k<5;k++){const a=R(0,TAU),v=R(60,160);JT_BITS.push({x:p.x,y:p.y-10,z:R(8,30),vx:Math.cos(a)*v,vy:Math.sin(a)*v*.5,vz:R(120,260),t:R(.8,1.4),c:k%2?'#8e8a76':'#a8a492',s:R(3,7)});}
   if(typeof SFX!=='undefined')SFX.play('crashStone',p.x,p.y,.45);
   // the lintel rests on the two west pillars: knock either out and it tumbles too
   if(p.kind==='pillar'&&p.site!==undefined&&(p.i%5===0||p.i%5===1)){const l=p.site*5+4;if(!rpDead(l))rpSmash({i:l,site:p.site,kind:'lintel',x:p.x,y:p.y-10},how);}
+  if(p.site!==undefined)rp167Site(p.site);
   if(G.rpN>=rpTotal()&&!G.rpAll){G.rpAll=1;float(D.x,D.y-110,'Every ancient ruin stone smashed!','#ffe28a');}
   return true;}
+// queue 167a: no gold per piece anywhere; a whole ancient ruins site (all 5 stones) pays RP130.siteGold once (the temple pays JT.gold=100 on wreck)
+function rp167Site(si){G.rp167=G.rp167||{};let all=true;for(let k=0;k<5;k++)if(!rpDead(si*5+k)){all=false;break;}
+  if(!all){delete G.rp167[si];return false;}if(G.rp167[si])return false;G.rp167[si]=1;const g=RP130.siteGold;D.gold=(D.gold||0)+g;G.rpGold=(G.rpGold||0)+g;G.rpSites=(G.rpSites||0)+1;
+  const c=RUINS[si];float(c?c.x:D.x,(c?c.y:D.y)-80,`Ancient ruins destroyed! +${g} gold`,'#ffd84a');return true;}
 function rpNear(x,y,r,one){let best=null,bd=r;const out=[];for(const p of rpPieces()){if(!rpLive(p))continue;const d=Math.hypot(p.x-x,(p.y-y)*1.2);if(d<r){out.push(p);if(d<bd){bd=d;best=p;}}}return one?best:out;}
 {const _b=biteWell;biteWell=function(){if(D.alt<.3){const mx=D.x+Math.cos(D.ang)*70,my=D.y+Math.sin(D.ang)*70,p=rpNear(mx,my,RP130.biteR,true)||rpNear(D.x,D.y,RP130.biteR,true);
     if(p){rpSmash(p,'bite');D.eatCD=.45;D.eatT=.3;return true;}}return _b.apply(this,arguments);};}
@@ -2969,7 +2974,7 @@ function rpNear(x,y,r,one){let best=null,bd=r;const out=[];for(const p of rpPiec
   for(const q of JT_BITS){ell(q.x,q.y+2,q.s*.8,q.s*.3,'rgba(0,0,0,.2)');rect(q.x-q.s/2,q.y-q.z-q.s/2,q.s,q.s,q.c);}};}
 // smash bits from the ancient ruins sites fly even when the temple stands
 try{const S=TALLY_SECT.find(s=>s.id==='build');if(S&&!S.keys.some(k=>k[0]==='rpStone'))S.keys.push(['rpStone','Ancient ruin stones smashed']);TALLY_LABEL.rpStone='Ancient ruin stones smashed';}catch(e){}
-if(typeof REGION_SUB!=='undefined'&&REGION_SUB.jungle&&REGION_SUB.jungle.indexOf('ruin stone')<0)REGION_SUB.jungle+=(/[.!]$/.test(REGION_SUB.jungle)?' ':'. ')+'Smash ancient ruin stones (bite, stomp or claw) for +5 gold each';
+if(typeof REGION_SUB!=='undefined'&&REGION_SUB.jungle&&REGION_SUB.jungle.indexOf('ruin stone')<0)REGION_SUB.jungle+=(/[.!]$/.test(REGION_SUB.jungle)?' ':'. ')+'Wreck the jungle temple for 100 gold; smash a WHOLE ancient ruins site (all its stones) for 10 gold';
 // ======================= queue 131-132: savanna animal sizes =======================
 // Drawn art used to be: elephant ~55x40 px, giraffe ~43x61 px, lion ~38x24 px, while the hippo is drawn x1.25 (~117x57 px).
 // Now elephants x2.4 (~132x80, the biggest land animal), giraffes x1.9 (~82x116, taller than everything), lions x1.35
@@ -4125,18 +4130,26 @@ function sh159Strip(){if(typeof structures==='undefined')return 0;let n=0;for(le
 // castle gold. The gold leaves the castle on a GUARDED CART (deducted the moment it rolls out), goes to the King's Quay, is loaded onto a
 // TREASURE SHIP that sails off the south edge of the map, and later the bought goods come back by trade ship -> guarded cart -> castle (141z flow).
 // Smash the gold cart or sink the treasure ship and the gold is yours (it goes to your lair like a caught tax sack). Then no goods come.
-// Rate: KB.rate (2 gold per wood, 4 gold per stone). Cooldown: TB160.cool seconds between orders of the same resource (160d: wood and stone separately).
-const TB160={low:5,share:.25,minBudget:8,cool:45,away:18,chk:2};
+// Rate: KB.rate (2 gold per wood, 4 gold per stone). 160f: no cooldown - one open order per resource (wood and stone separately) until it is delivered or destroyed.
+const TB160={low:5,share:.25,minBudget:8,cool:0,away:18,chk:2,grace:.5,tick:.5};
 // 160d: wood and stone are bought INDEPENDENTLY: each resource has its own open order (gold cart -> treasure ship -> goods back) and its own cooldown.
-function tb160Open(){const o=G.tbOpen||(G.tbOpen={wood:0,stone:0});for(const k of ['wood','stone']){if(o[k]&&(((G[k]||0)>=TB160.low&&!tb160Fly(k))||G.t>o[k]+240))o[k]=0;}return o;}
-function tb160Fly(k){const f=g=>g&&(k==='wood'?g.w>0:g.st>0);return carts.some(c=>c.tb160&&!c.wrecked&&!c.gone&&f(c.tb160))||ships.some(s=>s.treasure>0&&!s.gone&&s.state!=='sink'&&f(s.tbGoods))||f(G.tbGoods)||(G.tbGoodsQ||[]).some(f);}
+// 160f: no cooldown. One order per resource is in flight until it is RESOLVED: delivered into the castle, or the dragon destroys the gold cart,
+// treasure ship, goods ship or goods cart. (A 600 s failsafe only frees a order that somehow vanished.)
+function tb160Open(){const o=G.tbOpen||(G.tbOpen={wood:0,stone:0}),idle=G.tbIdle||(G.tbIdle={wood:0,stone:0});for(const k of ['wood','stone']){if(!o[k]){idle[k]=0;continue;}
+  if(tb160Fly(k)){idle[k]=0;}else{if(!idle[k])idle[k]=G.t;if(G.t-idle[k]>=TB160.grace){o[k]=0;idle[k]=0;G.tbResolved=(G.tbResolved||0)+1;}}if(o[k]&&G.t>o[k]+600){o[k]=0;G.tbFailsafe=(G.tbFailsafe||0)+1;}}return o;}
+function tb160Fly(k){const f=g=>g&&(k==='wood'?g.w>0:g.st>0);return carts.some(c=>c.tb160&&!c.wrecked&&!c.gone&&f(c.tb160))||ships.some(s=>s.treasure>0&&!s.gone&&s.state!=='sink'&&f(s.tbGoods))||f(G.tbGoods)||(G.tbGoodsQ||[]).some(f)
+  ||ships.some(s=>s.kind==='trade'&&!s.gone&&s.state!=='sink'&&(k==='wood'?s.w>0:s.st>0))||carts.some(c=>c.trader&&c.kind===k&&!c.wrecked&&!c.gone&&c.load>0);}
 function tb160Busy(res){const o=tb160Open();if(res)return !!o[res];return !!(o.wood||o.stone);}
 function tb160Close(g){if(!g||!G.tbOpen)return;if(g.w>0)G.tbOpen.wood=0;if(g.st>0)G.tbOpen.stone=0;}
 function tb160Plan(have,res){const nd=kbNeed();const low=res==='wood'?(G.wood<TB160.low||(nd&&nd.w>0)):(G.stone<TB160.low||(nd&&nd.st>0));if(!low)return null;
   const budget=Math.floor(have*TB160.share);if(budget<TB160.minBudget)return null;const w=res==='wood'?Math.floor(budget/KB.rate.wood):0,st=res==='stone'?Math.floor(budget/KB.rate.stone):0;
   if(w+st<=0)return null;return{w,st,budget,res,why:(res==='wood'?G.wood:G.stone)<TB160.low?'low':'rebuild'};}
+// 160e: each order is 25% of the treasury as it stood BEFORE this cycle's orders (snapshot when the first order goes out), so a second order does not shrink
 function tb160Try(force){if(!G||G.over||G.won)return false;const o=tb160Open(),cl=G.tbCool||(G.tbCool={wood:0,stone:0});let sent=false;
-  for(const res of ['wood','stone']){if(!force&&(o[res]||G.t<(cl[res]||0)))continue;const p=tb160Plan(castleTreasury(),res);if(!p)continue;if(tb160Send(p)){o[res]=G.t;cl[res]=G.t+TB160.cool;sent=true;if(force)break;}}
+  if(!o.wood&&!o.stone)G.tbBase=null;
+  for(const res of ['wood','stone']){if(!force&&o[res])continue;const now=castleTreasury(),base=G.tbBase!=null?Math.max(G.tbBase,now):now;const p=tb160Plan(base,res);if(!p)continue;
+    if(p.budget>now){p.budget=Math.floor(now);p.w=res==='wood'?Math.floor(p.budget/KB.rate.wood):0;p.st=res==='stone'?Math.floor(p.budget/KB.rate.stone):0;if(p.budget<TB160.minBudget||p.w+p.st<=0)continue;}
+    if(tb160Send(p)){if(G.tbBase==null)G.tbBase=now;o[res]=G.t;cl[res]=G.t+TB160.cool;sent=true;if(force)break;}}
   return sent;}
 function tb160Send(p){const paid=kbSpendGold(p.budget);if(paid<=0)return false;const T=kbTier(paid),what=kbWhat(p.w,p.st);
   const c=scSpawn('trader',{st:'back',load:0});c.kind='gold';c.tb160={gold:paid,w:p.w,st:p.st,tier:T.n};c.tier=T.n;if(c.drv)c.drv.shirt='#8a2a2a';
@@ -4147,6 +4160,8 @@ function tb160Send(p){const paid=kbSpendGold(p.budget);if(paid<=0)return false;c
     if(typeof showToast==='function')showToast(`💰 Royal gold cart: ${paid} gold heading for the quay`);}
   return true;}
 kbBuy=function(){return tb160Try(false);};
+// 160g: as soon as an order resolves and that resource is still below 5, the next order goes out (checked every 0.5 s, no extra wait)
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&G&&!G.over&&!paused){G.tbTick=(G.tbTick||0)-dt;if(G.tbTick<=0){G.tbTick=TB160.tick;tb160Try(false);}}return r;};}
 // the gold cart: castle -> quay; at the quay the gold goes aboard the treasure ship
 {const _s=scStep;scStep=function(c,dt){if(!c||!c.tb160||c.wrecked)return _s.apply(this,arguments);if(c.st==='load'||c.s>=(c.R?c.R.len:0)-1){tb160Board(c);return;}
   const r=_s.apply(this,arguments);if(c.tb160&&!c.wrecked&&c.st!=='back')tb160Board(c);return r;};}
@@ -4307,6 +4322,21 @@ function pm170Line(){if(!(scene==='play'&&G&&PM.scr==='main'))return;const S=SAF
   let fs=touch?12:13;ctx.font=`bold ${fs}px Georgia`;while(fs>8&&ctx.measureText(t).width>W-24){fs--;ctx.font=`bold ${fs}px Georgia`;}txt(t,cx,y0+H-88,fs,'#ffe08a','center');}
 {const _p=drawPM;drawPM=function(){const r=_p.apply(this,arguments);try{ctx.setTransform(DPR,0,0,DPR,0,0);pm170Line();}catch(e){}return r;};}
 
+// ======================= queue 171: the lair gold pile grows ~2.5x slower =======================
+// Every size step now needs 2.5x the gold: stages at 0 / 62 / 200 / 500 (were 0 / 25 / 80 / 200); the size curve is the same
+// power-0.55 (about square-root) curve stretched 2.5x, so the pile reaches its old full size at 650 gold (was 260) and tops out ~1,120 (was ~450).
+const HD171={mul:2.5};
+HOARD_ST.forEach(s=>{s.at=Math.round(s.at*HD171.mul);});
+hoardK=function(g){return clamp(Math.pow(Math.max(0,g)/(260*HD171.mul),.55),0,1.35);};
+
+// ======================= queue 172: gamepad Select / "-" (button 8) toggles the big map, once per press =======================
+// Before: button 8 was mapped to the R key in play (R does nothing mid-game; it restarts only on the game-over / win / pause screens,
+// and those menu bindings are unchanged). LB (button 4) still also toggles the map.
+{const _pp=pollPad;pollPad=function(dt){const pv=!!(GPAD.prev&&GPAD.prev[8]),hadR=!!pressed['r'];const r=_pp.apply(this,arguments);
+  const menu=scene==='title'||(G&&(G.over||G.won))||paused;const now=!!(GPAD.prev&&GPAD.prev[8]);
+  if(!menu&&now&&!pv){if(!hadR)delete pressed['r'];pressed['m']=true;GPAD.sel172=(GPAD.sel172||0)+1;}
+  return r;};}
+
 // ======================= queue 183 / 183a: RESTART is now MAIN MENU (game over, win screen, pause menu) =======================
 // Game over: Enter / Space / R / tap / A / Start / Back now go to the title MAIN MENU (instead of instantly restarting). The Mode row (the
 // EASY / NORMAL / HARD difficulty picker) is highlighted with the current difficulty, Start game begins a new game, Continue loads the
@@ -4321,16 +4351,18 @@ function mm183Ask(){const safe=as184Safe(),q='Leave this run and go to the MAIN 
     yes:()=>{if(as184Safe())as184Save('menu');mm183Go('menu');}};}
 {const i=PM_MAIN.findIndex(r=>r[1]==='restart');if(i>=0)PM_MAIN[i]=['🏠  Main Menu (new game · difficulty · continue)','mainmenu'];}
 {const _a=pmAct;pmAct=function(a){if(a==='mainmenu'){mm183Ask();return;}if(a==='restart'){mm183Ask();return;}return _a.apply(this,arguments);};}
-{const _f=frameBody;frameBody=function(ts){
-  try{if(scene==='play'&&G){
+// 183b: the gamepad is read inside frameBody (pollPad), after the check below, so pad Back / A / Start on the game-over, win and pause
+// screens used to reach the old restart code (instant new game). The same check now also runs right after pollPad.
+function mm183Chk(){if(scene==='play'&&G){
       if(G.over&&!PM.on&&G.overT>MM183.auto){mm183Go('death');}
       else if(G.over&&!PM.on&&(P('r')||P(' ')||(P('enter')&&G.overT>1))){if(G.overT>1||P('r'))mm183Go('death');else{delete pressed['enter'];delete pressed[' '];}}
       else if(G.won&&!PM.on&&P('r')){nextLevel();paused=false;as184Save('level');mm183Go('won');}
       else if(paused&&!G.over&&!G.won&&P('r')){delete pressed['r'];if(!(PM.on&&PM.confirm))mm183Ask();}}
     else if(scene==='title'&&!PM.on&&titleSel===3&&as184Valid()){
       if(P('enter')){delete pressed['enter'];as184Continue();}
-      else if(P('arrowleft')||P('arrowright')||P('a')||P('d')){pressed={};pmOpen('load','title');}}}catch(e){console.warn('183',e);}
-  return _f.apply(this,arguments);};}
+      else if(P('arrowleft')||P('arrowright')||P('a')||P('d')){pressed={};pmOpen('load','title');}}}
+{const _f=frameBody;frameBody=function(ts){try{mm183Chk();}catch(e){console.warn('183',e);}return _f.apply(this,arguments);};}
+{const _pp=pollPad;pollPad=function(dt){const r=_pp.apply(this,arguments);try{mm183Chk();}catch(e){console.warn('183b',e);}return r;};}
 {const _tt=titleTap;titleTap=function(x,y){const g=TOUCH.tg;
   if(g&&as184Valid()){const lx=(x-g.ox)/g.k,ly=y/g.k,ry=g.y0+3*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=3;if(lx>g.cx+230-120)pmOpen('load','title');else as184Continue();return true;}}
   return _tt.apply(this,arguments);};}
@@ -4355,7 +4387,12 @@ const TX183={'Press R / Enter (or Back / Start / A) to rise again':'Enter / A / 
 // stamina, hunger, upgrades and boosts), gold stash + carried gold, castle gold / wood / stone, world state (burned trees, ruined buildings,
 // structures, crops, fog / explored map, wizard / boss flags and rewards, tally). Like every load it starts the dragon at the lair spawn.
 const AS184={every:60,calm:8,calmHit:6,minHp:.3,startAt:2,t:0,n:0,pend:null,last:null,why:{},skip:0,ms:0};
-function as184Safe(){if(scene!=='play'||!G||!D||G.over||G.won||G.starved)return false;if(!(D.hp>0)||D.hp<AS184.minHp*D.maxHp)return false;
+// 184a (Zack 2:47 PM): Continue always restarts the dragon at the lair, so the autosave now runs at ANY time: in fights, when hurt, under 30%
+// health and when starving. It is only blocked for a dying dragon (health 0) or game over (and the win screen, which saves the next level).
+// Before (184): no save while hit in the last 8 s, while hitting a fighter in the last 6 s, under 30% health or starving.
+AS184.anytime=true;
+function as184Safe(){if(scene!=='play'||!G||!D||G.over||G.won||G.starved)return false;if(!(D.hp>0))return false;if(AS184.anytime)return true;
+  if(D.hp<AS184.minHp*D.maxHp)return false;
   if(G.t-(G.as184Hurt==null?-99:G.as184Hurt)<AS184.calm)return false;if(G.t-(G.as184Hit==null?-99:G.as184Hit)<AS184.calmHit)return false;return true;}
 function as184Save(why){if(!as184Safe()&&why!=='level'){AS184.skip++;return false;}if(G.over||G.won||!(D.hp>0))return false;
   const t0=performance.now();const ok=svWrite('dr_save_auto');AS184.ms=Math.round((performance.now()-t0)*10)/10;
@@ -4378,7 +4415,7 @@ function as184Continue(){const res=svLoad('dr_save_auto');if(res===true){try{pmC
 // the autosave row shows as "Autosave" again (it was renamed "Old autosave" by queue 112) and the load help text tells the new rules
 {const _sl=svList;svList=function(){const L=_sl.apply(this,arguments);if(!L||!L.length)return L;return L.map(s=>s.key==='dr_save_auto'&&s.name!=='Autosave'?Object.assign({},s,{name:'Autosave'}):s);};}
 {const _d=drawSlots;drawSlots=function(){const _t=txt;txt=function(s){if(typeof s==='string'&&s.indexOf('The game only saves when you save it yourself')>=0){const a=[].slice.call(arguments);
-      a[0]='Pick a save to load. The autosave updates at each level start and every minute of calm play (never mid-fight or when badly hurt).';return _t.apply(this,a);}return _t.apply(this,arguments);};
+      a[0]='Pick a save to load. The autosave updates at each level start, each level complete and every minute of play.';return _t.apply(this,a);}return _t.apply(this,arguments);};
   try{return _d.apply(this,arguments);}finally{txt=_t;}};}
 // title: row 0 reads "New game", row 3 reads "Continue (autosave ...)" with a "📂 All saves" side button when an autosave exists
 {const _dt=drawTitle;drawTitle=function(){_dt.apply(this,arguments);const T=TOUCH.tg;if(!T)return;

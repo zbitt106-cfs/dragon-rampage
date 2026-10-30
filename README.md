@@ -352,9 +352,9 @@ Controls are the usual ones: fire, stomp, and bite/eat (E, pad X, or the BITE bu
 ## The Ancient Jungle Temple
 On the east flank of **Mount Ember**, the jungle volcano in the far west of the Emerald Jungle, stands a stepped stone temple, overgrown with vines, with a gold-glinting shrine on top. It is **fire-proof** and too solid for most attacks: use **bites**, the **Q stomp** or **lava shots**. When it crumbles: KA-BOOM, stone blocks fly, and **+100 gold** goes straight to your lair. It is never rebuilt, but a new one stands every level. It has its own Tally line, and a world-map marker once you have seen it.
 - **Ember power (once per game):** the first time you wreck the temple you also get a **permanent +10 max fire** on top of the 100 gold, shown in the small alert at the bottom of the screen (*"🔥 Max fire +10!"*). It stacks with the nest-egg fire boosts, carries over every castle level and is kept in saves. Wrecking the temple again on later levels still gives the 100 gold, but no more fire. A new game resets it.
-- **Ruin stones, 5 gold each (item 130):** every piece of jungle temple ruin can now be smashed for **+5 gold** (*"Smash! +5 gold"*). Bite it (on the ground), stomp it (Q) or rake it with a claw; stone never burns, so fire alone does nothing. There are **30 pieces, 150 gold in all**:
-  - the **3 overgrown "ancient ruins"** in the jungle: 4 pillars and 1 lintel each, **15 pieces (75 gold)**. The lintel rests on the two west pillars, so knocking out either of those brings it down too (+5 for each);
-  - the **rubble of the wrecked temple**: 14 rubble blocks and 1 leaning broken pillar, **15 pieces (75 gold)**. They only appear once the temple itself has been wrecked (which still pays its own 100 gold).
+- **Ruin stones (item 130, changed by 167a):** every piece of jungle temple ruin can be smashed. Bite it (on the ground), stomp it (Q) or rake it with a claw; stone never burns, so fire alone does nothing. **Single pieces give no gold any more (167a).** Instead, each of the 3 ancient ruins sites pays **10 gold once** when the whole site is down, and the temple pays its **100 gold** when it is wrecked. The pieces are:
+  - the **3 overgrown "ancient ruins"** in the jungle: 4 pillars and 1 lintel each, **15 pieces**. The lintel rests on the two west pillars, so knocking out either of those brings it down too;
+  - the **rubble of the wrecked temple**: 14 rubble blocks and 1 leaning broken pillar, **15 pieces (no gold)**. They only appear once the temple itself has been wrecked (which pays its own 100 gold).
   - Smashed stones stay smashed in a save; all 30 are back at the start of the next castle level, like the temple. They count in the Dragon's Tally (*Ancient ruin stones smashed*), and the jungle hint mentions them.
 
 ## Mount Ember (the second volcano)
@@ -597,7 +597,7 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 
 ## Dragon's Tally, pause, save and load
 - Press **P** or **Esc** to pause. The pause menu has the **Dragon's Tally**, a bestiary that counts everything you've gobbled or beaten this game and all-time, plus **Save** and **Load**.
-- There are three save slots, stored in the browser, plus the **Autosave** (back since queue 184; see *Main menu and autosave* below). The autosave only happens at safe moments: never on pausing, never in a fight, never when badly hurt or dying.
+- There are three save slots, stored in the browser, plus the **Autosave** (back since queue 184; see *Main menu and autosave* below). The autosave runs at any time in play, even in a fight, when badly hurt or starving (queue 184a: Continue always starts at the lair anyway). It never saves on pausing, on a game over or for a dying dragon.
 
 ## Mounted knights
 - Fast lance cavalry rides out of the castle gate. They charge in a straight line (the lance only hits a grounded dragon) and then wheel around for another pass.
@@ -1066,9 +1066,11 @@ Close-ups: `screenshots/332z_minimap_150_zoom_desktop.png`, `332z_minimap_150_zo
 ## No castle storehouse (queue 159)
 - The storehouse next to Castle Aldric was the only one. It is gone. Supply carts now drive into the castle gate and unload there. Old saves that still have a storehouse load without it. Shot: `shots/340_cart_unloads_into_castle_159.png`.
 
-## The king buys wood and stone (queue 160, 160a, 160b, 160d)
-- Wood and stone are checked **separately**. When either one drops below 5 (or a rebuild is blocked by it), the king spends **25% of the castle treasury** on that resource. If both are low, two separate orders go out: first wood with 25%, then stone with 25% of what is left. For example, with 400 gold: 100 gold for 50 wood, then 75 gold for 18 stone.
-- Price: 2 gold per wood, 4 gold per stone. Each resource has its own 45 s cooldown and one open order at a time.
+## The king buys wood and stone (queue 160, 160a, 160b, 160d, 160e, 160f, 160g)
+- Wood and stone are checked **separately**. When either one drops below 5 (or a rebuild is blocked by it), the king spends **25% of the castle treasury** on that resource. Each order is 25% of the **full** treasury as it stood before this round of orders (queue 160e), so a second order never shrinks. With 400 gold and both low: 100 gold for 50 wood **and** 100 gold for 25 stone, 200 gold in all (50%). If only one is low, it's 25% (100 gold). With 1,000 gold and both low: 250 for 125 wood + 250 for 62 stone.
+- Price: 2 gold per wood, 4 gold per stone.
+- **No cooldown, one order in flight per resource (queue 160f):** a new wood (or stone) order can't start until the current one is resolved, either delivered into the castle or destroyed by the dragon (gold cart, treasure ship, goods ship or goods cart). *Before:* a 45 s cooldown per resource.
+- **Immediate reorder (queue 160g):** if that resource is still below 5 once its order is delivered or destroyed, the next order goes out right away (within half a second), again 25% of the treasury. Example: smash the 100-gold wood cart at 400 → the treasury is 300, so the next cart carries 75 gold for 37 wood.
 - How it travels: a guarded gold cart (the gold leaves the treasury when the cart leaves) goes to the quay. A treasure ship sails off the map. Later a trade ship brings the goods back, and an escorted cart takes them to the castle.
 - The dragon can smash the gold cart or sink the treasure ship. Either way the gold goes to the dragon's lair and no goods come.
 - Gold carts and treasure ships still on the way are not kept in a save.
@@ -1181,10 +1183,11 @@ What's in the list (74):
 ![Menu exact gold](screenshots/346c_menu_exact_gold_1280_170.png)
 ![Menu exact gold iPhone](screenshots/346d_menu_exact_gold_iphone_170.png)
 
-## Main menu and autosave (queue 183, 183a, 184)
+## Main menu and autosave (queue 183, 183a, 183b, 184, 184a)
 - **Game over**: the game-over screen (with your score) shows for about 3.5 s, then you go straight to the **main menu** (press any key / tap to go sooner). Game over and the pause menu's old "Restart" now go to the **main menu**, with the difficulty picker showing your current mode, **Start game** for a new run and **Continue** for the autosave. In the pause menu, "Main Menu" asks "Are you sure?" first.
 - **Win screen:** Enter / Space still starts the next level right away; R / Back now autosaves the next level and goes to the main menu (Continue picks it up).
-- **Autosave is back**, at safe points only: level start, level complete, every 60 s of calm play (no fight for a while, health at least 30%, not starving) and when you leave to the main menu. It never saves during a fight, a game over or a dying dragon. The old "save on every pause / every 2 minutes" triggers stay off.
+- **Autosave is back:** at level start, level complete, every 60 s of play and when you leave to the main menu. **Queue 184a:** because Continue always restarts the dragon at the lair, it now also saves in a fight, when hurt, under 30% health and when starving (before: only in calm play). It never saves a dying dragon or a game over. The old "save on every pause / every 2 minutes" triggers stay off.
+- **Gamepad fix (183b):** on the game-over, win and pause screens, the pad's Back / A / Start now do the same as the keyboard (main menu, next level + autosave, or the "Are you sure?" question). Before, the pad skipped these and restarted a new game at once.
 - The save holds the whole run: difficulty, level, wanted level, dragon stats and upgrades, gold, castle stores and the world. Continue starts the dragon at the lair.
 
 ![Main menu with Continue](screenshots/q184_main_menu_continue_desktop.png)
@@ -1192,3 +1195,14 @@ What's in the list (74):
 ![Game over: main menu](screenshots/q183a_game_over_main_menu_desktop.png)
 
 ![Main menu with Continue, iPhone](screenshots/q184_main_menu_continue_iphone.png)
+
+## Slower lair gold pile (queue 171)
+The lair gold pile grows about 2.5x slower: stages at 0 / 62 / 200 / 500 gold (were 0 / 25 / 80 / 200); it reaches its old full size at 650 gold.
+
+## Gamepad Select opens the big map (queue 172)
+Gamepad Select / "-" (button 8) toggles the big map once per press (LB still works too).
+
+![Ruins site pays 10 gold](screenshots/q167a_ruins_site_10_gold.png)
+![Lair gold 1k](screenshots/q171_lair_gold_1k.png)
+![Lair gold 10k](screenshots/q171_lair_gold_10k.png)
+![Gamepad Select opens map](screenshots/q172_gamepad_select_opens_map.png)
