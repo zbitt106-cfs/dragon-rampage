@@ -10885,6 +10885,256 @@ function txAreas(T){const A=[];for(const t of T){const live=ecPayers(t).reduce((
   if(A.length){let p={x:GATE.x,y:GATE.y};const route=[];for(const a of A){const L=a.stops.slice();while(L.length){L.sort((x,y)=>dist(x,p)-dist(y,p));p=L.shift();route.push(p);}}
     u.route=route;u.ri=0;u.txAreas=A.map(a=>({key:a.key,tot:a.tot,n:a.stops.length,names:a.stops.map(s=>s.name||s.wk||s.mk||('village '+s.vi))}));}
   return u;};}
+
+/* ===== 141: King William's Viking mercenaries (all modes) ===== */
+const VK={every:1000,cost:50,hEvery:500,hCost:25,garCap:5,lakeCap:3,sp:72*1.1,hp:260,lhp:90,r:46,lr:28,tough:1.25,wall:.5,chiefSh:.35,logs:3,build:15,buildC:10,swim:22,
+  crew:[['war',10],['ber',2],['thr',5],['chief',1]],
+  deck:{cd:[1,1.4],n:2,vcd:[2.5,3.5],vn:5,rg:560,vrg:660,dmg:2},ldeck:{cd:[1.2,1.6],n:2,vcd:[3,4],vn:4,rg:520,vrg:620,dmg:2},
+  fireShip:.9,defendT:20,mouth:{x:9150,y:4050},corner:{x:9150,y:4950},
+  CASTLE:new Set(['gate','barracks','cwall','ctower','keep','kroof','ptower'])};
+let VKG=[],VKID=1;
+SHIPK.vkwar={hp:VK.hp,sp:VK.sp,crew:0,r:VK.r,gold:0};SHIPK.vklong={hp:VK.lhp,sp:60,crew:0,r:VK.lr,gold:0};
+if(typeof TALLY_SECT!=='undefined'){const B=TALLY_SECT.find(s=>s.id==='boats');if(B&&!B.keys.some(k=>k[0]==='ship:vkwar')){B.keys.splice(B.keys.length,0,['ship:vkwar','Viking warships'],['ship:vklong','Viking longships']);}TALLY_LABEL['ship:vkwar']='Viking warships';TALLY_LABEL['ship:vklong']='Viking longships';}
+const vkFant=(x,y)=>typeof nrFantasyAt==='function'&&nrFantasyAt(x,y);
+const vkQuiet=()=>vkFant(D.x,D.y)||(typeof nrInNorth==='function'&&nrInNorth(D));
+const vkG=id=>VKG.find(g=>g.id===id);
+const vkWet=(x,y)=>inSea(x,y)||inLake0(x,y)||riverD(x,y)<RIVW-6;
+const vkStats=r=>{const b=RCV.solHp*VK.tough,a=RCV.arcHp*VK.tough;return r==='thr'?Math.round(a):r==='chief'?Math.round(RCV.camHp*VK.tough):Math.round(b);};
+const vkDmg=()=>RCV.dmgMul*VK.tough;
+function vkBerth(role,slot){if(role==='gar'){const a=-.35+slot*.42;return{x:LAKE.x+Math.cos(a)*LAKE.rx*.66,y:LAKE.y+Math.sin(a)*LAKE.ry*.62};}
+  if(role==='lake')return{x:LAKE.x+Math.cos(slot*2.1+2)*LAKE.rx*.5,y:LAKE.y+Math.sin(slot*2.1+2)*LAKE.ry*.45};
+  const P=vkSeaPosts();return P[slot%P.length];}
+let VKPOSTS=null;
+function vkSeaPosts(){if(VKPOSTS)return VKPOSTS;const c=[];for(const y of [3000,1500,0,-1300])c.push({x:coastX(y)+750,y});for(const x of [7600,6000,4300,2600,900])c.push({x,y:coastY(x)+650});
+  VKPOSTS=c.filter(p=>inSea(p.x,p.y)&&!vkFant(p.x,p.y)&&!(typeof inDeep==='function'&&inDeep(p.x,p.y)));if(!VKPOSTS.length)VKPOSTS=[{x:VK.mouth.x,y:VK.mouth.y+400}];return VKPOSTS;}
+function vkBody(x,y){if(inLake0(x,y))return'lake';if(riverD(x,y)<RIVW+10&&!inSea(x,y))return'river';return'sea';}
+function vkPath(x,y,to){const a=vkBody(x,y),b=vkBody(to.x,to.y),P=[];const riv=RIVER.map(p=>({x:p[0],y:p[1]}));
+  const seaHop=(fx,fy,tx,ty)=>{const w=fx<8400&&fy>4300,n=ty<4300||tx>=8400&&ty<4300;const w2=tx<8400&&ty>4300,n2=fy<4300;if((w&&ty<4300)||(n2&&w2))P.push(VK.corner);};
+  if(a===b&&a!=='sea'){P.push(to);return P;}
+  if(a==='sea'&&b==='sea'){seaHop(x,y,to.x,to.y);P.push(to);return P;}
+  if(a==='sea'){seaHop(x,y,VK.mouth.x,VK.mouth.y);P.push(VK.mouth);let i=riv.length-1;for(;i>=0;i--)P.push(riv[i]);P.push(to);return P;}
+  if(b==='sea'){let j=0,bd=1e9;riv.forEach((p,k)=>{const d=d2(x,y,p.x,p.y);if(d<bd){bd=d;j=k;}});for(let k=a==='lake'?0:j;k<riv.length;k++)P.push(riv[k]);P.push(VK.mouth);seaHop(VK.mouth.x,VK.mouth.y,to.x,to.y);P.push(to);return P;}
+  if(a==='lake'){P.push(riv[0]);P.push(to);return P;}
+  P.push(riv[0]);P.push(to);return P;}
+function vkShipOK(s,x,y){const g=vkG(s.vkg);if(g&&g.role!=='sea'&&s.kind==='vkwar')return inLake0(x,y)&&d2(x,y,LAKE.x,LAKE.y)<LAKE.rx;return inSea(x,y)&&!vkFant(x,y)&&(typeof seaD!=='function'||seaD(x,y)>s.r*.8);}
+function vkMkShip(g,x,y,kind){const L=kind==='vklong';const s={kind:L?'vklong':'vkwar',vk:1,vkg:g?g.id:0,x,y,ang:-Math.PI/2,sp:L?60:VK.sp,hp:L?VK.lhp:VK.hp,maxHp:L?VK.lhp:VK.hp,r:L?VK.lr:VK.r,crew:0,state:'sail',t:0,id:rnd(),bob:R(0,TAU),fire:0,fireT:0,cd:R(0,1),vcd:R(1,3),path:null,goal:null,goalSp:1};ships.push(s);return s;}
+function vkRoleNext(){const used={gar:new Set(),lake:new Set(),sea:new Set()};for(const g of VKG)if(!g.gone)used[g.role].add(g.slot);const free=r=>{let i=0;while(used[r].has(i))i++;return i;};
+  if(used.gar.size<VK.garCap)return['gar',free('gar')];if(used.lake.size<VK.lakeCap)return['lake',free('lake')];return['sea',free('sea')];}
+function vkSpawnFleet(role,slot,o){o=o||{};if(!role){const q=vkRoleNext();role=q[0];slot=q[1];}
+  const g={id:VKID++,role,slot,mode:'sail',ship:null,aboard:[],units:[],A:null,dir:0,t:0,logs:0,site:null,buildT:0};
+  for(const [r,n] of VK.crew)for(let i=0;i<n;i++)g.aboard.push({r,hp:0,bearHp:0});
+  const p=o.at||{x:VK.mouth.x,y:WY1-170};const s=vkMkShip(g,p.x,p.y);g.ship=s;const post=vkBerth(role,slot);
+  if(o.atPost){s.x=post.x;s.y=post.y;g.mode='aboard';}else s.path=vkPath(s.x,s.y,post);
+  VKG.push(g);G.vkFleets=(G.vkFleets||0)+1;return g;}
+function vkHireStep(){const inc=(G.taxIn||0)+(G.rcTreasIn||0)+(G.kgRaidIn||0),ev=G.hard?VK.hEvery:VK.every,cost=G.hard?VK.hCost:VK.cost;const want=Math.floor(inc/ev);G.vkHired=G.vkHired||0;
+  let guard=0;while(G.vkHired<want&&guard++<20){if(treasury()>=cost){kbSpendGold(cost);G.vkSpent=(G.vkSpent||0)+cost;G.vkHired++;G.vkOwed=0;const g=vkSpawnFleet();
+      const where=g.role==='gar'?'to guard the castle lake':g.role==='lake'?'to patrol the lake':'to patrol the coast';
+      if(!vkQuiet()){G.banner={text:'⚔️ King William hired Viking mercenaries!',sub:`A Viking warship sails up from the south ${where} · ${cost} gold for every ${ev} gold he earns`,t:4.5};G.vkAlerts=(G.vkAlerts||0)+1;}else G.vkQuietHires=(G.vkQuietHires||0)+1;}
+    else{G.vkOwed=1;break;}}}
+function vkMk(g,r,x,y,a){a=a||{};const max=vkStats(r),t=r==='thr'?'archer':'knight';
+  const u=mkUnit(t,x,y,{vk:r,vkg:g.id,post:'vk',foot:true,dsol:r!=='thr',darch:r==='thr',hp:a.hp>0?a.hp:max,maxHp:max,atk:R(0,1),dmgMul:vkDmg(),shootT:R(.5,1.5),born:G.t,vkc:Math.floor(rnd()*3)});
+  if(r==='chief'){const bm=Math.round(RCV.camHp*VK.tough);u.bear=(a.hp>0?a.bearHp:bm)>0?1:0;u.bearHp=a.hp>0?a.bearHp:bm;u.bearMax=bm;}
+  units.push(u);g.units.push(u);return u;}
+function vkBoard(u,g){g.aboard.push({r:u.vk,hp:u.hp,bearHp:u.bearHp||0});u.dead=true;u.gone=true;u.vkBoarded=1;if(u.vkJob&&u.vkJob.tree&&u.vkJob.tree.claimed===u)u.vkJob.tree.claimed=null;u.vkJob=null;}
+function vkLand(g,mode,at){const s=g.ship;const p=at||(s&&dryNear(s.x,s.y));if(!p)return false;
+  for(const a of g.aboard){const u=vkMk(g,a.r,p.x+R(-30,30),p.y+R(-18,18),a);if(soldierWet(u.x,u.y)){u.x=p.x;u.y=p.y;}}
+  g.aboard=[];g.mode=mode;g.land={x:p.x,y:p.y};g.A={x:p.x,y:p.y};g.t=0;if(s){s.goal=null;s.path=null;}
+  puff(p.x,p.y,14,'rgba(230,240,255,',90,8);if(d2(p.x,p.y,D.x,D.y)<1600)float(p.x,p.y-50,mode==='defend'?'Vikings storm ashore to defend the castle!':'Vikings storm ashore!','#ffd0a0');G.vkLandings=(G.vkLandings||0)+1;return true;}
+function vkCentroid(L){if(!L.length)return null;let x=0,y=0;for(const u of L){x+=u.x;y+=u.y;}return{x:x/L.length,y:y/L.length};}
+function vkShoreOf(g){const s=g.ship;if(!s)return null;if(!g.bp||g.bpT<G.t){g.bpT=G.t+1;g.bp=dryNear(s.x,s.y);}return g.bp;}
+function vkGuardPt(g){const a=g.slot*1.25+g.id;return{x:GATE.x+Math.cos(a)*150,y:GATE.y+110+Math.sin(a)*60};}
+function vkCart(g){if(typeof kbTraders!=='function')return null;const A=g.A||g.land;let b=null,bd=1e9;for(const c of kbTraders()){const d=d2(c.x,c.y,A.x,A.y);if(d<bd){bd=d;b=c;}}return b;}
+/* formation: shield wall line facing the dragon, throwers behind, chief behind the centre */
+function vkForm(g,dt,T,hold){const L=g.units.filter(u=>!u.dead&&!u.inLong&&!u.vkSwim&&!u.vkJob);g.eng=!hold;if(!L.length)return;
+  const c=vkCentroid(L);if(!g.A)g.A={x:c.x,y:c.y};const A=g.A;const W=L.filter(u=>u.vk==='war');
+  const dx=T.x-A.x,dy=T.y-A.y,dd=Math.hypot(dx,dy)||1;const stop=hold?20:(D.alt>DR.hitAltSword?110:48);
+  if(dd>stop){const sp=(W.length>=3?60:85)*dt,m=Math.min(sp,dd-stop);const nx=A.x+dx/dd*m,ny=A.y+dy/dd*m;if(!soldierWet(nx,ny)||hold){A.x=nx;A.y=ny;}else{for(let k=40;k<=Math.min(500,dd);k+=20){const qx=A.x+dx/dd*k,qy=A.y+dy/dd*k;if(!soldierWet(qx,qy)){A.x=qx;A.y=qy;g.Ajump=G.t;break;}}}}
+  const lc=d2(A.x,A.y,c.x,c.y);if(lc>70&&G.t-(g.Ajump||-99)>12){A.x=c.x+(A.x-c.x)*70/lc;A.y=c.y+(A.y-c.y)*70/lc;}
+  if(dd>8)g.dir=Math.atan2(dy,dx);const ca=Math.cos(g.dir),sa=Math.sin(g.dir),px=-sa,py=ca;
+  W.forEach((u,i)=>{const k=i-(W.length-1)/2;u.slot={x:A.x+px*k*19,y:A.y+py*k*19};});
+  const Th=L.filter(u=>u.vk==='thr');Th.forEach((u,i)=>{const k=i-(Th.length-1)/2;u.slot={x:A.x-ca*85+px*k*24,y:A.y-sa*85+py*k*24};});
+  for(const u of L){if(u.vk==='chief')u.slot={x:A.x-ca*40,y:A.y-sa*40};if(u.vk==='ber')u.slot={x:A.x+ca*10+px*(u.vkc-1)*30,y:A.y+sa*10+py*(u.vkc-1)*30};}
+  const dD=d2(A.x,A.y,D.x,D.y);for(const u of W)u.wallOn=W.length>=3&&!hold&&dD<650&&u.slot&&d2(u.x,u.y,u.slot.x,u.slot.y)<26;}
+/* walking with longship ferry over water */
+function vkMove(u,tx,ty,sp,dt,g){const dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy);if(d<4)return true;const st=Math.min(d,sp*dt),nx=u.x+dx/d*st,ny=u.y+dy/d*st;u.face=dx>=0?1:-1;u.anim+=dt*6;
+  if(soldierWet(nx+dx/d*10,ny+dy/d*10)&&!soldierWet(u.x,u.y)){if(d>90||!soldierWet(tx,ty))vkFerry(u,tx,ty,g);return false;}
+  u.x=nx;u.y=ny;return false;}
+function vkFerry(u,tx,ty,g){if(!g||G.t<(u.lsCool||0))return;let ls=ships.find(s=>s.kind==='vklong'&&s.vkg===g.id&&s.state==='load'&&d2(s.x,s.y,u.x,u.y)<240);
+  if(!ls){if(G.t<(g.lsT||0)){return;}const dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy)||1;let bx=u.x+dx/d*30,by=u.y+dy/d*30;if(!soldierWet(bx,by))return;
+    ls=vkMkShip(g,bx,by,'vklong');ls.state='load';ls.lt=0;ls.cargo=[];ls.tx=tx;ls.ty=ty;ls.bx=u.x;ls.by=u.y;ls.ang=Math.atan2(dy,dx);g.lsT=G.t+1.5;G.vkLongships=(G.vkLongships||0)+1;puff(bx,by,10,'rgba(230,240,255,',70,7);if(d2(bx,by,D.x,D.y)<1500)float(bx,by-40,'A Viking longship!','#ffd0a0');}
+  ls.cargo.push(u);u.inLong=ls;u.dead=true;u.gone=true;ls.tx=tx;ls.ty=ty;}
+function vkUnload(s,fx,fy){const p=!soldierWet(fx,fy)?{x:fx,y:fy}:(dryNear(s.x,s.y)||{x:s.bx,y:s.by});
+  for(const u of s.cargo){u.dead=false;u.gone=false;u.inLong=null;u.lsCool=G.t+4;u.x=p.x+R(-14,14);u.y=p.y+R(-10,10);if(soldierWet(u.x,u.y)){u.x=p.x;u.y=p.y;}units.push(u);}
+  s.cargo=[];puff(s.x,s.y,12,'rgba(230,240,255,',80,8);s.state='sink';s.t=99;s.gone=true;}
+function vkDryFar(x,y){const p=dryNear(x,y);if(p)return p;for(let r=520;r<=3200;r+=80)for(let k=0;k<24;k++){const a=k/24*TAU,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(px>WX0+60&&px<WX1-60&&py>WY0+60&&py<WY1-60&&!soldierWet(px,py)&&!vkFant(px,py))return{x:px,y:py};}return null;}
+function vkWaterNear(x,y){for(let r=0;r<=1600;r+=40)for(let k=0;k<(r?24:1);k++){const a=k/24*TAU,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(vkWet(px,py)&&vkWet(px+30,py)&&vkWet(px-30,py)&&!vkFant(px,py)&&!onBridge(px,py))return{x:px,y:py};}return null;}
+function vkTree(p){let b=null,bd=1800;for(const t of trees){if(t.state!=='ok'||t.fire||t.claimed||!(t.s>.8))continue;const d=d2(t.x,t.y,p.x,p.y);if(d<bd&&!vkFant(t.x,t.y)){bd=d;b=t;}}return b;}
+/* per-unit step (replaces updKnight / updArcher for Vikings) */
+function vkUnit(u,dt){u.retreat=0;u.atk=Math.max(0,(u.atk||0)-dt);u.atk2=Math.max(0,(u.atk2||0)-dt);u.shootT=(u.shootT||0)-dt;
+  const g=vkG(u.vkg);if(u.vkSwim){vkSwimStep(u,dt);return;}if(!g){u.vk&&(u.hp=Math.min(u.hp,u.maxHp));return;}
+  if(u.vkJob){vkJobStep(u,g,dt);return;}
+  const fant=vkFant(D.x,D.y),dd=d2(u.x,u.y,D.x,D.y),low=D.alt<DR.hitAltSword&&!fant&&!G.over,dm=u.dmgMul||vkDmg();
+  const fightMode=g.mode==='defend'||g.mode==='chase'||g.mode==='escort'||g.mode==='rebuild';
+  // throwing axes (throwers always defend themselves; chief at mid range)
+  const throwAxe=(dmg)=>{const a=Math.atan2(D.y-u.y,D.x-u.x),sp=380;projs.push({kind:'axe',x:u.x,y:u.y,z:16,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,tz:heightOf(D.x,D.y)+15,life:1.4,dmg,vkAxe:1});u.face=Math.cos(a)>=0?1:-1;G.vkAxes=(G.vkAxes||0)+1;};
+  if(!fightMode){const bp=g.ship?(g.mode==='return'&&g.land&&d2(g.ship.x,g.ship.y,g.land.x,g.land.y)<560?g.land:vkShoreOf(g)):null;if(!bp){u.anim=0;return;}
+    if(vkMove(u,bp.x,bp.y,95,dt,g)||d2(u.x,u.y,bp.x,bp.y)<34)vkBoard(u,g);
+    if(u.vk==='thr'&&dd<400&&!fant&&u.shootT<=0){u.shootT=R(1.6,2.2);throwAxe(4*dm);}return;}
+  if(u.vk==='ber'){if(g.eng&&!fant){if(dd>40)vkMove(u,D.x,D.y,150,dt,g);if(low&&dd<58&&u.atk<=0){u.atk=.68;u.swing=(u.swing?0:1);hurtDragon(4*dm,'spear');G.vkHits=(G.vkHits||0)+1;}}else if(u.slot)vkMove(u,u.slot.x,u.slot.y,120,dt,g);return;}
+  if(u.vk==='chief'){const sp=u.bear?120:95;if(g.eng&&!fant&&dd>60)vkMove(u,D.x,D.y,sp,dt,g);else if(!g.eng&&u.slot)vkMove(u,u.slot.x,u.slot.y,sp,dt,g);
+    if(low&&dd<70){if(u.atk<=0){u.atk=1.5;u.swing=1;hurtDragon(6*dm,'spear');G.vkHits=(G.vkHits||0)+1;}if(u.bear&&u.atk2<=0){u.atk2=1.2;hurtDragon(4*dm,'spear');G.vkBearHits=(G.vkBearHits||0)+1;}}
+    else if(dd>100&&dd<420&&!fant&&u.shootT<=0){u.shootT=R(2.2,3);throwAxe(4*dm);}if(u.atk<1.2)u.swing=0;return;}
+  if(u.vk==='thr'){if(u.slot)vkMove(u,u.slot.x,u.slot.y,100,dt,g);if(dd<400&&!fant&&u.shootT<=0){u.shootT=R(1.6,2.2);throwAxe(4*dm);}return;}
+  // warrior
+  if(u.slot&&d2(u.x,u.y,u.slot.x,u.slot.y)>3)vkMove(u,u.slot.x,u.slot.y,u.wallOn?60:95,dt,g);
+  if(low&&dd<58&&u.atk<=0){u.atk=1.35;u.swing=1;hurtDragon(4*dm,'spear');G.vkHits=(G.vkHits||0)+1;}if(u.atk<1.1)u.swing=0;}
+function vkSwimStep(u,dt){if(!soldierWet(u.x,u.y)){u.vkSwim=0;u.swTo=null;const g=vkG(u.vkg);if(g&&d2(u.x,u.y,D.x,D.y)<1500)float(u.x,u.y-24,'Ashore!','#cde');return;}
+  u.swRe=(u.swRe||0)-dt;if(!u.swTo||u.swRe<0){u.swRe=3;u.swTo=vkDryFar(u.x,u.y);}const t=u.swTo;
+  if(t){const a=Math.atan2(t.y-u.y,t.x-u.x);u.x+=Math.cos(a)*VK.swim*dt;u.y+=Math.sin(a)*VK.swim*dt;u.face=Math.cos(a)>=0?1:-1;}u.anim+=dt*3;if(rnd()<dt*1.5)ripples.push({x:u.x,y:u.y,t:0});}
+function vkJobStep(u,g,dt){const j=u.vkJob,S=g.site;if(!S){vkBoardJobClear(u);return;}
+  if(j.st==='walk'){const t=j.tree;if(!t||t.state!=='ok'){vkBoardJobClear(u);return;}if(vkMove(u,t.x+14,t.y+6,95,dt,g)||d2(u.x,u.y,t.x+14,t.y+6)<8){j.st='chop';j.t=3;}}
+  else if(j.st==='chop'){j.t-=dt;u.face=-1;u.swing=(Math.floor(j.t*3)%2);u.anim+=dt*2;if(rnd()<dt*3)puff(j.tree.x+6,j.tree.y-6,1,'rgba(200,170,110,',25,3);
+    if(j.t<=0){const t=j.tree;t.state='falling';t.fallT=0;t.fallA=rnd()<.5?1:-1;t.claimed=null;u.vkLog=1;u.swing=0;j.st='carry';G.vkTrees=(G.vkTrees||0)+1;}}
+  else if(j.st==='carry'){if(vkMove(u,S.shore.x,S.shore.y,80,dt,g)||d2(u.x,u.y,S.shore.x,S.shore.y)<30){u.vkLog=0;u.vkJob=null;g.logs=Math.min(VK.logs,g.logs+1);if(d2(u.x,u.y,D.x,D.y)<1600)float(u.x,u.y-30,`Log ${g.logs}/${VK.logs}`,'#e8c090');}}}
+function vkBoardJobClear(u){if(u.vkJob&&u.vkJob.tree&&u.vkJob.tree.claimed===u)u.vkJob.tree.claimed=null;u.vkJob=null;u.vkLog=0;}
+function vkRebuild(g,dt){const L=g.units.filter(u=>!u.dead&&!u.inLong&&!u.vkSwim);if(!L.length)return;
+  if(!g.site){const c=vkCentroid(L);const w=vkWaterNear(c.x,c.y)||g.sinkAt||c;g.site={x:w.x,y:w.y,shore:dryNear(w.x,w.y)||c};g.logs=0;g.buildT=0;g.rt=0;if(d2(c.x,c.y,D.x,D.y)<1800)float(c.x,c.y-50,'The Vikings will build a new ship!','#ffd0a0');}
+  const S=g.site;g.rt+=dt;const fant=vkFant(D.x,D.y),near=!fant&&d2(D.x,D.y,S.shore.x,S.shore.y)<320;
+  vkForm(g,dt,near?D:S.shore,!near);
+  if(g.logs<VK.logs){const busy=L.filter(u=>u.vkJob).length,need=Math.min(3,VK.logs-g.logs)-busy;
+    if(need>0){const pool=L.filter(u=>!u.vkJob&&u.vk!=='chief').sort((a,b)=>(a.vk==='war'?0:1)-(b.vk==='war'?0:1));let n=need;for(const u of pool){if(n<=0)break;const t=vkTree(S.shore);if(!t){g.noTree=1;break;}t.claimed=u;u.vkJob={tree:t,st:'walk',t:0};n--;}}
+    if(g.noTree&&!L.some(u=>u.vkJob)&&g.rt>30)g.logs=VK.logs;}
+  else{const chief=L.some(u=>u.vk==='chief');g.buildT+=dt/(chief?VK.buildC:VK.build);if(g.buildT>=1){g.buildT=1;g.wt=(g.wt||0)+dt;const far=g.units.some(u=>!u.dead&&!u.inLong&&(u.vkSwim||d2(u.x,u.y,S.shore.x,S.shore.y)>300));if(!far||g.wt>25){g.wt=0;vkLaunch(g);}}}}
+function vkLaunch(g){const S=g.site;const s=vkMkShip(g,S.x,S.y);g.ship=s;G.vkRebuilt=(G.vkRebuilt||0)+1;
+  for(const u of g.units)if(!u.dead&&!u.inLong)vkBoard(u,g);g.units=g.units.filter(u=>!u.dead||u.inLong);g.site=null;g.noTree=0;g.mode='sail';s.path=vkPath(s.x,s.y,vkBerth(g.role,g.slot));
+  puff(s.x,s.y,20,'rgba(230,240,255,',110,9);if(d2(s.x,s.y,D.x,D.y)<1800)float(s.x,s.y-70,'A new Viking warship is launched!','#ffd0a0');}
+function vkPatrol(g,s){if(s.path)return;const P=vkBerth(g.role,g.slot);if(g.role==='gar'){s.goal=d2(s.x,s.y,P.x,P.y)>30?P:null;s.goalSp=.6;return;}
+  const a=G.t*(g.role==='lake'?.05:.04)+g.id;const r=g.role==='lake'?1:130;s.goal=g.role==='lake'?{x:LAKE.x+Math.cos(a)*LAKE.rx*.55,y:LAKE.y+Math.sin(a)*LAKE.ry*.5}:{x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r*.6};s.goalSp=g.role==='lake'?.45:.4;}
+function vkSeek(g,s,dt){s.path=null;let t={x:D.x,y:D.y};if(g.role!=='sea'){const dx=(D.x-LAKE.x)/LAKE.rx,dy=(D.y-LAKE.y)/LAKE.ry,m=Math.hypot(dx,dy);if(m>.8)t={x:LAKE.x+dx/m*.8*LAKE.rx,y:LAKE.y+dy/m*.8*LAKE.ry};}
+  s.goal=t;s.goalSp=1;g.stk=(g.stk||0);const lp=g.lp||{x:s.x,y:s.y};if(d2(lp.x,lp.y,s.x,s.y)<4*dt*60)g.stk+=dt;else g.stk=0;g.lp={x:s.x,y:s.y};
+  const dd=d2(s.x,s.y,D.x,D.y);if(dd<700||(g.stk>1.5&&dd<1600)||(g.role!=='sea'&&d2(s.x,s.y,t.x,t.y)<60))vkLand(g,'chase');}
+function vkEscortStep(g,s,dt){if(typeof kbShips!=='function')return false;const T=kbShips().find(t=>(t.state==='sail'||t.state==='unload')&&t!==g.escDone);if(!T)return false;
+  if(g.escortOf!==T){const n=VKG.filter(o=>o!==g&&o.escortOf===T&&!o.gone).length;if(n>=2||d2(s.x,s.y,T.x,T.y)>3200)return false;g.escortOf=T;G.vkEscorts=(G.vkEscorts||0)+1;if(d2(s.x,s.y,D.x,D.y)<2200)float(s.x,s.y-70,'Vikings escort the royal trade ship!','#ffd0a0');}
+  s.path=null;const side=g.id%2?1:-1;s.goal={x:T.x+side*140,y:T.y+30};s.goalSp=d2(s.x,s.y,s.goal.x,s.goal.y)>240?1:.6;
+  if(T.state==='unload'&&d2(s.x,s.y,T.x,T.y)<420&&g.aboard.length){const q=kbQuay();if(vkLand(g,'escort',q.land)){g.escDone=T;s.goal=null;if(d2(q.land.x,q.land.y,D.x,D.y)<1800)float(q.land.x,q.land.y-60,'Vikings guard the royal cargo!','#ffd0a0');}}
+  return true;}
+function vkGroupStep(g,dt){g.t+=dt;
+  for(const u of g.units)if(u.dead&&!u.inLong&&!u.vkBoarded)vkBoardJobClear(u);
+  g.units=g.units.filter(u=>!u.dead||u.inLong);if(g.ship&&(g.ship.state==='sink'||g.ship.gone||!ships.includes(g.ship)))g.ship=null;
+  const s=g.ship,fant=vkFant(D.x,D.y),mil=G.level>=6&&!fant&&!G.over,hit=G.vkHitT!=null&&G.t-G.vkHitT<3,ashore=g.units.length>0;
+  if(!ashore&&!g.aboard.length){g.gone=true;G.vkWiped=(G.vkWiped||0)+1;if(s){s.vkg=0;s.leave=1;s.goal=null;s.path=[{x:VK.mouth.x,y:WY1+150}];}return;}
+  if(s&&g.mode!=='aboard'&&g.mode!=='sail'&&!(g.mode==='return'&&!ashore)){s.goal=null;s.path=null;}
+  switch(g.mode){
+  case 'sail':if(!s){g.mode=ashore?'rebuild':'swim';}break;
+  case 'aboard':if(!s){g.mode='swim';break;}if(ashore){g.mode='return';break;}
+    if(g.role==='gar'){vkPatrol(g,s);if(hit)vkLand(g,'defend');else if(mil)vkLand(g,'chase');}
+    else if(mil&&d2(s.x,s.y,D.x,D.y)<3000)vkSeek(g,s,dt);else if(!(g.role==='sea'&&vkEscortStep(g,s,dt)))vkPatrol(g,s);break;
+  case 'defend':{if(mil){g.mode='chase';break;}const nearC=!fant&&d2(D.x,D.y,GATE.x,GATE.y)<1000;if(G.t-(G.vkHitT||-99)>VK.defendT&&!nearC){g.mode='return';break;}vkForm(g,dt,nearC?D:vkGuardPt(g),!nearC);break;}
+  case 'chase':if(G.level<=0||G.over){g.mode='return';break;}vkForm(g,dt,fant?(g.A||D):D,fant);break;
+  case 'escort':{const c=vkCart(g);if(c){const near=!fant&&d2(c.x,c.y,D.x,D.y)<320;vkForm(g,dt,near?D:{x:c.x,y:c.y},!near);g.sawCart=1;}else if(g.sawCart||g.t>(KB.unload||2.5)+8){g.mode='return';g.sawCart=0;}else vkForm(g,dt,g.land,true);if(mil)g.mode='chase';break;}
+  case 'return':if(mil){g.mode='chase';break;}if(g.role==='gar'&&hit){g.mode='defend';break;}if(!s){g.mode='rebuild';break;}
+    if(!ashore){g.mode='sail';s.goal=null;const P=vkBerth(g.role,g.slot);s.path=vkPath(s.x,s.y,P);}break;
+  case 'swim':if(s){g.mode=ashore?'return':'aboard';break;}if(!g.units.some(u=>u.vkSwim||u.inLong))g.mode='rebuild';break;
+  case 'rebuild':if(s){g.mode='return';break;}if(mil||hit){/* fight first, build later */vkForm(g,dt,fant?(g.A||D):D,fant);g.eng=!fant;break;}vkRebuild(g,dt);break;}}
+function vkStep(dt){VK.hT=(VK.hT||0)-dt;if(VK.hT<=0){VK.hT=.5;vkHireStep();}for(const g of VKG)if(!g.gone)vkGroupStep(g,dt);if(VKG.some(g=>g.gone))VKG=VKG.filter(g=>!g.gone);}
+/* ships */
+function vkDeck(s,dt,C){const g=vkG(s.vkg);if(!g||vkFant(D.x,D.y)||G.over)return;const n=s.kind==='vklong'?(s.cargo||[]).length:g.aboard.length;if(!n)return;const dd=d2(s.x,s.y,D.x,D.y);
+  const shoot=(k)=>{for(let i=0;i<k;i++){const a=Math.atan2(D.y-s.y,D.x-s.x)+R(-.12,.12),ox=R(-s.r*.5,s.r*.5);projs.push({kind:'arrow',x:s.x+ox,y:s.y-8,z:18,vx:Math.cos(a)*470,vy:Math.sin(a)*470,tz:heightOf(D.x,D.y)+15,life:1.5,dmg:C.dmg,vkArrow:1});}G.vkArrows=(G.vkArrows||0)+k;};
+  s.cd-=dt;if(s.cd<=0&&dd<C.rg){s.cd=R(C.cd[0],C.cd[1]);shoot(Math.min(C.n,n));}
+  s.vcd-=dt;if(s.vcd<=0&&dd<C.vrg){s.vcd=R(C.vcd[0],C.vcd[1]);shoot(Math.min(C.vn,n+2));}}
+function vkFire(s,dt){if(!s.fire)return;s.fireT=(s.fireT||0)+dt;if(rnd()<dt*8)flame(s.x+R(-s.r*.6,s.r*.6),s.y-8,R(4,14));hurtShip(s,6*dt,'fire');if(s.fireT>(s.kind==='vklong'?5:7)&&s.state!=='sink'){s.fire=0;s.fireT=0;puff(s.x,s.y-10,10,'rgba(200,200,200,',50,8);if(d2(s.x,s.y,D.x,D.y)<1500)float(s.x,s.y-60,'The Vikings douse the flames!','#cde');}}
+function vkSail(s,dt,tx,ty,spf){const a=Math.atan2(ty-s.y,tx-s.x);s.ang+=angDiff(a,s.ang)*Math.min(1,2.5*dt);const st=s.sp*spf*dt;const nx=s.x+Math.cos(s.ang)*st,ny=s.y+Math.sin(s.ang)*st;return{nx,ny};}
+function updVkShip(s,dt){s.t+=dt;s.bob+=dt;if(s.state==='sink'){return;}vkFire(s,dt);if(s.state==='sink')return;
+  if(s.path&&s.path.length){const p=s.path[0];const r=vkSail(s,dt,p.x,p.y,1);s.x=r.nx;s.y=r.ny;if(d2(s.x,s.y,p.x,p.y)<40){s.path.shift();if(!s.path.length){s.path=null;const g=vkG(s.vkg);if(s.leave||!g){s.state='sink';s.t=99;s.gone=true;return;}if(g.mode==='sail')g.mode='aboard';}}}
+  else if(s.goal){const d=d2(s.x,s.y,s.goal.x,s.goal.y);if(d>12){const r=vkSail(s,dt,s.goal.x,s.goal.y,s.goalSp||1);if(vkShipOK(s,r.nx,r.ny)){s.x=r.nx;s.y=r.ny;}else{s.ang+=dt*1.5;const g=vkG(s.vkg);if(g)g.stk=(g.stk||0)+dt;}}}
+  if((G.fc&7)===0&&(s.path||s.goal))ripples.push({x:s.x-Math.cos(s.ang)*s.r,y:s.y-Math.sin(s.ang)*s.r*.5,t:0});
+  vkDeck(s,dt,VK.deck);}
+function updVkLong(s,dt){s.t+=dt;s.bob+=dt;if(s.state==='sink')return;vkFire(s,dt);if(s.state==='sink')return;
+  if(s.state==='load'){s.lt+=dt;if(s.lt>1.2)s.state='row';vkDeck(s,dt,VK.ldeck);return;}
+  const g=vkG(s.vkg);if(g&&(g.mode==='chase'||g.mode==='defend')&&!vkFant(D.x,D.y)){s.tx=D.x;s.ty=D.y;}
+  const r=vkSail(s,dt,s.tx,s.ty,1),fx=s.x+Math.cos(s.ang)*(s.r+10),fy=s.y+Math.sin(s.ang)*(s.r+10);
+  if(!soldierWet(fx,fy)||s.t>40||d2(s.x,s.y,s.tx,s.ty)<30){vkUnload(s,fx,fy);return;}
+  s.x=r.nx;s.y=r.ny;if((G.fc&7)===0)ripples.push({x:s.x,y:s.y,t:0});vkDeck(s,dt,VK.ldeck);}
+function vkShipSunk(s){G.vkSunk=(G.vkSunk||0)+1;const t=texts[texts.length-1];if(t&&/sunk/i.test(t.txt))t.txt='Viking warship sunk! The crew swims for shore!';else float(s.x,s.y-40,'Viking warship sunk! The crew swims for shore!','#ffd0a0');
+  const g=vkG(s.vkg);if(!g)return;g.ship=null;g.sinkAt={x:s.x,y:s.y};
+  for(const a of g.aboard){const an=R(0,TAU);const u=vkMk(g,a.r,s.x+Math.cos(an)*s.r*.8,s.y+Math.sin(an)*s.r*.4,a);u.vkSwim=1;G.vkSwimmers=(G.vkSwimmers||0)+1;}
+  g.aboard=[];if(g.mode==='aboard'||g.mode==='sail')g.mode='swim';}
+function vkLongSunk(s){G.vkLongSunk=(G.vkLongSunk||0)+1;const t=texts[texts.length-1];if(t&&/sunk/i.test(t.txt))t.txt='Longship sunk! Vikings in the water!';
+  for(const u of (s.cargo||[])){u.dead=false;u.gone=false;u.inLong=null;u.vkSwim=1;u.x=s.x+R(-20,20);u.y=s.y+R(-10,10);units.push(u);G.vkSwimmers=(G.vkSwimmers||0)+1;}s.cargo=[];}
+{const _u=updShip;updShip=function(s,dt){if(s&&s.vk){AB138.sb=(AB138.sb||0)+1;try{if(s.kind==='vklong')updVkLong(s,dt);else updVkShip(s,dt);}finally{AB138.sb--;}return;}return _u.apply(this,arguments);};}
+{const _h=hurtShip;hurtShip=function(s,d,src){if(!s||!s.vk)return _h.apply(this,arguments);if(s.state==='sink'||s.gone||src==='vksite')return;
+  if(typeof d==='number'&&src==='fire'&&AB138.fire&&!AB138.sb)d*=VK.fireShip;const was=s.state==='sink';const r=_h.call(this,s,d,src);
+  if(!was&&s.state==='sink'){if(s.kind==='vklong')vkLongSunk(s);else vkShipSunk(s);}return r;};}
+{const _d=drawShip;drawShip=function(s){if(s&&s.vk){if(!s.gone)drawVkShip(s);return;}return _d.apply(this,arguments);};}
+/* units */
+{const _k=updKnight;updKnight=function(u,dt){if(u&&u.vk){vkUnit(u,dt);return;}return _k.apply(this,arguments);};}
+{const _a=updArcher;updArcher=function(u,dt){if(u&&u.vk){vkUnit(u,dt);return;}return _a.apply(this,arguments);};}
+{const _s=soldierSwim;soldierSwim=function(u,dt){if(u&&u.vk)return false;return _s.apply(this,arguments);};}
+{const _h=hurtUnit;hurtUnit=function(u,d,src){if(!u||!u.vk||u.dead||typeof d!=='number')return _h.apply(this,arguments);
+  const burn=src==='fire'&&AB138.burn&&!AB138.fire;
+  if(!burn&&!u.vkSwim&&(u.wallOn||u.vk==='chief')){const a=Math.atan2(D.y-u.y,D.x-u.x),g=vkG(u.vkg),fa=u.vk==='chief'?(u.face>0?0:Math.PI):(g?g.dir:a);
+    if(Math.abs(angDiff(a,fa))<1.31){d*=1-(u.vk==='chief'?VK.chiefSh:VK.wall);G.vkBlocked=(G.vkBlocked||0)+1;if(rnd()<.2&&u.wallOn)float(u.x,u.y-30,'Shield wall!','#cde');}}
+  if(u.vk==='chief'&&u.bear&&u.bearHp>0){u.bearHp-=d;if(u.bearHp<=0){u.bear=0;u.bearHp=0;puff(u.x,u.y,16,'rgba(150,110,70,',90,10);float(u.x,u.y-50,'The war bear runs off! The chief fights on foot!','#ffd0a0');G.vkBears=(G.vkBears||0)+1;}return;}
+  const was=u.dead;const r=_h.call(this,u,d,src);
+  if(!was&&u.dead){G.vkDown=(G.vkDown||0)+1;const t=texts[texts.length-1];if(t&&/down!$/.test(t.txt))t.txt=u.vk==='chief'?'The Viking chief falls!':'Viking down!';}return r;};}
+{const _e=eatUnit;eatUnit=function(u){if(u&&u.vk==='chief'&&u.bear&&!u.dead){hurtUnit(u,50,'bite');float(u.x,u.y-40,'The war bear is too big to eat!','#ffd0a0');return;}return _e.apply(this,arguments);};}
+{const _hs=hurtStruct;hurtStruct=function(s,d){if(s&&VK.CASTLE.has(s.kind)&&s.state!=='ruin'&&d2(s.x,s.y,GATE.x,GATE.y)<1300)G.vkHitT=G.t;return _hs.apply(this,arguments);};}
+{const _up=update;update=function(dt){const r=_up.apply(this,arguments);try{if(G&&!G.over&&typeof scene!=='undefined'&&scene==='play')vkStep(dt);}catch(e){if(!VK.err){VK.err=String(e&&e.stack||e);console.warn('vk',e);}}return r;};}
+function vkReset(){VKG=[];if(typeof ships!=='undefined')ships=ships.filter(s=>!s.vk);if(typeof units!=='undefined')for(const u of units)if(u.vk){u.dead=true;u.gone=true;}}
+{const _n=newGame;newGame=function(){const r=_n.apply(this,arguments);try{vkReset();}catch(e){}return r;};}
+{const _sn=svSnapshot;svSnapshot=function(){const o=_sn.apply(this,arguments);try{if(o)o.VK=VKG.filter(g=>!g.gone).map(g=>{const n={};for(const a of g.aboard)n[a.r]=(n[a.r]||0)+1;for(const u of g.units)if(!u.dead||u.inLong)n[u.vk]=(n[u.vk]||0)+1;return{role:g.role,slot:g.slot,n};});}catch(e){}return o;};}
+{const _ap=svApply;svApply=function(d){const r=_ap.apply(this,arguments);try{vkReset();if(d&&Array.isArray(d.VK))for(const v of d.VK){const g=vkSpawnFleet(v.role,v.slot,{atPost:true});g.aboard=[];for(const [rr] of VK.crew)for(let i=0;i<((v.n||{})[rr]||0);i++)g.aboard.push({r:rr,hp:0,bearHp:0});}}catch(e){}return r;};}
+/* drawing */
+const VKBEARD=['#d9822b','#e8d070','#8a4a1a'],VKTUN=['#4f7a3a','#8a3a2a','#3a5a8a'],VKSH=[['#c0392b','#f1c40f'],['#2c6fbb','#ecf0f1'],['#27ae60','#f39c12']];
+function drawVkBear(u){const x=u.x,y=u.y,f=u.face||1,w=Math.sin((u.anim||0)*1.4)*2.5;ell(x,y+2,17,4,'rgba(0,0,0,.25)');
+  for(const [lx,ph] of [[-9,1],[-4,-1],[5,1],[10,-1]])rect(x+lx*f-2,y-7+0*ph,4,8+ph*w*.4,'#4e3018');
+  ell(x,y-10,16,9,'#6b4423');ell(x-f*4,y-14,9,5,'#7a5030');ell(x+f*14,y-13,6.5,5.5,'#6b4423');ell(x+f*11,y-18,2,2,'#4e3018');ell(x+f*15,y-18.5,2,2,'#4e3018');ell(x+f*19.5,y-12,3,2.4,'#c9a27a');ell(x+f*21.5,y-12.5,1.3,1.1,'#222');ell(x+f*16,y-15,1,1,'#111');}
+function drawViking(u){const x=u.x,y=u.y,f=u.face||1,c=((u.vkc|0)%3+3)%3,r=u.vk,gk=Math.sin((u.anim||0)*1.6);
+  if(u.vkSwim){ell(x,y+1,10,3.5,'rgba(230,245,255,.6)');ell(x,y-4,3.2,3.2,'#e8c0a0');ell(x,y-6,3.4,2.2,'#9aa3ad');line(x-3,y-7,x-5,y-10,'#f2e6c8',1.2);line(x+3,y-7,x+5,y-10,'#f2e6c8',1.2);line(x-4,y-2,x-8,y-4+gk*2,'#e8c0a0',1.6);line(x+4,y-2,x+8,y-4-gk*2,'#e8c0a0',1.6);return;}
+  const mount=r==='chief'&&u.bear;if(mount)drawVkBear(u);else ell(x,y+1.5,6,2.4,'rgba(0,0,0,.25)');
+  ctx.save();ctx.translate(x-(mount?f*3:0),y-(mount?15:0));const sc=r==='chief'?1.5:1.3;ctx.scale(sc,sc);
+  if(!mount){line(-1.4,0,-1.4+gk*1.6,-4.5,'#4a3a2a',1.8);line(1.4,0,1.4-gk*1.6,-4.5,'#4a3a2a',1.8);}
+  const skin='#e8c0a0',tun=r==='ber'?skin:r==='chief'?'#6a2a5a':VKTUN[c];poly([-3,-4.5,3,-4.5,2.6,-11,-2.6,-11],tun);if(r==='ber'){poly([-3.4,-11.4,3.4,-11.4,2.4,-8.6,-2.4,-8.6],'#6a4a2a');}rect(-3,-6,6,1.2,'#3a2a1a');
+  if(r==='chief')poly([-3.4,-11,3.4,-11,4.4,-3,-4.4,-3],'rgba(160,40,40,.85)');
+  ell(0,-13.6,2.6,2.6,skin);poly([-2.5,-13,2.5,-13,1.5,r==='chief'?-8:-9.6,-1.5,r==='chief'?-8:-9.6],VKBEARD[c]);
+  if(r==='ber'){ell(0,-15,3.2,2.5,'#6a4a2a');ell(-2.4,-17,1.1,1.1,'#5a3a1a');ell(2.4,-17,1.1,1.1,'#5a3a1a');}
+  else{ell(0,-15.3,3,2.1,'#9aa3ad');rect(-.4,-15.4,.8,3,'#7a838d');line(-2.6,-15.8,-4.4,-18.6,'#f2e6c8',1.3);line(2.6,-15.8,4.4,-18.6,'#f2e6c8',1.3);}
+  const sw=u.swing?1:0;
+  if(r==='war'){line(f*3,-3,f*(4+sw*3),-19+sw*6,'#7a5a3a',1.2);poly([f*(4+sw*3),-21+sw*6,f*(5+sw*3),-18.5+sw*6,f*(3+sw*3),-18.5+sw*6],'#cfd6dd');
+    const S=VKSH[c];if(u.wallOn){ell(f*4.4,-7.2,4.8,5.4,S[0]);ctx.strokeStyle=S[1];ctx.lineWidth=1;ctx.stroke();line(f*4.4,-12.4,f*4.4,-2,S[1],.9);ell(f*4.4,-7.2,1.2,1.2,'#888');}
+    else{ell(-f*3.6,-8,3.6,3.6,S[0]);ell(-f*3.6,-8,1,1,'#888');}}
+  else if(r==='ber'){for(const k of [-1,1]){const a=(k>0?sw:1-sw);line(k*3,-9,k*(5+a*2),-14+a*6,'#7a5a3a',1.1);poly([k*(5+a*2),-15+a*6,k*(7.5+a*2),-14+a*6,k*(5.5+a*2),-12+a*6],'#cfd6dd');}}
+  else if(r==='thr'){line(f*3,-8,f*5,-13,'#7a5a3a',1);poly([f*5,-14,f*6.6,-13,f*5.4,-11.6],'#cfd6dd');line(-1.6,-6,-2.6,-3,'#7a5a3a',1);line(1.6,-6,2.6,-3,'#7a5a3a',1);}
+  else if(r==='chief'){line(f*3.5,-4,f*(5+sw*3),-21+sw*7,'#5a3a1a',1.4);poly([f*(5+sw*3),-21+sw*7,f*(9+sw*3),-23+sw*7,f*(9+sw*3),-18+sw*7],'#d8dee4');poly([f*(5+sw*3),-21+sw*7,f*(1+sw*3),-23+sw*7,f*(1+sw*3),-18+sw*7],'#d8dee4');
+    ell(-f*4,-8,5.4,6.2,'#7a1f1f');ctx.strokeStyle='#e0b030';ctx.lineWidth=1.1;ctx.stroke();ell(-f*4,-8,1.6,1.6,'#e0b030');}
+  ctx.restore();
+  if(u.vkLog){rect(x-10,y-24,20,4,'#8a5a2a');ell(x-10,y-22,2,2,'#c09060');ell(x+10,y-22,2,2,'#c09060');}
+  const top=y-(r==='chief'?(mount?52:30):26);if(u.hp<u.maxHp){rect(x-8,top,16,2,'#300');rect(x-8,top,16*Math.max(0,u.hp/u.maxHp),2,'#e85');}
+  if(mount&&u.bearHp<u.bearMax){rect(x-10,top+3,20,2,'#210');rect(x-10,top+3,20*Math.max(0,u.bearHp/u.bearMax),2,'#b87a3a');}}
+{const _dk=drawKnight;drawKnight=function(u){if(u&&u.vk){drawViking(u);return;}return _dk.apply(this,arguments);};}
+{const _dp=drawPerson;drawPerson=function(u){if(u&&u.vk){drawViking(u);return;}return _dp.apply(this,arguments);};}
+function drawVkShip(s){const x=s.x,y=s.y,sk=s.state==='sink'?Math.min(1.2,s.t/4):0,b=Math.sin(s.bob*1.5)*1.6,r=s.r,f=Math.cos(s.ang)>=0?1:-1,L=s.kind==='vklong',n=L?4:7;
+  ctx.save();ctx.globalAlpha=Math.max(0,1-sk*.9);ell(x,y+6,r*1.1,r*.3,'rgba(10,30,60,.3)');ctx.translate(x,y+sk*26+b);ctx.rotate(f*sk*.5);ctx.scale(f,1);
+  const oa=Math.sin(G.t*4+s.id*9)*4;for(let i=0;i<n;i++){const ox=-r*.6+i*r*1.2/(n-1);line(ox,-3,ox-6+oa,12,'#7a5a34',1.6);}
+  ctx.fillStyle='#6b4226';ctx.beginPath();ctx.moveTo(-r*1.02,-20);ctx.quadraticCurveTo(-r*.95,6,-r*.5,8);ctx.lineTo(r*.5,8);ctx.quadraticCurveTo(r*.95,6,r*1.02,-20);ctx.lineTo(r*.85,-9);ctx.lineTo(-r*.85,-9);ctx.closePath();ctx.fill();
+  line(-r*.88,-3,r*.88,-3,'#8a5a32',2);line(-r*.8,3,r*.8,3,'#5a3418',1.5);
+  line(r*.92,-12,r*1.1,-28,'#5a3418',4);ell(r*1.13,-30,5.5,3.6,'#5a3418');poly([r*1.15,-32,r*1.32,-30,r*1.15,-27.5],'#5a3418');ell(r*1.14,-31,1.2,1.2,'#ffd23a');line(r*1.08,-33,r*1.02,-38,'#5a3418',1.6);
+  ctx.strokeStyle='#5a3418';ctx.lineWidth=3.5;ctx.beginPath();ctx.arc(-r*1.02,-26,6,Math.PI*.1,Math.PI*1.4);ctx.stroke();
+  const g=vkG(s.vkg),crew=g?(L?(s.cargo||[]).length:g.aboard.length):0;for(let i=0;i<Math.min(crew,n);i++){const hx=-r*.62+i*r*1.24/Math.max(1,n-1)+3;ell(hx,-15,2.4,2.4,'#e8c0a0');ell(hx,-16.6,2.6,1.7,'#9aa3ad');}
+  for(let i=0;i<n;i++){const sx=-r*.7+i*r*1.4/(n-1);ell(sx,-10,4.4,4.4,i%2?'#c0392b':'#f1c40f');ell(sx,-10,1.3,1.3,'#666');}
+  const mh=L?44:80,w=L?13:26,sw=Math.sin(G.t*1.3+s.id*5)*2.5;line(0,-12,0,-mh,'#4a2a10',3);line(-w,-mh+6,w,-mh+6,'#4a2a10',2);
+  for(let k=0;k<5;k++){ctx.fillStyle=k%2?'#f4ecd8':'#b03030';const x0=-w+k*w*2/5;ctx.beginPath();ctx.moveTo(x0,-mh+7);ctx.lineTo(x0+w*2/5,-mh+7);ctx.lineTo(x0+w*2/5+sw*.6,-22);ctx.lineTo(x0+sw*.6,-22);ctx.closePath();ctx.fill();}
+  ctx.restore();
+  if(s.state!=='sink'){if(s.hp<s.maxHp){rect(x-22,y-r-(L?30:62),44,3,'#300');rect(x-22,y-r-(L?30:62),44*Math.max(0,s.hp/s.maxHp),3,'#e85');}
+    if(!L&&Math.abs(x-D.x)<1100&&Math.abs(y-D.y)<800)txt('Viking warship',x,y-r-(L?36:68),10,'#ffd0a0','center',true);}}
+{const _st=drawSeaTop;drawSeaTop=function(x0,y0,x1,y1){const r=_st.apply(this,arguments);try{
+  for(const p of projs)if(p.kind==='axe'&&p.x>x0-50&&p.x<x1+50&&p.y>y0-50&&p.y<y1+50){ctx.save();ctx.translate(p.x,p.y-(p.z||0));ctx.rotate(G.t*16+p.x*.01);line(-5,0,5,0,'#7a5a3a',1.6);poly([4,-4,8,-1,8,3,4,1],'#d8dee4');ctx.restore();}
+  for(const g of VKG){const S=g.site;if(!S||S.x<x0-200||S.x>x1+200||S.y<y0-200||S.y>y1+200)continue;
+    const p=g.logs<VK.logs?0:g.buildT;line(S.x-40,S.y,S.x+40,S.y,'#6b4226',4);const nr=Math.floor(p*9);for(let i=0;i<nr;i++){const rx=S.x-36+i*9;ctx.strokeStyle='#8a5a32';ctx.lineWidth=2;ctx.beginPath();ctx.arc(rx,S.y-4,9,Math.PI*1.05,Math.PI*1.95);ctx.stroke();}
+    for(let i=0;i<g.logs;i++)rect(S.shore.x-14,S.shore.y-4-i*4,28,4,'#8a5a2a');
+    const bx=S.x-30,by=S.y-40;rect(bx,by,60,6,'#222');rect(bx,by,60*(g.logs<VK.logs?g.logs/VK.logs:p),6,g.logs<VK.logs?'#c99a50':'#6c6');
+    txt(g.logs<VK.logs?`Vikings gathering wood ${g.logs}/${VK.logs}`:`Building a new warship ${Math.round(p*100)}%`,S.x,by-6,10,'#ffd0a0','center',true);}
+}catch(e){}return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}

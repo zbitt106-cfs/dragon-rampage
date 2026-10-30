@@ -922,6 +922,55 @@ Trade (merchant) ships are now the slowest ships of all.
 | Royal escort warship | 66 | |
 | Pirate ship | 68 | 78 when attacking |
 | Prince fleet warship | 72 x 0.92-1.02 = 66-73 | |
+| Viking warship (queue 141y) | 72 x 1.1 = **79.2** | 10% faster than the warship; can sail up the river |
+| Viking longship (queue 141j/141y) | 60 (ferry) | only for crossing water during a chase |
+
+Only Viking ships go up the Silver River (141t). The small river rowboats stay as they were; trade ships, the treasure ship, prince fleets and pirates all stay on the sea.
+
+## Viking mercenaries (queue 141-141z, every mode)
+King William hires Viking mercenaries with his tax money.
+
+**Hiring.** Every **1,000 gold** the king collects (a running income total, not his balance), he hires one Viking warship for **50 gold** from his treasury. In hard mode it is every **500 gold** for **25 gold** (this setting sits behind the hard-mode hook). Ships stack. If he cannot pay, the hire waits until he can. The alert "⚔️ King William hired Viking mercenaries!" appears only while the dragon is south of the wind wall; north of it the hire happens quietly.
+
+**One warship crew (18 Vikings)**
+| Viking | Health | Attack | Notes |
+|---|---|---|---|
+| Shield warrior x10 | 66 (desert soldier 53, +25%) | 8.75 per axe hit every 1.35 s (desert 7) | round shield; forms the shield wall |
+| Axe thrower x5 | 60 (desert archer 48, +25%) | 8.75 per thrown axe every 1.6-2.2 s | stays behind the wall |
+| Berserker x2 | 66 | 8.75 per hit every 0.68 s (two axes) | no shirt; charges straight at the dragon |
+| War chief on a bear x1 | chief 113 + bear 113 (camel rider 90, +25%) | double-sided axe 13.1, plus thrown axes 8.75; the bear bites too | the bear takes the hits first and then vanishes in a puff, and the chief fights on foot |
+
+**Shields (they never block everything).** While the wall holds (3 or more warriors in position, marching at the dragon), a shield warrior takes **50%** of a hit from the front (within about 75 degrees). The chief on foot blocks **35%** from the front with his giant round shield. Burn damage over time is never blocked.
+
+**Where they go**
+- Warships arrive from the south sea edge and sail **up the Silver River** to Mirror Lake by the castle.
+- **Crews 1-5** wait aboard at the lake.
+- **Crews 6-8** patrol the lake.
+- **Crew 9 and up** spread out across nine posts on the eastern and southern sea.
+
+**What they do**
+- **Castle attacked:** they land and defend it. They go back aboard 20 s after the last hit.
+- **Wanted level reaches Militia:** they land and chase the dragon anywhere on the non-fantasy lands until wanted drops back to 0, then return to their ships. They never enter the fantasy lands.
+- **Water in the way:** a **longship** appears at the shore, ferries them across and disappears in a puff when they land. This works on any river, lake or sea, but not on wells or fountains.
+
+**Ships shoot arrows** at the dragon:
+| Ship | Arrows per second | Range |
+|---|---|---|
+| Viking warship | about 3.3 (2 every 1-1.4 s, plus a 5-arrow volley every 2.5-3.5 s) | 560 / 660 |
+| Viking longship | about 2.6 (2 every 1.2-1.6 s, plus a 4-arrow volley every 3-4 s) | 520 / 620 |
+| Pirate ship (for comparison) | about 1.9 | 520 / 620 |
+
+Vikings and pirates ignore each other. Viking ships take **10% less direct fire damage**; burning damage is the same as on any other ship.
+
+**Sinking and rebuilding**
+1. When a Viking ship sinks, the crew swims slowly to the nearest land (22 px/s). Swimmers cannot fight back and can be eaten.
+2. On land, and when not fighting, up to three of them walk to **real trees**, chop them down (the trees fall and are gone), and carry **3 logs** back to the shore.
+3. Then they build: **15 s**, or **10 s** if the war chief is alive, with a progress bar.
+4. The new ship launches and they go back to their job.
+
+**Trade escort.** When a royal trade ship sails in, up to two patrolling Viking warships within 3,200 px sail alongside it. At the quay the crew lands and walks with the king's carts to the castle, then goes back to its patrol post.
+
+**Save and load:** Viking crews are saved. On loading, each crew is back aboard its ship at its post.
 
 ## Wizards come back every level (queue 140)
 - Both wizards return at the start of every castle level, in every mode. The Storm Wizard comes back with his tower and a 300 shield (210 on easy). The Dark Wizard comes back with a 525 shield (368 on easy). Their shields don't grow with the level yet. A hard-mode switch can add that later through one hook (`WZ140.hpMul`).
