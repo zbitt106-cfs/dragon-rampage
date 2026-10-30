@@ -936,7 +936,7 @@ Only Viking ships go up the Silver River (141t). The small river rowboats stay a
 ## Viking mercenaries (queue 141-141z, every mode)
 King William hires Viking mercenaries with his tax money.
 
-**Hiring.** Every **1,000 gold** the king collects (a running income total, not his balance), he hires one Viking warship for **50 gold** from his treasury. In hard mode it is every **500 gold** for **25 gold** (this setting sits behind the hard-mode hook). Ships stack. If he cannot pay, the hire waits until he can. The alert "⚔️ King William hired Viking mercenaries!" appears only while the dragon is south of the wind wall; north of it the hire happens quietly.
+**Hiring (queue 141ac-141ag).** Each time King William's treasury **balance** climbs up through a milestone (1,000, 2,000, 3,000 ... ; hard mode 500, 1,000, 1,500 ...) he hires one Viking warship for **50 gold** (hard: **25 gold**). Falling through a milestone never hires. After a hire there is a cooldown: **easy 4 min, normal 3 min, hard 2 min**; a milestone crossed during the cooldown is ignored. Ships stack. If he cannot pay, the hire waits until he can. The alert "⚔️ King William hired Viking mercenaries!" appears only while the dragon is south of the wind wall; north of it the hire happens quietly.
 
 **One warship crew (18 Vikings)**
 | Viking | Health | Attack | Notes |
@@ -1092,7 +1092,7 @@ On the title screen the **Mode** row now cycles **NORMAL -> EASY -> HARD**. Use 
 | 139c troops | x1.3 health and attack, then **x1.05 per castle level** (compounding) | x1 |
 | 139d/e crossbows | royal knights (5 damage) and the prince (6) shoot crossbow bolts (range 480). **King William fires a 3-bolt spread** (7 damage each) | none |
 | 139f/i mini bosses and both wizards | health x1.2^(level-1), damage x1.1^(level-1) | x1 |
-| 139g Vikings | hired every 500 gold of income for 25 gold | 1000 / 50 |
+| 139g Vikings | hired at every 500-gold treasury milestone for 25 gold, 2 min cooldown | 1000 / 50, 3 min (easy 4 min) |
 | 139h meters | fire and fly drain 10% faster | x1 |
 | 139j alphas | x1.075^(level-1) health and damage | x1 |
 | 139k castle start | **double** the starting gold, wood and stone (level 1: 200/200/40 vs 100/100/20) | x1 |
@@ -1227,3 +1227,15 @@ Gamepad Select / "-" (button 8) toggles the big map once per press (LB still wor
 - A **direct fire-breath hit** still does its normal damage. Ships still catch fire and burn as before.
 - The dragon has no burning status, so nothing changes for the dragon.
 
+## Tougher alphas (queue 176)
+Every pack or herd alpha starts with **+25% health on normal** and **+50% on hard** (easy unchanged): pride lions, white alpha wolves, silverbacks, the white alpha elephant, the alpha tigers, the alpha hippos and the Northern Realms alphas. Only health changes. In hard mode the per-level growth still multiplies on top. The boost is kept after loading a save and when the tigers grow on a new level.
+
+![Alpha elephant](screenshots/q176_alpha_elephant_normal.png)
+
+## Harder-hitting sand worm (queue 177)
+Surfacing ambush 8 -> 12 (hard 14); chomp 5 -> 7.5 (hard 8.75). Easy is unchanged.
+
+## King William's golden shield (queue 182, hard mode)
+On hard, the King sometimes raises a big golden shield: when your fire comes at him, when you are close on the ground, or right after you hurt him. The block lasts 1.8 s (then 3-5 s before the next). While blocking he can't attack and takes half damage. Normal and easy are unchanged.
+
+![Golden shield](screenshots/q182_king_golden_shield_block.png)
