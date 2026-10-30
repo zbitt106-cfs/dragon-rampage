@@ -88,7 +88,7 @@ On iPhone, open the game in Safari, tap Share, then **Add to Home Screen**. It l
 | Stomp on the ground; **while flying = crash DIVE STOMP** | Q / Shift | B |
 | World map | M | LB |
 | Mute / unmute music and sound | N | — |
-| Pause / restart | P or Esc / R | Start |
+| Pause / main menu | P or Esc, then R or the Main Menu button (asks first) | Start, then Back / Select |
 
 ### Settings (title screen and pause menu)
 Pick **⚙ Settings** on the title screen (Start · Mode · Settings · Load) or **⚙ Settings: volume · mute · graphics** in the pause (II / Esc) menu. The panel has:
@@ -597,7 +597,7 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 
 ## Dragon's Tally, pause, save and load
 - Press **P** or **Esc** to pause. The pause menu has the **Dragon's Tally**, a bestiary that counts everything you've gobbled or beaten this game and all-time, plus **Save** and **Load**.
-- There are three save slots, stored in the browser. **The game only saves when you save it** (Pause → Save): there is no autosave any more (no timed save, no save on pause, level-up or closing the page). An *Old autosave* from an earlier version still shows in Load and still loads.
+- There are three save slots, stored in the browser, plus the **Autosave** (back since queue 184; see *Main menu and autosave* below). The autosave only happens at safe moments: never on pausing, never in a fight, never when badly hurt or dying.
 
 ## Mounted knights
 - Fast lance cavalry rides out of the castle gate. They charge in a straight line (the lance only hits a grounded dragon) and then wheel around for another pass.
@@ -1120,8 +1120,8 @@ After being knocked out dizzy he also charges again as soon as he wakes, so in h
   - Dark Wizard: his volcano stays drinkable, and the purple triple lava shot stays on.
   - Beating a wizard again while you have his reward doesn't double anything. You get a "beaten again" message, his normal beat bonuses (the Dark Wizard's full heal, the horn) and the gobble. Each repeat win now also gives a permanent +2.5% attack (queue 146).
 - **The Dark Wizard's volcano while he's back:** you can still drink if you hold the unlock. His shield no longer keeps you off the rim, but he keeps casting lava, eruptions and lightning at you, so it's risky. Without the unlock, the old "his shield keeps you from the lava" rule applies.
-- **Defeat:** when your dragon is defeated, the restart is a brand-new game. The barrier closes, the Cinder Isle volcano locks and the triple shot is gone until you beat each wizard again.
-- **Save and load:** saves record both "beaten this level" and "reward held". Loading a save restores exactly what that save had. You can't save on the game-over screen (the autosave stops too), so a save from before a defeat brings back the rewards you held at that point. Old saves with a beaten wizard load as "beaten this level, reward held".
+- **Defeat:** when your dragon is defeated you go to the main menu. *New game* is a brand-new game; *Continue* loads your last autosave (with the wizard rewards that save held). The barrier closes, the Cinder Isle volcano locks and the triple shot is gone until you beat each wizard again.
+- **Save and load:** saves record both "beaten this level" and "reward held". Loading a save restores exactly what that save had. You can't save on the game-over screen and the autosave never saves a dying dragon, so a save from before a defeat brings back the rewards you held at that point. Old saves with a beaten wizard load as "beaten this level, reward held".
 
 ## On-screen direction arrows (queue 142)
 Only four kinds of direction arrow are left on screen (all modes). Each one is pinned to the screen edge and kept clear of the HUD and touch buttons, and each one hides while its target is on screen:
@@ -1180,3 +1180,15 @@ What's in the list (74):
 ![HUD short gold iPhone](screenshots/346b_hud_gold_short_iphone_170.png)
 ![Menu exact gold](screenshots/346c_menu_exact_gold_1280_170.png)
 ![Menu exact gold iPhone](screenshots/346d_menu_exact_gold_iphone_170.png)
+
+## Main menu and autosave (queue 183, 183a, 184)
+- **Game over**: the game-over screen (with your score) shows for about 3.5 s, then you go straight to the **main menu** (press any key / tap to go sooner). Game over and the pause menu's old "Restart" now go to the **main menu**, with the difficulty picker showing your current mode, **Start game** for a new run and **Continue** for the autosave. In the pause menu, "Main Menu" asks "Are you sure?" first.
+- **Win screen:** Enter / Space still starts the next level right away; R / Back now autosaves the next level and goes to the main menu (Continue picks it up).
+- **Autosave is back**, at safe points only: level start, level complete, every 60 s of calm play (no fight for a while, health at least 30%, not starving) and when you leave to the main menu. It never saves during a fight, a game over or a dying dragon. The old "save on every pause / every 2 minutes" triggers stay off.
+- The save holds the whole run: difficulty, level, wanted level, dragon stats and upgrades, gold, castle stores and the world. Continue starts the dragon at the lair.
+
+![Main menu with Continue](screenshots/q184_main_menu_continue_desktop.png)
+![Pause: main menu confirm](screenshots/q183a_pause_main_menu_confirm_iphone.png)
+![Game over: main menu](screenshots/q183a_game_over_main_menu_desktop.png)
+
+![Main menu with Continue, iPhone](screenshots/q184_main_menu_continue_iphone.png)

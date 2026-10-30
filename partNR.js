@@ -4306,3 +4306,86 @@ function pm170Line(){if(!(scene==='play'&&G&&PM.scr==='main'))return;const S=SAF
   const t=`Gold: ${exact170(G.stash||0)}   ·   Castle gold: ${exact170(treasury())}   ·   Wood: ${exact170(G.wood|0)}   ·   Stone: ${exact170(G.stone|0)}`;
   let fs=touch?12:13;ctx.font=`bold ${fs}px Georgia`;while(fs>8&&ctx.measureText(t).width>W-24){fs--;ctx.font=`bold ${fs}px Georgia`;}txt(t,cx,y0+H-88,fs,'#ffe08a','center');}
 {const _p=drawPM;drawPM=function(){const r=_p.apply(this,arguments);try{ctx.setTransform(DPR,0,0,DPR,0,0);pm170Line();}catch(e){}return r;};}
+
+// ======================= queue 183 / 183a: RESTART is now MAIN MENU (game over, win screen, pause menu) =======================
+// Game over: Enter / Space / R / tap / A / Start / Back now go to the title MAIN MENU (instead of instantly restarting). The Mode row (the
+// EASY / NORMAL / HARD difficulty picker) is highlighted with the current difficulty, Start game begins a new game, Continue loads the
+// autosave (queue 184). Pause menu: the "Restart (new game)" button is now "Main Menu" and asks "Are you sure?" first (mid-run); R / Back
+// on the pause screen opens the same question. Win screen: R / Back starts the next level, autosaves it and goes to the main menu.
+const MM183={n:0,last:null,conf:0,auto:3.5}; // death: the game-over screen shows for 3.5 s (score), then goes straight to the main menu (any key sooner)
+function mm183Go(why){try{pmClose();}catch(e){}paused=false;if(typeof TOUCH!=='undefined')TOUCH.rotPaused=false;
+  scene='title';newGame();D.x=-9999;titleSel=1;pressed={};MM183.n++;MM183.last=why||'?';}
+function mm183Ask(){const safe=as184Safe(),q='Leave this run and go to the MAIN MENU?';
+  PM.on=true;PM.from='pause';PM.scr='main';MM183.conf++;
+  PM.confirm={q,sub:safe?'Your run is autosaved first, so Continue on the main menu picks it up again.':'(Not autosaved now: you are in a fight or badly hurt. Continue loads your last autosave.)',sel:1,
+    yes:()=>{if(as184Safe())as184Save('menu');mm183Go('menu');}};}
+{const i=PM_MAIN.findIndex(r=>r[1]==='restart');if(i>=0)PM_MAIN[i]=['🏠  Main Menu (new game · difficulty · continue)','mainmenu'];}
+{const _a=pmAct;pmAct=function(a){if(a==='mainmenu'){mm183Ask();return;}if(a==='restart'){mm183Ask();return;}return _a.apply(this,arguments);};}
+{const _f=frameBody;frameBody=function(ts){
+  try{if(scene==='play'&&G){
+      if(G.over&&!PM.on&&G.overT>MM183.auto){mm183Go('death');}
+      else if(G.over&&!PM.on&&(P('r')||P(' ')||(P('enter')&&G.overT>1))){if(G.overT>1||P('r'))mm183Go('death');else{delete pressed['enter'];delete pressed[' '];}}
+      else if(G.won&&!PM.on&&P('r')){nextLevel();paused=false;as184Save('level');mm183Go('won');}
+      else if(paused&&!G.over&&!G.won&&P('r')){delete pressed['r'];if(!(PM.on&&PM.confirm))mm183Ask();}}
+    else if(scene==='title'&&!PM.on&&titleSel===3&&as184Valid()){
+      if(P('enter')){delete pressed['enter'];as184Continue();}
+      else if(P('arrowleft')||P('arrowright')||P('a')||P('d')){pressed={};pmOpen('load','title');}}}catch(e){console.warn('183',e);}
+  return _f.apply(this,arguments);};}
+{const _tt=titleTap;titleTap=function(x,y){const g=TOUCH.tg;
+  if(g&&as184Valid()){const lx=(x-g.ox)/g.k,ly=y/g.k,ry=g.y0+3*36;if(lx>g.cx-230&&lx<g.cx+230&&ly>ry-4&&ly<ry+34){titleSel=3;if(lx>g.cx+230-120)pmOpen('load','title');else as184Continue();return true;}}
+  return _tt.apply(this,arguments);};}
+const TX183={'Press R / Enter (or Back / Start / A) to rise again':'Enter / A / tap: MAIN MENU  (Continue your autosave · or New game)',
+  'P / Esc / Start to resume · R / Back to restart':'P / Esc / Start to resume · R / Back: main menu',
+  '↑/↓ + Enter (A) choose · P / Esc / Start resume · R / Back restart':'↑/↓ + Enter (A) choose · P / Esc / Start resume · R / Back main menu',
+  'R / Back: start over at level 1':'R / Back: autosave the next level + MAIN MENU','Restart (game over)':'Main menu (game over / pause)'};
+{const _t=txt;txt=function(s,x,y,size){if(typeof s==='string'){
+    if(s==='Tap to continue'&&G&&G.over&&scene==='play')return;
+    else{let r=TX183[s];if(r!==undefined){if(TOUCH.on&&s.indexOf('rise again')>0)r='Tap (or A): MAIN MENU  ·  Continue your autosave or start a New game';arguments[0]=r;if(s.indexOf('rise again')>0){ctx.font=`bold ${size}px Georgia`;let f=size;while(f>11&&(ctx.font=`bold ${f}px Georgia`,ctx.measureText(r).width>VW-24))f--;arguments[3]=f;}}}}
+  return _t.apply(this,arguments);};}
+
+// ======================= queue 184: AUTOSAVE is back (safe points only) + Continue on the main menu =======================
+// Why it was removed (queue 112, Oct 29 5:30 PM, 94b506d): the queue item gives no reason. What the old autosave did that could go wrong:
+// it saved on EVERY pause-menu open, including the automatic pause when the window / phone app lost focus, and on a blind 2-minute timer,
+// so it could save in the middle of a fight or with the dragon nearly beaten (a Continue that drops you straight back into losing).
+// Now: those two old triggers stay OFF (svAuto is still a no-op). New safe autosave into the same 'dr_save_auto' localStorage slot:
+//   * level start (new game and each next level) as soon as it is safe (from 2 s in), * level complete (R on the win screen saves the next level),
+//   * every 60 s of play, only while NOT in combat (no damage taken for 8 s, no hit on a fighter near the dragon for 6 s), health >= 30%,
+//     not starving, not paused, never game over / won / dying (svWrite also refuses G.over / G.won), * leaving to the main menu when safe.
+// What is saved is the full partSV snapshot: difficulty (easy / hard), castle level, wanted level, dragon stats (health, max health, fire,
+// stamina, hunger, upgrades and boosts), gold stash + carried gold, castle gold / wood / stone, world state (burned trees, ruined buildings,
+// structures, crops, fog / explored map, wizard / boss flags and rewards, tally). Like every load it starts the dragon at the lair spawn.
+const AS184={every:60,calm:8,calmHit:6,minHp:.3,startAt:2,t:0,n:0,pend:null,last:null,why:{},skip:0,ms:0};
+function as184Safe(){if(scene!=='play'||!G||!D||G.over||G.won||G.starved)return false;if(!(D.hp>0)||D.hp<AS184.minHp*D.maxHp)return false;
+  if(G.t-(G.as184Hurt==null?-99:G.as184Hurt)<AS184.calm)return false;if(G.t-(G.as184Hit==null?-99:G.as184Hit)<AS184.calmHit)return false;return true;}
+function as184Save(why){if(!as184Safe()&&why!=='level'){AS184.skip++;return false;}if(G.over||G.won||!(D.hp>0))return false;
+  const t0=performance.now();const ok=svWrite('dr_save_auto');AS184.ms=Math.round((performance.now()-t0)*10)/10;
+  if(ok){AS184.n++;AS184.t=0;AS184.last={why,t:Math.round(G.t),lvl:G.lvl,hp:Math.round(D.hp),hard:!!G.hard,easy:!!EASY};AS184.why[why]=(AS184.why[why]||0)+1;G.as184N=(G.as184N||0)+1;}
+  return ok;}
+function as184Info(){try{const L=svList(),a=L.find(s=>s.key==='dr_save_auto');return a&&a.info&&!a.info.old?a.info:null;}catch(e){return null;}}
+function as184Valid(){return !!as184Info();}
+function as184Continue(){const res=svLoad('dr_save_auto');if(res===true){try{pmClose();}catch(e){}paused=false;scene='play';pressed={};AS184.cont=(AS184.cont||0)+1;
+    G.as184Hurt=-99;G.as184Hit=-99;AS184.t=0;AS184.pend=null;showToast('📂 Continued from your autosave');return true;}
+  pmOpen('load','title');pmSay(res);return false;}
+{const _h=hurtDragon;hurtDragon=function(d){if(G&&!G.over&&d>0)G.as184Hurt=G.t;return _h.apply(this,arguments);};Object.assign(hurtDragon,_h);}
+{const _h=hurtUnit;hurtUnit=function(u){if(G&&u&&u.type!=='villager'&&u.type!=='animal'&&D&&Math.abs(u.x-D.x)<700&&Math.abs(u.y-D.y)<700)G.as184Hit=G.t;return _h.apply(this,arguments);};Object.assign(hurtUnit,_h);}
+{const _n=newGame;newGame=function(){const r=_n.apply(this,arguments);AS184.t=0;AS184.pend='start';if(G){G.as184Hurt=-99;G.as184Hit=-99;G.as184T0=G.t;}return r;};Object.assign(newGame,_n);}
+{const _n=nextLevel;nextLevel=function(){const r=_n.apply(this,arguments);AS184.t=0;AS184.pend='level';if(G)G.as184T0=G.t;return r;};Object.assign(nextLevel,_n);}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);
+  try{if(scene==='play'&&G&&!G.over&&!G.won){AS184.t+=dt;
+      if(AS184.pend&&G.t-(G.as184T0||0)>=AS184.startAt){if(as184Safe()&&as184Save(AS184.pend))AS184.pend=null;}
+      else if(AS184.t>=AS184.every&&as184Safe())as184Save('timer');}}catch(e){console.warn('autosave',e);}
+  return r;};}
+// the autosave row shows as "Autosave" again (it was renamed "Old autosave" by queue 112) and the load help text tells the new rules
+{const _sl=svList;svList=function(){const L=_sl.apply(this,arguments);if(!L||!L.length)return L;return L.map(s=>s.key==='dr_save_auto'&&s.name!=='Autosave'?Object.assign({},s,{name:'Autosave'}):s);};}
+{const _d=drawSlots;drawSlots=function(){const _t=txt;txt=function(s){if(typeof s==='string'&&s.indexOf('The game only saves when you save it yourself')>=0){const a=[].slice.call(arguments);
+      a[0]='Pick a save to load. The autosave updates at each level start and every minute of calm play (never mid-fight or when badly hurt).';return _t.apply(this,a);}return _t.apply(this,arguments);};
+  try{return _d.apply(this,arguments);}finally{txt=_t;}};}
+// title: row 0 reads "New game", row 3 reads "Continue (autosave ...)" with a "📂 All saves" side button when an autosave exists
+{const _dt=drawTitle;drawTitle=function(){_dt.apply(this,arguments);const T=TOUCH.tg;if(!T)return;
+  try{ctx.setTransform(DPR*T.k,0,0,DPR*T.k,DPR*T.ox,0);const W0=VW;
+    {const y=T.y0,s=titleSel===0;ctx.fillStyle='rgb(22,13,9)';ctx.fillRect(W0/2-231,y-1,462,32);panel(W0/2-230,y,460,30);if(s){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y,460,30);}
+      txt(`▶  New game  (${EASY?'EASY':HARD?'HARD':'NORMAL'}: change it on the Mode row below)`,W0/2,y+21,16,s?'#ffd24a':'#ddd','center');}
+    const i=as184Info();if(i){const y=T.y0+3*36,s=titleSel===3;ctx.fillStyle='rgb(22,13,9)';ctx.fillRect(W0/2-231,y-1,462,32);panel(W0/2-230,y,460,30);if(s){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y,346,30);}
+      const md=i.hard?'Hard':i.easy?'Easy':'Normal';txt(`⟲  Continue  (autosave · castle lvl ${i.lvl} · ${md} · ${svDur(i.playT)})`,W0/2-57,y+21,14,s?'#ffd24a':'#9fe09f','center');
+      ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(W0/2+118,y+3,108,24);txt('📂 All saves ▶',W0/2+172,y+20,13,'#ddd','center',false);}
+  }catch(e){}finally{ctx.setTransform(DPR,0,0,DPR,0,0);}};}
