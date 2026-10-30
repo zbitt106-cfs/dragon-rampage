@@ -11188,9 +11188,19 @@ function vkNearBoss(x,y,pad){for(const z of vkZones())if(d2(x,y,z.x,z.y)<z.r+(pa
 const vkNoGo=(x,y,pad)=>vkFant(x,y)||!!vkNearBoss(x,y,pad);
 // waypoint/goal moves (all roles): never into fantasy water or a boss circle
 {const _ok=vkShipOK;vkShipOK=function(s,x,y){if(vkNoGo(x,y)&&!vkNoGo(s.x,s.y))return false;if(vkNoGo(s.x,s.y)){const z=vkNearBoss(s.x,s.y);if(z&&d2(x,y,z.x,z.y)<d2(s.x,s.y,z.x,z.y))return false;}return _ok.apply(this,arguments);};}
+// a ship whose next step would enter a boss circle slides along the edge of the circle (toward its next waypoint/goal) instead of
+// spinning in place, so a kraken or octopus parked beside the route can never trap it; it never slides onto land or into another no-go area
+const VKS={slides:0};
+function vkSlide(s,ax,ay){const z=vkNearBoss(ax,ay);if(!z||vkFant(ax,ay))return false;const st=Math.hypot(ax-s.x,ay-s.y);if(st<.01)return false;
+  const T=(s.path&&s.path[0])||s.goal;let rx=s.x-z.x,ry=s.y-z.y;const rl=Math.hypot(rx,ry)||1;rx/=rl;ry/=rl;let tx=-ry,ty=rx;
+  if(T&&(T.x-s.x)*tx+(T.y-s.y)*ty<0){tx=-tx;ty=-ty;}else if(!T&&(ax-s.x)*tx+(ay-s.y)*ty<0){tx=-tx;ty=-ty;}
+  const wet=(x,y)=>inWater(x,y)&&(!inSea(x,y)||seaD(x,y)>s.r*.8);
+  for(const sg of [1,-1])for(const k of [1,.5]){const cx=s.x+tx*sg*st*k+rx*st*.15,cy=s.y+ty*sg*st*k+ry*st*.15;
+    if(!vkNoGo(cx,cy)&&wet(cx,cy)){s.x=cx;s.y=cy;s.ang=Math.atan2(ty*sg,tx*sg);VKS.slides++;return true;}}
+  return false;}
 // path following and longship rowing move without vkShipOK: refuse any step that enters a no-go area (a longship that is blocked unloads at the nearest shore)
 {const _s=updVkShip;updVkShip=function(s,dt){const x=s.x,y=s.y,was=vkNoGo(x,y);const r=_s.apply(this,arguments);
-  if(!was&&s.state!=='sink'&&!s.gone&&vkNoGo(s.x,s.y)){s.x=x;s.y=y;s.ang+=dt*1.5;VKA.blocked++;if(s.path&&s.path.length&&vkNoGo(s.path[0].x,s.path[0].y,-1)){s.path.shift();if(!s.path.length)s.path=null;}}return r;};}
+  if(!was&&s.state!=='sink'&&!s.gone&&vkNoGo(s.x,s.y)){const ax=s.x,ay=s.y;s.x=x;s.y=y;VKA.blocked++;if(!vkSlide(s,ax,ay))s.ang+=dt*1.5;if(s.path&&s.path.length&&vkNoGo(s.path[0].x,s.path[0].y,-1)){s.path.shift();if(!s.path.length)s.path=null;}}return r;};}
 {const _l=updVkLong;updVkLong=function(s,dt){if(s.state!=='sink'&&s.state!=='load'&&vkNoGo(s.tx,s.ty)&&!vkNoGo(s.x,s.y)){const a=Math.atan2(s.ty-s.y,s.tx-s.x);
     let k=0;while(k<60&&vkNoGo(s.tx,s.ty)){s.tx-=Math.cos(a)*40;s.ty-=Math.sin(a)*40;k++;}}
   const x=s.x,y=s.y,was=vkNoGo(x,y);const r=_l.apply(this,arguments);
@@ -11310,6 +11320,161 @@ function rp151Pass(){RP151.passes++;let sent=0;const per=[];
     const L=p.members.find(m=>!m.dead);if(!L){continue;}if(p.engaged){if(dist(u,L)<120){u.rp151=null;p.members.push(u);RP151.joined++;}continue;}
     if(dist(u,L)<70){u.rp151=null;p.members.push(u);RP151.joined++;continue;}moveTo(u,L.x,L.y,u.mounted?95:72,dt);if(u.mounted){u.cs='wheel';u.ha=Math.atan2(L.y-u.y,L.x-u.x);}}
   if(G.over||G.won)return r;RP151.t-=dt;if(RP151.t<=0){RP151.t=RP151.every;if(rp151Attack())RP151.skipped++;else rp151Pass();}return r;};}
+
+// ======================= QUEUE 139 (139-GO): HARD MODE - a new selectable mode (title screen: NORMAL -> EASY -> HARD) =======================
+// Normal and easy are untouched: every rule below checks G.hard (HM.on()). Saved in the save file (G.hard) and remembered on the title screen (localStorage dr_hard).
+//  139a food fills hunger and gluttony 25% less (x0.75)          139b fighters at full health must be bitten (24 dmg) before they can be eaten
+//  139c regular troops x1.3 health+attack, then x1.05 per castle level compounding   139d/e crossbows: royal knights + the prince (1 bolt), King William (3-bolt spread)
+//  139f/i mini bosses + both wizards: health x1.2^(L-1), damage x1.1^(L-1)           139g/141n Viking hire 500 / 25 (VK hook, already built)
+//  139h fire + fly meters drain 10% faster   139j alphas x1.075^(L-1) health+damage   139k castle starts with double gold/wood/stone (then +10%/level)
+//  139l a town building upgrades to stone every 45 s (normal 60 s; same stone price, same 100-stone reserve)   139m town/desert towers +1%/level health+bolt damage
+//  139n rich desert caravan 15% faster out of combat   139o Dark Wizard LAVA FLOOD on Cinder Isle   139p wood/stone carts 10% faster
+let HARD=false;try{HARD=localStorage.getItem('dr_hard')==='1';}catch(e){}
+const HM={food:.75,bite:24,troop:1.3,troopLv:1.05,bossHp:1.2,bossDm:1.1,drain:1.10,alpha:1.075,start:2,stoneEvery:45,tower:1.01,caravan:1.15,cart:1.10,
+  xb:{range:480,min:70,sp:520,knight:5,prince:6,king:7,kingN:3,kingSpread:.18,cdK:[3,4.2],cdP:[2.6,3.4],cdW:[3.2,4]},
+  flood:{warn:2.2,dur:5,cd:[13,17],dps:9,tick:.5},
+  on:()=>!!(G&&G.hard),L:()=>Math.max(1,(G&&G.lvl)||1),cur:null,ld:0,force:null,xbList:[],stats:{xb:0,xbKing:0,flood:0,floodDmg:0,troops:0,alphas:0,towers:0,fed:0}};
+function hmLvPow(b){return Math.pow(b,HM.L()-1);}
+function hmTroopMul(){return HM.troop*hmLvPow(HM.troopLv);}
+function setHard(v){HARD=!!v&&!EASY;try{localStorage.setItem('dr_hard',HARD?'1':'0');}catch(e){}if(G&&scene!=='play')G.hard=HARD?1:0;}
+// --- mode select: the title "Mode" row now cycles NORMAL -> EASY -> HARD (left arrow / A goes the other way) ---
+{const _se=setEasy;setEasy=function(v){
+  if(scene==='title'&&!HM.ld&&(P('m')||P('arrowleft')||P('arrowright')||P('a')||P('d')||P('enter'))){const back=P('arrowleft')||P('a'),m=EASY?1:HARD?2:0,n=(m+(back?2:1))%3;_se(n===1);setHard(n===2);return;}
+  _se(v);if(v)setHard(false);};}
+{const _ng=newGame;newGame=function(opt){const r=_ng.apply(this,arguments);if(!G)return r;const h=HM.force!==null?HM.force:(HARD&&!EASY);G.hard=h?1:0;
+  if(h){for(const p of goldPiles)p.amt=Math.round(p.amt*HM.start);G.wood=Math.round(G.wood*HM.start);G.stone=Math.round(G.stone*HM.start);
+    if(KS125.last)Object.assign(KS125.last,{hard:1,gold:goldPiles.reduce((a,p)=>a+p.amt,0),wood:G.wood,stone:G.stone});}
+  return r;};}
+{const _sa=svApply;svApply=function(d){HM.ld=1;HM.force=!!(d&&d.G&&d.G.hard);try{return _sa.apply(this,arguments);}finally{HM.ld=0;HM.force=null;HARD=!!(G&&G.hard);try{localStorage.setItem('dr_hard',HARD?'1':'0');}catch(e){}}};}
+{const _sm=svMeta;svMeta=function(d){const m=_sm.apply(this,arguments);m.hard=!!(d&&d.G&&d.G.hard);return m;};}
+{const _sd=svDesc;svDesc=function(i){const s=_sd.apply(this,arguments);return i&&i.hard&&!i.old?s+'  ·  Hard':s;};}
+{const _dt=drawTitle;drawTitle=function(){_dt.apply(this,arguments);if(!HARD||EASY)return;const T=TOUCH.tg;if(!T)return;
+  ctx.setTransform(DPR*T.k,0,0,DPR*T.k,DPR*T.ox,0);const W0=VW,y=T.y0+36,s=titleSel===1;panel(W0/2-230,y,460,30);
+  if(s){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y,460,30);}
+  txt('Mode:  HARD (tougher troops, crossbows, less food)   ◀ ▶',W0/2,y+21,17,s?'#ffd24a':'#ff8a6a','center');ctx.setTransform(DPR,0,0,DPR,0,0);};}
+{let inHud=0;const _t=txt;txt=function(s){if(inHud&&s==='THE DRAGON'&&G&&G.hard){arguments[0]='THE DRAGON  ·  HARD MODE';arguments[4]='#ff9a7a';}return _t.apply(this,arguments);};
+  const _h=drawHUD;drawHUD=function(){inHud=1;try{return _h.apply(this,arguments);}finally{inHud=0;}};}
+// --- 139a: food counts 25% less (hunger meter + gluttony meter) ---
+{const _f=feed;feed=function(heal){if(!HM.on())return _f.apply(this,arguments);const a=HUNGER.feedMul,b=HUNGER.feedMin;HUNGER.feedMul=a*HM.food;HUNGER.feedMin=b*HM.food;HM.stats.fed++;
+  try{return _f.apply(this,arguments);}finally{HUNGER.feedMul=a;HUNGER.feedMin=b;}};}
+{const _g=glutEat;glutEat=function(food){if(HM.on()&&food>0)arguments[0]=food*HM.food;return _g.apply(this,arguments);};}
+// --- 139b: anything that can attack must be hurt before it can be eaten (the first bite only damages: 24, never below 1 HP) ---
+function hmFighter(u){return !!u&&(u.type==='knight'||u.type==='archer'||u.type==='hunter'||u.militia||u.type==='crew'&&!!u.siege);}
+{let d0=BT145.dmg;Object.defineProperty(BT145,'dmg',{get:()=>HM.on()?HM.bite:d0,set:v=>{d0=v;},configurable:true});}
+{const _bb=bt145Big;bt145Big=function(u){if(!HM.on())return _bb.apply(this,arguments);return !!u&&!bt145Safe(u)&&hmFighter(u)&&!bt145Tough(u)&&!u.hmHurt&&u.hp>1;};}
+{const _hu=hurtUnit;hurtUnit=function(u,d){if(u&&typeof d==='number'&&d>0&&HM.on())u.hmHurt=1;return _hu.apply(this,arguments);};}
+// --- 139c: regular troops (castle/prince/raid/desert/treasure-ship soldiers + archers incl. tower archers) x1.3 then x1.05/level ---
+// Not King William, the prince, raid champions, guardians or your Viking allies (they have their own hard rule: 500/25 hire).
+function hmTroop(u){return (u.type==='knight'||u.type==='archer')&&!u.isKing&&!u.isKingArmor&&!u.isPrince&&!u.champ&&!u.vk&&!u.gd&&!u.guardian&&!u.princess;}
+function hmXbow(u){return u.type==='knight'&&!u.dead&&!u.inside&&!u.vk&&(u.isKingArmor||u.isPrince||(!u.foot&&!u.dsol&&!u.dcam&&!u.champ&&!u.raid&&!u.gd&&!u.guardian));}
+// --- 139j: alphas (pack leaders, alpha hippos, realm alphas) x1.075^(L-1) health (+ damage below). The white elephant and tigers keep max(their linear scaling, 1.075^(L-1)).
+function hmAlpha(u){return u.species!=='elephant'&&u.species!=='tiger'&&(u.alpha||u.atAlpha||(typeof tfIsLeader==='function'&&tfIsLeader(u)));}
+{const _h=el129Hp,_b=el129Bite;el129Hp=function(l){l=l||el129Lv();const v=_h(l);return HM.on()?Math.max(v,Math.round(EL129.hp0*Math.pow(HM.alpha,l-1))):v;};
+  el129Bite=function(l){l=l||el129Lv();const v=_b(l);return HM.on()?Math.max(v,+(EL129.bite0*AL119.mul*Math.pow(HM.alpha,l-1)).toFixed(2)):v;};}
+{const h0=TG143.lvHp,d0=TG143.lvDm;TG143.lvHp=l=>HM.on()?Math.max(h0(l),Math.pow(HM.alpha,l-1)):h0(l);TG143.lvDm=l=>HM.on()?Math.max(d0(l),Math.pow(HM.alpha,l-1)):d0(l);}
+// --- 139f/i: mini-boss scaling becomes 1.2^(L-1) health / 1.1^(L-1) damage, and both wizards join it ---
+{const _bh=bossHpMul,_bd=bossDmMul;bossHpMul=function(){return HM.on()?Math.pow(HM.bossHp,lvsL()-1):_bh();};bossDmMul=function(){return HM.on()?Math.pow(HM.bossDm,lvsL()-1):_bd();};}
+{const _w=WZ140.hpMul;WZ140.hpMul=()=>HM.on()?bossHpMul():_w();}
+const HM_WIZ={ice:1,lightning:1,wind:1,lava:1,erupt:1,lavaflood:1};
+// one damage hook for 139c lance / 139f wizards / 139j alphas / 139m bolts
+{const _hd=hurtDragon;hurtDragon=function(d,src){if(HM.on()&&typeof d==='number'&&d>0){const u=HM.cur;
+    if(HM_WIZ[src]&&(WZB.on||DWB.on))d*=Math.pow(HM.bossDm,lvsL()-1);
+    else if(src==='bolt')d*=hmLvPow(HM.tower);
+    else if(u&&u.hmA)d*=u.hmA;
+    else if(u&&u.hmM&&src==='lance')d*=u.hmM;}
+  return _hd.call(this,d,src);};}
+for(const n of['updKnight','updCavalry','updWild','nrUpd','hpUpd']){const f=window[n];if(typeof f!=='function')continue;
+  const w=function(u){const p=HM.cur;HM.cur=u;try{return f.apply(this,arguments);}finally{HM.cur=p;}};Object.assign(w,f);
+  if(n==='updKnight')updKnight=w;else if(n==='updCavalry')updCavalry=w;else if(n==='updWild')updWild=w;else if(n==='nrUpd')nrUpd=w;else hpUpd=w;}
+// --- 139l: one town building to stone every 45 s (normal: 60 s); price and the 100-stone reserve unchanged ---
+{let e0=STUP.every;Object.defineProperty(STUP,'every',{get:()=>HM.on()?HM.stoneEvery:e0,set:v=>{e0=v;},configurable:true});}
+// --- 139m: town archer/scorpion towers + desert towers +1% health per level (castle towers and realm turrets already scale more) ---
+const HM_TOWER=new Set(['wtower','stower','dtower']);
+// --- 139n: rich desert caravan 15% faster when nothing is fighting it ---
+{let sp0=RCV.spd;Object.defineProperty(RCV,'spd',{get:()=>HM.on()&&!HM.rcFight?sp0*HM.caravan:sp0,set:v=>{sp0=v;},configurable:true});}
+// --- 139p: wood/stone (supply) carts 10% faster ---
+{const _s=scStep;scStep=function(c){if(!HM.on())return _s.apply(this,arguments);const v=SC.speed;SC.speed=v*HM.cart;try{return _s.apply(this,arguments);}finally{SC.speed=v;}};}
+// --- 139h + the 0.25 s scans + crossbows ---
+{const _u=update;let acc=0;update=function(dt){if(!HM.on())return _u.apply(this,arguments);const st0=D.st,f0=D.fire,air=D.mode==='air'||D.alt>.3;
+  const r=_u.apply(this,arguments);
+  if(!G.over){if(air&&D.st<st0)D.st=Math.max(0,D.st-(st0-D.st)*(HM.drain-1));if(typeof f0==='number'&&D.fire<f0)D.fire=Math.max(0,D.fire-(f0-D.fire)*(HM.drain-1));
+    acc+=dt;if(acc>=.25){acc=0;hmScan();}hmXbTick(dt);}
+  return r;};}
+function hmScan(){const tm=hmTroopMul(),am=hmLvPow(HM.alpha),tw=hmLvPow(HM.tower);HM.xbList=[];let fight=false;
+  for(const u of units){if(u.dead)continue;
+    if(!u.hmM&&hmTroop(u)){u.hmM=tm;u.maxHp=Math.round((u.maxHp||u.hp)*tm);u.hp=Math.round(u.hp*tm);u.dmgMul=(u.dmgMul||1)*tm;HM.stats.troops++;}
+    if(!u.hmA&&u.type==='animal'&&hmAlpha(u)&&am>1){u.hmA=am;u.maxHp=Math.round((u.maxHp||u.hp)*am);u.hp=Math.round(u.hp*am);HM.stats.alphas++;}
+    if(hmXbow(u))HM.xbList.push(u);
+    if(u.rc&&Math.hypot(u.x-D.x,u.y-D.y)<700)fight=true;}
+  if(typeof NRU!=='undefined')for(const u of NRU)if(!u.dead&&!u.hmA&&(u.alpha||u.atAlpha)&&am>1){u.hmA=am;u.maxHp=Math.round((u.maxHp||u.hp)*am);u.hp=Math.round(u.hp*am);HM.stats.alphas++;}
+  HM.rcFight=fight;
+  if(tw>1)for(const s of structures)if(HM_TOWER.has(s.kind)&&!s.hmT&&s.maxHp>0){s.hmT=tw;s.maxHp=Math.round(s.maxHp*tw);s.hp=Math.round(s.hp*tw);HM.stats.towers++;}}
+function hmXbFire(u,a,dmg){const s=HM.xb.sp;projs.push({kind:'arrow',x:u.x,y:u.y-6,z:16,vx:Math.cos(a)*s,vy:Math.sin(a)*s,tz:heightOf()+15,life:1.3,dmg,z0:16,xb:1});HM.stats.xb++;}
+function hmXbTick(dt){if(G.won||scene!=='play')return;const X=HM.xb;
+  for(const u of HM.xbList){if(u.dead||u.inside||u.dizzy>0||u.carried||u.grabbed)continue;
+    if(u.xbT===undefined)u.xbT=R(1,2.5);u.xbT-=dt;if(u.xbAim>0)u.xbAim-=dt;const dd=Math.hypot(D.x-u.x,D.y-u.y);
+    if(u.xbT>0||dd>X.range||dd<X.min)continue;
+    const T=dd/X.sp,a=Math.atan2(D.y+D.vy*T*.5-u.y,D.x+D.vx*T*.5-u.x);u.face=D.x>u.x?1:-1;u.xbAim=.35;
+    if(u.isKingArmor){u.xbT=R(X.cdW[0],X.cdW[1]);for(let i=0;i<X.kingN;i++)hmXbFire(u,a+(i-(X.kingN-1)/2)*X.kingSpread,X.king);HM.stats.xbKing++;
+      if(rnd()<.4)float(u.x,u.y-84,'Royal crossbow - three bolts!','#ffe08a');}
+    else if(u.isPrince){u.xbT=R(X.cdP[0],X.cdP[1]);hmXbFire(u,a,X.prince);}
+    else{u.xbT=R(X.cdK[0],X.cdK[1]);hmXbFire(u,a,X.knight*(u.hmM||1));}}}
+{const _dk=drawKnight;drawKnight=function(u){const r=_dk.apply(this,arguments);if(!HM.on()||!hmXbow(u))return r;
+  const f=u.face||1,k=u.isKingArmor?1.35:1,x=u.x+f*9*k,y=u.y-(u.mounted?34:22)*k-(u.isKingArmor?8:0),aim=u.xbAim>0;
+  line(x-f*7*k,y+2,x+f*9*k,y-(aim?2:0),'#6a4020',3*k);line(x+f*7*k,y-7*k,x+f*7*k,y+6*k,'#3a2a1a',2*k);line(x+f*7*k,y-7*k,x+f*1*k,y,'#ddd',1);line(x+f*7*k,y+6*k,x+f*1*k,y,'#ddd',1);
+  if(aim)ell(x+f*10*k,y-1,2,2,'#ffe08a');return r;};}
+// --- 139o: the Dark Wizard's LAVA FLOOD - the volcano rumbles (telegraph), then lava covers Cinder Isle for 5 s; only hurts on the ground ---
+const HMF={st:'idle',t:6,tick:0};
+{const _d=dwUpd;dwUpd=function(dt){const r=_d.apply(this,arguments);if(!HM.on()||!DWB.on||dwDown()||DWB.koT>0||G.over){if(HMF.st!=='idle'){HMF.st='idle';HMF.t=6;}return r;}
+  const F=HM.flood;HMF.t-=dt;
+  if(HMF.st==='idle'&&HMF.t<=0){HMF.st='warn';HMF.t=F.warn;const t=dwTop();float(t.x,t.y-40,'The volcano rumbles... LAVA FLOOD - take off!','#ffb060');showToast('🌋 The volcano rumbles - Cinder Isle is about to FLOOD with lava! Get airborne!');G.shake=Math.max(G.shake||0,3);}
+  else if(HMF.st==='warn'){G.shake=Math.max(G.shake||0,1.5);if(HMF.t<=0){HMF.st='flood';HMF.t=F.dur;HMF.tick=0;HM.stats.flood++;float(DWV.x,DWV.y-DWV.H-30,'LAVA FLOOD!','#ff7a2a');}}
+  else if(HMF.st==='flood'){HMF.tick-=dt;if(HMF.tick<=0){HMF.tick=F.tick;if(onDwIsle(D.x,D.y)&&D.alt<.3){const d=F.dps*F.tick;const h0=D.hp;hurtDragon(d,'lavaflood');HM.stats.floodDmg+=h0-D.hp;
+      if(rnd()<.5)float(D.x,D.y-heightOf()-80,'Hot hot HOT! Fly up!','#ffb060');}}
+    if(HMF.t<=0){HMF.st='idle';HMF.t=R(F.cd[0],F.cd[1]);}}
+  return r;};}
+{const _w=drawWells;drawWells=function(){const r=_w.apply(this,arguments);if(HMF.st==='idle'||Math.abs(cam.x-DWV.x)>2600||Math.abs(cam.y-DWV.y)>2200)return r;
+  const rx=DWV.r,ry=DWV.r/1.2,p=.5+.5*Math.sin(G.t*8);
+  if(HMF.st==='warn'){const q=1-HMF.t/HM.flood.warn;ctx.strokeStyle=`rgba(255,120,30,${.5+.4*p})`;ctx.lineWidth=5;ctx.setLineDash([14,10]);ctx.beginPath();ctx.ellipse(DWV.x,DWV.y,rx,ry,0,0,TAU);ctx.stroke();ctx.setLineDash([]);
+    ell(DWV.x,DWV.y,rx*q,ry*q,`rgba(255,110,30,${.18+.1*p})`);for(let i=0;i<6;i++){const a=i*TAU/6+G.t;ell(DWV.x+Math.cos(a)*rx*.35*q,DWV.y+Math.sin(a)*ry*.35*q-DWV.H*.2,10,6,'rgba(255,150,40,.55)');}}
+  else{const k=Math.min(1,(HM.flood.dur-HMF.t)/.6,HMF.t/.6+.15);ell(DWV.x,DWV.y,rx*k,ry*k,'rgba(200,50,10,.85)');ell(DWV.x,DWV.y,rx*.86*k,ry*.86*k,`rgba(255,${110+40*p|0},20,.75)`);
+    for(let i=0;i<10;i++){const a=i*2.39+G.t*.6,rr=(.25+.6*((i*37)%10)/10)*k;ell(DWV.x+Math.cos(a)*rx*rr,DWV.y+Math.sin(a)*ry*rr,7+4*Math.sin(G.t*5+i),4,'rgba(255,230,120,.8)');}}
+  return r;};}
+// ===== QUEUE 139q-fix + 139r (HARD MODE only): patrols grow with the level =====
+// 139q-fix: +1 ARCHER on every EVEN level and +1 SWORD (foot) soldier on every ODD level from level 2 on (cumulative; level 1 unchanged):
+//           L2 +1 archer, L3 +1 archer +1 sword, L4 +2 archers +1 sword, L5 +2/+2 ...
+// 139r:     +1 MOUNTED knight (cavalry) at every 5th level (L5, L10, L15 ...), cumulative and on top of the above.
+// Extras use the patrol's own colours and level HP; hard-mode troop strength (139c) applies to them like every other soldier. Safety cap: 20 extra per patrol.
+const HMP={cap:20,added:0};
+function hmPatrolExtra(L){const a=Math.floor(L/2),s=Math.floor((L-1)/2),c=Math.floor(L/5);return{archer:a,foot:s,cavalry:c};}
+{const _sp=spawnPatrol;spawnPatrol=function(){const p=_sp.apply(this,arguments);if(!p||!HM.on())return p;
+  const L=HM.L(),E=hmPatrolExtra(L),hpM=1+.2*(L-1),b=p.members[0],colr=(b&&b.colr)||'#c33';let n=0;const add=[];
+  for(const [k,c] of [['cavalry',E.cavalry],['archer',E.archer],['foot',E.foot]])for(let i=0;i<c&&n<HMP.cap;i++,n++){const x=GATE.x+R(-20,20),y=GATE.y+10+(p.members.length+add.length)*6;let u;
+    if(k==='foot')u=mkUnit('knight',x,y,{hp:24,maxHp:24,atk:0,foot:true,colr});else if(k==='cavalry')u=mkCavalry(x,y,{colr});else u=mkUnit('archer',x,y,{hp:22,maxHp:22,shootT:R(1,3)});
+    u.hp=u.maxHp=Math.round(u.maxHp*hpM);u.patrol=p;u.born=G.t;u.hmExtra=k;add.push(u);}
+  p.members.push(...add);units.push(...add);HMP.added+=add.length;p.hmExtra=E;return p;};}
+// ===== 139s: HARD - the tax collector spawn/respawn timer is 30 s (normal 40 s, easy 55 s) =====
+const HMS={every:30,resets:0};
+{const _u=updTaxes;updTaxes=function(dt){const t0=G.taxT;const r=_u.apply(this,arguments);
+  if(HM.on()&&t0!==undefined&&G.taxT>t0&&G.taxT>HMS.every){G.taxT=HMS.every;HMS.resets++;}return r;};}
+// ===== 139t: HARD - King William gives chase after only 5 s, and rides his horse while he chases =====
+// Normal: once the dragon carries Princess Elizabeth out of the castle area he gathers his men after 6 s (7 s easy); hard: 5 s.
+// (The other chase, after he wakes from being knocked out dizzy, now follows the 20 s dizzy time of 139u.)
+// While charging (phase 'charge') in hard mode he sits on a big golden-caparisoned warhorse and rides at 145 instead of 115.
+const HMK={rescue:5,horseSp:145,rides:0,dizzy:20};
+{const _r=kaRescueDelay;kaRescueDelay=function(){return HM.on()?HMK.rescue:_r.apply(this,arguments);};}
+{const _c=kaCharge;kaCharge=function(){const r=_c.apply(this,arguments);if(HM.on()&&KA.u){KA.u.kaHorse=1;HMK.rides++;}return r;};}
+{const _s=kaStep;kaStep=function(u,dt){if(u&&u.kaHorse&&(KA.phase!=='charge'||!HM.on()))u.kaHorse=0;if(!(u&&u.kaHorse))return _s.apply(this,arguments);
+  const o=KA_CFG.chargeSp;KA_CFG.chargeSp=HMK.horseSp;try{return _s.apply(this,arguments);}finally{KA_CFG.chargeSp=o;}};}
+function hmKingHorse(x,y,f,an){const g=Math.sin(an*1.6);ctx.save();ctx.translate(x,y);ctx.scale(1.7,1.7);
+  ell(0,2,17,5,'rgba(0,0,0,.25)');for(const lx of[-8,-4,5,9])line(lx,-7,lx+g*3*(lx>0?1:-1),1,'#2a1a0a',2.4);
+  ell(0,-11,14,6.5,'#5a3a22');rect(-10,-15,20,7,'#a8142a');rect(-10,-9,20,1.6,'#ffd23a');
+  ell(f*12,-17,3.8,5.8,'#5a3a22');ell(f*15.5,-21,4.8,3.1,'#5a3a22');ell(f*17,-22,1,1,'#111');poly([f*11,-21,f*13,-21,f*11.5,-26],'#ffd23a');
+  line(-f*13,-12,-f*18,-3,'#2a1a0a',2.6);ctx.restore();}
+{const _d=drawArmoredKing;drawArmoredKing=function(u){if(!(u&&u.kaHorse&&!u.dizzy&&KA.phase==='charge'))return _d.apply(this,arguments);
+  hmKingHorse(u.x,u.y,u.face||1,u.anim||0);const y0=u.y;u.y=y0-24;try{return _d.apply(this,arguments);}finally{u.y=y0;}};}
+// ===== 139u: HARD - King William stays knocked out dizzy for 20 s (normal 30 s); the banner says 20 =====
+{const _z=kaDizzy;kaDizzy=function(){const o=KA_CFG.dizzy;if(HM.on())KA_CFG.dizzy=HMK.dizzy;try{return _z.apply(this,arguments);}finally{KA_CFG.dizzy=o;}};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}

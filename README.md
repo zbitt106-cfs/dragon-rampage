@@ -860,7 +860,7 @@ In normal mode King William starts with **half the health** and **25% less attac
 - **Bosses** (griffin, hydra, Nessie, the wizards) keep their own bite damage (18 / 14). Ships still take 18 from a bite.
 - **Buildings (145a):** a ground bite on a building in front of the mouth does **30 to wooden** buildings and **25 to stone** ones (realm turrets 25 too), with a "CRUNCH!" pop.
 - **Stomp (145b):** **30** area damage to soldiers and animals (it was 18). Building stomp stays at 150 on wood and 120 on stone. The same change lifts champion stomp to 24, boss stomp to 15 and siege stomp to 39. Dive is unchanged.
-- **Hard-mode hooks:** `BT145.on()` (hard mode can bring back "eat whole"), `BT145.mustHurtFirst` for rule 139b ("damage a fighter before you can eat it"). Hard mode is not built yet.
+- **Hard-mode hooks:** `BT145.on()` (hard mode can bring back "eat whole"), `BT145.mustHurtFirst` for rule 139b ("damage a fighter before you can eat it"). Hard mode (queue 139) uses `BT145.mustHurtFirst`.
 
 ## Permanent attack boost from repeat wizard wins (queue 146)
 - The **first** time you beat a wizard in a game you get his normal reward. **Every later win** over a wizard you have already beaten in that game (Storm or Dark, since they come back every castle level) gives **+2.5% attack** to every dragon attack: bite, stomp, dive, claw scratch, fire breath and burning, and lava.
@@ -980,6 +980,7 @@ Vikings and pirates ignore each other. Viking ships take **10% less direct fire 
 
 ### Viking ships keep clear of sea bosses and fantasy waters (queue 141aa, 141ab)
 - **141aa:** Viking warships and longships give the giant squid, the giant octopus, the Kraken Deep and Wizard's Isle a wide berth. Routes bend around them, the Vikings don't chase the dragon into a boss circle, and they won't escort a trade ship that sails next to one. In tests the closest a warship got to a squid it was sent straight at was 900 px.
+- **Fix (with queue 139):** a Viking ship whose route runs into a sea monster's circle now slides around the edge of the circle toward its next waypoint instead of turning in place. Before, it could stay stuck until the monster moved away. With an octopus parked on the route at 8 different spots, ships reached their berth in 5 to 6 of them per run (before the fix: 0 of 7). In the rest the octopus sat by the river mouth, so the ship waits outside the circle until the monster moves. It never enters the circle.
 - **141ab:** Viking ships never sail into fantasy waters (the Northern Realms sea past the wizard's barrier). If the dragon flies over fantasy water they wait at the edge. Over three runs of 20 seconds each aimed straight at it, no Viking ship spent a single frame inside.
 
 ## Tax collectors already out at the start of each level (queue 147l)
@@ -1020,6 +1021,39 @@ Kept: the WANTED bar itself, the "Wave N" line in the pause menu, and all other 
 
 Close-ups: `screenshots/332z_minimap_150_zoom_desktop.png`, `332z_minimap_150_zoom_landscape.png`, `332z_minimap_150_zoom_portrait.png`. (Phone shots are emulated in desktop Chrome at iPhone 17 Pro Max size, not taken on a real phone.)
 
+
+## Hard mode (queue 139, selectable)
+On the title screen the **Mode** row now cycles **NORMAL -> EASY -> HARD**. Use the arrows, A/D or M, or tap it. Your choice is remembered on this device, saved in each save file, and shown as "· Hard" in the save list. **Normal and easy are unchanged**: every rule below applies only in hard mode.
+
+| Item | Hard mode | Normal |
+|---|---|---|
+| 139a food | hunger and gluttony fill **25% less** (x0.75) | x1 |
+| 139b eating fighters | a fighter at full health must be **bitten first** (24 damage) before you can eat it | eat whole |
+| 139c troops | x1.3 health and attack, then **x1.05 per castle level** (compounding) | x1 |
+| 139d/e crossbows | royal knights (5 damage) and the prince (6) shoot crossbow bolts (range 480). **King William fires a 3-bolt spread** (7 damage each) | none |
+| 139f/i mini bosses and both wizards | health x1.2^(level-1), damage x1.1^(level-1) | x1 |
+| 139g Vikings | hired every 500 gold of income for 25 gold | 1000 / 50 |
+| 139h meters | fire and fly drain 10% faster | x1 |
+| 139j alphas | x1.075^(level-1) health and damage | x1 |
+| 139k castle start | **double** the starting gold, wood and stone (level 1: 200/200/40 vs 100/100/20) | x1 |
+| 139l towns | a building upgrades to stone every 45 s | 60 s |
+| 139m towers | town and desert towers +1% a level health and bolt damage | x1 |
+| 139n caravan | the rich desert caravan travels 15% faster out of combat | x1 |
+| 139o Cinder Isle | the Dark Wizard's **lava flood**: a 2.2 s warning, then 5 s of lava over the island (9 damage a second), every 13-17 s | none |
+| 139p carts | wood and stone carts 10% faster | x1 |
+| 139q patrols | +1 archer every even castle level and +1 sword soldier every odd level, cumulative | none |
+| 139r patrols | +1 mounted knight every 5 castle levels, cumulative | none |
+| 139s tax collectors | spawn/respawn every **30 s** | 40 s (easy 55 s) |
+| 139t King William's chase | gathers his men and chases **5 s** after the princess leaves the castle area, **riding his warhorse** (145 px/s) | 6 s (easy 7 s), on foot at 115 px/s |
+| 139u King William dizzy | **20 s** (the banner says 20) | 30 s |
+
+After being knocked out dizzy he also charges again as soon as he wakes, so in hard mode that chase comes after 20 s instead of 30.
+
+| | |
+|---|---|
+| ![Mode select](screenshots/327_hard_mode_select_139.png) | ![Crossbow knights](screenshots/328_hard_crossbow_knights_139.png) |
+| ![King William's 3-bolt spread](screenshots/329_hard_king_3bolt_spread_139.png) | ![Lava flood on Cinder Isle](screenshots/330_hard_lava_flood_island_139.png) |
+| ![King William rides out on his horse](screenshots/334_hard_king_rides_horse_139t.png) | |
 
 ## Wizards come back every level (queue 140)
 - Both wizards return at the start of every castle level, in every mode. The Storm Wizard comes back with his tower and a 300 shield (210 on easy). The Dark Wizard comes back with a 525 shield (368 on easy). Their shields don't grow with the level yet. A hard-mode switch can add that later through one hook (`WZ140.hpMul`).
