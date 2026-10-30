@@ -3671,3 +3671,178 @@ function drawVkShip(s){const x=s.x,y=s.y,sk=s.state==='sink'?Math.min(1.2,s.t/4)
     const bx=S.x-30,by=S.y-40;rect(bx,by,60,6,'#222');rect(bx,by,60*(g.logs<VK.logs?g.logs/VK.logs:p),6,g.logs<VK.logs?'#c99a50':'#6c6');
     txt(g.logs<VK.logs?`Vikings gathering wood ${g.logs}/${VK.logs}`:`Building a new warship ${Math.round(p*100)}%`,S.x,by-6,10,'#ffd0a0','center',true);}
 }catch(e){}return r;};}
+// ===== QUEUE 147i (all modes): the tax-man hat sits ON his head, and tax collectors are always mounted =====
+// Knocked off by fire/stomp he lands on foot for 2 s, then catches his horse and is back in the saddle (the loose horse is
+// removed when he remounts; if it was lost, he gets a fresh one). Saves never restore a collector on foot.
+const TX147I={remount:2,remounts:0};
+{const _o=tx147Off;tx147Off=function(u){const n=units.length;_o.apply(this,arguments);u.txFootT=TX147I.remount;const h=units[units.length-1];u.txHorse=units.length>n&&h&&h.species==='horse'?h:null;};}
+function tx147iRemount(u){u.txFoot=0;u.txFootT=0;const h=u.txHorse;u.txHorse=null;if(h&&!h.dead){const i=units.indexOf(h);if(i>=0)units.splice(i,1);}
+  TX147I.remounts++;if(dist(u,D)<1200)float(u.x,u.y-44,'Back in the saddle!','#ffe0a0');}
+{const _t=updTax;updTax=function(u,dt){if(u&&u.tax&&!u.dead&&u.txFoot){if(!(u.txFootT>0))u.txFootT=Math.min(u.txFootT||TX147I.remount,TX147I.remount);u.txFootT-=dt;if(u.txFootT<=0)tx147iRemount(u);}
+  return _t.apply(this,arguments);};}
+{const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);for(const u of units)if(u.tax){u.txFoot=0;u.txFootT=0;u.txHorse=null;}return r;};}
+// hat: brim on top of the head (head top is ~15 px above the feet; riders sit 13 px higher)
+{const _s=drawTaxSack;drawTaxSack=function(u){const ride=tx147Rides(u);
+  if(!ride){const x=u.x+(u.face||1)*-7,y=u.y-10,s=4+Math.min(5,(u.sack||0)/5);ell(x,y,s,s+1,'#a07a40');ell(x,y-s,2.4,1.6,'#7a5a28');ctx.fillStyle='#ffe58a';ctx.font='bold 7px Georgia';ctx.textAlign='center';ctx.fillText('$',x,y+2);}
+  const hy=u.y-(ride?13:0)+Math.sin(u.anim||0)*.36;rect(u.x-5,hy-16,10,2.4,'#2a1a2a');rect(u.x-3,hy-20,6,4.2,'#2a1a2a');};}
+// ===== QUEUE 147j (all modes): ONE AREA per trip - richest area of his region, ride home and deliver, then out again to the (re-ranked) richest area =====
+// His region (one collector per region) is unchanged. After each delivery he re-ranks his region's areas by live stored taxes and rides out to the
+// richest one (the area he just emptied is skipped while another area has anything to give). Nothing left anywhere in his region = he retires.
+const TXJ={trips:0,retired:0,wait:1.5};
+function txjRoute(u,skip){const T=taxTargets().filter(t=>t.rg===u.txRg);let A=txAreas(T).filter(a=>a.tot>0);
+  if(skip&&A.length>1)A=A.filter(a=>a.key!==skip);const a=A[0];if(!a)return false;let p={x:GATE.x,y:GATE.y};const L=a.stops.slice(),route=[];
+  while(L.length){L.sort((x,y)=>dist(x,p)-dist(y,p));p=L.shift();route.push(p);}
+  u.route=route;u.ri=0;u.txArea=a.key;u.txAreas=[{key:a.key,tot:a.tot,n:a.stops.length,names:a.stops.map(s=>s.name||s.wk||s.mk||('village '+s.vi))}];return true;}
+{const _sp=spawnTaxman;spawnTaxman=function(){const u=_sp.apply(this,arguments);if(u&&u.txRg){txjRoute(u);u.txTrip=1;}return u;};}
+{const _t=updTax;updTax=function(u,dt){const was=u&&u.tax&&!u.dead;const r=_t.apply(this,arguments);
+  if(was&&u.dead&&u.gone&&u.sack===0&&!G.over){ // just delivered at the gate
+    if(txjRoute(u,u.txArea)){u.dead=false;u.gone=false;u.txeDone=0;u.txBolt=0;u.txGot=[];u.wait=TXJ.wait;u.txTrip=(u.txTrip||1)+1;TXJ.trips++;u.x=GATE.x;u.y=GATE.y+20;
+      if(dist(u,D)<1500)float(GATE.x,GATE.y-50,`The tax collector rides out again: ${u.txAreas[0].names[0]}`,'#ffe0a0');}
+    else TXJ.retired++;}
+  return r;};}
+{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);if(Array.isArray(d.TX)){const L=units.filter(u=>u.tax&&!u.dead);d.TX.forEach((t,i)=>{const u=L[i];if(u){t.area=u.txArea||null;t.trip=u.txTrip||1;}});}return d;};}
+{const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);if(d&&Array.isArray(d.TX)){const L=units.filter(u=>u.tax);d.TX.forEach((t,i)=>{const u=L[i];if(u){u.txArea=t.area||null;u.txTrip=t.trip||1;}});}return r;};}
+// ===== QUEUE 147k (all modes): when he BOLTS, the escort he borrowed from patrols STAYS BEHIND and fights; afterwards they rejoin their patrol =====
+const TXK={stay:0,rejoin:0,calm:3,far:700};
+function txkStay(m){const E=txeOf(m);for(const u of E){u.escort=null;u.txe=0;u.txStay=1;u.txCalm=0;u.retreat=false;u.born=G.t;TXK.stay++;}
+  if(E.length){G.txkStay=(G.txkStay||0)+E.length;if(dist(m,D)<1200)float(E[0].x,E[0].y-40,'Hold the line! The taxes must get through!','#bfe0ff');}}
+{const _t=updTax;updTax=function(u,dt){const b0=u&&u.txBolt;const r=_t.apply(this,arguments);if(u&&u.tax&&!b0&&u.txBolt)txkStay(u);return r;};}
+function txkRejoin(u){u.txStay=0;const p=u.txP;u.txP=null;TXK.rejoin++;
+  if(p){if(!patrols.includes(p)){p.dead=false;p.engaged=false;p.wp=null;patrols.push(p);}if(!p.members.includes(u))p.members.push(u);u.patrol=p;}else u.retreat=true;}
+{const _u=updTaxes;updTaxes=function(dt){const r=_u.apply(this,arguments);
+  for(const u of units){if(!u.txStay||u.dead)continue;u.born=G.t;if(dist(u,D)>TXK.far||G.over)u.txCalm+=dt;else u.txCalm=0;if(u.txCalm>=TXK.calm)txkRejoin(u);}return r;};}
+// ===== QUEUE 141aa (all modes): Viking ships and longships keep AWAY from the ocean mini bosses and never engage them =====
+// Kept-out circles: the giant squid (kraken) +900, the giant octopus +900, Nessie's loch +700 past her water, the storm Wizard's Isle +1400.
+// No Viking waypoint, chase target or escort station may fall inside; a move that would enter one is refused (the ship turns away / holds).
+// ===== QUEUE 141ab (all modes): Viking ships and longships NEVER enter fantasy-land water; a chase on the water stops at the fantasy boundary =====
+const VKA={sq:900,oc:900,ns:700,wz:1400,blocked:0,skipSeek:0,skipEsc:0};
+function vkBossZones(){const Z=[];for(const u of units){if(u.dead||u.type!=='sea')continue;if(u.kind==='squid')Z.push({x:u.x,y:u.y,r:VKA.sq});else if(u.kind==='octopus')Z.push({x:u.x,y:u.y,r:VKA.oc});}
+  if(typeof NS!=='undefined'&&typeof NSZ!=='undefined'&&!(typeof nsDown==='function'&&nsDown()))Z.push({x:NS.on?NS.x:NSZ.x,y:NS.on?NS.y:NSZ.y,r:Math.max(NSZ.rx,NSZ.ry)+VKA.ns});
+  if(typeof WZ!=='undefined')Z.push({x:WZ.x,y:WZ.y,r:WZ.r+VKA.wz});return Z;}
+let VKA_Z=null,VKA_ZF=-1;const vkZones=()=>{if(VKA_ZF!==G.fc||!VKA_Z){VKA_Z=vkBossZones();VKA_ZF=G.fc;}return VKA_Z;};
+function vkNearBoss(x,y,pad){for(const z of vkZones())if(d2(x,y,z.x,z.y)<z.r+(pad||0))return z;return null;}
+const vkNoGo=(x,y,pad)=>vkFant(x,y)||!!vkNearBoss(x,y,pad);
+// waypoint/goal moves (all roles): never into fantasy water or a boss circle
+{const _ok=vkShipOK;vkShipOK=function(s,x,y){if(vkNoGo(x,y)&&!vkNoGo(s.x,s.y))return false;if(vkNoGo(s.x,s.y)){const z=vkNearBoss(s.x,s.y);if(z&&d2(x,y,z.x,z.y)<d2(s.x,s.y,z.x,z.y))return false;}return _ok.apply(this,arguments);};}
+// path following and longship rowing move without vkShipOK: refuse any step that enters a no-go area (a longship that is blocked unloads at the nearest shore)
+{const _s=updVkShip;updVkShip=function(s,dt){const x=s.x,y=s.y,was=vkNoGo(x,y);const r=_s.apply(this,arguments);
+  if(!was&&s.state!=='sink'&&!s.gone&&vkNoGo(s.x,s.y)){s.x=x;s.y=y;s.ang+=dt*1.5;VKA.blocked++;if(s.path&&s.path.length&&vkNoGo(s.path[0].x,s.path[0].y,-1)){s.path.shift();if(!s.path.length)s.path=null;}}return r;};}
+{const _l=updVkLong;updVkLong=function(s,dt){if(s.state!=='sink'&&s.state!=='load'&&vkNoGo(s.tx,s.ty)&&!vkNoGo(s.x,s.y)){const a=Math.atan2(s.ty-s.y,s.tx-s.x);
+    let k=0;while(k<60&&vkNoGo(s.tx,s.ty)){s.tx-=Math.cos(a)*40;s.ty-=Math.sin(a)*40;k++;}}
+  const x=s.x,y=s.y,was=vkNoGo(x,y);const r=_l.apply(this,arguments);
+  if(!was&&s.state==='row'&&vkNoGo(s.x,s.y)){s.x=x;s.y=y;VKA.blocked++;s.t=Math.max(s.t,40.5);}return r;};}
+// chase: a dragon over fantasy water or inside a boss circle is not chased on the water (the ship patrols instead)
+{const _k=vkSeek;vkSeek=function(g,s,dt){if(vkNoGo(D.x,D.y)){VKA.skipSeek++;s.goal=null;vkPatrol(g,s);return;}return _k.apply(this,arguments);};}
+// escort: a royal trade ship sailing near a boss (or in fantasy water) is not escorted there
+{const _e=vkEscortStep;vkEscortStep=function(g,s,dt){const r=_e.apply(this,arguments);if(r&&s.goal&&vkNoGo(s.goal.x,s.goal.y)){s.goal=null;VKA.skipEsc++;return false;}return r;};}
+// patrol stations: skip a station inside a boss circle (fall back to the next safe one)
+{const _p=vkPatrol;vkPatrol=function(g,s){const r=_p.apply(this,arguments);if(s.goal&&vkNoGo(s.goal.x,s.goal.y)){const P=vkSeaPosts().filter(p=>!vkNoGo(p.x,p.y,200));
+    if(g.role==='sea'&&P.length){const p=P[(g.slot||0)%P.length];s.goal={x:p.x,y:p.y};}else s.goal=null;}return r;};}
+// ======================= queue 150 / 150-fix: a bigger MINIMAP, more wide than tall (~+30% width, ~+10% height), no stretching =======================
+// The world map keeps its true aspect: it is drawn ~10% bigger (uniform scale), and the frame is ~30% wider than before; the extra width is
+// a framed margin either side (the whole world is already shown, so there is no more land to show sideways). The top-right corner stays put,
+// and the frame never grows past the old "room" limit, so it stays clear of the centred WANTED panel and the touch buttons.
+const MM150={w:1.3,h:1.1,f:null,n:0};
+{const _g=hudMMGeom;hudMMGeom=function(sm){const o=_g.apply(this,arguments);try{
+  const room=Math.floor(VW/2-(sm?210:260)-20),R=o.mx0+o.mmw,asp=o.mmh/o.mmw;
+  let fw=Math.round(o.mmw*MM150.w);fw=Math.max(o.mmw,Math.min(fw,Math.max(room,o.mmw)));
+  const cw=Math.min(o.mmw*MM150.h,fw),ch=cw*asp,fl=R-fw,mx0=fl+(fw-cw)/2;
+  ctx.font='10px Georgia';const capW=Math.ceil(ctx.measureText(`Explored ${exploredPct()}%  ·  M: map`).width)+4;
+  MM150.f={x:fl,y:o.my0,w:fw,h:ch,cx:mx0};MM150.n++;
+  return{mx0,my0:o.my0,mmw:cw,mmh:ch,mmL:Math.min(fl-3,mx0+cw-capW),fw,fl,old:{w:o.mmw,h:o.mmh}};}catch(e){MM150.f=null;return o;}};}
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const f=MM150.f;if(!big&&f&&Math.abs(mmx-f.cx)<.5&&f.w>mmw+1){try{panel(f.x-3,f.y-3,f.w+6,f.h+6);
+    ctx.fillStyle='#1d3a5c';ctx.fillRect(f.x,f.y,f.w,f.h);}catch(e){}}return _m.apply(this,arguments);};}
+// the minimap's HUD box (used by the layout checks and taps) spans the whole wider frame
+{const _h=drawHUD;drawHUD=function(){const r=_h.apply(this,arguments);try{const f=MM150.f;if(f&&UI.mm){const x0=Math.min(UI.mm.x,f.x-3),x1=Math.max(UI.mm.x+UI.mm.w,f.x+f.w+3);UI.mm.x=x0;UI.mm.w=x1-x0;}}catch(e){}return r;};}
+// ======================= queue 150a / 150a-fix: only the THREE true castles keep the big map icons =======================
+// Lumenspire Citadel (light), Doomforge Citadel (dark) and King William's Castle Aldric keep the item-137 castle icons. The forts / other
+// strongholds (Ironhold Gate, Gorgrim War-Fort) go back to a normal-size marker: a small square in their side's colours, like before 137.
+MAPC.fortSq={mini:5,big:9};
+mapCastles=function(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s,W=big?MAPC.big:MAPC.mini,P=MAPC.pal;
+  if(typeof NR_TOWNS!=='undefined')for(const [n,k] of [['Ironhold Gate','L'],['Gorgrim War-Fort','D']]){const t=NRT(n);if(t&&(big?seen(t.x,t.y):true)){const q=big?MAPC.fortSq.big:MAPC.fortSq.mini;
+    ctx.fillStyle=P[k].f;ctx.fillRect(X(t.x)-q/2,Y(t.y)-q/2,q,q);ctx.strokeStyle=P[k].o;ctx.lineWidth=1;ctx.strokeRect(X(t.x)-q/2,Y(t.y)-q/2,q,q);G.mapFortN=(G.mapFortN||0)+1;}}
+  if(typeof NR_CC!=='undefined')for(const k in NR_CC){const c=NR_CC[k];mapCastle(X(c.x),Y(c.y),W,P[k],big);}
+  mapCastle(X(CASTLE.x),Y(CASTLE.y)+(big?2:1),W,P.K,big);G.mapCastleN=(G.mapCastleN||0)+1;
+  if(typeof PR!=='undefined'&&PR.state==='tower'){const pb=big?5:2.4;ell(X(PR.x),Y(PR.y),pb+1.5,pb+1.5,'#fff');ell(X(PR.x),Y(PR.y),pb,pb,'#f6c');}
+  ell(X(D.x),Y(D.y),big?6:4,big?6:4,Math.floor(G.t*4)%2?'#f33':'#ff0');};
+// ======================= queue 147l: every level STARTS with tax collectors already out =======================
+// New game and every level-up (both go through newGame): on the first tax tick of the level, one mounted collector rides out per region
+// that has taxable gold (richest region first, up to the usual cap), each placed partway (40%) along the road to his first area with his
+// escort beside him, instead of everyone waiting at the gate. Loading a save clears the pending start (the save's own collectors are restored),
+// so nothing is double-spawned.
+const TXL={pend:0,frac:.4,n:0,last:[]};
+{const _n=newGame;newGame=function(){const r=_n.apply(this,arguments);TXL.pend=1;return r;};}
+{const _a=svApply;svApply=function(){const r=_a.apply(this,arguments);TXL.pend=0;return r;};}
+function txlStart(){TXL.pend=0;TXL.last=[];if(G.over)return;const cap=tx147Cap();let guard=8;
+  while(guard-->0&&units.filter(u=>u.tax&&!u.dead).length<cap){const u=spawnTaxman();if(!u)break;
+    const s0=u.route&&u.route.find(t=>!t.home);
+    if(s0){const gx=u.x,gy=u.y,nx=gx+(s0.x-gx)*TXL.frac,ny=gy+(s0.y-gy)*TXL.frac;u.x=nx;u.y=ny;
+      for(const k of units)if(!k.dead&&k.escort===u){k.x=nx+R(-24,24);k.y=ny+R(-14,14);}}
+    u.txStart=1;TXL.n++;TXL.last.push({rg:u.txRg,x:Math.round(u.x),y:Math.round(u.y),to:s0?s0.name||s0.wk||s0.mk:null,d:s0?Math.round(dist(u,s0)):0});}}
+{const _u=updTaxes;updTaxes=function(dt){if(TXL.pend){try{txlStart();}catch(e){TXL.pend=0;}}return _u.apply(this,arguments);};}
+// ======================= queue 147m / 147m-fix: released tax escorts RESTART their own patrol on its original route =======================
+// When the tax man borrows soldiers (txeLend), the patrol's route is stored on the patrol and on each lent soldier (u.txR): a waystation
+// patrol's site + loop index, or a road patrol's current waypoint, and its colours. When they are released (delivery, the tax man lost, or the
+// 147k hold-the-line rejoin) and their old patrol was destroyed meanwhile, they re-create it on that SAME route with themselves as members
+// (a site patrol that was already replaced joins the replacement on that same loop). Only a soldier with no route info at all retreats home.
+// The route is also kept in saves, so escorts restored from a save still know their way back.
+const TXM={saved:0,restarted:0,joined:0,last:null,np:new WeakMap()};
+function txmRoute(p){if(!p)return null;if(p.txR)return p.txR;const L=p.members&&p.members.find(m=>m.colr);
+  const R={site:p.site||null,li:p.li|0,wp:p.wp?{x:Math.round(p.wp.x),y:Math.round(p.wp.y)}:null,colr:L?L.colr:null,id:p.id};
+  if(!R.site&&!R.wp){const m=p.members&&p.members[0];if(m)R.wp={x:Math.round(m.x),y:Math.round(m.y)};}
+  if(!R.site&&!R.wp)return null;p.txR=R;TXM.saved++;return R;}
+{const _l=txeLend;txeLend=function(m,u,p){const R=p?txmRoute(p):null;const r=_l.apply(this,arguments);if(R)u.txR=R;return r;};}
+const txmGone=p=>!p||p.dead||!patrols.includes(p)||!p.members.some(x=>!x.dead&&!x.txe&&x.escort==null&&!x.txStay);
+function txmPrep(u){const R=u.txR;let p=u.txP;if(!R)return;
+  if(p&&!txmGone(p)&&!p.txLoad)return; // the old patrol is still out there: the normal rejoin
+  if(R.site){const live=patrols.find(q=>q!==p&&q.site===R.site&&!q.dead&&q.members.some(x=>!x.dead));if(live){u.txP=live;TXM.joined++;return;}}
+  if(!p){p=TXM.np.get(R);if(!p||p.dead&&patrols.includes(p)){p={id:++patrolId,members:[],engaged:false,wp:null};TXM.np.set(R,p);}}
+  p.dead=false;p.txFix=R;u.txP=p;}
+function txmFix(){for(const p of patrols){const R=p.txFix;if(!R)continue;p.txFix=null;p.txLoad=0;p.txR=R;
+  if(R.site){const S=typeof WS!=='undefined'&&WS.sites?WS.sites().find(s=>s.key===R.site):null;if(S){p.site=R.site;p.siteS=S;p.li=R.li;p.wp=null;}else if(R.wp)p.wp={x:R.wp.x,y:R.wp.y};}
+  else if(R.wp)p.wp={x:R.wp.x,y:R.wp.y};
+  if(!p.members.some(m=>m.banner)&&p.members[0])p.members[0].banner=true;
+  TXM.restarted++;TXM.last={id:p.id,site:p.site||null,li:p.li,wp:p.wp?{x:Math.round(p.wp.x),y:Math.round(p.wp.y)}:null,n:p.members.length};
+  if(p.members[0]&&dist(p.members[0],D)<1200)float(p.members[0].x,p.members[0].y-40,'Back on our patrol!','#bfe0ff');}}
+{const _r=txeRelease;txeRelease=function(m){for(const u of units)if(!u.dead&&u.escort===m&&u.txe)txmPrep(u);const r=_r.apply(this,arguments);txmFix();
+  return r;};}
+{const _k=txkRejoin;txkRejoin=function(u){txmPrep(u);const r=_k.apply(this,arguments);txmFix();return r;};}
+{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);if(Array.isArray(d.TX)){const L=units.filter(u=>u.tax&&!u.dead);
+  d.TX.forEach((t,i)=>{const m=L[i];if(!m||!Array.isArray(t.esc))return;const E=txeOf(m);t.esc.forEach((e,j)=>{const u=E[j];if(u&&u.txR)e.r=u.txR;});});}return d;};}
+{const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);if(d&&Array.isArray(d.TX)){const L=units.filter(u=>u.tax);
+  d.TX.forEach((t,i)=>{const m=L[i];if(!m||!Array.isArray(t.esc))return;const E=txeOf(m);t.esc.forEach((e,j)=>{const u=E[j];if(u&&e.r){u.txR=e.r;if(u.txP&&u.txP.txLoad)u.txP.txR=e.r;}});});}return r;};}
+// ======================= queue 152: NO wave announcements (the WANTED bar already shows the threat) =======================
+// spawnWave still musters the same troops, but its announcement is gone: the "The knights / foot soldiers are coming!" and
+// "Reinforcements! ..." banner (with its "Wave N: ..." line and the first-time troop tips), the war horn it blew, and its screen shake.
+// Any banner that was already up (or that the caller sets afterwards, e.g. the princess capture) is untouched.
+const W152={muted:0};
+{const _w=spawnWave;spawnWave=function(){const b0=G.banner,sh0=G.shake,h0=typeof horn==='function'?horn:null;if(h0)horn=function(){};
+  try{return _w.apply(this,arguments);}finally{if(h0)horn=h0;if(G.banner!==b0){G.banner=b0;W152.muted++;}G.shake=sh0;}};}
+// ======================= queue 151 / 151-fix: the castle quietly tops up its patrols every 60 s =======================
+// Every 60 s, unless the castle is under attack (a castle building hit in the last 20 s, the dragon within 1200 px of the gate, or the
+// militia out), every patrol that is not fighting and is below its original strength gets fresh soldiers from the castle gate: the exact
+// lost types (foot / knight / mounted knight / archer, at the patrol's original hit points and colours). They ride out and fall in once they
+// reach the column. Soldiers lent to a tax man or on their way back count as present. Never past maxSoldiers (170). Missing patrols keep the
+// existing 45 s / 25 s replacement timer. 151-fix: completely silent (no banner, float text, alert or sound).
+const RP151={every:60,t:60,passes:0,skipped:0,sent:0,joined:0,capped:0,hitWin:20,nearGate:1200,last:null};
+const rp151Kind=u=>u.type==='archer'?'archer':u.mounted?'cavalry':u.foot?'foot':'knight';
+function rp151Attack(){return(G.vkHitT!=null&&G.t-G.vkHitT<RP151.hitWin)||d2(D.x,D.y,GATE.x,GATE.y)<RP151.nearGate||!!G.milOn;}
+function rp151Mk(o){const x=GATE.x+R(-20,20),y=GATE.y+10;let u;
+  if(o.k==='foot')u=mkUnit('knight',x,y,{hp:o.hp,maxHp:o.hp,atk:0,foot:true,colr:o.colr});else if(o.k==='cavalry')u=mkCavalry(x,y,o.colr?{colr:o.colr}:{});
+  else if(o.k==='archer')u=mkUnit('archer',x,y,{hp:o.hp,maxHp:o.hp,shootT:R(1,3)});else u=mkUnit('knight',x,y,{hp:o.hp,maxHp:o.hp,atk:0,colr:o.colr});
+  u.hp=u.maxHp=o.hp;u.born=G.t;return u;}
+function rp151Pass(){RP151.passes++;let sent=0;const per=[];
+  for(const p of patrols){if(p.dead||p.engaged||!p.orig||!p.members.some(u=>!u.dead))continue;
+    const have={};const cnt=u=>{const k=rp151Kind(u);have[k]=(have[k]||0)+1;};
+    for(const u of p.members)if(!u.dead)cnt(u);for(const u of units)if(!u.dead&&!u.gone&&(u.txP===p||u.rp151===p)&&!p.members.includes(u))cnt(u);
+    const need=[];for(const o of p.orig){if(have[o.k]>0)have[o.k]--;else need.push(o);}
+    let n=0;for(const o of need){if(soldierCount()>=PATROL_CFG.maxSoldiers){RP151.capped++;break;}const u=rp151Mk(o);u.patrol=p;u.rp151=p;units.push(u);n++;sent++;}
+    if(n)per.push({id:p.id,n,orig:p.orig.length});}
+  if(sent)G.gateOpenT=Math.max(G.gateOpenT||0,2);RP151.sent+=sent;RP151.last={t:Math.round(G.t),sent,per};return sent;}
+{const _u=updPatrols;updPatrols=function(dt){const r=_u.apply(this,arguments);
+  for(const p of patrols)if(!p.orig&&p.members.length)p.orig=p.members.filter(u=>!u.dead).map(u=>({k:rp151Kind(u),hp:u.maxHp,colr:u.colr||null}));
+  // reinforcements on their way: ride to the patrol leader, then fall into the column
+  for(const u of units){const p=u.rp151;if(!p||u.dead)continue;if(p.dead||!patrols.includes(p)){u.rp151=null;u.patrol=null;u.retreat=true;continue;}
+    const L=p.members.find(m=>!m.dead);if(!L){continue;}if(p.engaged){if(dist(u,L)<120){u.rp151=null;p.members.push(u);RP151.joined++;}continue;}
+    if(dist(u,L)<70){u.rp151=null;p.members.push(u);RP151.joined++;continue;}moveTo(u,L.x,L.y,u.mounted?95:72,dt);if(u.mounted){u.cs='wheel';u.ha=Math.atan2(L.y-u.y,L.x-u.x);}}
+  if(G.over||G.won)return r;RP151.t-=dt;if(RP151.t<=0){RP151.t=RP151.every;if(rp151Attack())RP151.skipped++;else rp151Pass();}return r;};}

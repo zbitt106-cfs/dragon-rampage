@@ -889,7 +889,7 @@ Screenshots: `screenshots/321_tax_collector_horse_147.png` and `321_tax_collecto
 | South | the rest | Millbrook, Riverbend, Southwold, Haybury, the Castle Market and the Millbrook and Riverbend markets |
 | Desert | x < 0 | Sandhaven, the Sandhaven Bazaar, and the Deepwood north and Deepwood south hunters' cabins |
 
-- A route covers up to 4 areas in his region, richest area first (see queue 147h below).
+- A route covers ONE area per trip, the richest in his region (see queue 147j below).
 - When choosing a region, the richest uncovered region goes first (by the gold waiting to be taxed). With the gate broken, only the two richest uncovered regions get a collector.
 - The desert has no hunter camps of its own. The two Deepwood hunters' cabins on the western road to the desert are the "hunters" on the desert route.
 
@@ -899,6 +899,12 @@ Screenshots: `screenshots/321_tax_collector_horse_147.png` and `321_tax_collecto
 - **No carry cap (147g):** the old 30-coin limit per stop is gone. At each stop he takes every taxable coin (houses still keep 1 coin, and shops, market stalls and working sites keep 3). In the test he left Riverbend with 589 gold in one sack and delivered all 589.
 - **Richest area first (147h):** the stops in his region are grouped into areas: a village, a market, or a cluster of working sites within 700 px of each other. Areas are ranked by the total taxes they hold. He goes to the richest area first, collects from every building there, then moves on to the next-richest area, up to 4 areas per trip.
 
+
+## Tax collectors: hat, always mounted, one area per trip, escorts hold the line (queue 147i, 147j, 147k)
+- **Hat on his head (147i):** the tall tax-man hat now sits on the collector's head, both mounted and on foot. Before, it floated above the rider.
+- **Always mounted (147i):** every collector spawns on horseback. Fire or a stomp still throws him off ("Whoa! My horse!"), but after 2 seconds he catches his horse and climbs back on ("Back in the saddle!"). The loose horse is removed when he remounts. Loading a save always restores collectors mounted, including old saves that stored one on foot.
+- **One area per trip (147j):** he collects every building in the richest area of his region (a village, a market, or a cluster of working sites), rides back to the castle and delivers, then re-ranks the areas by their live stored taxes and rides out to the richest one. The area he just emptied is skipped while any other area has gold. When nothing is left anywhere in his region, he retires. There is still one collector per region. Saves keep his current area.
+- **Escort holds the line (147k):** when a collector bolts for the castle on seeing the dragon, the soldiers he borrowed from patrols stay behind and fight ("Hold the line! The taxes must get through!"). Once the dragon has been more than 700 px away for 3 seconds, they rejoin their patrol. A soldier whose patrol is gone returns to the castle. The guards who leave the castle with him are unchanged.
 ## Earning tiers for hidden gold (queue 148, 148a, 148b)
 | Tier | Buildings | Rate | Cap | Always left behind |
 |---|---|---|---|---|
@@ -971,6 +977,49 @@ Vikings and pirates ignore each other. Viking ships take **10% less direct fire 
 **Trade escort.** When a royal trade ship sails in, up to two patrolling Viking warships within 3,200 px sail alongside it. At the quay the crew lands and walks with the king's carts to the castle, then goes back to its patrol post.
 
 **Save and load:** Viking crews are saved. On loading, each crew is back aboard its ship at its post.
+
+### Viking ships keep clear of sea bosses and fantasy waters (queue 141aa, 141ab)
+- **141aa:** Viking warships and longships give the giant squid, the giant octopus, the Kraken Deep and Wizard's Isle a wide berth. Routes bend around them, the Vikings don't chase the dragon into a boss circle, and they won't escort a trade ship that sails next to one. In tests the closest a warship got to a squid it was sent straight at was 900 px.
+- **141ab:** Viking ships never sail into fantasy waters (the Northern Realms sea past the wizard's barrier). If the dragon flies over fantasy water they wait at the edge. Over three runs of 20 seconds each aimed straight at it, no Viking ship spent a single frame inside.
+
+## Tax collectors already out at the start of each level (queue 147l)
+At the start of every level (a new game and every level-up), the tax collectors are already working. One mounted collector rides out per region that has taxable gold, up to the region cap (4, or 2 once the gate is broken). Each starts 40% of the way along his route to his first area, with his escort beside him, instead of at the gate. Loading a save restores the collectors that were saved and never adds extra ones. In tests a new game started with 4 collectors in 4 regions, between 142 and 3076 px from the gate.
+
+## Tax escorts restart their own patrol (queue 147m, 147m-fix)
+When a tax man borrows soldiers from a road patrol, the patrol's route is written down: its waypoint, or its site loop and loop position, plus its colours. If that patrol is wiped out while they are away, the released soldiers rebuild it on exactly that route instead of retreating to the castle ("Back on our patrol!"). If another patrol is still walking the same site loop, they join it. They only retreat if the patrol had no route at all. The saved route is also kept in save files.
+
+## Castle tops up its patrols (queue 151, 151-fix)
+Every **60 seconds**, if the castle is **not under attack**, every road patrol that isn't fighting and is below its original size gets fresh soldiers from the castle gate. The castle counts as under attack if one of its buildings was hit in the last 20 seconds, the dragon is within 1200 px of the gate, or the militia is out. When that happens the pass is skipped.
+- Replacements are the same types that were lost: foot soldiers, knights, mounted knights or archers, with the patrol's original hit points and colours. Hard-mode extra troops count too.
+- Soldiers lent to a tax man, or already on their way, count as present, so a patrol is never over-filled.
+- New soldiers ride out (72 px/s on foot, 95 mounted) and fall into the column when they reach it.
+- Never more than **170** soldiers in total. Completely missing patrols still use the existing replacement timer (45 s, or 25 s refill).
+- **Silent (151-fix):** no banner, float text, alert or sound.
+
+## No wave announcements (queue 152)
+When a wave of troops rides out, nothing is announced any more: the WANTED bar already shows the threat. The troops are exactly the same. Removed:
+- The banner **"The foot soldiers are coming!" / "The knights are coming!"**, and **"Reinforcements! ..."** for top-up waves.
+- Its sub-line **"Wave N: 3 foot soldiers, 1 knight ... · riding out of the castle gate"** (or "trickling out through the rubble").
+- The first-time troop tips that rode along with it ("Scorpions roll out of the castle!", "Catapults! Dodge the warning circles", "Mounted knights charge in straight lines", "Archers can hit you even in the air!", "Armoured knights on horseback join the foot soldiers", "Foot soldiers can only poke you on the ground", "Your damage to the castle has slowed them down!", "The gate is rubble: a smaller wave trickles out").
+- The **war horn** sound and the small screen shake that went with a wave.
+
+Kept: the WANTED bar itself, the "Wave N" line in the pause menu, and all other banners (for example the princess capture, raids and King William).
+
+## Bigger minimap; big icons only for the 3 castles (queue 150, 150a)
+- **150:** the minimap is about **30% wider and 10% taller**, with no stretching. The map is scaled up 10% evenly and sits in the middle of the wider frame, with sea-blue side bands. The top-right corner stays put, and the minimap never reaches the WANTED bar or HUD panels.
+  - Desktop 1280x800: 257x150 -> map 283x165 in a 334-px frame (tap area 263x171 -> 340x186).
+  - Phone landscape: tap area 115x80 -> 139x86. Phone portrait: 184x125 -> 234x135.
+- **150a:** only the 3 real castles keep the big castle icon: **Lumenspire Citadel**, **Doomforge Citadel** and **King William's Castle Aldric**. Ironhold Gate and Gorgrim War-Fort (and any other strongholds) now use a normal-size square icon in their land's colours.
+
+| Before | After |
+|---|---|
+| ![Desktop before](screenshots/332_minimap_150_before_desktop.png) | ![Desktop after](screenshots/332_minimap_150_after_desktop.png) |
+| ![Phone landscape before](screenshots/332b_minimap_150_before_phone_landscape.png) | ![Phone landscape after](screenshots/332b_minimap_150_after_phone_landscape.png) |
+| ![Phone portrait before](screenshots/332c_minimap_150_before_phone_portrait.png) | ![Phone portrait after](screenshots/332c_minimap_150_after_phone_portrait.png) |
+| ![Big map before](screenshots/333_bigmap_150a_before_castle_icons.png) | ![Big map after](screenshots/333_bigmap_150a_after_castle_icons.png) |
+
+Close-ups: `screenshots/332z_minimap_150_zoom_desktop.png`, `332z_minimap_150_zoom_landscape.png`, `332z_minimap_150_zoom_portrait.png`. (Phone shots are emulated in desktop Chrome at iPhone 17 Pro Max size, not taken on a real phone.)
+
 
 ## Wizards come back every level (queue 140)
 - Both wizards return at the start of every castle level, in every mode. The Storm Wizard comes back with his tower and a 300 shield (210 on easy). The Dark Wizard comes back with a 525 shield (368 on easy). Their shields don't grow with the level yet. A hard-mode switch can add that later through one hook (`WZ140.hpMul`).
