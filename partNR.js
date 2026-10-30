@@ -4288,3 +4288,21 @@ function tx158Detour(u,tx,ty){if(!tx158Cross(u.x,u.y,tx,ty))return null;let best
 function v156Water(x,y){return inSea(x,y)||inLake(x,y)||riverD(x,y)<RIVW-10;}
 function v156WaterNear(x,y,R){for(let r=0;r<=R;r+=30)for(let k=0;k<(r?32:1);k++){const a=k/32*TAU,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(px<WX0+80||px>WX1-80||py<WY0+80||py>WY1-80)continue;if(v156Water(px,py)&&!vkFant(px,py)&&!onBridge(px,py))return{x:px,y:py};}return null;}
 {const _l=vkLaunch;vkLaunch=function(g){const S=g.site;if(S&&!v156Water(S.x,S.y)){const w=v156WaterNear(S.x,S.y,2400);if(!w){g.site=null;G.vkLaunchHeld=(G.vkLaunchHeld||0)+1;return;}S.x=w.x;S.y=w.y;G.vkLaunchFix=(G.vkLaunchFix||0)+1;}return _l.apply(this,arguments);};}
+
+// ---- 170 hotfix: HUD castle-gold counter showed the CHEST count (161 drawHUD swap) + short/exact gold formats ----
+function amt170(n){n=Math.max(0,Math.floor(+n||0));if(n<1000)return String(n);
+  const f=(v,s)=>{const t=v<10?(Math.floor(v*10)/10).toFixed(1).replace(/\.0$/,''):String(Math.floor(v));return t+s;};
+  return n>=1e9?f(n/1e9,'b'):n>=1e6?f(n/1e6,'m'):f(n/1e3,'k');}
+function exact170(n){n=Math.max(0,Math.floor(+n||0));return n.toLocaleString('en-US');}
+uiAmt=amt170;
+{const _h=drawHUD;drawHUD=function(){const t0=treasury,T=t0();treasury=function(){return T;};try{return _h.apply(this,arguments);}finally{treasury=t0;}};}
+{const _p=drawPM;drawPM=function(){const u0=uiAmt;uiAmt=exact170;try{return _p.apply(this,arguments);}finally{uiAmt=u0;}};}
+uiStock=function(x,y,fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;const a=uiAmt(G.wood|0),b=uiAmt(G.stone|0),w1=ctx.measureText(a).width,w2=ctx.measureText(b).width;
+  let cx=x+9*s;uiLog(cx,y,s);cx+=13*s;txt(a,cx,y+fs*.38,fs,'#f0d6a8','left');cx+=w1+12*s;
+  uiRock(cx,y,s);cx+=12*s;txt(b,cx,y+fs*.38,fs,'#e4e8ee','left');cx+=w2;return cx-x;};
+uiStockW=function(fs){fs=fs||12;const s=fs/12;ctx.font=`bold ${fs}px Georgia`;return 9*s+13*s+ctx.measureText(uiAmt(G.wood|0)).width+12*s+12*s+ctx.measureText(uiAmt(G.stone|0)).width;};
+function pm170Line(){if(!(scene==='play'&&G&&PM.scr==='main'))return;const S=SAFE,touch=TOUCH.on,aw=VW-S.l-S.r,ah=VH-S.t-S.b,W=Math.min(aw-16,600),x0=S.l+(aw-W)/2,cx=x0+W/2;
+  const rh=Math.max(30,Math.min(touch?46:38,Math.floor((ah-16-182)/PM_MAIN.length)-8)),H=86+PM_MAIN.length*(rh+8)+96,y0=S.t+Math.max(8,(ah-H)/2);
+  const t=`Gold: ${exact170(G.stash||0)}   ·   Castle gold: ${exact170(treasury())}   ·   Wood: ${exact170(G.wood|0)}   ·   Stone: ${exact170(G.stone|0)}`;
+  let fs=touch?12:13;ctx.font=`bold ${fs}px Georgia`;while(fs>8&&ctx.measureText(t).width>W-24){fs--;ctx.font=`bold ${fs}px Georgia`;}txt(t,cx,y0+H-88,fs,'#ffe08a','center');}
+{const _p=drawPM;drawPM=function(){const r=_p.apply(this,arguments);try{ctx.setTransform(DPR,0,0,DPR,0,0);pm170Line();}catch(e){}return r;};}

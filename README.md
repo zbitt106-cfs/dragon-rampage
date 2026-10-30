@@ -1170,3 +1170,13 @@ What's in the list (74):
 | ![Achievements list](screenshots/286_achievements_list.png) | ![Achievements on a phone](screenshots/287_achievements_phone.png) |
 | ![Pause menu with Achievements](screenshots/288_achievements_pause_phone.png) | ![Region feasts with still-to-eat lists](screenshots/289_achievements_feasts.png) |
 | ![Alpha guardians](screenshots/290_achievements_alphas.png) | ![Achievement unlocked alert](screenshots/291_achievement_unlocked_alert.png) |
+
+## Gold counter hotfix (queue 170, 170a, 170b, 170c)
+- **Bug:** the castle-gold number in the HUD pill showed the number of **treasure chests** on the map (usually 0 or 1), not the castle treasury. Since queue 161, the HUD temporarily swaps the castle gold piles for the chest markers so the minimap draws chests, and the pill read the treasury during that swap. The fix keeps the real treasury for the whole HUD draw. The hoard (dragon) gold was never wrong.
+- **Short HUD format (all big HUD counters: castle gold, hoard gold, wood, stone):** exact below 1,000, then 1k / 1.2k / 2.5k (one decimal, rounded down, no ".0") up to 9.9k, then whole thousands (10k, 12k, 999k), then 1m / 1.5m from 1,000,000. Never clipped on desktop or iPhone.
+- **Exact amounts in the pause menu:** the pills there show exact numbers with commas, plus a line like "Gold: 1,037 · Castle gold: 100 · Wood: 12,345 · Stone: 9,876".
+
+![HUD short gold](screenshots/346_hud_gold_short_1280_170.png)
+![HUD short gold iPhone](screenshots/346b_hud_gold_short_iphone_170.png)
+![Menu exact gold](screenshots/346c_menu_exact_gold_1280_170.png)
+![Menu exact gold iPhone](screenshots/346d_menu_exact_gold_iphone_170.png)
