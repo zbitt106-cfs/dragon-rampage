@@ -10661,6 +10661,26 @@ function ar142Draw(){AR142.drawn=[];if(laHide())return;const T=ar142Targets();if
 {const _h=drawHUD;drawHUD=function(){AR142.on=1;AR142.cut=0;try{_h.apply(this,arguments);}finally{AR142.on=0;}};}
 // drawn in the lair arrow's slot (after every HUD layer), so the HUD layout test treats all guide arrows alike
 {const _l=drawLairArrow;drawLairArrow=function(){const r=_l.apply(this,arguments);ar142Draw();return r;};}
+// ======================= queue 155: a bigger LAIR arrow, and a BIG flashing one while you carry Princess Elizabeth or a dark / light egg =======================
+// Normal: 28% bigger than before (scale .5 -> .64). Carrying the princess (D.princess) or an egg (D.nrEgg, dark or light): ~1.85x normal (scale ~1.1-1.26), pulsing in
+// size and flashing bright/dim about 3 times a second, with a glow. The arrow is pulled in from the screen edge by the extra length so its tip never leaves the screen.
+// Same spot logic (laSpot, clear of the HUD and touch buttons) as before; the other guide arrows (queue 142) are unchanged.
+const LA155={n:1.28,c:1.85,lastK:0,lastCarry:'',flash:0};
+function la155Carry(){if(D.princess)return 'princess';if(D.nrEgg)return D.nrEgg==='W'?'light egg':'dark egg';return '';}
+drawLairArrow=function(){LA.last=null;if(laHide()||laLairOnScreen()){ar142Draw();return;}
+  ctx.setTransform(DPR,0,0,DPR,0,0);const p=laSpot(),dist=Math.round(Math.hypot(LAIR.x-D.x,LAIR.y-D.y)/10),cr=la155Carry(),glow=!!cr,pl=.5+.5*Math.sin(G.t*6),fl=Math.sin(G.t*19)>0;
+  const base=.5*LA155.n,k=glow?base*LA155.c*(.94+.12*pl):base,pull=Math.max(0,24*k-12),ax=p.x-Math.cos(p.a)*pull,ay=p.y-Math.sin(p.a)*pull;
+  const lp=glow?pull+10:pull*.6,lx=clamp(p.lx-Math.cos(p.a)*lp,30,VW-30),ly=clamp(p.ly-Math.sin(p.a)*lp*.6,14,VH-6);
+  LA155.lastK=k;LA155.lastCarry=cr;LA155.flash=glow?(fl?1:0):0;
+  LA.last={x:ax,y:ay,ang:p.a,dist,glow,lx,ly,k,carry:cr};
+  const egg=cr==='dark egg',col=!glow?'#d8b060':egg?(fl?'#e0a0ff':'#9a50e0'):(fl?'#fff27a':'#ffc21e'),sh=egg?'rgba(200,120,255,1)':'rgba(255,200,40,1)';
+  ctx.save();ctx.translate(ax,ay);ctx.rotate(p.a);ctx.scale(k,k);
+  if(glow){ctx.shadowColor=sh;ctx.shadowBlur=(fl?18:8)+8*pl;}
+  ctx.globalAlpha=glow?(fl?1:.62):.85;poly([24,0,-10,-14,-3,0,-10,14],col);
+  ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle=glow?(fl?'#ffffff':'#fff6c0'):'rgba(60,40,10,.85)';ctx.stroke();ctx.restore();ctx.globalAlpha=1;
+  txt(`LAIR ${dist} m`,lx,ly,glow?12:11,glow?'#fff0a0':'#ffe2a0','center');
+  if(glow)txt(cr==='princess'?'\u265b take her home!':`take the ${cr} home!`,lx,ly+(ly>VH/2?-13:13),10,egg?'#e8c8ff':cr==='light egg'?'#fff8c0':'#ffc0e0','center',false);
+  ar142Draw();};
 
 // ======================= queue 143 / 143a: every tiger is an ALPHA that guards its own turf (all modes) =======================
 // Alpha rules (same as the white elephant, item 129): a tiger above 50% health shrugs off a bite (it stings him); at/below 50% he is
@@ -11045,7 +11065,7 @@ function vkDeck(s,dt,C){const g=vkG(s.vkg);if(!g||vkFant(D.x,D.y)||G.over)return
 function vkFire(s,dt){if(!s.fire)return;s.fireT=(s.fireT||0)+dt;if(rnd()<dt*8)flame(s.x+R(-s.r*.6,s.r*.6),s.y-8,R(4,14));hurtShip(s,6*dt,'fire');if(s.fireT>(s.kind==='vklong'?5:7)&&s.state!=='sink'){s.fire=0;s.fireT=0;puff(s.x,s.y-10,10,'rgba(200,200,200,',50,8);if(d2(s.x,s.y,D.x,D.y)<1500)float(s.x,s.y-60,'The Vikings douse the flames!','#cde');}}
 function vkSail(s,dt,tx,ty,spf){const a=Math.atan2(ty-s.y,tx-s.x);s.ang+=angDiff(a,s.ang)*Math.min(1,2.5*dt);const st=s.sp*spf*dt;const nx=s.x+Math.cos(s.ang)*st,ny=s.y+Math.sin(s.ang)*st;return{nx,ny};}
 function updVkShip(s,dt){s.t+=dt;s.bob+=dt;if(s.state==='sink'){return;}vkFire(s,dt);if(s.state==='sink')return;
-  if(s.path&&s.path.length){const p=s.path[0];const r=vkSail(s,dt,p.x,p.y,1);s.x=r.nx;s.y=r.ny;if(d2(s.x,s.y,p.x,p.y)<40){s.path.shift();if(!s.path.length){s.path=null;const g=vkG(s.vkg);if(s.leave||!g){s.state='sink';s.t=99;s.gone=true;return;}if(g.mode==='sail')g.mode='aboard';}}}
+  if(s.path&&s.path.length){const p=s.path[0];let r=vkSail(s,dt,p.x,p.y,1);if(!vkShipOK(s,r.nx,r.ny)&&vkShipOK(s,s.x,s.y)){/*156b: never let the turn swing the hull onto land*/const a0=Math.atan2(p.y-s.y,p.x-s.x),st=s.sp*dt,sd=s.slideDir||1;let ok=null;for(const k of [0,1,-1,2,-2,3,-3,4,-4,5,-5]){const a=a0+k*sd*.38,nx=s.x+Math.cos(a)*st,ny=s.y+Math.sin(a)*st;if(vkShipOK(s,nx,ny)&&vkShipOK(s,s.x+Math.cos(a)*st*8,s.y+Math.sin(a)*st*8)){ok={a,nx,ny};if(k)s.slideDir=sd*Math.sign(k);break;}}if(ok){s.ang=ok.a;r={nx:ok.nx,ny:ok.ny};}else{r={nx:s.x,ny:s.y};s.ang+=dt*1.5;const g=vkG(s.vkg);if(g)g.stk=(g.stk||0)+dt;if(d2(s.x,s.y,p.x,p.y)<90)s.path.shift();if(!s.path.length){s.path=null;if(s.leave||!g){s.state='sink';s.t=99;s.gone=true;return;}if(g.mode==='sail')g.mode='aboard';}}}if(!s.path){vkDeck(s,dt,VK.deck);return;}s.x=r.nx;s.y=r.ny;if(d2(s.x,s.y,p.x,p.y)<40){s.path.shift();if(!s.path.length){s.path=null;const g=vkG(s.vkg);if(s.leave||!g){s.state='sink';s.t=99;s.gone=true;return;}if(g.mode==='sail')g.mode='aboard';}}}
   else if(s.goal){const d=d2(s.x,s.y,s.goal.x,s.goal.y);if(d>12){const r=vkSail(s,dt,s.goal.x,s.goal.y,s.goalSp||1);if(vkShipOK(s,r.nx,r.ny)){s.x=r.nx;s.y=r.ny;}else{s.ang+=dt*1.5;const g=vkG(s.vkg);if(g)g.stk=(g.stk||0)+dt;}}}
   if((G.fc&7)===0&&(s.path||s.goal))ripples.push({x:s.x-Math.cos(s.ang)*s.r,y:s.y-Math.sin(s.ang)*s.r*.5,t:0});
   vkDeck(s,dt,VK.deck);}
@@ -11214,7 +11234,7 @@ function vkSlide(s,ax,ay){const z=vkNearBoss(ax,ay);if(!z||vkFant(ax,ay))return 
     if(g.role==='sea'&&P.length){const p=P[(g.slot||0)%P.length];s.goal={x:p.x,y:p.y};}else s.goal=null;}return r;};}
 // ======================= queue 150 / 150-fix: a bigger MINIMAP, more wide than tall (~+30% width, ~+10% height), no stretching =======================
 // The world map keeps its true aspect: it is drawn ~10% bigger (uniform scale), and the frame is ~30% wider than before; the extra width is
-// a framed margin either side (the whole world is already shown, so there is no more land to show sideways). The top-right corner stays put,
+// a framed margin either side (queue 153 later replaced the margin: the map is now drawn to fill the frame). The top-right corner stays put,
 // and the frame never grows past the old "room" limit, so it stays clear of the centred WANTED panel and the touch buttons.
 const MM150={w:1.3,h:1.1,f:null,n:0};
 {const _g=hudMMGeom;hudMMGeom=function(sm){const o=_g.apply(this,arguments);try{
@@ -11224,8 +11244,14 @@ const MM150={w:1.3,h:1.1,f:null,n:0};
   ctx.font='10px Georgia';const capW=Math.ceil(ctx.measureText(`Explored ${exploredPct()}%  ·  M: map`).width)+4;
   MM150.f={x:fl,y:o.my0,w:fw,h:ch,cx:mx0};MM150.n++;
   return{mx0,my0:o.my0,mmw:cw,mmh:ch,mmL:Math.min(fl-3,mx0+cw-capW),fw,fl,old:{w:o.mmw,h:o.mmh}};}catch(e){MM150.f=null;return o;}};}
-{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const f=MM150.f;if(!big&&f&&Math.abs(mmx-f.cx)<.5&&f.w>mmw+1){try{panel(f.x-3,f.y-3,f.w+6,f.h+6);
-    ctx.fillStyle='#1d3a5c';ctx.fillRect(f.x,f.y,f.w,f.h);}catch(e){}}return _m.apply(this,arguments);};}
+// queue 153: no more blue side strips - the minimap is drawn to FILL the wider frame (stretched sideways by frame/map width, ~1.18x),
+// so the minimap shows only the map. Every map layer (all the drawMap add-ons) is inside this transform, so icons stay lined up.
+const MM153={n:0,k:1};
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const f=MM150.f;if(!big&&f&&Math.abs(mmx-f.cx)<.5&&f.w>mmw+1){const k=f.w/mmw;MM153.k=k;MM153.n++;
+    ctx.save();const fT=ctx.fillText,sT=ctx.strokeText;
+         // labels and icon glyphs are NOT stretched: each text is drawn at its stretched spot with the sideways scale undone
+         const un=o=>function(t,x,y,...a){ctx.save();ctx.translate(x,y);ctx.scale(1/k,1);try{return o.call(this,t,0,0,...a);}finally{ctx.restore();}};
+         let r;try{ctx.fillText=un(fT);ctx.strokeText=un(sT);ctx.translate(f.x-mmx*k,0);ctx.scale(k,1);r=_m.apply(this,arguments);}finally{delete ctx.fillText;delete ctx.strokeText;if(ctx.fillText!==fT){ctx.fillText=fT;ctx.strokeText=sT;}ctx.restore();}return r;}return _m.apply(this,arguments);};}
 // the minimap's HUD box (used by the layout checks and taps) spans the whole wider frame
 {const _h=drawHUD;drawHUD=function(){const r=_h.apply(this,arguments);try{const f=MM150.f;if(f&&UI.mm){const x0=Math.min(UI.mm.x,f.x-3),x1=Math.max(UI.mm.x+UI.mm.w,f.x+f.w+3);UI.mm.x=x0;UI.mm.w=x1-x0;}}catch(e){}return r;};}
 // ======================= queue 150a / 150a-fix: only the THREE true castles keep the big map icons =======================
@@ -11475,6 +11501,257 @@ function hmKingHorse(x,y,f,an){const g=Math.sin(an*1.6);ctx.save();ctx.translate
   hmKingHorse(u.x,u.y,u.face||1,u.anim||0);const y0=u.y;u.y=y0-24;try{return _d.apply(this,arguments);}finally{u.y=y0;}};}
 // ===== 139u: HARD - King William stays knocked out dizzy for 20 s (normal 30 s); the banner says 20 =====
 {const _z=kaDizzy;kaDizzy=function(){const o=KA_CFG.dizzy;if(HM.on())KA_CFG.dizzy=HMK.dizzy;try{return _z.apply(this,arguments);}finally{KA_CFG.dizzy=o;}};}
+// ======================= queue 154: a HARD boundary - fairies and every other fantasy-land creature stay NORTH of the magic mountains / magic wind wall =======================
+// Applies after every update, so it covers wandering, chasing, fleeing, flying, dashes, knockback and anything else that moves them:
+//  - realm units (zone 'nr': unicorns, elves, trolls, cyclopes, Medusa, Cerberus, Hydra, wild dragons... flying ones too),
+//  - fairies and vampire bats (b3), the Griffin, and the mermaids (already culled south of the wall by queue 93).
+// The line is the magic barrier itself (nrEdge, which is the crystal mountains on land and the magic winds over the sea), less a 40 px margin.
+// A fairy that is stinging the dragon gives up and flies home when the dragon is south of the wall. Only the player's dragon may cross.
+// The Storm Wizard's isle is south of the wall by design (he holds the barrier) and is not a fantasy-land creature, so it is not affected.
+const FB154={m:40,units:0,birds:0,gr:0,stings:0,passes:0};
+function fb154Line(x){return nrEdge(x)-FB154.m;}
+function fb154Fantasy(u){return !!(u&&(u.nr||u.zone==='nr'));}
+function fb154Skip(u){return !u||u.dead||u.inside||u.princess||u.isPrincess||(typeof D!=='undefined'&&D.carry===u)||u.carried||u.held;}
+function fb154Pass(){FB154.passes++;
+  for(const u of units){if(!fb154Fantasy(u)||fb154Skip(u))continue;const L=fb154Line(u.x);if(u.y>L){u.y=L;if(u.vy>0)u.vy=0;FB154.units++;}}
+  if(typeof birds!=='undefined')for(const b of birds){const k=b.b3||b.kind||b.type;if(b.dead||(k!=='fairy'&&k!=='vbat'))continue;
+    if(k==='fairy'&&b.md==='sting'&&D.y>fb154Line(D.x)-60){b.md='home';b.mt=0;b.cd=R(4,6);FB154.stings++;}
+    const L=fb154Line(b.x);if(b.y>L){b.y=L;FB154.birds++;}}
+  if(typeof GR!=='undefined'&&GR.on){const L=fb154Line(GR.x);if(GR.y>L){GR.y=L;FB154.gr++;}}}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);try{if(scene==='play'&&G&&typeof nrEdge==='function')fb154Pass();}catch(e){FB154.err=String(e);}return r;};}
+// ======================= queue 157: King William never runs away because a bridge burned =======================
+// Bug: while he chased the dragon (phase 'charge') across the Silver River and the dragon wrecked the bridges, riverRoute sent him on the long
+// "go round Mirror Lake" detour (or to a far-off bridge), so he turned and marched AWAY from the dragon. Now:
+//  - a standing bridge that is not a huge detour (route <= 2.2x the straight distance + 600) -> he repaths over it, as before;
+//  - otherwise he HOLDS at the nearest point of his own riverbank facing the dragon and shoots his royal crossbow (3-bolt spread) across the water.
+// He keeps the chase going (no retreat because his path broke); the usual chase time limit, dizzy and lair rules are unchanged.
+const KB157={ratio:2.2,extra:600,range:560,dmg:5,n:3,spread:.18,cd:[2.6,3.4],holdT:0,bolts:0,holds:0,repath:0,last:null};
+function kb157Cross(u){if(typeof rside!=='function'||typeof riverY!=='function')return false;const ru=rside(u.x,u.y),rd=rside(D.x,D.y);if(!ru||!rd||ru===rd)return false;
+  if((u.y<3150&&D.y<3150)||(u.x<1900&&D.x<1900))return false;return true;}
+function kb157Bank(u){const su=rside(u.x,u.y);let best=null,bd=1e18;
+  for(let k=-10;k<=10;k++){const x=D.x+k*50,ry=riverY(x);if(ry==null)continue;const y=ry+su*(RIVW+36);
+    if((typeof inSea==='function'&&inSea(x,y))||(typeof inLake==='function'&&inLake(x,y))||riverD(x,y)<RIVW+10)continue;
+    const d=d2(x,y,D.x,D.y)+.1*d2(x,y,u.x,u.y);if(d<bd){bd=d;best={x,y};}}return best;}
+function kb157Need(u){if(KA.phase!=='charge'||!u||u.dizzy||!kb157Cross(u))return null;
+  const direct=Math.hypot(D.x-u.x,D.y-u.y);let best=1e18;
+  for(const s of structures)if(s.kind==='bridge'&&s.state==='ok'){const L=Math.hypot(s.x-u.x,s.y-u.y)+Math.hypot(D.x-s.x,D.y-s.y);if(L<best)best=L;}
+  if(best<=direct*KB157.ratio+KB157.extra){KB157.repath++;return null;}return kb157Bank(u);}
+function kb157Fire(u){const X=KB157,sp=520,dd=Math.hypot(D.x-u.x,D.y-u.y),T=dd/sp,a=Math.atan2(D.y+(D.vy||0)*T*.5-u.y,D.x+(D.vx||0)*T*.5-u.x);
+  for(let i=0;i<X.n;i++){const b=a+(i-(X.n-1)/2)*X.spread;projs.push({kind:'arrow',x:u.x,y:u.y-6,z:16,vx:Math.cos(b)*sp,vy:Math.sin(b)*sp,tz:heightOf()+15,life:1.3,dmg:X.dmg,z0:16,xb:1});}
+  X.bolts+=X.n;u.xbAim=.35;if(rnd()<.4)float(u.x,u.y-84,['King William: "You shan\'t escape across the river!"','Royal crossbow - three bolts!','King William: "Hold the bank, men!"'][RI(0,2)],'#ffe08a');}
+{const _s=kaStep;kaStep=function(u,dt){const b=kb157Need(u);if(!b){if(u)u.kb157=0;return _s.apply(this,arguments);}
+  // hold the bank toward the dragon and shoot; drop any detour/bridge leg he had picked
+  u.detour=0;u.leg=null;u.rp=null;u.retreat=false;u.post=null;u.atk-=dt;u.swing=Math.max(0,(u.swing||0)-dt);u.bashFx=Math.max(0,(u.bashFx||0)-dt);
+  if(!u.kb157){u.kb157=1;KB157.holds++;float(u.x,u.y-90,'King William: "The bridge is out! Hold the bank - crossbows!"','#ffe08a');}
+  const sp=u.kaHorse&&typeof HMK!=='undefined'?HMK.horseSp:KA_CFG.chargeSp;if(d2(u.x,u.y,b.x,b.y)>16*16)moveTo(u,b.x,b.y,sp,dt);else u.anim=(u.anim||0)+dt*2;
+  u.face=D.x>u.x?1:-1;KB157.holdT+=dt;KB157.last={x:b.x,y:b.y};
+  const hmOwn=typeof HM!=='undefined'&&HM.on&&HM.on();
+  if(!hmOwn){if(u.kbT===undefined)u.kbT=R(.6,1.2);u.kbT-=dt;if(u.xbAim>0)u.xbAim-=dt;const dd=Math.hypot(D.x-u.x,D.y-u.y);
+    if(u.kbT<=0&&dd<KB157.range&&dd>60&&!G.over){u.kbT=R(KB157.cd[0],KB157.cd[1]);kb157Fire(u);}}};}
+// show his crossbow while he holds the bank in normal mode too (hard mode already draws it)
+{const _dk=drawKnight;drawKnight=function(u){const r=_dk.apply(this,arguments);if(!(u&&u.isKingArmor&&u.kb157)||(typeof HM!=='undefined'&&HM.on&&HM.on()))return r;
+  const f=u.face||1,k=1.35,x=u.x+f*9*k,y=u.y-22*k-8,aim=u.xbAim>0;
+  line(x-f*7*k,y+2,x+f*9*k,y-(aim?2:0),'#6a4020',3*k);line(x+f*7*k,y-7*k,x+f*7*k,y+6*k,'#3a2a1a',2*k);line(x+f*7*k,y-7*k,x+f*1*k,y,'#ddd',1);line(x+f*7*k,y+6*k,x+f*1*k,y,'#ddd',1);
+  if(aim)ell(x+f*10*k,y-1,2,2,'#ffe08a');return r;};}
+// ======================= queue 158: tax collectors NEVER go on water (river, sea, Mirror Lake) =======================
+// They already used bridges for the Silver River; the sea and the lake were not walls to them (only soldiers had that), and a bolt/flee step
+// could still end in the water. Now the sea and lake are walls for collectors too (they slide along the shore), and a final check after every
+// update puts a collector back on his last dry spot if anything moved him onto water. A burned bridge -> riverRoute already repaths via
+// another bridge (or round the lake), and a collector whose route stop is unreachable skips it rather than wading.
+const TX158={reverts:0,skips:0};
+function tx158Wet(x,y){return (riverD(x,y)<RIVW-6&&!onBridge(x,y))||inSea(x,y)||inLake(x,y);}
+{const _b=uBlocked;uBlocked=function(u){const b=_b.apply(this,arguments);if(!(u&&u.tax))return b;return (x,y)=>b(x,y)||inSea(x,y)||inLake(x,y);};}
+function tx158Pass(){for(const u of units){if(!u.tax||u.dead)continue;
+    if(tx158Wet(u.x,u.y)){if(u.txDry){u.x=u.txDry.x;u.y=u.txDry.y;}else{for(let r=20;r<600;r+=20){let ok=false;for(let a=0;a<6.28&&!ok;a+=.4){const x=u.x+Math.cos(a)*r,y=u.y+Math.sin(a)*r;if(!tx158Wet(x,y)){u.x=x;u.y=y;ok=true;}}if(ok)break;}}
+      TX158.reverts++;u.txWetN=(u.txWetN||0)+1;
+      // stuck against water for a long time on the way to a stop: skip that stop (head for the next one / home)
+      if(u.txWetN>240&&u.route&&u.ri<u.route.length){u.ri++;u.txWetN=0;TX158.skips++;}}
+    else{u.txDry={x:u.x,y:u.y};if(u.txWetN>0)u.txWetN-=.25;}}}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);try{if(scene==='play'&&G)tx158Pass();}catch(e){TX158.err=String(e);}return r;};}
+// ===== fix found by t155 (iPhone run): a smoke/dust particle living past 1.6x its max life gave ctx.arc a NEGATIVE radius and threw inside drawWorld
+// (the rest of that frame's world drawing was skipped). Clamp such particles before drawing.
+{const _dw=drawWorld;drawWorld=function(){try{for(const p of parts)if((p.kind==='smoke'||p.kind==='dust')&&p.max>0&&p.life>p.max*1.55)p.life=p.max*1.55;}catch(e){}return _dw.apply(this,arguments);};}
+// ===== QUEUE 159: NO castle STOREHOUSE. Castle Aldric's storehouse was the only one in the game (partSC; no other castle had one).
+// Supply carts (camp/mine, partSC + partES east yards) and the king's trade carts now drive through the castle GATE and unload INTO THE CASTLE.
+// The wood/stone stockpile (G.wood/G.stone) is unchanged; it is simply kept in the castle. No storehouse building, no map marker.
+const SH159={door:{x:GATE.x+30,y:GATE.y-55}};
+STORE_DOOR.x=SH159.door.x;STORE_DOOR.y=SH159.door.y;STORE_POS.x=GATE.x;STORE_POS.y=GATE.y-90;
+storeS=function(){return null;};
+storeUp=function(){return true;};   // the castle is always open for deliveries
+function sh159Strip(){if(typeof structures==='undefined')return 0;let n=0;for(let i=structures.length-1;i>=0;i--)if(structures[i]&&structures[i].kind==='storehouse'){structures.splice(i,1);n++;}return n;}
+{const _n=newGame;newGame=function(){const r=_n.apply(this,arguments);sh159Strip();return r;};}
+{const _a=svApply;svApply=function(){const r=_a.apply(this,arguments);sh159Strip();
+  for(const c of carts)if(c.supply&&!c.wrecked&&c.st==='wait')c.st='go';return r;};}
+{const _s=scStep;scStep=function(c,dt){if(c&&c.st==='wait'&&!c.wrecked){c.st='go';c.s=c.R?c.R.len:0;}return _s.apply(this,arguments);};}
+{const _d=scDeliver;scDeliver=function(c){if(!c||c.trader||c.tb160)return _d.apply(this,arguments);const f0=float;
+  float=function(x,y,t,col){return f0.call(this,x,y,String(t).replace('delivered to the storehouse','delivered to the castle'),col);};try{return _d.apply(this,arguments);}finally{float=f0;}};}
+// ===== QUEUE 160/160a/160b: when the castle's WOOD or STONE drops below 5 (or a rebuild is blocked by stock), King William spends 25% of the
+// castle gold. The gold leaves the castle on a GUARDED CART (deducted the moment it rolls out), goes to the King's Quay, is loaded onto a
+// TREASURE SHIP that sails off the south edge of the map, and later the bought goods come back by trade ship -> guarded cart -> castle (141z flow).
+// Smash the gold cart or sink the treasure ship and the gold is yours (it goes to your lair like a caught tax sack). Then no goods come.
+// Rate: KB.rate (2 gold per wood, 4 gold per stone). Cooldown: TB160.cool seconds between orders of the same resource (160d: wood and stone separately).
+const TB160={low:5,share:.25,minBudget:8,cool:45,away:18,chk:2};
+// 160d: wood and stone are bought INDEPENDENTLY: each resource has its own open order (gold cart -> treasure ship -> goods back) and its own cooldown.
+function tb160Open(){const o=G.tbOpen||(G.tbOpen={wood:0,stone:0});for(const k of ['wood','stone']){if(o[k]&&(((G[k]||0)>=TB160.low&&!tb160Fly(k))||G.t>o[k]+240))o[k]=0;}return o;}
+function tb160Fly(k){const f=g=>g&&(k==='wood'?g.w>0:g.st>0);return carts.some(c=>c.tb160&&!c.wrecked&&!c.gone&&f(c.tb160))||ships.some(s=>s.treasure>0&&!s.gone&&s.state!=='sink'&&f(s.tbGoods))||f(G.tbGoods)||(G.tbGoodsQ||[]).some(f);}
+function tb160Busy(res){const o=tb160Open();if(res)return !!o[res];return !!(o.wood||o.stone);}
+function tb160Close(g){if(!g||!G.tbOpen)return;if(g.w>0)G.tbOpen.wood=0;if(g.st>0)G.tbOpen.stone=0;}
+function tb160Plan(have,res){const nd=kbNeed();const low=res==='wood'?(G.wood<TB160.low||(nd&&nd.w>0)):(G.stone<TB160.low||(nd&&nd.st>0));if(!low)return null;
+  const budget=Math.floor(have*TB160.share);if(budget<TB160.minBudget)return null;const w=res==='wood'?Math.floor(budget/KB.rate.wood):0,st=res==='stone'?Math.floor(budget/KB.rate.stone):0;
+  if(w+st<=0)return null;return{w,st,budget,res,why:(res==='wood'?G.wood:G.stone)<TB160.low?'low':'rebuild'};}
+function tb160Try(force){if(!G||G.over||G.won)return false;const o=tb160Open(),cl=G.tbCool||(G.tbCool={wood:0,stone:0});let sent=false;
+  for(const res of ['wood','stone']){if(!force&&(o[res]||G.t<(cl[res]||0)))continue;const p=tb160Plan(castleTreasury(),res);if(!p)continue;if(tb160Send(p)){o[res]=G.t;cl[res]=G.t+TB160.cool;sent=true;if(force)break;}}
+  return sent;}
+function tb160Send(p){const paid=kbSpendGold(p.budget);if(paid<=0)return false;const T=kbTier(paid),what=kbWhat(p.w,p.st);
+  const c=scSpawn('trader',{st:'back',load:0});c.kind='gold';c.tb160={gold:paid,w:p.w,st:p.st,tier:T.n};c.tier=T.n;if(c.drv)c.drv.shirt='#8a2a2a';
+  kbGuards(c,T.guards);if(T.archers)kbArchers(c,T.archers);
+  G.kbCoolT=G.t+TB160.cool;G.kbSpent=(G.kbSpent||0)+paid;G.kbBuys=(G.kbBuys||0)+1;G.tbSent=(G.tbSent||0)+1;G.tbLast={gold:paid,w:p.w,st:p.st,why:p.why,t:G.t};
+  float(GATE.x,GATE.y-80,`King William sends ${paid} gold to buy ${what}`,'#ffe08a');
+  if(kbSay()){G.banner={text:`King William sends ${paid} gold to the King's Quay!`,sub:`25% of his treasury buys ${what}  ·  ${T.guards} guards escort the gold  ·  smash the cart or sink the treasure ship and the gold is yours!`,t:4.5};
+    if(typeof showToast==='function')showToast(`💰 Royal gold cart: ${paid} gold heading for the quay`);}
+  return true;}
+kbBuy=function(){return tb160Try(false);};
+// the gold cart: castle -> quay; at the quay the gold goes aboard the treasure ship
+{const _s=scStep;scStep=function(c,dt){if(!c||!c.tb160||c.wrecked)return _s.apply(this,arguments);if(c.st==='load'||c.s>=(c.R?c.R.len:0)-1){tb160Board(c);return;}
+  const r=_s.apply(this,arguments);if(c.tb160&&!c.wrecked&&c.st!=='back')tb160Board(c);return r;};}
+function tb160Board(c){const o=c.tb160;if(!o||c.gone)return;const q=kbQuay();
+  const s=kbSpawnShip(0,0,{x:q.anchor.x,y:q.anchor.y,state:'home',tier:o.tier,ang:Math.PI/2});s.treasure=o.gold;s.tbGoods={w:o.w,st:o.st,tier:o.tier};s.sp=KB.ship.sp*.8;
+  G.tbBoarded=(G.tbBoarded||0)+1;float(q.land.x,q.land.y-50,`${o.gold} gold is loaded onto the treasure ship`,'#ffd84a');
+  c.tb160=null;kbDismiss(c);c.wrecked=true;c.t=0;c.gone=true;for(const u of [c.drv,c.horse])if(u&&!u.dead){u.dead=true;u.gone=true;}}
+function tb160Loot(n,x,y,how){n=Math.max(0,Math.floor(n||0));if(n<=0)return;D.gold=(D.gold||0)+n;G.tbLoot=(G.tbLoot||0)+n;G.tbLost=(G.tbLost||0)+1;kbLose(how);
+  puff(x,y-10,10,'rgba(255,216,74,',100,6);sparkle(x,y,10);float(x,y-60,`The king's gold is yours! +${n} gold → lair`,'#ffd84a');addAlarm(6);}
+{const _w=wreckCart;wreckCart=function(c){const o=c&&!c.wrecked&&c.tb160;const r=_w.apply(this,arguments);if(o){c.tb160=null;tb160Close(o);tb160Loot(o.gold,c.x,c.y,'goldcart');}return r;};}
+{const _h=hurtShip;hurtShip=function(s,d,src){const tr=s&&s.treasure>0&&s.state!=='sink';const r=_h.apply(this,arguments);
+  if(tr&&s.state==='sink'&&!s.gone){const n=s.treasure;s.treasure=0;tb160Close(s.tbGoods);s.tbGoods=null;tb160Loot(n,s.x,s.y,'treasureship');}return r;};}
+{const _u=updTradeShip;updTradeShip=function(s,dt){const r=_u.apply(this,arguments);
+  if(s.treasure>0&&s.gone&&!s.tbDone){s.tbDone=1;const g=s.tbGoods||{w:0,st:0,tier:1};{const ng={w:g.w,st:g.st,tier:g.tier,t:G.t+TB160.away};if(G.tbGoods)(G.tbGoodsQ||(G.tbGoodsQ=[])).push(ng);else G.tbGoods=ng;}G.tbAway=(G.tbAway||0)+1;s.treasure=0;}return r;};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(G&&!G.tbGoods&&G.tbGoodsQ&&G.tbGoodsQ.length){G.tbGoods=G.tbGoodsQ.shift();G.tbGoods.t=Math.max(G.tbGoods.t,G.t+4);}if(scene==='play'&&G&&!G.over&&!paused&&G.tbGoods&&G.t>=G.tbGoods.t){const g=G.tbGoods;G.tbGoods=null;
+    kbSpawnShip(g.w,g.st,{tier:g.tier});G.kbShipsSent=(G.kbShipsSent||0)+1;G.tbReturned=(G.tbReturned||0)+1;
+    if(kbSay()){G.banner={text:`A trade ship brings King William's ${kbGoods(g.w,g.st)}!`,sub:`${kbWhat(g.w,g.st)} bought with the king's gold  ·  sink it or smash the cart!`,t:4};
+      if(typeof SFX!=='undefined')SFX.play('princeHorn');G.kbHorn=(G.kbHorn||0)+1;}else G.kbQuiet=(G.kbQuiet||0)+1;}return r;};}
+// gold chest on the cart and on the treasure ship
+{const _dc=drawSupplyCart;drawSupplyCart=function(c){_dc.apply(this,arguments);if(c.tb160&&!c.wrecked)ch161Icon(c.x,c.y-14,.8);};}
+{const _d=drawShip;drawShip=function(s){_d.apply(this,arguments);if(s&&s.treasure>0&&!(s.state==='sink'&&s.t>2)){const b=Math.sin(s.bob*1.6)*1.5;ch161Icon(s.x-4,s.y-10+b,1);ch161Icon(s.x+14,s.y-6+b,.8);}};}
+// ===== QUEUE 161/161a: the castle's gold piles are replaced by BREAKABLE TREASURE CHESTS.
+// Replaced mechanic: 5 heaps of coins in the courtyard held the WHOLE treasury; the dragon bit up to 60 gold (80 easy) per bite from any heap.
+// Now the heaps are only the treasury ledger (hidden, not grab-able). Chests = floor(treasury/1000), max 10; together they hold 20% of the
+// treasury, split evenly. Bite, dive-slam or burn a chest: its gold leaves the treasury and goes to the dragon (carried to the lair).
+const CH161={per:1000,max:10,share:.2,hp:40,respawn:25,bite:95,mouth:90,slam:150,
+  slot:[[0,0],[1,0],[2,0],[3,0],[4,0],[0,1],[1,1],[2,1],[3,1],[4,1]],list:[],broken:{}};
+function ch161Pos(i){const gp=goldPiles||[];const a=gp[i%5]||{x:CASTLE.x,y:CASTLE.y};return i<5?{x:a.x,y:a.y}:{x:a.x+(i%2?38:-38),y:a.y+(i===9?-34:30)};}
+function ch161Count(T){return Math.max(0,Math.min(CH161.max,Math.floor((T||0)/CH161.per)));}
+function ch161Each(T,n){return n>0?Math.floor(CH161.share*T/n):0;}
+function ch161Sync(){const T=castleTreasury(),n=ch161Count(T),each=ch161Each(T,n),L=CH161.list;const B=CH161.broken;
+  for(let i=L.length-1;i>=0;i--)if(L[i].i>=n||L[i].dead)L.splice(i,1);
+  for(let i=0;i<n;i++){if(L.some(c=>c.i===i))continue;if(B[i]&&G.t<B[i])continue;const p=ch161Pos(i);L.push({i,x:p.x,y:p.y,hp:CH161.hp,amt:0,shake:0});}
+  for(const c of L)c.amt=each;return L;}
+function ch161Break(c,how){if(!c||c.dead)return 0;c.dead=true;CH161.broken[c.i]=G.t+CH161.respawn;const n=kbSpendGold(c.amt);D.gold=(D.gold||0)+n;
+  G.chBroken=(G.chBroken||0)+1;G.chGold=(G.chGold||0)+n;G.chLast={i:c.i,amt:n,how};
+  puff(c.x,c.y-8,10,'rgba(150,110,60,',90,6);sparkle(c.x,c.y,12);float(c.x,c.y-34,`Chest smashed! +${n} gold → lair`,'#ffd84a');addAlarm(6);
+  if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('coin');}catch(e){}ch161Sync();return n;}
+{const _n=newGame;newGame=function(){CH161.list=[];CH161.broken={};return _n.apply(this,arguments);};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&G&&!paused){ch161Sync();for(const c of CH161.list)c.shake=Math.max(0,c.shake-dt);}return r;};}
+// heaps are hidden ledgers: the old bite-the-heap grab is off; bite a chest instead
+{const _g=tryGrab;tryGrab=function(){const gp=goldPiles;goldPiles=[];let r;try{r=_g.apply(this,arguments);}finally{goldPiles=gp;}if(r)return r;
+  if(D.alt>.6)return false;const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
+  for(const c of ch161Sync())if(!c.dead&&(d2(D.x,D.y,c.x,c.y)<CH161.bite||d2(mx,my,c.x,c.y)<CH161.mouth)){ch161Break(c,'bite');return true;}return false;};}
+{const _a=applyFire;applyFire=function(ox,oy,dt){const r=_a.apply(this,arguments);for(const c of CH161.list)if(!c.dead&&inFire(c.x,c.y,ox,oy)){c.hp-=DR.fireDps*.5*dt;c.shake=.2;if(c.hp<=0)ch161Break(c,'fire');}return r;};}
+{const _s=diveSlam;diveSlam=function(){const r=_s.apply(this,arguments);for(const c of [...CH161.list])if(!c.dead&&dist(c,D)<CH161.slam)ch161Break(c,'slam');return r;};}
+function ch161Icon(x,y,k){k=k||1;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ell(0,9,15,5,'rgba(0,0,0,.3)');
+  rect(-13,-4,26,13,'#7a4a1c');rect(-13,-4,26,2,'#5a3410');ctx.fillStyle='#8a5a26';ctx.beginPath();ctx.ellipse(0,-4,13,6,0,Math.PI,0);ctx.fill();
+  rect(-13,-1,26,2,'#d8a830');rect(-2,-4,4,13,'#d8a830');rect(-2,1,4,4,'#ffe27a');ctx.restore();}
+function ch161Draw(){for(const c of CH161.list){if(c.dead)continue;const sx=c.shake>0?R(-1.5,1.5):0;ch161Icon(c.x+sx,c.y,1.15);
+  if(c.hp<CH161.hp){const f=Math.max(0,c.hp/CH161.hp);rect(c.x-12,c.y-22,24,3,'rgba(0,0,0,.5)');rect(c.x-12,c.y-22,24*f,3,'#ffb030');}}}
+{const _d=drawCastle;drawCastle=function(){const gp=goldPiles;goldPiles=[];try{_d.apply(this,arguments);}finally{goldPiles=gp;}ch161Draw();};}
+// (drawCastleHi is only called from drawCastle, so the wrapper above covers both graphics modes)
+// map: chests instead of heaps (the castle label still shows the full treasury)
+{const _m=drawMap;drawMap=function(){const gp=goldPiles,t0=treasury,T=castleTreasury();goldPiles=CH161.list.filter(c=>!c.dead).map(c=>({x:c.x,y:c.y,amt:1}));treasury=function(){return T;};
+  try{return _m.apply(this,arguments);}finally{goldPiles=gp;treasury=t0;}};}
+{const _h=drawHUD;drawHUD=function(){const gp=goldPiles;goldPiles=CH161.list.filter(c=>!c.dead).map(c=>({x:c.x,y:c.y,amt:1}));try{return _h.apply(this,arguments);}finally{goldPiles=gp;}};}
+
+/* ===== QUEUE 156 / 156a-j: Viking crews fight on LAND, the crew IS the ship ===== */
+const V156={shoreR:2400,landNear:450,regroup:12,wade:40,furlT:15,reach:750,gapMax:220,stuckD:25,stuckEvery:6,stuckFor:12};
+function v156ShipOK(g,x,y){if(x<WX0+80||x>WX1-80||y<WY0+80||y>WY1-80)return false;return vkShipOK({vkg:g.id,kind:'vkwar',r:VK.r,x,y,vk:1},x,y)&&!vkNoGo(x,y)&&!vkFant(x,y);}
+/* nearest water tile this group's ship may float on, searched outward from a LAND point = the shoreline tile */
+function v156ShoreWater(g,x,y){for(let r=0;r<=V156.shoreR;r+=40)for(let k=0;k<(r?24:1);k++){const a=k/24*TAU,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(v156ShipOK(g,px,py))return{x:px,y:py};}return null;}
+/* where the dragon can be fought on foot: the dragon on land, or land within reach of where it hovers */
+function v156DryNearD(){if(vkFant(D.x,D.y))return null;if(!soldierWet(D.x,D.y))return{x:D.x,y:D.y};const p=dryNear(D.x,D.y);return p&&d2(p.x,p.y,D.x,D.y)<V156.landNear&&!vkFant(p.x,p.y)?p:null;}
+/* longest stretch of real water (lake/sea, not a crossable river mouth) between two points, ignoring water at the far end */
+function v156Gap(a,b){const d=d2(a.x,a.y,b.x,b.y),n=Math.max(1,Math.ceil(d/20));let run=0,mx=0;for(let i=1;i<n;i++){const x=a.x+(b.x-a.x)*i/n,y=a.y+(b.y-a.y)*i/n;if(soldierWet(x,y)&&!(riverD(x,y)<RIVW-6&&!inSea(x,y)&&!inLake(x,y)))run+=d/n;else{if(run>mx)mx=run;run=0;}}return mx;}
+function v156Live(g){return g.units.filter(u=>!u.dead&&!u.inLong);}
+/* 156h: in combat only when the dragon is reachable on foot and they are not stuck */
+function v156Reach(g,L){if(G.over||vkFant(D.x,D.y))return false;if(g.stuckT&&G.t<g.stuckT)return false;const c=vkCentroid(L||v156Live(g));if(!c)return false;
+  const d=d2(c.x,c.y,D.x,D.y);if(d>V156.reach+(g.mode==='chase'?400:0))return false;if(!v156DryNearD())return false;if(v156Gap(c,D)>V156.gapMax)return false;return true;}
+function v156StuckCheck(g,L,dt){const c=vkCentroid(L);if(!c)return;if(!g.ckP||G.t>(g.ckT||0)){if(g.ckP&&d2(c.x,c.y,D.x,D.y)>160&&d2(c.x,c.y,g.ckP.x,g.ckP.y)<V156.stuckD&&(g.mode==='chase'||g.mode==='rebuild')&&!(D.alt<DR.hitAltSword&&d2(c.x,c.y,D.x,D.y)<420)){g.stuckT=G.t+V156.stuckFor;G.vkStuckFree=(G.vkStuckFree||0)+1;}g.ckP=c;g.ckT=G.t+V156.stuckEvery;}}
+function v156NearTree(c){let b=null,bd=1e9;for(const t of trees){if(t.state!=='ok'||t.fire||t.claimed||!(t.s>.8)||vkFant(t.x,t.y))continue;const d=d2(t.x,t.y,c.x,c.y);if(d<bd){bd=d;b=t;}}return b;}
+/* lead the formation toward T, swimming slowly over water (156i/156j) */
+function v156Lead(g,dt,T,L){const c=vkCentroid(L);if(!c)return;const A=g.A||(g.A={x:c.x,y:c.y});const dx=T.x-A.x,dy=T.y-A.y,d=Math.hypot(dx,dy)||1;const sp=soldierWet(A.x,A.y)?V156.wade*.9:55;
+  if(d>20){A.x+=dx/d*Math.min(d,sp*dt);A.y+=dy/d*Math.min(d,sp*dt);}vkForm(g,dt,{x:A.x+dx/d*5,y:A.y+dy/d*5},true);}
+/* 156e: the crew turns back into its ship at the shoreline (quick, no puff, nothing stored) */
+function v156Unfurl(g,L){const W=g.fp&&g.fp.w;if(!W)return false;const s=vkMkShip(g,W.x,W.y);s.hp=Math.max(1,Math.min(g.furl.maxHp||s.maxHp,g.furl.hp||s.hp));s.maxHp=g.furl.maxHp||s.maxHp;g.ship=s;g.furl=null;
+  for(const u of g.units)if(!u.dead&&!u.inLong){u.vkSwim=0;vkBoard(u,g);}g.units=g.units.filter(u=>!u.dead||u.inLong);g.mode='sail';g.fp=null;g.rgT=0;g.awayT=0;g.noLandT=G.t+20;s.path=vkPath(s.x,s.y,vkBerth(g.role,g.slot));
+  G.vkUnfurls=(G.vkUnfurls||0)+1;if(d2(s.x,s.y,D.x,D.y)<1600)float(s.x,s.y-60,'The Vikings form up into their ship','#ffd0a0');return true;}
+function v156Regroup(g,dt,L){const hit=G.vkHitT!=null&&G.t-G.vkHitT<3;if(g.role==='gar'&&hit&&!vkFant(D.x,D.y)){g.mode='defend';g.rgT=0;return;}if(v156Reach(g,L)&&G.level>=6){g.mode='chase';g.awayT=0;g.rgT=0;return;}
+  g.rgT=(g.rgT||0)+dt;const c=vkCentroid(L);if(!c)return;
+  if(!g.fp||G.t>(g.fpT||0)){g.fpT=G.t+4;let W=v156ShoreWater(g,c.x,c.y);g.fp=W?{w:W,land:dryNear(W.x,W.y)||{x:c.x,y:c.y}}:g.fp;}
+  if(!g.fp){v156Lead(g,dt,{x:c.x,y:c.y},L);return;}
+  const P=g.fp.land;if(soldierWet(c.x,c.y)||d2(c.x,c.y,P.x,P.y)>500)v156Lead(g,dt,P,L);else vkForm(g,dt,P,true);
+  const near=L.filter(u=>d2(u.x,u.y,P.x,P.y)<110).length;
+  if(near>=L.length||(g.rgT>V156.furlT&&near*2>=L.length)||g.rgT>V156.furlT*2.5)v156Unfurl(g,L);}
+
+/* 156/156a: a crew hunting the dragon sails to the shore tile nearest it and lands; open sea -> sea fight, never lands */
+{const _k=vkSeek;vkSeek=function(g,s,dt){if(!s||vkNoGo(D.x,D.y))return _k.apply(this,arguments);const L=v156DryNearD();
+  if(!L){g.noLand=1;try{return _k.apply(this,arguments);}finally{g.noLand=0;}}
+  if(!g.sW||G.t>(g.sT||0)){g.sT=G.t+1;g.sW=v156ShoreWater(g,L.x,L.y);}const W=g.sW;if(!W)return _k.apply(this,arguments);
+  const lp=g.lp156||{x:s.x,y:s.y};if(d2(lp.x,lp.y,s.x,s.y)<4*dt*60)g.stk156=(g.stk156||0)+dt;else g.stk156=0;g.lp156={x:s.x,y:s.y};
+  const dW=d2(s.x,s.y,W.x,W.y);
+  if(dW<s.r+45||(g.stk156>1.5&&dW<700)){const p=dryNear(s.x,s.y);if(p&&vkLand(g,'chase',p))return;}
+  if(s.path&&s.path.length){if(g.stk156>3){s.path=null;g.stk156=0;}return;}
+  if(g.stk156>3){s.path=vkPath(s.x,s.y,W);g.stk156=0;return;}
+  s.path=null;s.goal={x:W.x,y:W.y};s.goalSp=1;};}
+/* 156c/e: landing turns the ship into its crew (no puff, ship not kept) */
+{const _l=vkLand;vkLand=function(g,mode,at){if(g&&(g.noLand||(mode==='chase'&&g.noLandT&&G.t<g.noLandT)))return false;if(g&&g.garGate&&mode==='chase'&&g.role==='gar'&&g.ship&&(!v156DryNearD()||d2(g.ship.x,g.ship.y,D.x,D.y)>2600))return false;const s=g&&g.ship;const p0=puff;puff=function(){};let r;try{r=_l.apply(this,arguments);}finally{puff=p0;}
+  if(r&&s&&!s.gone&&s.state!=='sink'){g.furl={hp:s.hp,maxHp:s.maxHp};s.gone=true;s.state='sink';s.t=99;s.vkFurled=1;s.goal=null;s.path=null;g.ship=null;g.awayT=0;g.rgT=0;G.vkFurls=(G.vkFurls||0)+1;}return r;};}
+/* 156j: on foot they swim across water instead of calling longships */
+vkMove=function(u,tx,ty,sp,dt,g){const dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy);const wet=soldierWet(u.x,u.y);u.vkWade=wet?1:0;if(d<4)return true;
+  const s2=wet?Math.min(sp,V156.wade):sp,st=Math.min(d,s2*dt),nx=u.x+dx/d*st,ny=u.y+dy/d*st;if(vkFant(nx,ny)&&!vkFant(u.x,u.y))return false;
+  u.face=dx>=0?1:-1;u.anim+=dt*(wet?3:6);u.x=nx;u.y=ny;if(wet&&rnd()<dt*2&&typeof ripples!=='undefined'&&Array.isArray(ripples))ripples.push({x:u.x,y:u.y,t:0,r:6});return false;};
+{const _dv=drawViking;drawViking=function(u){if(u&&u.vkWade&&!u.vkSwim&&soldierWet(u.x,u.y)){u.vkSwim=1;try{return _dv.apply(this,arguments);}finally{u.vkSwim=0;}}return _dv.apply(this,arguments);};}
+/* units of a regrouping crew follow their formation slots */
+{const _u=vkUnit;vkUnit=function(u,dt){const g=u&&!u.vkSwim&&!u.vkJob?vkG(u.vkg):null;if(g&&g.mode==='furlret'){u.retreat=0;u.atk=Math.max(0,(u.atk||0)-dt);u.atk2=Math.max(0,(u.atk2||0)-dt);u.shootT=(u.shootT||0)-dt;
+    if(u.slot)vkMove(u,u.slot.x,u.slot.y,u.vk==='chief'&&u.bearHp>0?120:95,dt,g);else u.anim=0;return;}return _u.apply(this,arguments);};}
+/* 156i: no reachable trees -> swim slowly to the nearest land that has trees */
+{const _r=vkRebuild;vkRebuild=function(g,dt){const L=v156Live(g);if(!L.length)return _r.apply(this,arguments);
+  if(g.trip){const c=vkCentroid(L),T=g.trip;if(d2(c.x,c.y,T.x,T.y)<220&&!soldierWet(c.x,c.y)){g.trip=null;g.site=null;g.noTree=0;g.rt=0;return _r.apply(this,arguments);}v156Lead(g,dt,T,L);return;}
+  if(g.site&&(g.logs||0)<VK.logs&&!L.some(u=>u.vkJob)&&!vkTree(g.site.shore||g.site)){const c=vkCentroid(L),t=v156NearTree(c);
+    if(t&&d2(t.x,t.y,c.x,c.y)>200){g.trip={x:t.x,y:t.y};g.site=null;G.vkTrips=(G.vkTrips||0)+1;float(c.x,c.y-50,'No trees here! The Vikings swim for a wooded shore','#ffd0a0');return;}}
+  return _r.apply(this,arguments);};}
+/* group brain: furled crews regroup + transform; wrecked crews rebuild only when not in combat (156g/h) */
+{const _g=vkGroupStep;vkGroupStep=function(g,dt){const m=g.mode;
+  const furlMine=g.furl&&!g.ship&&(m==='return'||m==='sail'||m==='swim'||m==='rebuild'||m==='furlret'||m==='aboard');
+  const rbMine=!g.furl&&!g.ship&&m==='rebuild';
+  if(!furlMine&&!rbMine){g.garGate=g.role==='gar'&&m==='aboard'?1:0;let r;try{r=_g.apply(this,arguments);}finally{g.garGate=0;}if(g.furl&&!g.ship&&!g.gone&&g.mode==='chase'){const L=v156Live(g);v156StuckCheck(g,L,dt);
+      if(!v156Reach(g,L))g.awayT=(g.awayT||0)+dt;else g.awayT=0;if(g.awayT>V156.regroup){g.mode='furlret';g.awayT=0;g.rgT=0;g.fp=null;G.vkRegroups=(G.vkRegroups||0)+1;}}
+    else if(g.furl&&!g.ship&&!g.gone&&g.mode==='return'){g.mode='furlret';g.rgT=0;g.fp=null;}return r;}
+  g.mode='__156';_g.apply(this,arguments);if(g.gone){return;}g.mode=m;const L=v156Live(g);if(!L.length)return;
+  if(furlMine){g.mode='furlret';v156Regroup(g,dt,L);return;}
+  v156StuckCheck(g,L,dt);if(v156Reach(g,L)){g.eng=true;g.rbFight=1;vkForm(g,dt,{x:D.x,y:D.y},false);return;}g.rbFight=0;vkRebuild(g,dt);};}
+
+// 158b: tax collectors walk AROUND Mirror Lake instead of standing at its shore (the lake now blocks them since 158)
+function tx158Cross(x0,y0,x1,y1){const n=Math.ceil(Math.hypot(x1-x0,y1-y0)/40);for(let i=1;i<n;i++){const f=i/n;if(inLake0(x0+(x1-x0)*f,y0+(y1-y0)*f))return true;}return false;}
+function tx158Detour(u,tx,ty){if(!tx158Cross(u.x,u.y,tx,ty))return null;let best=null,bc=1e18;
+  for(let k=0;k<16;k++){const a=k/16*TAU,cx=LAKE.x+Math.cos(a)*LAKE.rx*1.3,cy=LAKE.y+Math.sin(a)*LAKE.ry*1.45;if(tx158Wet(cx,cy)||tx158Cross(u.x,u.y,cx,cy))continue;
+    const c=Math.hypot(cx-u.x,cy-u.y)+Math.hypot(tx-cx,ty-cy)+(tx158Cross(cx,cy,tx,ty)?400:0);if(c<bc){bc=c;best={x:cx,y:cy};}}return best;}
+{const _m=moveTo;moveTo=function(u,tx,ty,sp,dt){if(u&&u.tax&&!u.dead&&Math.hypot(u.x-LAKE.x,u.y-LAKE.y)<LAKE.rx*2.2){const w=tx158Detour(u,tx,ty);if(w){_m.call(this,u,w.x,w.y,sp,dt);TX158.detours=(TX158.detours||0)+1;return false;}}return _m.apply(this,arguments);};}
+
+// a toast with no text (null/undefined/empty) is ignored instead of showing a "null" box
+{const _s=showToast;showToast=function(s){if(s==null||s==='')return;return _s.apply(this,arguments);};}
+{const _d=drawToast;drawToast=function(){if(GPAD.toast==null||GPAD.toast===''){GPAD.toastT=0;return;}return _d.apply(this,arguments);};}
+
+// 156b: a rebuilt ship is only ever launched on real water (the build site could fall back to the crew's spot on land)
+function v156Water(x,y){return inSea(x,y)||inLake(x,y)||riverD(x,y)<RIVW-10;}
+function v156WaterNear(x,y,R){for(let r=0;r<=R;r+=30)for(let k=0;k<(r?32:1);k++){const a=k/32*TAU,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(px<WX0+80||px>WX1-80||py<WY0+80||py>WY1-80)continue;if(v156Water(px,py)&&!vkFant(px,py)&&!onBridge(px,py))return{x:px,y:py};}return null;}
+{const _l=vkLaunch;vkLaunch=function(g){const S=g.site;if(S&&!v156Water(S.x,S.y)){const w=v156WaterNear(S.x,S.y,2400);if(!w){g.site=null;G.vkLaunchHeld=(G.vkLaunchHeld||0)+1;return;}S.x=w.x;S.y=w.y;G.vkLaunchFix=(G.vkLaunchFix||0)+1;}return _l.apply(this,arguments);};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}

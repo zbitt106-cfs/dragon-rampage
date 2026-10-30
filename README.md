@@ -1022,6 +1022,64 @@ Kept: the WANTED bar itself, the "Wave N" line in the pause menu, and all other 
 Close-ups: `screenshots/332z_minimap_150_zoom_desktop.png`, `332z_minimap_150_zoom_landscape.png`, `332z_minimap_150_zoom_portrait.png`. (Phone shots are emulated in desktop Chrome at iPhone 17 Pro Max size, not taken on a real phone.)
 
 
+## Minimap without the blue side strips (queue 153)
+- Since queue 150 the minimap frame is about 30% wider and 10% taller than before, but the map inside kept its true shape, so a dark-blue strip filled the frame on the left and right. Those strips were not part of the map.
+- The map is now drawn to **fill the whole frame**: it is stretched sideways by frame width / map width (about 1.18x) and keeps the same height. Every map layer (castles, ships, patrols, dragon, view box) is drawn inside the same stretch, so all icons stay on the right spot. The frame size and position did not change, so it still clears the HUD and touch buttons.
+- Because of the stretch, minimap icons and labels are about 18% wider than tall. Queue 150-fix said the map should not stretch; Zack's later request for "only the map" takes priority.
+- The big map (M) had no side strips (its frame is exactly the map's size), so it is unchanged.
+
+| Shot | Before | After |
+|---|---|---|
+| Desktop 1280x800 | `shots/335_minimap_153_before_desktop.png` (zoom `335z_..._before_zoom_desktop.png`) | `shots/335_minimap_153_after_desktop.png` (zoom `335z_..._after_zoom_desktop.png`) |
+| iPhone landscape 956x440 | `shots/335b_minimap_153_before_iphone_landscape.png` (zoom `335bz_...`) | `shots/335b_minimap_153_after_iphone_landscape.png` (zoom `335bz_...`) |
+| iPhone portrait 440x956 | `shots/335c_minimap_153_before_iphone_portrait.png` (zoom `335cz_...`) | `shots/335c_minimap_153_after_iphone_portrait.png` (zoom `335cz_...`) |
+| Big map | (no strips) | `shots/335d_bigmap_153_after_no_side_strips.png` |
+
+## Fantasy creatures stay north of the magic wind (queue 154)
+- A hard barrier now runs along the magic mountains / magic wind. Fairies, vampire bats, the griffin and every other creature of the fantasy realm are pushed back every frame if they try to cross it. (A carried princess is the only exception.)
+- Fairies that are chasing the dragon stop and fly home when the dragon is south of the line, instead of following it.
+- Long simulation test (t154): no fantasy creature ever ended up south of the line. Shot: `shots/336_fairies_stop_at_magic_wind_154.png`.
+
+## Bigger, flashing lair arrow (queue 155)
+- The arrow that points to the lair is about 28% bigger.
+- While you carry the princess, the dark egg or the light egg it grows about 1.85x more and flashes.
+- Shots: `shots/339_lair_arrow_155_*_desktop.png` and `shots/339b_lair_arrow_155_*_iphone.png` (normal, carrying the princess, carrying the dark egg).
+
+## Vikings fight on foot on land (queue 156, 156a-156j)
+- **Dragon on land:** the longship sails to the nearest shore water, and the crew jumps off. The ship itself turns into the crew (no ship is left at the beach). They form a shield wall, and the war chief rides his bear. They fight on foot.
+- **Dragon gone for a while (about 12 s out of reach):** the crew walks back to the shore and turns back into the ship on the water. The ship has the same hull damage as before. It sails back to its post.
+- **Ships are for travel** or for fights at sea when there is no land near the dragon (156a). A ship never sits on land (156b): ships now slide along the coast instead of swinging their hull over the beach. A long simulation test checks it.
+- **Sunk ship (156f):** the crew swims ashore, chops trees and rebuilds. It takes 15 s, or 10 s with the war chief. They only rebuild when they are not in combat (156g). A dragon they cannot reach (over a lake or the sea) does not count as combat, so they never stand stuck at the shore (156h).
+- **Launching a rebuilt ship:** the new ship always goes into real water, at the nearest open water to the build site.
+- **No trees nearby (156i):** they swim slowly to the nearest land that has trees and rebuild there.
+- **Rivers (156j):** they march in formation on land and swim across water. The old longship ferries are gone.
+- Still true: Viking ships keep clear of sea bosses and fantasy waters (141aa/141ab).
+- Shots: `shots/343_vikings_land_shieldwall_156.png`, `shots/343b_vikings_swim_river_156j.png`, `shots/343c_vikings_reform_ship_156e.png`.
+
+## King William on broken bridges (queue 157)
+- If the bridges are broken, King William stays on his bank or finds another way. He never walks into the river. Shot: `shots/337_king_holds_bank_crossbow_157.png`.
+
+## Tax collectors stay dry (queue 158)
+- Tax collectors and their escorts never walk into water. They go around it or wait. Shot: `shots/338_tax_collector_stays_dry_158.png`.
+- A collector whose next stop is across Mirror Lake walks around the shore instead of stopping at the water's edge.
+
+## No castle storehouse (queue 159)
+- The storehouse next to Castle Aldric was the only one. It is gone. Supply carts now drive into the castle gate and unload there. Old saves that still have a storehouse load without it. Shot: `shots/340_cart_unloads_into_castle_159.png`.
+
+## The king buys wood and stone (queue 160, 160a, 160b, 160d)
+- Wood and stone are checked **separately**. When either one drops below 5 (or a rebuild is blocked by it), the king spends **25% of the castle treasury** on that resource. If both are low, two separate orders go out: first wood with 25%, then stone with 25% of what is left. For example, with 400 gold: 100 gold for 50 wood, then 75 gold for 18 stone.
+- Price: 2 gold per wood, 4 gold per stone. Each resource has its own 45 s cooldown and one open order at a time.
+- How it travels: a guarded gold cart (the gold leaves the treasury when the cart leaves) goes to the quay. A treasure ship sails off the map. Later a trade ship brings the goods back, and an escorted cart takes them to the castle.
+- The dragon can smash the gold cart or sink the treasure ship. Either way the gold goes to the dragon's lair and no goods come.
+- Gold carts and treasure ships still on the way are not kept in a save.
+- Shots: `shots/341a_king_gold_cart_160.png`, `shots/341b_treasure_ship_160.png`.
+
+## Breakable treasure chests (queue 161, 161a)
+- **Replaced mechanic:** before, 5 coin heaps in the castle courtyard held the whole treasury, and each bite took up to 60 gold (80 on easy). Those heaps are now just the hidden count of castle gold.
+- **New:** 1 chest for every 1000 gold in the treasury, up to 10. Together the chests hold 20% of the treasury, split evenly.
+- A bite, a dive slam or fire breaks a chest. Its gold goes to the dragon and is taken out of the treasury. A new chest appears after 25 s if the treasury still allows it.
+- Shot: `shots/342_castle_treasure_chests_161.png`.
+
 ## Hard mode (queue 139, selectable)
 On the title screen the **Mode** row now cycles **NORMAL -> EASY -> HARD**. Use the arrows, A/D or M, or tap it. Your choice is remembered on this device, saved in each save file, and shown as "· Hard" in the save list. **Normal and easy are unchanged**: every rule below applies only in hard mode.
 
