@@ -122,7 +122,7 @@ Big touch targets, works in portrait, landscape and Flip 90°. Everything is sav
 
 ## The Northern Realms (beyond the Frostpeak range)
 The map doubles northward. A glowing **magic barrier** of crystal peaks runs along the Frostpeak range and blocks the way ("A magic barrier blocks the way — defeat the Wizard!") until you beat the **Storm Wizard**.
-- **The Storm Wizard** stands on top of his tower on a small island in the north-east deep sea (around x 11500, y −1500) and never leaves it. The whole isle and his widest wind-gust ring sit **south of the magic wind wall** (the isle clears it by about 1100 px, the gust ring by about 370 px), so you can always fly in and fight him before he is beaten. He wakes when you come near and casts three spells: **ice spikes** (the hardest hitting; your fire melts them), **telegraphed lightning** (a warning mark first, then a strike about a second later, so you can dodge it) and a **wind gust** that knocks you back (the weakest). His shield is 300 at every castle level (he never scales; lower on easy). His health bar is a **magic shield** (see *Queue update* below). When the shield breaks he is beaten: the barrier opens for the dragon only (he gives **no gold**, see *No gold in the fantasy lands* below). He stays beaten, and the wall stays open, for the rest of that life (saved, and kept over castle level-ups). When your dragon is defeated he returns, with his tower and shield, and the wall closes again.
+- **The Storm Wizard** stands on top of his tower on a small island in the north-east deep sea (around x 11500, y −1500) and never leaves it. The whole isle and his widest wind-gust ring sit **south of the magic wind wall** (the isle clears it by about 1100 px, the gust ring by about 370 px), so you can always fly in and fight him before he is beaten. He wakes when you come near and casts three spells: **ice spikes** (the hardest hitting; your fire melts them), **telegraphed lightning** (a warning mark first, then a strike about a second later, so you can dodge it) and a **wind gust** that knocks you back (the weakest). His shield is 300 at every castle level (he never scales; lower on easy). His health bar is a **magic shield** (see *Queue update* below). When the shield breaks he is beaten: the barrier opens for the dragon only (he gives **no gold**, see *No gold in the fantasy lands* below). He stays beaten for the rest of that castle level and **comes back at the next castle level** with his tower and a full shield (queue 140). The wall stays open for you while he's back, because the open barrier is your reward and you keep it until your dragon is defeated. Then it closes again and you have to beat him again.
 - **Wizard spells hit twice as hard (item 126):** every Storm Wizard and Dark Wizard spell does double damage, the same at every castle level. Storm Wizard: ice spike **18** (was 9), lightning **12** (was 6), wind gust **2** (was 1). Dark Wizard: lava shot **26** (was 13), eruption **12** (was 6), purple lightning **16** (was 8).
 - **The northern sea** above the Wizard's Isle is full of life: 3 narwhal pods (3-5 each), 2 orca pods, 3 dolphin pods, 3 whales and 5 fish schools (about 36 animals plus 35 schooling fish). They stay in open water well clear of the isle and the wizard's wind ring, appear only when you fly up into the north-east (so the rest of the map runs as before), and pods you eat come back a few seconds later out of sight.
 - **Two bands of realms.** The light band in the south has the Hobbit Shire (west), **Lumeria, the Elven Realm** (centre: purple grass, glowing trees, unicorns, centaurs, satyrs) and the Dwarf Holds (east). The dark band in the north has the Goblin Bogs (west), the **Orc Warlands** (centre) and the Cyclops Highlands (east), with trolls, wyverns, giant scorpions and red-eyed spiders. All vegetation up north burns.
@@ -166,7 +166,7 @@ The map doubles northward. A glowing **magic barrier** of crystal peaks runs alo
 - **Dragon no longer hidden by set pieces:** when the dragon walks or lands near the Temple of the Hydra, the temple floor and pool are drawn under it, and the pillars, the Hydra, a grounded or dizzy Griffin, Nessie and dizzy units are depth-sorted with the dragon. Anything behind the dragon is drawn first, anything in front of it is drawn after. When flying, the dragon is always on top.
 - **HUD title restored:** a line-break slip in the phone-landscape HUD update (item 45) had commented out the "THE DRAGON" title on the health panel. It's back.
 - **Alpha trolls and centaurs:** 3 **troll caves** in the dark north, each home to a white alpha troll with 3–4 regular trolls, and 3 **sacred glades** in the light north, each home to a silver-and-gold alpha centaur with 3–4 regular centaurs. They follow the lion and white-wolf alpha rules: they defend the turf, the alpha's call rallies the band (+12% damage, +8% speed, 10% less damage taken, 10 s, orange glow), helpers refill about every 40 s, and a new alpha takes over about 75 s after one is beaten. An alpha can only be eaten once worn below 80%. Alphas hit **+20% harder**: alpha troll ×1.8 a troll's blow (was ×1.5), alpha centaur ×1.92 (was ×1.6), and the centaur charge 8.4 (was 7; easy 4.8, was 4). A few regular trolls and centaurs still roam freely. From level 4 an alpha may lead its band in the big armies and goes home afterwards.
-- **Wizard's tower and magic shield:** while the wizard is alive, his tower is invulnerable. Every attack on the tower or on him (fire, lava, stomp, claw, dive, bite) drains his **magic shield** instead, shown as a shimmering bubble that fades as it drops. When the shield breaks he is beaten, goes dizzy and can be eaten (it counts as food). His tower can then be burned or smashed into rubble. He, his tower and his shield return when your dragon is defeated.
+- **Wizard's tower and magic shield:** while the wizard is alive, his tower is invulnerable. Every attack on the tower or on him (fire, lava, stomp, claw, dive, bite) drains his **magic shield** instead, shown as a shimmering bubble that fades as it drops. When the shield breaks he is beaten, goes dizzy and can be eaten (it counts as food). His tower can then be burned or smashed into rubble. He, his tower and his shield return at every new castle level and when your dragon is defeated.
 
 - **Wizard's Isle, flat:** the wizard's island has no mountains any more, just sand and his tower, on the world and the minimap/big map.
 - **Soft boss waters:** the Kraken Deep now fades in over about 840 px instead of a hard seam, and Nessie's loch is a single smooth gradient (see the shots below).
@@ -193,15 +193,15 @@ On **Cinder Isle**, a small ash-grey volcano island in the northern dark ocean (
   - **Eruption:** his volcano erupts in a ring that grows to 900 px over 1.5 s: **12** damage (was 6) and a strong knockback (stronger than the wind wall's push).
   - **Purple lightning:** a purple mark appears for 1 s, then the bolt hits for **16** damage (was 8).
 - **Beat him:** your reward is **his volcano and the purple triple lava shot** (below), plus a full heal, the *Volcano Tamer* achievement and a horn. There is no gold or max-health bonus for beating him. He lies dizzy and can be eaten (+40 HP, *Spicy Snack* achievement).
-- **He stays beaten** through every level-up and save/load; he never respawns in that game. Starting a new game (after your dragon is defeated) brings him back, like the Storm Wizard.
+- **He comes back every castle level** (queue 140) with a full shield. **Your rewards stay** until your dragon is defeated: the volcano stays yours and the purple triple lava shot stays on. While he's back you can still land on the rim and drink from his volcano, but he keeps casting at you. Beating him again gives the full heal and a *"beaten again"* message, with no second alert and no doubled reward. When your dragon is defeated, the new game takes the rewards away until you beat him again.
 
 ## Purple TRIPLE lava (the Dark Wizard's reward)
-Beating the Dark Wizard unlocks **his volcano for lava drinking**: land anywhere by the crater on Cinder Isle and press **E** (pad X / touch DRINK). The rules are exactly the same as at Mount Cinder: a full load of 20 shots, an 8-second refill cooldown, and *Already full of lava!* when you are topped up. Before he is beaten, his shield keeps you away. While he lies dizzy on the rim, the first **E** gulps him and after that **E** drinks. The unlock is saved and kept through level-ups; only a new game resets it.
+Beating the Dark Wizard unlocks **his volcano for lava drinking**: land anywhere by the crater on Cinder Isle and press **E** (pad X / touch DRINK). The rules are exactly the same as at Mount Cinder: a full load of 20 shots, an 8-second refill cooldown, and *Already full of lava!* when you are topped up. Before he is beaten, his shield keeps you away. While he lies dizzy on the rim, the first **E** gulps him and after that **E** drinks. The unlock is saved and kept through level-ups, even when he comes back. Losing your dragon (a new game) takes it away.
 
 Beating him also upgrades lava at **every** volcano (Mount Cinder, Mount Ember and Cinder Isle). A small alert announces it: *"🌋 Purple TRIPLE lava shot!"* (*Dark Wizard beaten · his volcano is yours · 3 purple globs, +50% damage each, at every volcano*).
 - Each lava press now lobs **3 dark-purple globs** (straight ahead and ±18°, a 36° fan). They are big, with a purple glow and a short trail, so the three shots are easy to tell apart even on a phone. All three cost just **1 lava**.
 - Each glob does **+50% damage**: units 30 → 45 (wet units 25 → 37.5), stone buildings 55 → 82.5, wooden buildings 60 → 90, ships 70 → 105, siege engines 70 → 105. Cooling puddles are unchanged (2 per tick).
-- The upgrade is saved and kept through every level-up. Like the Dark Wizard's beaten state, it resets only on a new game.
+- The upgrade is saved and kept through every level-up. It is lost when your dragon is defeated and comes back when you beat him again.
 
 | Volcano fight | Eruption |
 |---|---|
@@ -654,7 +654,7 @@ Pick it in **Settings** (title screen or pause menu): LOW, MEDIUM or HIGH. **G**
 Every mini boss returns at the start of each new castle level, even if you beat or ate it on the level before. A small banner names them: *"👹 New castle level: the mini bosses are back (Hydra, Griffin, Nessie, Sand worm)"*.
 - **Now come back (used to stay beaten for the whole game):** the Hydra, the Griffin, Nessie and the Sand worm.
 - **Already came back each level:** the Kraken (giant squid), the giant octopus, Cerberus, the wild dragons of the Dragon Peaks, and the turf alphas (male lions, white alpha wolves, silverbacks, alpha hippos, white alpha trolls, alpha centaurs).
-- **Stay beaten for the whole game:** the **Storm Wizard** and the **Dark Wizard**, and their rewards (the open barrier to the Northern Realms, the lava shot) stay unlocked.
+- **The two wizards come back too (queue 140):** the **Storm Wizard** and the **Dark Wizard** return each level with a full shield (*"🧙 The Storm Wizard and the Dark Wizard are back! Your rewards are kept"*). Their rewards (the open barrier, the Cinder Isle volcano and the purple triple lava shot) stay yours until your dragon is defeated.
 - Rewards and progress are kept: win counters, Tally lines, earned achievements and the bosses' extra-health growth all carry on.
 
 ## Mini bosses grow with the castle level
@@ -814,6 +814,41 @@ The dragon dot and the princess marker are still drawn on top of the icons. Fort
 ![Minimap before and after](screenshots/316_map_castles_minimap.png)
 ![Big map after](screenshots/317_map_castles_bigmap.png)
 ![Big map before](screenshots/318_map_castles_bigmap_before.png)
+
+## Attack balance (queue 138)
+Each attack now has its own job. Dive is unchanged. Stomp is a building-breaker. Bite is the best close-range move against creatures. Direct fire is the weakest hit, but things that catch fire keep burning, and ships burn hardest. Stone never catches fire.
+
+| Target | Attack | Before | After |
+|---|---|---|---|
+| Soldiers / animals | Bite | swallowed whole | swallowed whole |
+| Soldiers / animals | Stomp | 60 | 18 |
+| Soldiers / animals | Dive | 96 | 96 (unchanged) |
+| Soldiers / animals | Direct fire | 60 per second | 15 per second |
+| Soldiers / animals | Burning afterwards | 10/s for 1.4 s (14) | 16/s for 3 s (48) |
+| Shielded champion | Bite / Stomp / Dive | 14.4 / 48 / 76.8 | 19.2 / 14.4 / 76.8 |
+| Bosses (griffin, hydra, Nessie) | Stomp / Fire | 30 / 30 per second | 9 / 7.5 per second (bite unchanged at 18) |
+| Wooden buildings | Stomp | 120 | 150 |
+| Wooden buildings | Bite | none | none |
+| Wooden buildings | Dive | smashed flat | smashed flat |
+| Wooden buildings | Direct fire / Burning | 42/s / 9/s | 21/s / 13.5/s |
+| Stone buildings | Stomp | 96 | 120 |
+| Stone buildings | Dive | 263.6 | 263.6 |
+| Stone buildings | Fire | 21/s, never ignites | 21/s, never ignites |
+| Realm turrets | Stomp / Bite | 45 / 32 | 56 / 32 |
+| Ships | Bite / Dive | 18 / 80 | 18 / 80 |
+| Ships | Direct fire | 30 per second | 15 per second |
+| Ships | Burning | 6 per second | 18 per second |
+| Siege engines | Stomp / Fire / Burning | 78 / 30/s / 18/s | 23.4 / 15/s / 22.5/s |
+
+## Wizards come back every level (queue 140)
+- Both wizards return at the start of every castle level, in every mode. The Storm Wizard comes back with his tower and a 300 shield (210 on easy). The Dark Wizard comes back with a 525 shield (368 on easy). Their shields don't grow with the level yet. A hard-mode switch can add that later through one hook (`WZ140.hpMul`).
+- **Rewards last until your dragon is defeated:**
+  - Storm Wizard: the barrier stays open.
+  - Dark Wizard: his volcano stays drinkable, and the purple triple lava shot stays on.
+  - Beating a wizard again while you have his reward doesn't double anything. You get a "beaten again" message, his normal beat bonuses (the Dark Wizard's full heal, the horn) and the gobble.
+- **The Dark Wizard's volcano while he's back:** you can still drink if you hold the unlock. His shield no longer keeps you off the rim, but he keeps casting lava, eruptions and lightning at you, so it's risky. Without the unlock, the old "his shield keeps you from the lava" rule applies.
+- **Defeat:** when your dragon is defeated, the restart is a brand-new game. The barrier closes, the Cinder Isle volcano locks and the triple shot is gone until you beat each wizard again.
+- **Save and load:** saves record both "beaten this level" and "reward held". Loading a save restores exactly what that save had. You can't save on the game-over screen (the autosave stops too), so a save from before a defeat brings back the rewards you held at that point. Old saves with a beaten wizard load as "beaten this level, reward held".
 
 ## Achievements
 Open **🏆 Achievements** from the title menu (it shows *N of 74* right on the button) or from the pause menu (between *Settings* and *Flip screen*). It's a scrollable list sized for touch: big **▲ Up / ▼ Down** buttons, drag or swipe to scroll, **Show: All / Locked / Unlocked** to filter, and **◀ Back**. On a keyboard: ↑/↓ scroll, ←/→ page, A cycles the filter, Esc/B goes back.

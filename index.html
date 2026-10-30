@@ -7936,7 +7936,8 @@ function wzMaxHp(){return Math.round(300*(1+.15*(nrLvl()-1))*(EASY?.7:1));}
 function wzTop(){return{x:WZ.x,y:WZ.y-WZ.H-20};}
 function wzStart(){WZB.on=true;if(!WZB.maxHp||WZB.lvl!==nrLvl()){WZB.maxHp=wzMaxHp();WZB.hp=G.nrWzHp>0?Math.min(G.nrWzHp,WZB.maxHp):WZB.maxHp;WZB.lvl=nrLvl();}WZB.cd=1.4;
   if(!WZB.said){WZB.said=1;showToast('🧙 The Storm Wizard: "None shall pass my barrier, wyrm!"');}}
-function wzHurt(d,how){if(!WZB.on||WZB.koT>0||G.nrOpen)return;WZB.hp-=d;WZB.hitT=G.t;G.nrWzHp=Math.max(1,Math.round(WZB.hp));
+function wzBeaten(){return !!(G&&G.wzBeat);} // 140: beaten THIS level (G.nrOpen = the barrier reward, kept until the dragon dies)
+function wzHurt(d,how){if(!WZB.on||WZB.koT>0||wzBeaten())return;WZB.hp-=d;WZB.hitT=G.t;G.nrWzHp=Math.max(1,Math.round(WZB.hp));
   if(rnd()<.15)float(WZ.x+R(-30,30),WZ.y-WZ.H-60,how==='bite'?'Ouch! My beard!':'Yowch! Hot hot!','#e6d0ff');
   if(WZB.hp<=0){WZB.hp=0;WZB.koT=2;WZB.ice=[];WZB.marks=[];WZB.winds=[];float(WZ.x,WZ.y-WZ.H-70,'Dizzy wizard!','#ffe28a');}}
 function wzCast(){const k=WZB.spell++%3,t=wzTop();WZB.cast=.5;
@@ -7945,7 +7946,7 @@ function wzCast(){const k=WZB.spell++%3,t=wzTop();WZB.cast=.5;
   else if(k===1){WZB.marks.push({x:D.x+D.vx*.35,y:D.y+D.vy*.35,t:1});float(t.x,t.y-40,'Lightning!','#fff3a0');WZB.stats.lightning++;}
   else{WZB.winds.push({r:30,t:0,hit:0});float(t.x,t.y-40,'Gust of wind!','#d8f0ff');WZB.stats.wind++;}}
 function wzUpd(dt){const dd=Math.hypot(D.x-WZ.x,D.y-WZ.y);
-  if(G.nrOpen){WZB.on=false;return;}
+  if(wzBeaten()){WZB.on=false;return;}
   if(WZB.koT>0){WZB.koT-=dt;if(WZB.koT<=0)wzDefeat();return;}
   if(!WZB.on){if(dd<1400&&!G.over&&!G.won)wzStart();else return;}
   if(dd>2600){WZB.on=false;WZB.ice=[];WZB.marks=[];WZB.winds=[];return;}
@@ -7959,8 +7960,8 @@ function wzUpd(dt){const dd=Math.hypot(D.x-WZ.x,D.y-WZ.y);
       D.nrKb={vx:Math.cos(a)*1100,vy:Math.sin(a)*1100*.8,t:.65};float(D.x,D.y-heightOf()-80,'Whoooosh!','#d8f0ff');}}
   WZB.ice=WZB.ice.filter(s=>!s.done);WZB.marks=WZB.marks.filter(m=>!m.done||m.flash>0);WZB.winds=WZB.winds.filter(w=>w.t<1.7);}
 const WZ_GOLD=0; // QUEUE 109: no gold in the fantasy lands - breaking his shield gives no gold (was 300); the barrier opening is the reward
-function wzDefeat(){WZB.on=false;G.nrOpen=1;G.nrOpenT=G.t;G.nrWzHp=0;puff(WZ.x,WZ.y-WZ.H,14,'rgba(200,170,255,',90,10);sparkle(WZ.x,WZ.y-WZ.H,20);
-  float(WZ.x,WZ.y-WZ.H-60,'The barrier opens!','#d8c8ff');showToast(`🛡️ The magic shield shatters! The barrier to the Northern Realms opens for you — the dizzy wizard can be gobbled up`);try{horn();}catch(e){}G.nrWzWins=(G.nrWzWins||0)+1;}
+function wzDefeat(){const had=!!G.nrOpen;WZB.on=false;G.wzBeat=1;G.nrOpen=1;if(!had)G.nrOpenT=G.t;G.nrWzHp=0;puff(WZ.x,WZ.y-WZ.H,14,'rgba(200,170,255,',90,10);sparkle(WZ.x,WZ.y-WZ.H,20);
+  float(WZ.x,WZ.y-WZ.H-60,had?'Beaten again!':'The barrier opens!','#d8c8ff');showToast(had?`🛡️ The Storm Wizard is beaten again! The barrier stays open for you — the dizzy wizard can be gobbled up`:`🛡️ The magic shield shatters! The barrier to the Northern Realms opens for you — the dizzy wizard can be gobbled up`);try{horn();}catch(e){}G.nrWzWins=(G.nrWzWins||0)+1;}
 // dragon fire: hurts the wizard and melts ice spikes into steam
 {const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);
   if(WZB.on&&WZB.koT<=0&&inFire(WZ.x,WZ.y,ox,oy))wzHurt(DR.fireDps*.55*dt,'fire');
@@ -7999,7 +8000,7 @@ let NR_FOGOFF=0;
 {const _sa=svApply;svApply=function(d){NR_FOGOFF=d&&d.FY0===undefined?Math.round((MWY0-WY0)/FG)*FW:0;let r;try{r=_sa.apply(this,arguments);}finally{NR_FOGOFF=0;}nrReset(true);return r;};}
 function nrReset(keepG){for(const u of NRU)nrGone(u);NRU=[];NRQ=[];NR_P=[];NR_KO=[];NR_RINGS.length=0;for(const t of NR_TOWNS){t.res=0;t.cool=0;}
   Object.assign(WZB,{on:false,hp:0,maxHp:0,cd:2,spell:0,ice:[],marks:[],winds:[],koT:0,said:0,cast:0});D.nrKb=null;D.webT=0;
-  if(!keepG){G.nrWarT=0;G.nrVanT=50;G.nrOpen=0;G.nrWzHp=0;}}
+  if(!keepG){G.nrWarT=0;G.nrVanT=50;G.nrOpen=0;G.wzBeat=0;G.nrWzHp=0;}}
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);nrReset(false);return r;};}
 // ======================= drawing the realm folk =======================
 function nrEyes(x,y,n,gap,r){for(let i=0;i<n;i++){const ex=x+(i-(n-1)/2)*gap;ell(ex,y,r*2.4,r*2.4,'rgba(255,40,30,.28)');ell(ex,y,r,r,'#ff3020');ell(ex-r*.3,y-r*.3,r*.35,r*.35,'#ffd0c0');}}
@@ -8096,7 +8097,7 @@ function nrDrawFx(){const x0=cam.x-VW/cam.z/2-200,x1=cam.x+VW/cam.z/2+200,y0=cam
   for(const r of NR_RINGS){const q=r.t/.6;if(r.sweep){ctx.strokeStyle=`rgba(255,230,160,${.85*(1-q)})`;ctx.lineWidth=14*(1-q)+2;ctx.beginPath();ctx.ellipse(r.x,r.y,NR_SWEEP_R*(.6+.4*q),NR_SWEEP_R*(.6+.4*q)*.6,0,r.a-NR_SWEEP_A,r.a+NR_SWEEP_A);ctx.stroke();continue;}ctx.strokeStyle=`rgba(200,170,120,${.8*(1-q)})`;ctx.lineWidth=6*(1-q)+1;ctx.beginPath();ctx.ellipse(r.x,r.y,120*q+10,(120*q+10)*.6,0,0,TAU);ctx.stroke();}
   if(on(WZ.x,WZ.y))wzDraw();}
 function wzDraw(){const t=wzTop(),x=t.x,y=t.y+20;
-  if(!G.nrOpen&&!(WZB.koT<0)){const ko=WZB.koT>0,bob=ko?0:Math.sin(G.t*2)*2,c=WZB.cast>0;
+  if(!wzBeaten()&&!(WZB.koT<0)){const ko=WZB.koT>0,bob=ko?0:Math.sin(G.t*2)*2,c=WZB.cast>0;
     if(ko){ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(G.t*9)*.2);ctx.translate(-x,-y);}
     poly([x-11,y,x+11,y,x+4,y-30+bob,x-4,y-30+bob],'#4a3aa8');for(let i=0;i<4;i++)txt('✦',x-6+i*4,y-8-i*6+bob,6,'#ffe890','center',false);
     ell(x,y-34+bob,6,6,'#f0d0b0');poly([x-6,y-28+bob,x+6,y-28+bob,x+2,y-12+bob,x-2,y-12+bob],'#f4f4f4');poly([x-10,y-37+bob,x+10,y-37+bob,x+2,y-62+bob],'#3a2a90');ell(x,y-37+bob,11,3,'#3a2a90');
@@ -8111,7 +8112,7 @@ function wzDraw(){const t=wzTop(),x=t.x,y=t.y+20;
   if(WZB.on&&WZB.koT<=0&&WZB.maxHp){const w=90,y0=t.y-90;rect(x-w/2,y0,w,6,'rgba(0,0,0,.5)');rect(x-w/2,y0,w*WZB.hp/WZB.maxHp,6,'#b48aff');}}
 {const _cf=drawCrashFx;drawCrashFx=function(){const r=_cf.apply(this,arguments);nrDrawFx();return r;};}
 // screen boss bar
-{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!WZB.on||G.nrOpen||!WZB.maxHp)return;const S=hudSlot('wizard',Math.min(424,VW*.6+4),32),w=S.w-4,x=S.x+2,y=S.y+20,lab='🛡️ Storm Wizard\'s magic shield'+(EASY?' (easy)':'');
+{const _h=drawHUD;drawHUD=function(){_h.apply(this,arguments);if(scene!=='play'||!WZB.on||wzBeaten()||!WZB.maxHp)return;const S=hudSlot('wizard',Math.min(424,VW*.6+4),32),w=S.w-4,x=S.x+2,y=S.y+20,lab='🛡️ Storm Wizard\'s magic shield'+(EASY?' (easy)':'');
   rect(x-2,y-2,w+4,14,'rgba(20,10,40,.75)');rect(x,y,w*Math.max(0,WZB.hp)/WZB.maxHp,10,'#a87aff');txt(lab,S.cx,S.y+13,hudFit(lab,S.w,13),'#e8dcff','center');};}
 // ======================= magic turret towers =======================
 // Light lands: elven crystal towers shoot ice bolts (damage + a brief slow). Dark lands: orc spiked storm towers shoot lightning (short charge-up, then a zap).
@@ -8890,7 +8891,7 @@ function atFx(u,F,draw){if(!ATFX){const a=document.createElement('canvas'),b=doc
 NR_BLD.wztower=[620,70];
 {const _n=nrbName;nrbName=function(k){return k==='wztower'?"Wizard's tower":_n.apply(this,arguments);};}
 function wzTw(){return nrbList().find(o=>o.k==='wztower');}
-function wzTowerOpen(){return !!G.nrOpen;}
+function wzTowerOpen(){return wzBeaten();}
 // the generic northern handlers only look north of MWY0+400; the wizard's isle (y -1500) gets its own, gated on the wizard being defeated
 // item 28: while he lives, every hit on the tower (fire, lava, stomp, claw, dive slam, bite) drains his MAGIC SHIELD (= his health bar, WZB.hp) instead; the tower takes no damage.
 // (fire that already hit him this frame is not counted twice)
@@ -8922,7 +8923,7 @@ const WZ_NEAR=o=>o&&o.y>=MWY0+400;
   if(f<.35){ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;line(o.x-30,cy-ry*.6,o.x-5,cy-ry*.2,'rgba(255,255,255,.55)',1.5);line(o.x-5,cy-ry*.2,o.x-20,cy+ry*.1,'rgba(255,255,255,.55)',1.5);}ctx.restore();};}
 // shield broken: he is defeated (barrier/wind wall open, item 10) but stays dizzy where he stood - on the tower, or on the rubble once it is knocked down - and can be gulped (optional)
 function wzEdibleSpot(){const o=wzTw(),up=o&&o.bst==='ok';return{x:WZ.x,y:up?WZ.y-WZ.H:WZ.y+20,up};}
-function wzEdible(){return G.nrOpen&&!G.wzEaten&&scene==='play';}
+function wzEdible(){return wzBeaten()&&!G.wzEaten&&scene==='play';}
 {const _w=wzDraw;wzDraw=function(){const r=_w.apply(this,arguments);if(!wzEdible())return r;const sp=wzEdibleSpot(),x=sp.x,y=sp.y;if(Math.abs(x-D.x)>1600||Math.abs(y-D.y)>1200)return r;
   ctx.save();ctx.translate(x,y);ctx.rotate(.5+Math.sin(G.t*3)*.12);ctx.translate(-x,-y);poly([x-11,y,x+11,y,x+4,y-30,x-4,y-30],'#4a3aa8');ell(x,y-34,6,6,'#f0d0b0');
   poly([x-6,y-28,x+6,y-28,x+2,y-12,x-2,y-12],'#f4f4f4');poly([x-10,y-37,x+10,y-37,x+16,y-58],'#3a2a90');ell(x,y-37,11,3,'#3a2a90');line(x-3,y-36,x-1,y-34,'#222',1);line(x+1,y-36,x+3,y-34,'#222',1);ctx.restore();
@@ -9972,9 +9973,9 @@ function dwUpd(dt){if(!G||G.over)return;const dd=Math.hypot(D.x-DWV.x,D.y-DWV.y)
   for(const w of DWB.erupts){w.t+=dt;w.r=40+860*Math.min(1,w.t/1.5);if(!w.hit&&Math.abs(dd-w.r)<70){w.hit=1;hurtDragon(DW_DMG.erupt,'erupt');const a=Math.atan2(D.y-DWV.y,D.x-DWV.x);
       D.nrKb={vx:Math.cos(a)*DW_KB,vy:Math.sin(a)*DW_KB*.8,t:.7};float(D.x,D.y-heightOf()-80,'KABOOM! Blown back!','#ff9a4a');G.dwKb=(G.dwKb||0)+1;}}
   DWB.shots=DWB.shots.filter(s=>!s.done);DWB.marks=DWB.marks.filter(m=>!m.done||m.flash>0);DWB.erupts=DWB.erupts.filter(w=>w.t<1.6);}
-function dwDefeat(){DWB.on=false;G.dwDown=1;G.dwHp=0;G.dwWins=(G.dwWins||0)+1;G.lavaUp=1;const t=dwTop();puff(t.x,t.y,14,'rgba(200,160,255,',90,10);sparkle(t.x,t.y,22);
-  D.hp=D.maxHp;D.healFx=1;float(t.x,t.y-40,'Volcano unlocked!','#d8a8ff');
-  boostAlert('🌋 Purple TRIPLE lava shot!',`Dark Wizard beaten · his volcano is yours · 3 purple globs, +${Math.round((DWL.mul-1)*100)}% damage each, at every volcano`);
+function dwDefeat(){const had=!!(G.lavaUp&&G.dwKey);DWB.on=false;G.dwDown=1;G.dwHp=0;G.dwWins=(G.dwWins||0)+1;G.lavaUp=1;G.dwKey=1;const t=dwTop();puff(t.x,t.y,14,'rgba(200,160,255,',90,10);sparkle(t.x,t.y,22);
+  D.hp=D.maxHp;D.healFx=1;float(t.x,t.y-40,had?'Beaten again!':'Volcano unlocked!','#d8a8ff');
+  if(had)showToast('🌋 The Dark Wizard is beaten again! You already have his volcano and the purple triple lava shot');else boostAlert('🌋 Purple TRIPLE lava shot!',`Dark Wizard beaten · his volcano is yours · 3 purple globs, +${Math.round((DWL.mul-1)*100)}% damage each, at every volcano`);
   try{achEv('dwizard');}catch(e){}try{horn();}catch(e){}}
 // hits on him / his volcano drain the shield
 function dwNear(x,y,r){return Math.hypot(x-DWV.x,(y-DWV.y)*1.2)<DWV.r*.6+(r||0);}
@@ -10000,10 +10001,10 @@ function dwEdible(){return dwDown()&&!G.dwEaten&&scene==='play';}
 {const _t=nrTick;nrTick=function(dt){_t(dt);if(scene==='play'&&G)dwUpd(dt);};}
 // ---- 102: his volcano is drinkable once he is beaten; the triple purple lava shot at every volcano ----
 function dwEatRange(){const mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;return Math.min(Math.hypot(D.x-DWV.x,D.y-DWV.y),Math.hypot(mx-DWV.x,my-DWV.y))<200;}
-function nearDW(){return dwDown()&&D&&!(dwEdible()&&dwEatRange())&&D.mode==='ground'&&D.alt<.3&&!D.swim&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60;}
+function nearDW(){return (dwDown()||G.dwKey)&&D&&!(dwEdible()&&dwEatRange())&&D.mode==='ground'&&D.alt<.3&&!D.swim&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60;}
 {const _n=nearLava;nearLava=function(){return _n.apply(this,arguments)||nearDW();};}
 {const _l=lavaDrink;lavaDrink=function(){if(dwEdible()&&D&&dwEatRange())return false;/* 106: the dizzy wizard on the rim is gulped first, then E drinks */if(nearDW()){const ox=VOLC.x,oy=VOLC.y;VOLC.x=DWV.x;VOLC.y=DWV.y;try{const r=_l.apply(this,arguments);if(r)G.dwDrinks=(G.dwDrinks||0)+1;return r;}finally{VOLC.x=ox;VOLC.y=oy;}}
-  if(!dwDown()&&D&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60&&D.alt<.3&&!(G.dwLockT>G.t)){G.dwLockT=G.t+3;float(D.x,D.y-90,'The Dark Wizard\'s shield keeps you from the lava!','#e0c8ff');}
+  if(!dwDown()&&!G.dwKey&&D&&Math.hypot(D.x-DWV.x,D.y-DWV.y)<DWV.drinkR+60&&D.alt<.3&&!(G.dwLockT>G.t)){G.dwLockT=G.t+3;float(D.x,D.y-90,'The Dark Wizard\'s shield keeps you from the lava!','#e0c8ff');}
   return _l.apply(this,arguments);};}
 {const _lf=lavaFire;lavaFire=function(dt){const n0=LGLOBS.length;const r=_lf.apply(this,arguments);if(G&&G.lavaUp&&LGLOBS.length===n0+1){const g=LGLOBS[n0];g.dw=1;
     const sp=Math.hypot(g.vx,g.vy),a=Math.atan2(g.vy,g.vx);for(const k of[-1,1]){const b=a+k*DWL.spread;LGLOBS.push(Object.assign({},g,{vx:Math.cos(b)*sp,vy:Math.sin(b)*sp,rot:R(0,TAU)}));}G.dwTriple=(G.dwTriple||0)+1;}return r;};}
@@ -10057,7 +10058,7 @@ function dwDrawFx(){if(Math.abs(cam.x-DWV.x)>2600||Math.abs(cam.y-DWV.y)>2200)re
 {const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{if(big){const s=mmw/(WX1-WX0),px=mmx+(DWV.x-WX0)*s,py=mmy+(DWV.y-WY0)*s;ell(px,py,4,4,dwDown()?'#c8a0e0':'#a040e0');txt(dwDown()?'🌋 Cinder Isle (yours)':'🌋 Dark Wizard',px+7,py+4,10,'#f0d8ff','left');}}catch(e){}return r;};}
 // ---- saves / levels (101: fixed strength; 103/104: beaten + lava upgrade kept through level-ups) ----
 function dwReset(){Object.assign(DWB,{on:false,hp:0,maxHp:0,cd:2,spell:0,shots:[],marks:[],erupts:[],koT:0,said:0,cast:0});}
-{const _ng=newGame;newGame=function(opt){const lv=opt&&opt.lvl>1&&G,k=lv?{dwDown:G.dwDown,dwWins:G.dwWins,lavaUp:G.lavaUp,dwEaten:G.dwEaten,dwEatenN:G.dwEatenN,dwSpireDown:G.dwSpireDown,dwSpireHp:G.dwSpireHp,dwHp:G.dwHp}:null;
+{const _ng=newGame;newGame=function(opt){const lv=opt&&opt.lvl>1&&G,k=lv?{dwDown:G.dwDown,dwWins:G.dwWins,lavaUp:G.lavaUp,dwKey:G.dwKey,dwEaten:G.dwEaten,dwEatenN:G.dwEatenN,dwSpireDown:G.dwSpireDown,dwSpireHp:G.dwSpireHp,dwHp:G.dwHp}:null;
   const r=_ng.apply(this,arguments);dwReset();if(k)for(const q in k)if(k[q]!==undefined)G[q]=k[q];return r;};}
 {const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);dwReset();return r;};}
 if(typeof tallyAddSect==='function')tallyAddSect('nrdark','Northern Realms · Dark lands','👹','#9ad06a',[['dwizard','Dark Wizard']]);
@@ -10071,10 +10072,10 @@ if(typeof tallyAddSect==='function')tallyAddSect('nrdark','Northern Realms · Da
 // Screen overlay only: a dark blue-grey wash + vignette, choppy darker water tint, slanted rain streaks (30 on LOW, 90 on HIGH), and a soft harmless lightning
 // flash every ~5-11 s with a quiet, delayed distant rumble. No damage, nothing scary.
 const STORM={s:0,flash:0,next:6,thunder:-1,flashes:0};
-function stormLevel(){if(!D||!G)return 0;const d=Math.hypot(D.x-WZ.x,D.y-WZ.y),s=clamp(1-(d-600)/2600,0,1);return s*s*(3-2*s)*(G.nrOpen?.35:1);}
+function stormLevel(){if(!D||!G)return 0;const d=Math.hypot(D.x-WZ.x,D.y-WZ.y),s=clamp(1-(d-600)/2600,0,1);return s*s*(3-2*s)*(wzBeaten()?.35:1);}
 {const _t=nrTick;nrTick=function(dt){_t(dt);if(scene!=='play'||!G)return;const tgt=stormLevel();STORM.s+=(tgt-STORM.s)*Math.min(1,dt*1.5);
   if(STORM.flash>0)STORM.flash-=dt;if(STORM.thunder>0){STORM.thunder-=dt;if(STORM.thunder<=0){STORM.thunder=-1;try{SFX.play('stomp',D.x,D.y,.18*STORM.s);}catch(e){}}}
-  STORM.next-=dt;if(STORM.next<=0){STORM.next=R(5,11);if(STORM.s>.45&&!G.nrOpen||STORM.s>.3&&rnd()<.3){STORM.flash=.35;STORM.flashes++;STORM.thunder=R(.8,1.8);}}};}
+  STORM.next-=dt;if(STORM.next<=0){STORM.next=R(5,11);if(STORM.s>.45&&!wzBeaten()||STORM.s>.3&&rnd()<.3){STORM.flash=.35;STORM.flashes++;STORM.thunder=R(.8,1.8);}}};}
 function drawStorm(){const s=STORM.s;if(scene!=='play'||s<.02)return;const W=VW,H=VH,t=G.t;
   ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle=`rgba(22,28,48,${.28*s})`;ctx.fillRect(0,0,W,H);
@@ -10579,6 +10580,57 @@ function mapCastles(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=
   if(typeof PR!=='undefined'&&PR.state==='tower'){const pb=big?5:2.4;ell(X(PR.x),Y(PR.y),pb+1.5,pb+1.5,'#fff');ell(X(PR.x),Y(PR.y),pb,pb,'#f6c');}
   ell(X(D.x),Y(D.y),big?6:4,big?6:4,Math.floor(G.t*4)%2?'#f33':'#ff0');}
 {const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{mapCastles(mmx,mmy,mmw,big);}catch(e){}return r;};}
+// ===== queue 138: attack balance. Stomp is weak against creatures but strong against buildings; dive (crash stomp)
+// is unchanged; bite beats stomp against enemies; direct fire is the weakest hit but burning things (ships most of all) burn harder.
+const AB138={stompFoe:.3,stompBld:1.25,fireFoe:.25,fireShip:.5,fireSiege:.5,fireWood:.5,fireBld:.5,
+  burnUnit:1.6,burnT:3,burnShip:3,burnSiege:1.25,burnWood:1.5,biteMin:24,st:0,dive:0,fire:0,burn:0};
+{const _c=crashStomp;crashStomp=function(){AB138.dive++;try{return _c.apply(this,arguments);}finally{AB138.dive--;}};}
+{const _s=doStomp;doStomp=function(){const k=!AB138.dive;if(k)AB138.st++;try{return _s.apply(this,arguments);}finally{if(k)AB138.st--;}};}
+{const _f=applyFire;applyFire=function(){AB138.fire++;let r;try{r=_f.apply(this,arguments);}finally{AB138.fire--;}
+  for(const u of units)if(!u.dead&&u.type!=='sea'&&u.burn===1.4)u.burn=AB138.burnT;return r;};}
+{const _u=updFire;updFire=function(){AB138.burn++;try{return _u.apply(this,arguments);}finally{AB138.burn--;}};}
+const ab138Foe=(d,how)=>{if(AB138.st&&how==='stomp')return d*AB138.stompFoe;if(AB138.fire&&how==='fire')return d*AB138.fireFoe;return d;};
+{const _h=hurtUnit;hurtUnit=function(u,d,src){if(u&&!u.dead&&typeof d==='number'){
+   if(src==='stomp'&&AB138.st)d*=AB138.stompFoe;
+   else if(src==='fire'){if(AB138.fire)d*=AB138.fireFoe;else if(AB138.burn&&u.type!=='sea')d*=AB138.burnUnit;}
+   else if(src==='bite'&&d<AB138.biteMin&&u.hp>d)d=Math.max(d,Math.min(AB138.biteMin,u.hp-1));}
+  return _h.call(this,u,d,src);};}
+{const _h=hurtSiege;hurtSiege=function(g,d){if(typeof d==='number'){if(AB138.st)d*=AB138.stompFoe;else if(AB138.fire)d*=AB138.fireSiege;else if(AB138.burn)d*=AB138.burnSiege;}return _h.call(this,g,d);};}
+{const _u=updShip;updShip=function(){AB138.sb=(AB138.sb||0)+1;try{return _u.apply(this,arguments);}finally{AB138.sb--;}};}
+{const _h=hurtShip;hurtShip=function(s,d,src){if(typeof d==='number'&&src==='fire'){if(AB138.fire)d*=AB138.fireShip;else if(AB138.sb)d*=AB138.burnShip;}else if(typeof d==='number'&&AB138.st)d*=AB138.stompFoe;return _h.call(this,s,d,src);};}
+{const _h=hurtStruct;hurtStruct=function(s,d){if(s&&typeof d==='number'){if(AB138.st)d*=AB138.stompBld;else if(AB138.fire&&!stoneish(s))d*=AB138.fireWood;else if(AB138.burn&&!stoneish(s)&&s.kind!=='stonepile')d*=AB138.burnWood;}return _h.apply(this,[s,d].concat([].slice.call(arguments,2)));};}
+{const _h=nrbHurt;nrbHurt=function(o,d,how){if(typeof d==='number'){if(AB138.st)d*=AB138.stompBld;else if(AB138.fire&&how==='fire')d*=AB138.fireBld;}return _h.apply(this,[o,d].concat([].slice.call(arguments,2)));};}
+{const _h=nrTurHurt;nrTurHurt=function(t,d,how){if(typeof d==='number'){if(AB138.st)d*=AB138.stompBld;else if(AB138.fire&&how==='fire')d*=AB138.fireBld;}return _h.apply(this,[t,d].concat([].slice.call(arguments,2)));};}
+{const _h=blFenceHit;blFenceHit=function(P,d){if(typeof d==='number'&&AB138.st)d*=AB138.stompBld;return _h.apply(this,[P,d].concat([].slice.call(arguments,2)));};}
+{const _h=hyHurt;hyHurt=function(d,how){if(typeof d==='number')d=ab138Foe(d,how);return _h.apply(this,[d].concat([].slice.call(arguments,1)));};}
+{const _h=grHurt;grHurt=function(d,how){if(typeof d==='number')d=ab138Foe(d,how);return _h.apply(this,[d].concat([].slice.call(arguments,1)));};}
+{const _h=nsHurt;nsHurt=function(d,how){if(typeof d==='number')d=ab138Foe(d,how);return _h.apply(this,[d].concat([].slice.call(arguments,1)));};}
+{const _h=dwHurt;dwHurt=function(d,how){if(typeof d==='number')d=ab138Foe(d,how);return _h.apply(this,[d].concat([].slice.call(arguments,1)));};}
+{const _h=wzHurt;wzHurt=function(d,how){if(typeof d==='number')d=ab138Foe(d,how);return _h.apply(this,[d].concat([].slice.call(arguments,1)));};}
+{const _h=mmBurn;mmBurn=function(m,d){if(typeof d==='number'&&AB138.fire)d*=AB138.fireFoe;return _h.call(this,m,d);};}
+
+// ======================= queue 140 / 140a: both wizards come back every castle level (all modes) =======================
+// "Beaten" and "reward" are now separate:
+//   Storm Wizard: G.wzBeat = beaten this level (he, his tower and shield come back next level); G.nrOpen = the reward (barrier open).
+//   Dark Wizard:  G.dwDown = beaten this level; G.dwKey = his volcano is drinkable, G.lavaUp = the purple triple lava shot (the rewards).
+// The rewards last until the dragon dies: a defeat ends the run and the restart is a brand-new game (newGame() with no level) which
+// clears every reward, so they must be won again. Beating a wizard again while holding his reward just says "beaten again" (no duplicate,
+// rewards are plain on/off flags). Saves carry all of these flags in G, so loading a save restores exactly what that save had.
+// The dark volcano stays drinkable while he is back (if you hold G.dwKey): his shield no longer locks you out, but he still fights you.
+// Hard-mode hook (139f): WZ140.hpMul() is 1 in every mode for now; hard mode can return the mini-boss level scaling here.
+const WZ140={hpMul:()=>1,back:0};
+{const _w=wzMaxHp;wzMaxHp=function(){return Math.round(_w.apply(this,arguments)*WZ140.hpMul());};}
+{const _s=dwStart;dwStart=function(){const fresh=!DWB.maxHp;const r=_s.apply(this,arguments);if(fresh&&WZ140.hpMul()!==1){DWB.maxHp=Math.round(DWB.maxHp*WZ140.hpMul());DWB.hp=G.dwHp>0?Math.min(G.dwHp,DWB.maxHp):DWB.maxHp;}return r;};}
+{const _nl=nextLevel;nextLevel=function(){const back=[];if(G.wzBeat)back.push('Storm Wizard');if(G.dwDown)back.push('Dark Wizard');
+  const r=_nl.apply(this,arguments);
+  G.wzBeat=0;G.wzEaten=0;G.nrWzHp=0;Object.assign(WZB,{on:false,hp:0,maxHp:0,lvl:0,koT:0,said:0,cast:0,ice:[],marks:[],winds:[]});
+  G.dwDown=0;G.dwEaten=0;G.dwHp=0;dwReset();
+  if(back.length){WZ140.back++;G.wzBack=(G.wzBack||0)+1;if(typeof showToast==='function')showToast(`🧙 The ${back.join(' and the ')} ${back.length>1?'are':'is'} back! Your rewards are kept`);}
+  return r;};}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);const g=d&&d.G||{};
+  if(g.wzBeat===undefined)G.wzBeat=g.nrOpen?1:0;   // pre-140 saves: an open barrier meant he was beaten
+  if(g.dwKey===undefined)G.dwKey=g.dwDown?1:0;
+  return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
