@@ -7958,9 +7958,9 @@ function wzUpd(dt){const dd=Math.hypot(D.x-WZ.x,D.y-WZ.y);
   for(const w of WZB.winds){w.t+=dt;w.r=30+870*Math.min(1,w.t/1.6);if(!w.hit&&Math.abs(dd-w.r)<60){w.hit=1;hurtDragon(WZ_DMG.wind,'wind');const a=Math.atan2(D.y-WZ.y,D.x-WZ.x);
       D.nrKb={vx:Math.cos(a)*1100,vy:Math.sin(a)*1100*.8,t:.65};float(D.x,D.y-heightOf()-80,'Whoooosh!','#d8f0ff');}}
   WZB.ice=WZB.ice.filter(s=>!s.done);WZB.marks=WZB.marks.filter(m=>!m.done||m.flash>0);WZB.winds=WZB.winds.filter(w=>w.t<1.7);}
-const WZ_GOLD=300; // gold for breaking the wizard's shield (achievements list reads it)
+const WZ_GOLD=0; // QUEUE 109: no gold in the fantasy lands - breaking his shield gives no gold (was 300); the barrier opening is the reward
 function wzDefeat(){WZB.on=false;G.nrOpen=1;G.nrOpenT=G.t;G.nrWzHp=0;puff(WZ.x,WZ.y-WZ.H,14,'rgba(200,170,255,',90,10);sparkle(WZ.x,WZ.y-WZ.H,20);
-  D.gold=(D.gold||0)+WZ_GOLD;float(WZ.x,WZ.y-WZ.H-60,`+${WZ_GOLD} gold`,'#ffd84a');showToast(`🛡️ The magic shield shatters! The barrier opens for you (+${WZ_GOLD} gold) — the dizzy wizard can be gobbled up`);try{horn();}catch(e){}G.nrWzWins=(G.nrWzWins||0)+1;}
+  float(WZ.x,WZ.y-WZ.H-60,'The barrier opens!','#d8c8ff');showToast(`🛡️ The magic shield shatters! The barrier to the Northern Realms opens for you — the dizzy wizard can be gobbled up`);try{horn();}catch(e){}G.nrWzWins=(G.nrWzWins||0)+1;}
 // dragon fire: hurts the wizard and melts ice spikes into steam
 {const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);
   if(WZB.on&&WZB.koT<=0&&inFire(WZ.x,WZ.y,ox,oy))wzHurt(DR.fireDps*.55*dt,'fire');
@@ -8830,7 +8830,7 @@ function atTick(dt){if(!G||G.over)return;if(G.atToast&&G.t>=G.atToast.t){showToa
 {const _u=nrUpd;nrUpd=function(u,dt){if(u.turf&&u.turf.alert&&!G.over&&!G.won){const t=u.turf,S=NRS[u.species],dd=Math.hypot(u.x-D.x,u.y-D.y);
     const reach=S.rng||D.alt<.4;if(reach&&dd<1100&&Math.hypot(u.x-t.x,u.y-t.y)<AT_LEASH){return atWith(u,()=>{const V=NRS[u.species];u.vsD=1;u.tgt=null;u.cd-=dt;u.t-=dt;
       if(V.regen&&u.hp<u.maxHp&&!(u.burn>0))u.hp=Math.min(u.maxHp,u.hp+V.regen*dt);if(u.dash>0){u.dash-=dt;u.x+=Math.cos(u.dva)*480*dt;u.y+=Math.sin(u.dva)*480*dt;nrClamp(u);return;}
-      if(u.atAlpha&&u.species==='centaur'&&dd<200&&D.alt<.4&&!(u.chgCd>G.t)){u.chgCd=G.t+5;u.dash=.28;u.dva=Math.atan2(D.y-u.y,D.x-u.x);hurtDragon(EASY?4:7,'centaur');u.lastHitD=G.t;G.atCharge=(G.atCharge||0)+1;float(D.x,D.y-90,'Hoof charge! -'+(EASY?4:7),'#ffb0a0');return;}
+      if(u.atAlpha&&u.species==='centaur'&&dd<200&&D.alt<.4&&!(u.chgCd>G.t)){u.chgCd=G.t+5;u.dash=.28;u.dva=Math.atan2(D.y-u.y,D.x-u.x);hurtDragon(atChg(),'centaur');u.lastHitD=G.t;G.atCharge=(G.atCharge||0)+1;float(D.x,D.y-90,'Hoof charge! -'+Math.round(atChg()),'#ffb0a0');return;}
       nrAttack(u,V,D,dt,true);nrClamp(u);});}
     if(Math.hypot(u.x-t.x,u.y-t.y)>AT_LEASH){moveTo(u,t.x,t.y+60,NRS[u.species].sp,dt);nrClamp(u);return;}}
   return atWith(u,()=>_u.call(this,u,dt));};}
@@ -9024,7 +9024,7 @@ function grEdible(){return grDown()&&!G.grEaten&&scene==='play';}
 {const _te=tryEat;tryEat=function(){if(grEdible()&&!(D.eatCD>0)&&D.alt<.5){const gx=G.grX,gy=G.grY,mx=D.x+Math.cos(D.ang)*60,my=D.y+Math.sin(D.ang)*60;
     if(Math.min(Math.hypot(D.x-gx,D.y-gy),Math.hypot(mx-gx,my-gy))<120){G.grEaten=1;D.eatCD=.6;D.eatT=.3;const h=GR_K.heal;D.hp=Math.min(D.maxHp,D.hp+h);try{feed(h);}catch(e){}try{if(typeof glutEat==='function')glutEat(GR_K.food);}catch(e){}
       G.stats.eaten=(G.stats.eaten||0)+1;puff(gx,gy-30,14,'rgba(255,240,200,',90,10);sparkle(gx,gy-30,14);float(gx,gy-70,'BIG GULP! The Griffin (+'+h+')','#ffe28a');
-      showToast('🦅 Gulp! The Griffin is gone - until the next dragon comes along...');if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('gulp',gx,gy,1);}catch(e){}return;}}
+      showToast('🦅 Gulp! The Griffin is gone - until the next castle level...');if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('gulp',gx,gy,1);}catch(e){}return;}}
   return _te.apply(this,arguments);};}
 // drawing
 function grArt(x,y,f,alt,st){const T=G.t,gold='#d9a441',dg='#a8762a',wh='#f6f2e8',fly=alt>.15,ko=st.ko,lift=alt*90;
@@ -9389,7 +9389,7 @@ let WRM_ROAD=null;function wormRoadD(x,y){if(!WRM_ROAD||WRM_ROAD.lvl!==G.lvl||WR
   const P=WRM_ROAD.P;let b=1e9;for(let i=0;i<P.length-1;i++){const a=P[i],c=P[i+1],vx=c.x-a.x,vy=c.y-a.y,L=vx*vx+vy*vy||1,t=clamp(((x-a.x)*vx+(y-a.y)*vy)/L,0,1);b=Math.min(b,Math.hypot(x-a.x-vx*t,y-a.y-vy*t));}return b;}
 {const _ws=wormSafe;wormSafe=function(x,y){return _ws(x,y)||(!inDesert(x,y)?'out':null)||(wormRoadD(x,y)<WRM.road?'road':null);};}
 function wormBeat(u){if(G.wormDown)return;G.wormDown=1;G.wormWins=(G.wormWins||0)+1;
-  float(u.x,u.y-140,'The sand worm is beaten! The dunes are quiet now.','#7aff8a');if(typeof showToast==='function')showToast('🪱 Sand worm beaten! It stays gone until you lose this dragon');}
+  float(u.x,u.y-140,'The sand worm is beaten! The dunes are quiet now.','#7aff8a');if(typeof showToast==='function')showToast('🪱 Sand worm beaten! It comes back at the next castle level');}
 {const _h=hurtUnit;hurtUnit=function(u){const w=u&&u.species==='sandworm'&&!u.dead;const r=_h.apply(this,arguments);if(w&&(u.dead||u.hp<=0))wormBeat(u);return r;};}
 {const _e=eatUnit;eatUnit=function(u){const w=u&&u.species==='sandworm'&&!u.dead;const r=_e.apply(this,arguments);if(w&&u.dead)wormBeat(u);return r;};}
 {const _s=spawnWorm;spawnWorm=function(){if(G.wormDown)return null;return _s.apply(this,arguments);};}
@@ -9724,7 +9724,7 @@ function achBuild(){const L=[],A=(sec,id,name,how,ok,o)=>L.push(Object.assign({s
   A('goal','roof','Raise the Roof',"Smash the great keep's stone roof at Castle Aldric",()=>achTA('b:kroof')>0);
   A('goal','princess','Royal Guest','Grab Princess Elizabeth from the keep (she is never hurt!)',()=>(TALLY.prAll||0)>0||!!(D&&D.princess));
   A('goal','clear1','Castle Cleared','Fly Princess Elizabeth safely home to your lair',()=>achG('lvl')>=2||!!(G&&G.won),
-    {rew:()=>typeof RANSOM!=='undefined'?`the king pays a ransom of ${RANSOM.base} gold (+${RANSOM.perLvl} per castle level) · next castle level`:'next castle level'});
+    {rew:()=>typeof RANSOM!=='undefined'?`the king pays a ransom of ${Math.round(RANSOM.treasury*100)}% of his treasury + ${RANSOM.base} gold (+${RANSOM.perLvl} per castle level) · next castle level`:'next castle level'});
   for(const v of[3,5,10])A('goal','lvl'+v,v===3?'Rising Terror':v===5?'Dread of the Realm':'Legend of the Realm',`Reach castle level ${v}`,()=>achG('lvl')>=v,{prog:n(()=>achG('lvl'),v)});
   // ---- dragons (81, 85) ----
   A('dragon','egg1','Egg Snack','Eat a dragon egg from the wild dragon nest in the Dragon Peaks',()=>achTA('wdegg')>0,{rew:()=>`+${WDN_FIRE} max fire per egg`});
@@ -9737,7 +9737,7 @@ function achBuild(){const L=[],A=(sec,id,name,how,ok,o)=>L.push(Object.assign({s
     {rew:()=>`a black guardian dragon (${GDB.hp} health, more each castle level) that throws lightning for you`});
   A('dragon','glut','Glutton','Eat a whale\'s worth of food (watch the Glutton bar in the pause menu)',()=>(D&&D.glutN||0)>0,{rew:()=>`+${GLUT.gain} max health per whale's worth`});
   // ---- bosses (81: wizard) ----
-  A('boss','wizard','Shield Breaker',"Break the Storm Wizard's magic shield on his isle",()=>!!ACH.ev.wizard||achG('nrWzWins')>0,{rew:()=>`+${WZ_GOLD} gold · the barrier to the Northern Realms opens`});
+  A('boss','wizard','Shield Breaker',"Break the Storm Wizard's magic shield on his isle",()=>!!ACH.ev.wizard||achG('nrWzWins')>0,{rew:()=>'the barrier to the Northern Realms opens'});
   A('boss','wizEat','Wizard Snack','Gobble the dizzy wizard after breaking his shield',()=>achG('wzEatenN')>0||achTA('wizard')>0);
   A('boss','hydra','Hydra Hunter','Defeat the 3-headed Hydra at its temple in the dark far west',()=>achG('hyWins')>0,{rew:()=>`+${HY_K.reward} max health`});
   A('boss','griffin','Griffin Tamer','Defeat the Griffin who roams the light lands',()=>achG('grWins')>0,{rew:()=>`+${GR_K.reward} max health`});
@@ -9895,7 +9895,7 @@ if(typeof drawDecorHi==='function'){const _dh=drawDecorHi;drawDecorHi=function(o
   ell(px,py,rx,ry,'#d8c89a');ell(px,py,rx*.78,ry*.78,'#8a6cc0');ell(px,py,Math.max(1.2,rx*.22),Math.max(1.2,rx*.22),'#4a3a78');}catch(e){}return r;};}
 // ======================= queue 100-104: the DARK WIZARD of Cinder Isle =======================
 // A volcano island in the northern DARK ocean (east of the cyclops lands, north of the dark/light divide). The Dark Wizard hovers over the crater inside a magic shield
-// with the Storm Wizard's rules: the shield IS his health bar, every hit on the volcano, his obsidian spire or on him drains it, and the spire can only be smashed after he is beaten.
+// with the Storm Wizard's rules: the shield IS his health bar, every hit on the volcano or on him drains it. (107: his obsidian spire is gone; he just hovers over the crater.)
 // ~1.75x the Storm Wizard (525 shield vs 300) and he never level-scales (101). Attacks (kid-friendly, cartoony):
 //  - LAVA SHOTS: 5 glowing blobs (13 dmg each vs ice 9). Dragon fire does NOT melt them (unlike ice spikes); they just fizzle into steam when they land.
 //  - ERUPTION: the volcano blasts smoke + fire; an expanding fire ring knocks the dragon back harder than the wind (1300 vs 1100) for 6 dmg (wind: 1).
@@ -9903,7 +9903,7 @@ if(typeof drawDecorHi==='function'){const _dh=drawDecorHi;drawDecorHi=function(o
 // Beaten (104): stays beaten for good - saved, kept through level-ups (only a brand-new game after losing the dragon resets him). Reward: +50 max health, +400 gold,
 // his volcano unlocks for lava drinking and the LAVA SHOT is upgraded at EVERY volcano (102/103): a dark-purple TRIPLE shot (spread 0.14 rad) with +50% splash damage.
 const DWV={x:9700,y:-9000,r:250,H:170,drinkR:190,name:'Cinder Isle'},DW_HP=525,DW_DMG={lava:13,erupt:6,bolt:8},DW_KB=1300,DW_GOLD=0,DW_GAIN=0,/* QUEUE 105: no gold / max-health reward; the volcano + purple triple lava ARE the reward */DW_SPIRE=520;
-const DWL={n:3,spread:.14,mul:1.5};
+const DWL={n:3,spread:18*Math.PI/180,mul:1.5};/* 108: 18 deg between globs (36 deg fan) so the three read apart */
 const DWB={on:false,hp:0,maxHp:0,cd:2,spell:0,shots:[],marks:[],erupts:[],koT:0,said:0,hitT:0,cast:0,stats:{lava:0,bolt:0,erupt:0}};
 function onDwIsle(x,y){const dx=x-DWV.x,dy=(y-DWV.y)*1.2;return dx*dx+dy*dy<DWV.r*DWV.r;}
 {const _o=onWzIsle;onWzIsle=function(x,y){return _o(x,y)||onDwIsle(x,y);};}
@@ -9941,15 +9941,13 @@ function dwDefeat(){DWB.on=false;G.dwDown=1;G.dwHp=0;G.dwWins=(G.dwWins||0)+1;G.
   D.hp=D.maxHp;D.healFx=1;float(t.x,t.y-40,'Volcano unlocked!','#d8a8ff');
   boostAlert('🌋 Purple TRIPLE lava shot!',`Dark Wizard beaten · his volcano is yours · 3 purple globs, +${Math.round((DWL.mul-1)*100)}% damage each, at every volcano`);
   try{achEv('dwizard');}catch(e){}try{horn();}catch(e){}}
-// hits on him / his volcano / his spire all drain the shield
-function dwNear(x,y,r){return Math.hypot(x-DWV.x,(y-DWV.y)*1.2)<DWV.r*.6+(r||0)||Math.hypot(x-dwSpire().x,y-dwSpire().y)<60+(r||0);}
-function dwSpireUp(){return !(G&&G.dwSpireDown);}
-function dwSpireHurt(d){if(!dwDown()||!dwSpireUp()||d<=0)return;G.dwSpireHp=(G.dwSpireHp==null?DW_SPIRE:G.dwSpireHp)-d;const s=dwSpire();
-  if(G.dwSpireHp<=0){G.dwSpireDown=1;G.dwSpireHp=0;puff(s.x,s.y-60,16,'rgba(110,90,130,',120,14);D.gold=(D.gold||0)+100;float(s.x,s.y-120,'The obsidian spire crumbles! +100 gold','#ffd84a');}}
-function dwHit(d,how){if(dwDown())dwSpireHurt(d);else if(DWB.on)dwHurt(d,how);}
-{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);if(Math.abs(ox-DWV.x)<900&&Math.abs(oy-DWV.y)<900){const s=dwSpire();
-    if(!dwDown()&&(inFire(DWV.x,DWV.y,ox,oy)||inFire(DWV.x,DWV.y-60,ox,oy)||inFire(s.x,s.y,ox,oy)))dwHurt(DR.fireDps*.55*dt,'fire');
-    else if(dwDown()&&dwSpireUp()&&inFire(s.x,s.y,ox,oy))dwSpireHurt(DR.fireDps*.5*dt);}return r;};}
+// hits on him / his volcano drain the shield
+function dwNear(x,y,r){return Math.hypot(x-DWV.x,(y-DWV.y)*1.2)<DWV.r*.6+(r||0);}
+function dwSpireUp(){return false;}/* QUEUE 107: no spire on Cinder Isle any more (old saves' dwSpire* fields are simply ignored) */
+function dwSpireHurt(){}/* 107: spire (and its +100 gold) removed */
+function dwHit(d,how){if(!dwDown()&&DWB.on)dwHurt(d,how);}
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);if(Math.abs(ox-DWV.x)<900&&Math.abs(oy-DWV.y)<900){
+    if(!dwDown()&&(inFire(DWV.x,DWV.y,ox,oy)||inFire(DWV.x,DWV.y-60,ox,oy)))dwHurt(DR.fireDps*.55*dt,'fire');}return r;};}
 {const _ls=lavaSplash;lavaSplash=function(x,y){const r=_ls.apply(this,arguments);if(dwNear(x,y,LAVA_CFG.splashR))dwHit(dwDown()?70:35,'lava');return r;};}
 {const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);if(dwNear(D.x,D.y,DR.stompR))dwHit(dwDown()?DR.stompDmg*1.6:20,'stomp');return r;};}
 {const _ds=diveSlam;diveSlam=function(){const r=_ds.apply(this,arguments);if(dwNear(D.x,D.y,160))dwHit(dwDown()?110:40,'stomp');return r;};}
@@ -9984,10 +9982,12 @@ if(typeof hurtSiege==='function'){const _h=hurtSiege;hurtSiege=function(g,d){if(
 {const _h=nrbHurt;nrbHurt=function(o,d){if(DWL_MUL!==1)arguments[1]=d*DWL_MUL;return _h.apply(this,arguments);};}
 // purple globs (drawn by us, the classic drawer skips them)
 {const _dl=drawLavaAir;drawLavaAir=function(){const P=LGLOBS.filter(g=>g.dw);if(P.length)LGLOBS=LGLOBS.filter(g=>!g.dw);try{_dl.apply(this,arguments);}finally{if(P.length)LGLOBS=LGLOBS.concat(P);}
-  for(const g of P){const sy=g.y-g.z;ell(g.x,g.y,10,5,'rgba(0,0,0,.25)');if(GFX_HI){ctx.globalCompositeOperation='lighter';const gg=ctx.createRadialGradient(g.x,sy,2,g.x,sy,26);gg.addColorStop(0,'rgba(200,120,255,.7)');gg.addColorStop(1,'rgba(120,0,200,0)');ctx.fillStyle=gg;ctx.beginPath();ctx.arc(g.x,sy,26,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';}
-    ctx.fillStyle='#4a1470';ctx.beginPath();ctx.arc(g.x,sy,11,0,TAU);ctx.fill();ctx.fillStyle='#9a3ad8';ctx.beginPath();ctx.arc(g.x-2,sy-2,7.5,0,TAU);ctx.fill();ctx.fillStyle='#f0c8ff';ctx.beginPath();ctx.arc(g.x-4,sy-4,3,0,TAU);ctx.fill();
-    ctx.strokeStyle='#22082e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(g.x,sy,11,0,TAU);ctx.stroke();}};}
-// ---- drawing: soft shallows (no hard edge), volcano cone, obsidian spire, the wizard, his spells, shield, HUD bar, map ----
+  for(const g of P){const sy=g.y-g.z;g.tr=g.tr||[];if(!g.dead&&(!g.tr.length||g.tr[g.tr.length-1][0]!==g.x||g.tr[g.tr.length-1][1]!==sy)){g.tr.push([g.x,sy]);if(g.tr.length>9)g.tr.shift();}ell(g.x,g.y,16,7,'rgba(20,0,30,.35)');
+    for(let i=0;i<g.tr.length-1;i++){const q=g.tr[i],f=(i+1)/g.tr.length;ctx.fillStyle=`rgba(110,30,190,${.55*f})`;ctx.beginPath();ctx.arc(q[0],q[1],5+9*f,0,TAU);ctx.fill();}ctx.globalCompositeOperation='lighter';
+    const gg=ctx.createRadialGradient(g.x,sy,3,g.x,sy,44);gg.addColorStop(0,'rgba(210,130,255,.85)');gg.addColorStop(.45,'rgba(150,40,240,.4)');gg.addColorStop(1,'rgba(100,0,200,0)');ctx.fillStyle=gg;ctx.beginPath();ctx.arc(g.x,sy,44,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';
+    ctx.fillStyle='#3a0c5c';ctx.beginPath();ctx.arc(g.x,sy,17,0,TAU);ctx.fill();ctx.fillStyle='#8a2ad0';ctx.beginPath();ctx.arc(g.x-3,sy-3,12,0,TAU);ctx.fill();ctx.fillStyle='#f0d0ff';ctx.beginPath();ctx.arc(g.x-6,sy-6,4.5,0,TAU);ctx.fill();
+    ctx.strokeStyle='#14041e';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(g.x,sy,17,0,TAU);ctx.stroke();}};}
+// ---- drawing: soft shallows (no hard edge), volcano cone, the wizard, his spells, shield, HUD bar, map ----
 function dwGround(){const x=DWV.x,y=DWV.y,r=DWV.r;ctx.save();ctx.translate(x,y);ctx.scale(1,1/1.2);const g=ctx.createRadialGradient(0,0,r*.85,0,0,r*1.7);
   g.addColorStop(0,'rgba(120,150,160,.45)');g.addColorStop(1,'rgba(60,90,130,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r*1.7,0,TAU);ctx.fill();
   const a=ctx.createRadialGradient(0,0,r*.2,0,0,r*.9);a.addColorStop(0,'rgba(64,54,60,.95)');a.addColorStop(.7,'rgba(84,72,76,.85)');a.addColorStop(1,'rgba(110,98,92,0)');ctx.fillStyle=a;ctx.beginPath();ctx.arc(0,0,r*.9,0,TAU);ctx.fill();ctx.restore();}
@@ -9995,9 +9995,7 @@ function dwVolcano(){const x=DWV.x,y=DWV.y,H=DWV.H,t=G.t,pl=.5+.5*Math.sin(t*2.6
   ell(x,y+6,150,34,'rgba(0,0,0,.22)');poly([x-150,y,x-36,y-H,x+36,y-H,x+150,y],'#4a3c44');poly([x-150,y,x-36,y-H,x-6,y-H,x-60,y],'#5c4c54');
   for(const k of[-1,1])poly([x+k*10,y-H+4,x+k*24,y-H*.55,x+k*14,y-H*.3,x+k*6,y-H*.6],`rgba(255,${110+pl*60|0},40,.85)`);
   ell(x,y-H,36,10,'#2a1a20');ell(x,y-H+1,28,7,`rgba(255,${120+pl*80|0},40,1)`);if(GFX_HI){ctx.globalCompositeOperation='lighter';ell(x,y-H-6,50,18,`rgba(255,120,40,${.12+.1*pl})`);ctx.globalCompositeOperation='source-over';}
-  if(dwSpireUp()){const s=dwSpire(),hf=G.dwSpireHp!=null&&dwDown()?G.dwSpireHp/DW_SPIRE:1;poly([s.x-26,s.y,s.x-14,s.y-120,s.x,s.y-150,s.x+14,s.y-120,s.x+26,s.y],'#1e1626');poly([s.x-14,s.y-120,s.x,s.y-150,s.x,s.y],'#34283e');
-    ell(s.x,s.y-104,6,8,`rgba(200,120,255,${.6+.4*pl})`);if(dwDown()&&hf<1){rect(s.x-30,s.y-170,60,5,'#300');rect(s.x-30,s.y-170,60*hf,5,'#b48aff');}}
-  else{const s=dwSpire();ell(s.x,s.y,34,12,'#2a2030');ell(s.x-10,s.y-6,12,8,'#3a2e44');ell(s.x+12,s.y-4,10,6,'#3a2e44');}}
+}
 {const _df=drawFlora;drawFlora=function(x0,y0,x1,y1){const r=_df.apply(this,arguments);try{if(DWV.x+500>x0&&DWV.x-500<x1&&DWV.y+400>y0&&DWV.y-400<y1){dwGround();dwVolcano();}}catch(e){if(!DWB.err)DWB.err=String(e);}return r;};}
 function dwWizard(x,y,ko){const c=DWB.cast>0;if(ko){ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(G.t*9)*.2);ctx.translate(-x,-y);}
   poly([x-12,y,x+12,y,x+4,y-32,x-4,y-32],'#2a1438');for(let i=0;i<4;i++)txt('✦',x-6+i*4,y-8-i*6,6,'#d8a0ff','center',false);
@@ -10052,6 +10050,377 @@ function drawStorm(){const s=STORM.s;if(scene!=='play'||s<.02)return;const W=VW,
   ctx.restore();}
 {const _h=drawHUD;drawHUD=function(){try{drawStorm();}catch(e){if(!STORM.err)STORM.err=String(e);}return _h.apply(this,arguments);};}
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);STORM.s=0;STORM.flash=0;return r;};}
+
+// ======================= QUEUE 109: no human gold in the fantasy lands =======================
+// Nothing in the Northern Realms (both realms, their seas and isles: everything north of the magic wind wall) gives gold, and neither do the
+// Storm Wizard (g.js, was +300) or the Dark Wizard (105/107: his +400 and the spire's +100 are gone). Their other rewards stay.
+// The rest are safety nets, so gold can never turn up up there by accident: buildings spill no coins, sunk-ship loot, coins, seashells
+// and raiders' purses are not dropped north of the wall. Human-land gold is untouched.
+function nrFantasyAt(x,y){return typeof nrEdge==='function'&&y<nrEdge(x);}
+{const _o=onRuin;onRuin=function(s){if(s&&nrFantasyAt(s.x,s.y))s.hasGold=false;return _o.apply(this,arguments);};}
+{const _d=dropCoins;dropCoins=function(x,y,n){if(nrFantasyAt(x,y))return;return _d.apply(this,arguments);};}
+{const _a=rgAdd;rgAdd=function(x,y,n){if(nrFantasyAt(x,y))return null;return _a.apply(this,arguments);};}
+{const _r=rgDrop;rgDrop=function(u){if(u&&!u.rgDone&&nrFantasyAt(u.x,u.y)){u.rgDone=true;u.rgP=0;return;}return _r.apply(this,arguments);};}
+if(typeof ocShell==='function'){const _s=ocShell;ocShell=function(p){if(p&&nrFantasyAt(p.x,p.y))return;return _s.apply(this,arguments);};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if((G.fc&15)===0){if(loot.length)loot=loot.filter(l=>!nrFantasyAt(l.x,l.y));if(coins.length&&coins.some(c=>nrFantasyAt(c.x,c.y)))coins=coins.filter(c=>!nrFantasyAt(c.x,c.y));}return r;};}
+
+// ======================= QUEUE 110/111: a castle detachment meets the trade ship at the King's Quay =======================
+// The moment a trade ship is announced, Castle Aldric sends a detachment out of the gate. It marches to the quay and is already standing in
+// line on the shore when the ship ties up (its pace is set from the ship's ETA; and the carts never leave before it is there). When the
+// goods are on the carts the detachment walks with them to the castle, on top of the carts' own guards. Once the goods are delivered (or the
+// cart is smashed / the ship sunk) the survivors march back in through the gate to the garrison. Size by shipload tier:
+//   Small 2 (2 foot soldiers) · Medium 4 (2 foot, 1 knight, 1 archer) · Large 6 (2 foot, 2 knights, 2 archers) · Grand 9 (3 foot, 3 knights, 3 archers)
+const KBD={tiers:[[2,0,0],[2,1,1],[2,2,2],[3,3,3]],sp:70,maxSp:170,col:'#2f6a8a',hold:30,ld:false};
+function kbdComp(t){return KBD.tiers[Math.max(0,Math.min(3,(t|0)-1))];}
+function kbdUnit(kind,x,y,o){const b={born:G.t,colr:KBD.col,kbDet:1};let u;
+  if(kind==='a')u=mkUnit('archer',x,y,Object.assign({hp:22,maxHp:22,shootT:R(1,3)},b,o));
+  else if(kind==='k')u=mkUnit('knight',x,y,Object.assign({hp:45,maxHp:45,atk:0},b,o));
+  else u=mkUnit('knight',x,y,Object.assign({hp:24,maxHp:24,atk:0,foot:true},b,o));units.push(u);return u;}
+function kbdSlot(L,i){const n=L.n,row=n>5?(i%2):0,k=n>5?Math.floor(i/2):i,cols=n>5?Math.ceil(n/2):n;const q=kbQuay();
+  return {x:q.land.x+(k-(cols-1)/2)*38+(row?19:0),y:q.land.y+14-row*30};}
+function kbdSpawn(s,atDock){const T=kbdComp(s.tier||1),q=kbQuay(),ks=[];for(let i=0;i<T[0];i++)ks.push('f');for(let i=0;i<T[1];i++)ks.push('k');for(let i=0;i<T[2];i++)ks.push('a');
+  const L={kbdL:1,ship:s,n:ks.length,dead:false,x:q.land.x,y:q.land.y,t0:G.t,tier:s.tier||1};
+  const eta=Math.max(1,Math.hypot(s.x-s.anchor.x,s.y-s.anchor.y)/(s.sp||KB.ship.sp)),far=Math.hypot(GATE.x-q.land.x,GATE.y-q.land.y);
+  L.sp=Math.min(KBD.maxSp,Math.max(KBD.sp,far/(eta*.7)));s.kbd=L;
+  ks.forEach((k,i)=>{const sl=kbdSlot(L,i),p=atDock?sl:{x:GATE.x+R(-16,16),y:GATE.y-6+i*4};const u=kbdUnit(k,p.x,p.y,{escort:L,kbdI:i,eo:[-2.4,2.4,-1.7,1.7,-3,3,-1,1,0][i%9]});u.face=1;});
+  G.kbdSent=(G.kbdSent||0)+1;G.kbdLast=ks.length;return L;}
+function kbdOf(L){return units.filter(u=>!u.dead&&u.kbDet&&u.escort===L);}
+function kbdLeft(L){return kbdOf(L).filter(u=>{const sl=kbdSlot(L,u.kbdI|0);return Math.hypot(u.x-sl.x,u.y-sl.y)>40;}).length;}
+function kbdHome(u){u.escort=null;u.retreat=true;u.kbdHome=1;G.kbdHomeN=(G.kbdHomeN||0)+1;}
+// march / wait / walk-with-cart steps (fighting is left to the usual AI whenever the dragon comes close)
+function kbdStep(k,dt){const L=k.escort;if(!L)return false;
+  if(L.kbdL){const s=L.ship;if(L.dead||!s||s.state==='sink'||s.state==='home'||s.gone){L.dead=true;kbdHome(k);return false;}
+    if(dist(k,D)<260&&D.alt<.6)return false;if(k.type==='archer'&&dist(k,D)<380&&!G.over)return false;
+    const sl=kbdSlot(L,k.kbdI|0),d=Math.hypot(sl.x-k.x,sl.y-k.y);if(d>3)moveTo(k,sl.x,sl.y,d>60?L.sp:Math.max(25,Math.min(L.sp,d*2)),dt);else{k.face=1;k.kbdAt=1;}
+    k.born=G.t;k.retreat=false;return true;}
+  if(L.wrecked||L.gone||L.dead||!((L.load|0)>0)){kbdHome(k);return false;}
+  return null;}
+{const _e=escortStep;escortStep=function(k,dt){if(k&&k.kbDet){const r=kbdStep(k,dt);if(r!==null)return r;}return _e.apply(this,arguments);};}
+// the ship is announced -> the detachment sets out (not for restored saves, see below)
+{const _s=kbSpawnShip;kbSpawnShip=function(w,st,o){const s=_s.apply(this,arguments);try{if(s&&!KBD.ld&&s.state!=='home')kbdSpawn(s,s.state==='unload');}catch(e){G.kbdErr=String(e);}return s;};}
+// the banner names the detachment too
+{const _b=kbBuy;kbBuy=function(){const b0=G.banner,r=_b.apply(this,arguments);try{if(r&&G.banner&&G.banner!==b0&&G.banner.sub){const n=G.kbdLast||0;if(n)G.banner.sub+=`  ·  ${n} castle soldiers march to the quay to meet it`;}}catch(e){}return r;};}
+// the ship ties up -> the goods go onto the carts and the detachment falls in beside them; the carts wait until it is there
+{const _u=kbUnload;kbUnload=function(s){const before=new Set(kbTraders()),r=_u.apply(this,arguments);try{const L=s&&s.kbd;const nc=kbTraders().filter(c=>!before.has(c));
+    if(L&&!L.dead&&nc.length){const m=kbdOf(L),late=kbdLeft(L);m.forEach((u,i)=>{u.escort=nc[i%nc.length];u.retreat=false;});
+      if(late>0)for(const c of nc)c.kbHold=G.t+KBD.hold;G.kbdMet=(G.kbdMet||0)+1;G.kbdMetN=m.length;
+      if(m.length){const q=kbQuay();float(q.land.x,q.land.y-80,`${m.length} castle soldier${m.length>1?'s':''} fall in to escort the carts`,'#bfe0ff');}}
+    if(s)s.kbd=null;}catch(e){G.kbdErr=String(e);}return r;};}
+function kbdReady(c){const m=units.filter(u=>!u.dead&&u.kbDet&&u.escort===c);return m.every(u=>dist(u,c)<120);}
+{const _s=scStep;scStep=function(c,dt){if(c&&c.trader&&c.kbHold&&!c.wrecked){if(G.t>c.kbHold||kbdReady(c))c.kbHold=0;else return;}return _s.apply(this,arguments);};}
+// save / load: carts in transit keep their detachment (counts per cart, same order as the carts); a ship still at sea gets a fresh one
+{const _sn=svSnapshot;svSnapshot=function(){const o=_sn.apply(this,arguments);try{o.KBD=kbTraders().map(c=>{const m=units.filter(u=>!u.dead&&u.kbDet&&u.escort===c);
+    return [m.filter(u=>u.type!=='archer'&&u.foot).length,m.filter(u=>u.type!=='archer'&&!u.foot).length,m.filter(u=>u.type==='archer').length].join(',');}).join(';');}catch(e){}return o;};
+  const _ap=svApply;svApply=function(d){KBD.ld=true;let r;try{r=_ap.apply(this,arguments);}finally{KBD.ld=false;}try{for(const u of units)if(u.kbDet){u.dead=true;u.gone=true;}
+    for(const s of kbShips())if(s.state==='sail'||s.state==='unload')kbdSpawn(s,s.state==='unload');
+    const cs=kbTraders(),a=String((d&&d.KBD)||'').split(';');cs.forEach((c,i)=>{const e=(a[i]||'').split(',').map(Number);if(e.length<3)return;let j=0;
+      for(const [k,n] of [['f',e[0]],['k',e[1]],['a',e[2]]])for(let t=0;t<(n|0)&&t<9;t++){const g=R(0,TAU);kbdUnit(k,c.x+Math.cos(g)*34,c.y+Math.sin(g)*20,{escort:c,kbdI:j,eo:[-2.4,2.4,-1.7,1.7,-3,3,-1,1,0][j%9]});j++;}});}catch(e){G.kbdErr=String(e);}return r;};}
+// ======================= QUEUE 112: no more autosave — the game only saves when the player saves =======================
+// Removed triggers: the timed autosave (every 2 minutes of play, partSV update hook) and the save-on-pause (part6, opening the pause menu,
+// which also covered the auto-pause when the window loses focus). There were no level-up or page-hide/unload game saves (the pagehide
+// listeners only store the all-time tally and the achievements, which are not game saves). An old 'Autosave' from an earlier version still
+// shows in the Load list (as "Old autosave") and still loads; it simply never gets written again. Manual Slot 1-3 save/load is unchanged.
+svAuto=function(){G.svAutoSkip=(G.svAutoSkip||0)+1;return false;};
+{const _sl=svList;svList=function(){const L=_sl.apply(this,arguments);if(!L||!L.length||!L[0].auto)return L;
+  const a=Object.assign({},L[0],{name:'Old autosave'});if(typeof PM!=='undefined'&&PM.scr==='save')return [a].concat(L.slice(1));return a.raw?[a].concat(L.slice(1)):L.slice(1);};}
+{const _r=pmRowsN;pmRowsN=function(){if(typeof PM!=='undefined'&&PM.scr==='load')return svList().length+1;return _r.apply(this,arguments);};}
+{const _d=drawSlots;drawSlots=function(){const _t=txt;txt=function(s){if(typeof s==='string'&&s.indexOf('The autosave updates')>=0){s='Pick a save to load. The game only saves when you save it yourself (Pause → Save).';const a=[].slice.call(arguments);a[0]=s;return _t.apply(this,a);}return _t.apply(this,arguments);};
+  try{return _d.apply(this,arguments);}finally{txt=_t;}};}
+// ======================= queue 113: every mini boss comes back with each new castle level =======================
+// Before: the Hydra (and its Medusa flag), the Griffin, Nessie and the sand worm stayed beaten through level-ups. Now this wrapper (the
+// outermost nextLevel) clears their "beaten / eaten / where it fell / its hurt health" flags after the older carry-over wrappers have run,
+// so each comes back fresh on the new level at the usual mini-boss scaling (lvsL). Wins counters (grWins, nsWins, wormWins, hyWins,
+// mdWins, nsEatN), the max-health they already gave (hyHp, grHpGain, nsHpGain) and achievements are kept. The Storm Wizard (wzDown) and the
+// Dark Wizard (dwDown) and their unlocks are NOT touched: they stay beaten for good. Everything else (Kraken, giant octopus/squid, Cerberus
+// packs, wild dragons, alphas...) is already rebuilt by newGame on every level. All of these flags live in G, so saves keep per-level state.
+const MB113={keys:{mdDown:0,hyEaten:0,hyHeads:null,grDown:0,grEaten:0,grX:null,grY:null,grWp:null,grHp:0,nsDown:0,nsEaten:0,nsHp:0,nsX:null,nsY:null,wormDown:0},last:[]};
+{const _nl=nextLevel;nextLevel=function(){const r=_nl.apply(this,arguments);const back=[];
+  if(G.mdDown)back.push('Hydra');if(G.grDown)back.push('Griffin');if(G.nsDown)back.push('Nessie');if(G.wormDown)back.push('Sand worm');
+  for(const k in MB113.keys)G[k]=MB113.keys[k];G.wormFirst=0;
+  try{HYD.on=false;HYD.P=[];}catch(e){}try{GR.on=false;GR.act=null;}catch(e){}try{NS.on=false;NS.act=null;}catch(e){}
+  MB113.last=back;G.mbBack=(G.mbBack||0)+1;
+  if(back.length&&typeof showToast==='function')showToast(`👹 New castle level: the mini bosses are back (${back.join(', ')})`);return r;};}
+
+// ======================= queue 114-116: Sandhaven grows its garrison and the rich caravan's escort grows =======================
+// The towers cap is 8 (was 5). 114: once Sandhaven has all 8 towers standing, every rich-caravan arrival home adds SHG.add troops to the
+// town garrison (2 desert soldiers + 1 desert archer), up to SHG.cap extra (perf cap). A burned tower is rebuilt first (no troops on that trip).
+// 115/116: every time the rich caravan reaches EITHER end (castle gate or Sandhaven) its own escort gains one more guard (soldier, soldier,
+// archer, ...) up to RCE.cap extra; the bonus adds up over time, is saved (G.rcEscX), carries over castle levels and is used by every
+// new rich caravan (a raided one comes back with it too). A brand-new game starts again from the base escort.
+DTW.max=8;
+const SHG={add:[2,1],cap:15},RCE={cap:8};
+// the old spot rings only fit 5 towers: add outer rings (same rules: desert, no water/oasis/buildings, 230 px apart) until 8 fit
+{const _sp=dtSpots;dtSpots=function(){const had=!!DTW_SPOTS,out=_sp.apply(this,arguments);if(had||typeof DTOWN==='undefined'||out.length>=DTW.max)return out;
+  for(const r of[520,600,680])for(let k=0;k<12&&out.length<DTW.max+2;k++){const a=k*TAU/12+r/97,x=Math.round(DTOWN.x+Math.cos(a)*r),y=Math.round(DTOWN.y+Math.sin(a)*r*.8);
+    if(!inDesert(x,y)||(typeof inWater==='function'&&inWater(x,y)))continue;if(structures.some(s=>!isDT(s)&&d2(x,y,s.x,s.y)<95))continue;
+    if(typeof inOasis==='function'&&inOasis(x,y))continue;if(out.some(q=>d2(x,y,q.x,q.y)<230))continue;out.push({x,y});}
+  return out;};}
+RC_FORM.sol.push([-140,-30],[-140,30],[-170,-30],[-170,30],[-200,-30],[-200,30]);RC_FORM.arc.push([-110,-64],[-110,64]);
+function shExtra(){return units.filter(u=>u.shX&&u.dguard&&!u.dead).length;}
+function shGarAdd(){let n=0;const L=[];for(let k=0;k<SHG.add[0];k++)L.push('s');for(let k=0;k<SHG.add[1];k++)L.push('a');
+  for(const t of L){if(shExtra()>=SHG.cap){G.shGarCapHit=(G.shGarCapHit||0)+1;break;}const i=rcTownGuards().length,P=rcTownPost(i);
+    const u=t==='a'?mkDArc(P.x,P.y,{shX:1}):mkDSol(P.x,P.y,{shX:1});rcMakeGuard(u,i);units.push(u);n++;}
+  if(n){G.shGarAdded=(G.shGarAdded||0)+n;if(dist(DTOWN,D)<1500)float(DTOWN.x,DTOWN.y-160,`Sandhaven's garrison grows: +${n} troops!`,'#ffe0a0');}return n;}
+{const _h=rcHome;rcHome=function(u){const T=dtTowers(),full=T.length>=DTW.max&&!T.some(s=>s.state==='druin');const r=_h.apply(this,arguments);
+  if(full)shGarAdd();rcEscGrow(u);return r;};}
+{const _d=rcDeliver;rcDeliver=function(u){const n0=G.rcDeliv||0;const r=_d.apply(this,arguments);rcEscGrow(u);if((G.rcDeliv||0)>n0){
+    if(typeof showToast==='function')showToast(`🐪 The desert caravan reached the castle safely: +${RCV.deliver} gold for the king's treasury`);}return r;};}
+function rcEscKind(i){return i%3===2?'darcher':'dsoldier';}
+function rcEscAdd(c,i){const L=c.lead,k=rcEscKind(i),x=L.x+R(-30,30),y=L.y+R(-20,30);const u=k==='darcher'?mkDArc(x,y):mkDSol(x,y);
+  u.escort=L;u.eo=[-1.6,1.6,-.6,.6][c.guards.length%4];u.rcG=true;u.rcX=1;u.rcSlot=c.guards.filter(g=>(k==='darcher')===!!g.darch&&!g.dcam).length;units.push(u);c.guards.push(u);return u;}
+function rcEscGrow(u){const c=RCV.cur;G.rcEnds=(G.rcEnds||0)+1;if((G.rcEscX||0)>=RCE.cap){G.rcEscCapHit=(G.rcEscCapHit||0)+1;return;}
+  G.rcEscX=(G.rcEscX||0)+1;if(c&&!c.done&&c.lead===u){rcEscAdd(c,G.rcEscX-1);if(dist(u,D)<1500)float(u.x,u.y-60,'One more guard joins the caravan!','#ffe0a0');}}
+{const _s=spawnRich;spawnRich=function(o){const c=_s.apply(this,arguments);if(c&&!(o&&o.guards))for(let i=0;i<Math.min(RCE.cap,G.rcEscX||0);i++)rcEscAdd(c,i);return c;};}
+{const _nl=nextLevel;nextLevel=function(){const e=G.rcEscX;const r=_nl.apply(this,arguments);if(e)G.rcEscX=e;return r;};}
+// the garrison extras keep their mark through save/load (town list is saved in rcTownGuards order)
+{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);if(d&&d.RCV&&d.RCV.town){const T=rcTownGuards();d.RCV.town.forEach((t,i)=>{if(T[i]&&T[i].shX)t.shx=1;});}return d;};}
+{const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);if(d&&d.RCV&&d.RCV.town){const T=rcTownGuards();d.RCV.town.forEach((t,i)=>{if(t.shx&&T[i])T[i].shX=1;});}return r;};}
+
+// ======================= queue 117/118: desert soldiers +50% health, +40% attack =======================
+// before → after: desert soldier HP 35 → 53, desert archer HP 32 → 48, camel rider HP 60 → 90 (all still grow with the level);
+// damage multiplier 1.25 → 1.75 (= ×1.4): desert soldier sword 5 → 7, desert archer arrow 5 → 7, camel rider scimitar 7.5 → 10.5,
+// camel rider arrow 5 → 7. Covers the escort, Sandhaven's garrison, militia, tower archers, camel riders (there are no separate oasis guards).
+Object.assign(RCV,{solHp:53,arcHp:48,camHp:90,dmgMul:1.75});
+
+// ======================= queue 119: every alpha hits 20% harder =======================
+const AL119={mul:1.2,before:{}};
+(function(){for(const sp in TF_L){AL119.before[sp]=TF_L[sp].bite;TF_L[sp].bite=+(TF_L[sp].bite*AL119.mul).toFixed(2);}
+  AL119.before.hippo=HP_A.bite;HP_A.bite=+(HP_A.bite*AL119.mul).toFixed(2);if(FAUNA.hippo){FAUNA.hippo.bite=HP_A.bite;FAUNA.hippo.say=`Hippo CHOMP! -${Math.round(HP_A.bite)}`;}
+  for(const sp in AT){AL119.before['at_'+sp]=AT[sp].dm;AT[sp].dm=+(AT[sp].dm*AL119.mul).toFixed(3);}for(const k in AT_V)delete AT_V[k];})();
+function atChg(){return (EASY?4:7)*AL119.mul;}
+
+// ======================= queue 120/121: desert caravan gold =======================
+// 120: destroying a desert caravan (the rich one or a plain one) spills 50 gold COINS to collect (was: rich only, 20 gold straight to the lair).
+// 121: the rich caravan pays 100 gold (was 50) into the king's treasury at the castle gate, with a small toast (see rcDeliver above).
+RCV.gold=50;RCV.deliver=100;
+{const _r=rcRaided;rcRaided=function(why){const c=RCV.cur;if(!c||c.done)return _r.apply(this,arguments);const tc=c.camels.find(k=>k.rcChest&&!k.gone)||c.lead,x=tc.x,y=tc.y;
+  const g0=D.gold,_f=float;float=function(a,b,s){if(typeof s==='string'&&s.indexOf("treasure chest is yours")>=0)s=`The treasure chest bursts open: ${RCV.gold} gold coins to collect!`;return _f.apply(this,[a,b,s].concat([].slice.call(arguments,3)));};
+  try{_r.apply(this,arguments);}finally{float=_f;}D.gold=g0;dropCoins(x,y,RCV.gold);G.cvCoins=(G.cvCoins||0)+RCV.gold;};}
+const cvPlainLive=u=>!!(u&&u.carav&&u.type==='villager'&&!u.rc&&!u.tax&&!u.dead);
+function cvPlainLoot(u){if(u.cvLoot)return;u.cvLoot=1;dropCoins(u.x,u.y,RCV.gold);G.cvCoins=(G.cvCoins||0)+RCV.gold;G.cvPlainRaids=(G.cvPlainRaids||0)+1;
+  if(dist(u,D)<1500)float(u.x,u.y-50,`The caravan's packs spill: ${RCV.gold} gold coins to collect!`,'#ffd84a');}
+{const _h=hurtUnit;hurtUnit=function(u){const w=cvPlainLive(u);const r=_h.apply(this,arguments);if(w&&u.dead)cvPlainLoot(u);return r;};}
+{const _e=eatUnit;eatUnit=function(u){const w=cvPlainLive(u);const r=_e.apply(this,arguments);if(w&&u.dead)cvPlainLoot(u);return r;};}
+// ===== QUEUE 122: trade prices 2 gold per wood, 4 per stone (were 4 and 6); the shipload stays 25% of the treasury =====
+const TP122={before:{wood:KB.rate.wood,stone:KB.rate.stone}};KB.rate.wood=2;KB.rate.stone=4;
+// ===== QUEUE 123: ransom = 50% of the king's treasury + 100 + 50 x (castle level - 1)  (was 10% of the treasury) =====
+const RS123={before:RANSOM.treasury};RANSOM.treasury=.5;
+// ===== QUEUE 124: dragon fire hurts stone buildings directly at 50% of its wood rate; stone never catches fire or keeps burning =====
+const F124={wood:DR.fireDps*.7,stone:.5,realmStone:new Set(['elfspire','dwhall','dwforge','dwmine','dwgate','cyccave'])};
+// castle stone (walls, towers, keep, princess tower, lighthouse): 3.6/s -> 21/s; fire alone still can't push it below 35% (stomps, slams and lava finish it). Keep roof, wells, fountains, temple unchanged.
+{const _sf=stoneFire;stoneFire=function(s,dt){if(!s||s.kind==='kroof'||s.kind==='well'||s.kind==='fountain'||s.kind==='jtemple'||!isStone(s))return _sf.apply(this,arguments);
+  s.weak=3;if(s.hp>s.maxHp*.35)s.hp=Math.max(s.maxHp*.35,s.hp-F124.wood*F124.stone*dt);};}
+// stone-upgraded kingdom buildings: direct fire 50% (was 40%), and they never catch fire (was: 50% chance, then burned on at 40%)
+STUP.fire=F124.stone;let F124_IN=0;
+{const _af=applyFire;applyFire=function(){const S=[];for(const s of structures)if(s.stoneUp&&s.state!=='ruin'&&!s.fire){s.fire=1;S.push(s);}F124_IN=1; // pre-set so no ignition / alarm / shrug roll happens
+  try{return _af.apply(this,arguments);}finally{F124_IN=0;for(const s of S)s.fire=0;for(const s of structures)if(s.stoneUp&&s.fire)s.fire=0;}};}
+{const _h=hurtStruct;hurtStruct=function(s,d){if(s&&s.stoneUp&&s.fire&&!F124_IN&&!HEAVY){s.fire=0;G.f124Out=(G.f124Out||0)+1;return;} // a stray spark on stone just goes out (no burn tick)
+  return _h.apply(this,arguments);};}
+// fantasy-realm stone buildings (elven castle, dwarf hall/forge/mine/gate, cyclops cave): fire 50% of the wooden ones' rate (30/s -> 15/s)
+{const _n=nrbHurt;nrbHurt=function(o,d,how){if(how==='fire'&&o&&F124.realmStone.has(o.k))d*=F124.stone;return _n.call(this,o,d,how);};}
+// ===== QUEUE 125: the kingdom's starting gold, wood and stone grow 10% per castle level, compounding (x1.1^(level-1)); level 1 unchanged =====
+// Applied on top of the existing start values (gold piles 5 x (20+10 x (level-1)); 100 wood; 20 stone) when each level is set up. A loaded save keeps its saved amounts.
+const KS125={g:1.1,last:null};
+function ks125Mul(l){return Math.pow(KS125.g,Math.max(0,(l|0)-1));}
+{const _ng=newGame;newGame=function(opt){const r=_ng.apply(this,arguments);const l=(opt&&opt.lvl)||1,m=ks125Mul(l);
+  if(m>1&&G){for(const p of goldPiles)p.amt=Math.round(p.amt*m);G.wood=Math.round(G.wood*m);G.stone=Math.round(G.stone*m);}
+  KS125.last={lvl:l,mul:m,gold:goldPiles.reduce((a,p)=>a+p.amt,0),wood:G&&G.wood,stone:G&&G.stone};return r;};}
+// ===== QUEUE 126: every wizard spell does double damage (no level scaling) =====
+const WZ126={before:{wz:Object.assign({},WZ_DMG),dw:Object.assign({},DW_DMG)}};
+Object.assign(WZ_DMG,{ice:18,lightning:12,wind:2});Object.assign(DW_DMG,{lava:26,erupt:12,bolt:16});
+
+// ======================= queue 127: the fantasy battle starts ~10% bigger each castle level =======================
+// Army size per side was 16 + 4 per castle level (cap 46). Now that is ×1.1^(level−1) on top (compounding), cap 52 a side (nrperf-tested).
+// L1 16 → 16, L2 20 → 22, L3 24 → 29, L4 28 → 37, L5 32 → 47. The light side still matches 90% of the dark army's strength.
+const NA127={g:1.1,cap:52,before:nrArmySize};
+nrArmySize=function(l){l=l||nrLvl();return Math.min(NA127.cap,Math.round((16+4*(l-1))*Math.pow(NA127.g,l-1)));};
+
+// ======================= queue 128: caravans start each castle level with ~10% more guards =======================
+// Extra starting guards = max(round(base × (1.1^(level−1) − 1)), floor((level−1)/2)), so at least +1 every two levels.
+// Rich caravan (base 10 soldiers + 6 archers + 2 camel riders): foot extras cycle soldier, soldier, archer; cap +16.
+// Plain caravans (base 2 camel riders): extra camel riders, cap +4. The per-crossing bonus of 115/116 comes on top and its cap scales: round(8 × 1.1^(level−1)).
+const CG128={g:1.1,richBase:16,plainBase:2,richCap:16,plainCap:4,crossBase:8};
+function cg128Lvl(){return Math.max(1,(G&&G.lvl)||1);}
+function cg128Extra(base,cap,l){l=l||cg128Lvl();const m=Math.pow(CG128.g,l-1);return Math.min(cap,Math.max(Math.round(base*(m-1)),Math.floor((l-1)/2)));}
+Object.defineProperty(RCE,'cap',{get(){return Math.round(CG128.crossBase*Math.pow(CG128.g,cg128Lvl()-1));},configurable:true});
+RC_FORM.sol.push([-230,-30],[-230,30],[-260,-30],[-260,30],[-290,-30],[-290,30]);RC_FORM.arc.push([-200,-64],[-200,64],[-260,-64],[-260,64]);
+{const _s=spawnRich;spawnRich=function(o){const c=_s.apply(this,arguments);if(c&&!(o&&o.guards)){const x0=Math.min(RCE.cap,G.rcEscX||0),n=cg128Extra(CG128.richBase,CG128.richCap);
+    for(let i=0;i<n;i++){const u=rcEscAdd(c,x0+i);u.rcLv=1;}c.lvX=n;}return c;};}
+{const _s=spawnCaravan;spawnCaravan=function(){const lead=_s.apply(this,arguments);if(lead&&typeof DTOWN!=='undefined'){const n=cg128Extra(CG128.plainBase,CG128.plainCap);
+    for(let i=0;i<n;i++){const s=RCV.camN+i;const u=mkDCam(lead.x-40-55*Math.floor(s/2),lead.y+(s%2?46:-46),{escort:lead,cvG:true,cvSlot:s,eo:s%2?1.6:-1.6});units.push(u);}lead.cvLvX=n;}return lead;};}
+{const _p=cvSlotPos;cvSlotPos=function(k,L){if(!(k.cvSlot>=2))return _p.apply(this,arguments);const t=L.route&&L.route[L.ri],a=t?Math.atan2(t.y-L.y,t.x-L.x):0,f=-40-55*Math.floor(k.cvSlot/2),l=k.cvSlot%2?50:-50;
+  return{x:L.x+Math.cos(a)*f-Math.sin(a)*l,y:L.y+Math.sin(a)*f*.8+Math.cos(a)*l*.8};};}
+// ===================== item 129: savanna elephants fight back + the WHITE ALPHA GUARDIAN ELEPHANT and his herd =====================
+// Family-friendly: trunk swats, tusk shoves and ground stomps (no gore).
+// 1) Any savanna elephant that gets hurt by the dragon stays cross for EL129.mad seconds and chases a dragon on the ground (up to EL129.madR px).
+// 2) One big white alpha elephant (gold head-crest) PATROLS the savanna with his herd on a random route: he walks to a random savanna
+//    waypoint, picks a brand-new random one when he arrives (so the route is different every time), and the herd follows him.
+//    When he or any herd member is attacked (or the dragon lands near the herd) he TRUMPETS (rings + sound) and calls the herd to protect him.
+//    He uses the shared partTF turf-leader system (call, rally, fight, leash, calm down, a new leader ~60 s later once you fly away).
+//    Alpha rules: shrugs off bites until under 50%, then dizzy and edible; mini-boss level scaling (HP +15%/level, damage +6%/level);
+//    item 119's +20% alpha damage; points + first-defeat achievement. If the whole herd is gone a new herd arrives EL129.back s later.
+const EL129={hp0:180,bite0:7,cd:1.6,herd:4,sp:34,th:.5,pts:300,back:120,mad:8,madR:700,R:300,food:90,
+  moves:[['Trunk swat!',5,0],['Tusk shove!',5,90],['Ground stomp!',6,0]],pk:0,down:0,wpN:0};
+function el129Lv(){return (G&&G.lvl)||1;}
+function el129Hp(l){l=l||el129Lv();return Math.round(EL129.hp0*(1+.15*(l-1)));}
+function el129Bite(l){l=l||el129Lv();return +(EL129.bite0*AL119.mul*(1+.06*(l-1))).toFixed(2);}
+TF_L.elephant={flag:'elA',hp:EL129.hp0,bite:el129Bite(1),cd:EL129.cd,R:EL129.R,scale:1.25,kb:110,call:'PAWOOOOO!',sfx:'elTrumpet',col:'#fff4c8',ring:'255,244,200',
+  key:'elephantw',label:'White alpha elephants',food:EL129.food,heal:(HEAL.elephant||60),grp:'herd',who:'The white elephant',say:'Trunk swat!',
+  calm:'The white elephant flaps his ears and leads the herd on',fresh:'A new white elephant leads the herd!'};
+AL119.before.elephantw=EL129.bite0;
+FOOD.elephantw=EL129.food;
+if(typeof SFX_DEF!=='undefined'&&!SFX_DEF.elTrumpet)SFX_DEF.elTrumpet=(a,B,o,t)=>{osc(a,o,t,'sawtooth',220,520,.35,.16,.04);osc(a,o,t+.33,'sawtooth',520,430,.8,.15,.02);osc(a,o,t,'triangle',110,260,1.1,.08,.1);return 1.2;};
+function el129Sync(){const L=TF_L.elephant;L.hp=el129Hp();L.bite=el129Bite();}
+const el129Ld=()=>EL129.pk?units.find(v=>!v.dead&&v.pack===EL129.pk&&tfIsLeader(v)):null;
+const el129Herd=()=>EL129.pk?units.filter(v=>!v.dead&&v.type==='animal'&&v.pack===EL129.pk&&v.species==='elephant'):[];
+function el129Wp(u){const Z=ZONES.savanna;for(let t=0;t<60;t++){const q=Z.s(),d=Math.hypot(q.x-u.x,q.y-u.y);
+    if(d<500||d>2400||!Z.ok(q.x,q.y))continue;if(typeof WHOLES!=='undefined'&&WHOLES.some(H=>Math.hypot((q.x-H.x)/(H.rx+160),(q.y-H.y)/(H.ry+120))<1))continue;return{x:q.x,y:q.y};}
+  return null;}
+function el129Spawn(){el129Sync();const Z=ZONES.savanna;
+  for(const v of units)if(!v.dead&&v.species==='elephant'&&(v.herd==='el129'||(v.pack&&v.pack===EL129.pk))){v.dead=true;v.gone=true;}if(EL129.pk&&TF.packs[EL129.pk])delete TF.packs[EL129.pk];
+  let p=null;for(let t=0;!p&&t<80;t++){const q=Z.s();if(Z.ok(q.x,q.y)&&d2(q.x,q.y,D.x,D.y)>900)p=q;}if(!p)return null;
+  const pk=++packId,home={x:p.x-EL129.R,y:p.y-EL129.R*.7,w:EL129.R*2,h:EL129.R*1.4},F=FAUNA.elephant,L=TF_L.elephant;EL129.pk=pk;EL129.down=0;
+  const ld=tfMakeLeader(mkUnit('animal',p.x,p.y,{species:'elephant',wild:true,zone:'savanna',home,hp:L.hp,maxHp:L.hp,free:true,pack:pk,herd:'el129',t:R(0,3),jt:0,face:rnd()<.5?1:-1}));
+  units.push(ld);ld.wp=el129Wp(ld);
+  for(let i=0;i<EL129.herd;i++){const q=sjNear(Z,p,90,60);units.push(mkUnit('animal',q.x,q.y,{species:'elephant',wild:true,zone:'savanna',home,hp:F.hp,maxHp:F.hp,free:true,pack:pk,herd:'el129',elSlot:i,t:R(0,3),jt:0,face:ld.face}));}
+  if(TF.packs[pk])delete TF.packs[pk];G.elHerds=(G.elHerds||0)+1;return ld;}
+// patrol (pack calm): the white elephant walks his random route, the herd follows in a loose file behind him; the turf moves with him
+function el129Patrol(u,dt,ld){const Z=ZONES.savanna,ox=u.x,oy=u.y;
+  if(u===ld){if(!u.wp||Math.hypot(u.wp.x-u.x,u.wp.y-u.y)<30||(u.wpT=(u.wpT||0)+dt)>90){u.wp=el129Wp(u);u.wpT=0;EL129.wpN++;G.elWps=(G.elWps||0)+1;}
+    if(u.wp){if(moveTo(u,u.wp.x,u.wp.y,EL129.sp,dt))u.wp=null;}
+    const H=u.home;if(H){H.x=u.x-H.w/2;H.y=u.y-H.h/2;}}
+  else{const s=u.elSlot!==undefined?u.elSlot:(u.id%5),f=ld.face||1,row=1+(s>>1),side=(s&1)?1:-1;
+    const tx=ld.x-f*(55*row),ty=ld.y+side*(34+8*row),dd=Math.hypot(tx-u.x,ty-u.y);
+    if(dd>12)moveTo(u,tx,ty,dd>260?FAUNA.elephant.sp*1.2:Math.max(EL129.sp,Math.min(FAUNA.elephant.sp,dd*.5)),dt);else u.face=f;}
+  if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;if(u===ld)u.wp=null;}}
+// a hurt elephant (any elephant not busy in a herd fight) stays cross for a few seconds and fights back
+function el129Mad(u,dt){const F=FAUNA.elephant,Z=ZONES[u.zone]||ZONES.savanna,dd=dist(u,D),ox=u.x,oy=u.y;
+  if(G.over||G.won||u.burn>0||u.bolted>0||D.alt>=.5||dd>EL129.madR)return false;u.cd=(u.cd||0)-dt;u.state='hunt';
+  if(u.state2==='back'){u.t2-=dt;const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,F.sp*.8,dt);if(u.t2<=0)u.state2=null;}
+  else if(dd>40)moveTo(u,D.x,D.y,F.sp*1.15,dt);
+  else if(u.cd<=0){const m=EL129.moves[(u.elMv=(u.elMv||0)+1)%EL129.moves.length];u.cd=F.cd;hurtDragon(m[1],'elephant');
+    if(m[2]){const ka=Math.atan2(D.y-u.y,D.x-u.x);D.vx+=Math.cos(ka)*m[2];D.vy+=Math.sin(ka)*m[2];}if(m[0]==='Ground stomp!'){G.shake=Math.max(G.shake||0,5);puff(u.x,u.y,6,'rgba(200,170,120,',50,4);}
+    float(D.x+R(-20,20),D.y-90,`${m[0]} -${Math.round(m[1]*G.dmgMul)}`,'#ffb0a0');G.elHits=(G.elHits||0)+1;u.state2='back';u.t2=.9;}
+  if(!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}return true;}
+{const _uw=updWild;updWild=function(u,dt){
+  if(u&&!u.dead&&u.species==='elephant'){
+    if(u.pack&&u.pack===EL129.pk){tfPackTick(u);const P=TF.packs[u.pack];const ld=P&&P.ld&&!P.ld.dead?P.ld:null;
+      if(P&&P.alert){if(ld===u&&u.cd<=dt){const m=EL129.moves[(u.elMv=(u.elMv||0)+1)%EL129.moves.length];TF_L.elephant.say=m[0];}return _uw(u,dt);}
+      if(u.elMad>G.t&&el129Mad(u,dt))return;
+      if(ld&&!(u.burn>0)&&!(u.bolted>0)){if(!u.herd)u.herd='el129';el129Patrol(u,dt,ld);u.cd=(u.cd||0)-dt;if(ld===u&&u.roarFx>0)u.roarFx-=dt;return;}
+      return _uw(u,dt);}
+    if(u.elMad>G.t&&el129Mad(u,dt))return;}
+  return _uw(u,dt);};updWild._base=_uw._base;}
+// attacked -> cross; a herd member or the white elephant attacked -> he trumpets and calls the herd
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){const el=u&&!u.dead&&u.type==='animal'&&u.species==='elephant';const wasL=el&&tfIsLeader(u);const r=_hu.apply(this,arguments);
+  if(el&&!u.dead&&dist(u,D)<1500){u.elMad=G.t+EL129.mad;G.elMadN=(G.elMadN||0)+1;
+    if(u.pack&&u.pack===EL129.pk){const ld=el129Ld();if(ld){const P=tfPack(ld);P.ld=ld;P.seenT=G.t;P.calm=0;if(!P.alert){tfAlarm(ld,P);G.elCalls=(G.elCalls||0)+1;}}}}
+  if(wasL&&u.dead)el129Down(u);return r;};}
+{const _e=eatUnit;eatUnit=function(u){const wasL=u&&!u.dead&&u.species==='elephant'&&tfIsLeader(u);const r=_e.apply(this,arguments);if(wasL&&u.dead)el129Down(u);return r;};}
+function el129Down(u){if(u._elDown)return;u._elDown=1;G.stats.kPts=(G.stats.kPts||0)+EL129.pts;G.elBeaten=(G.elBeaten||0)+1;puff(u.x,u.y,10,'rgba(255,250,230,',70,6);
+  float(u.x,u.y-80,`The white elephant is ${u.eaten?'gulped':'beaten'}! +${EL129.pts}`,'#fff2c0');}
+// alpha rule: a healthy white elephant shrugs off a bite (and it stings him); under 50% he is dizzy and can be gulped
+{const prev=TOUGH.elephant;TOUGH.elephant={chk:u=>tfIsLeader(u)?u.hp>u.maxHp*EL129.th:!!(prev&&prev.chk(u)),
+  hit:u=>{if(!tfIsLeader(u)){if(prev)prev.hit(u);return;}hurtUnit(u,Math.ceil(u.maxHp*.15),'bite');u.roarFx=1.2;G.elShrug=(G.elShrug||0)+1;
+    if(dist(u,D)<1200)float(u.x,u.y-80,'The white elephant shrugs off the bite! Wear him below 50% first','#ffd27a');}};}
+// manager: keep the leader's numbers in step with the castle level; a whole new herd if the old one is gone
+function el129Mgr(dt){if(!G||!ZONES.savanna)return;el129Sync();if(el129Herd().length){EL129.down=0;return;}
+  EL129.down+=dt;if(EL129.down>=EL129.back&&regionKey(D.x,D.y)!=='savanna'){el129Spawn();G.elNew=(G.elNew||0)+1;}}
+{const _up=updParts;updParts=function(dt){const r=_up.apply(this,arguments);if(scene==='play'&&G&&!G.over)el129Mgr(dt);return r;};}
+{const _ng=newGame;newGame=function(o){const r=_ng.apply(this,arguments);EL129.pk=0;EL129.down=0;el129Spawn();return r;};}
+// loads rebuild the herd after the saved gorilla packs have restored their pack ids (so the ids never clash)
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);el129Spawn();return r;};}
+tallyAddSect('savanna','Animals · The savanna','🦓','#e8c860',[['elephantw',TF_L.elephant.label]]);
+if(typeof REGION_SUB!=='undefined'&&REGION_SUB.savanna&&!/white elephant/.test(REGION_SUB.savanna))REGION_SUB.savanna+='. A white alpha elephant patrols with his herd (elephants fight back when hurt)';
+// achievement text (the partTF alpha loop already makes 'al_elephant'; give it its own name, hint and reward)
+{const _b=achBuild;achBuild=function(){const L=_b.apply(this,arguments);const a=L.find(q=>q.id==='al_elephant');
+  if(a){a.name='Herd Guardian';a.how=`Defeat the white alpha elephant who patrols the savanna with his herd (a new one takes over about ${TF_NEWLEADER}s after, once you fly away)`;
+    a.ok=()=>!!ACH.ev.al_elephant||achG('elBeaten')>0;a.rew=()=>`+${EL129.pts} points · gulp him for +${TF_L.elephant.heal} health`;}return L;};if(ACH.list)ACH.list=null;}
+// drawing: a big white elephant with a gold head-crest and a red-and-gold blanket; dizzy stars only once he is under 50% (edible)
+function el129Draw(u){const x=u.x,y=u.y,f=u.face||1,W='#eef0f4',S='#cdd2dc';ctx.lineCap='round';
+  const by=sjQuad(u,{bw:22,bh:13,leg:12,c:W,dk:S,lw:7});
+  ctx.fillStyle='#c0392b';ctx.fillRect(x-11,by-12,20,13);ctx.fillStyle='#ffd23a';ctx.fillRect(x-11,by+0,20,2.2);ctx.fillRect(x-11,by-12,20,2);
+  ell(x+f*20,by-4,10,10,W);ell(x+f*14,by-3,7,11,S);
+  ctx.strokeStyle=W;ctx.lineWidth=4.5;ctx.beginPath();ctx.moveTo(x+f*27,by);ctx.quadraticCurveTo(x+f*31,by+10,x+f*28+Math.sin(G.t*1.4+u.id*7)*3*f,by+16);ctx.stroke();
+  line(x+f*25,by+4,x+f*31,by+8,'#fff4c8',2.8);sjEye(x+f*23,by-6,1.4);line(x-f*22,by-2,x-f*24,by+8,'#aab0bc',1.6);
+  poly([x+f*16,by-12,x+f*19,by-19,x+f*21,by-13,x+f*23,by-19,x+f*25,by-12],'#ffd23a');ell(x+f*20.5,by-13,1.6,1.6,'#e8342a');}
+FAUNA_ART.add('elephant');
+{const _df=drawFauna;drawFauna=function(u){if(!(u&&u.species==='elephant'&&tfIsLeader(u)))return _df.apply(this,arguments);const L=TF_L.elephant;
+  tfRings(u);if(tfRallied(u)){ctx.save();ctx.globalAlpha=.25;ell(u.x,u.y-10*L.scale,16*L.scale,9*L.scale,'#ffb347');ctx.restore();}
+  ctx.save();ctx.translate(u.x,u.y);ctx.scale(L.scale,L.scale);ctx.translate(-u.x,-u.y);try{el129Draw(u);}finally{ctx.restore();}
+  {const hp=u._elRH!==undefined?u._elRH:u.hp;if(hp<u.maxHp&&!u.dead){const k=typeof szBase==='function'?szBase(u):1,w=50/k,bh=5/k,y=u.y-62;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(u.x-w/2,y,w,bh);ctx.fillStyle=hp>u.maxHp*EL129.th?'#e05050':'#ffd23a';ctx.fillRect(u.x-w/2,y,w*Math.max(0,hp/u.maxHp),bh);}}};}
+// partAL's dizzy stars show at 80%; this alpha becomes edible at 50%, so hide them until then
+{const _da=drawAnimal;drawAnimal=function(u){if(u&&u.species==='elephant'&&!u.dead&&tfIsLeader(u)&&u.hp>u.maxHp*EL129.th&&u.hp<=u.maxHp*AL_TH){const h=u.hp;u._elRH=h;u.hp=u.maxHp;try{return _da.apply(this,arguments);}finally{u.hp=h;u._elRH=undefined;}}return _da.apply(this,arguments);};}
+// ======================= queue 130: every jungle temple ruin piece can be smashed for 5 gold =======================
+// The pieces: the 3 overgrown "ancient ruins" sites in the jungle (4 pillars + 1 lintel each = 15) and the rubble of the
+// wrecked ancient jungle temple (14 rubble blocks + 1 leaning broken pillar = 15, only once the temple is wrecked).
+// A bite (on the ground), a stomp or a claw rake smashes a piece: +5 gold each. Stone, so fire alone never breaks them.
+// Pieces are back every level (like the temple); smashed pieces are remembered in saves (G.rp130).
+const RP130={gold:5,perSite:5,rubble:14,biteR:55,clawR:120};
+const RP_PILL=[-.3,-.1,.12,.3];
+function rpSiteN(){return RUINS.length*RP130.perSite;}
+function rpTotal(){return rpSiteN()+RP130.rubble+1;}
+function rpDead(i){return !!(G.rp130&&G.rp130[i]==='1');}
+function rpSet(i){let s=G.rp130||'';while(s.length<rpTotal())s+='0';G.rp130=s.slice(0,i)+'1'+s.slice(i+1);}
+// world positions of every piece (x,y = where it stands on the ground)
+function rpPieces(){const P=[];RUINS.forEach((q,si)=>{const w=q.w;RP_PILL.forEach((px,k)=>P.push({i:si*5+k,site:si,kind:'pillar',x:q.x+px*w,y:q.y-w*.12}));
+    P.push({i:si*5+4,site:si,kind:'lintel',x:q.x-w*.1,y:q.y-w*.14});});
+  const t=jtS(),tx=t?t.x:JT.x,ty=t?t.y:JT.y,b=rpSiteN();
+  for(let i=0;i<RP130.rubble;i++){const a=i*2.1,r=20+(i*37%60);P.push({i:b+i,kind:'rubble',x:tx+Math.cos(a)*r,y:ty+Math.sin(a)*r*.4});}
+  P.push({i:b+RP130.rubble,kind:'tpillar',x:tx-23,y:ty-5});return P;}
+function rpLive(p){if(rpDead(p.i))return false;if(p.kind==='rubble'||p.kind==='tpillar'){const t=jtS();return !!(t&&t.state==='ruin');}return true;}
+function rpSmash(p,how){if(!rpLive(p))return false;rpSet(p.i);D.gold=(D.gold||0)+RP130.gold;G.rpGold=(G.rpGold||0)+RP130.gold;G.rpN=(G.rpN||0)+1;if(typeof tallyAdd==='function')tallyAdd('rpStone');
+  float(p.x,p.y-50,`Smash! +${RP130.gold} gold`,'#ffd84a');puff(p.x,p.y-14,10,'rgba(170,165,140,',110,10);
+  if(p.site===undefined)for(let k=0;k<5;k++){const a=R(0,TAU),v=R(60,160);JT_BITS.push({x:p.x,y:p.y-10,z:R(8,30),vx:Math.cos(a)*v,vy:Math.sin(a)*v*.5,vz:R(120,260),t:R(.8,1.4),c:k%2?'#8e8a76':'#a8a492',s:R(3,7)});}
+  if(typeof SFX!=='undefined')SFX.play('crashStone',p.x,p.y,.45);
+  // the lintel rests on the two west pillars: knock either out and it tumbles too
+  if(p.kind==='pillar'&&p.site!==undefined&&(p.i%5===0||p.i%5===1)){const l=p.site*5+4;if(!rpDead(l))rpSmash({i:l,site:p.site,kind:'lintel',x:p.x,y:p.y-10},how);}
+  if(G.rpN>=rpTotal()&&!G.rpAll){G.rpAll=1;float(D.x,D.y-110,'Every ancient ruin stone smashed!','#ffe28a');}
+  return true;}
+function rpNear(x,y,r,one){let best=null,bd=r;const out=[];for(const p of rpPieces()){if(!rpLive(p))continue;const d=Math.hypot(p.x-x,(p.y-y)*1.2);if(d<r){out.push(p);if(d<bd){bd=d;best=p;}}}return one?best:out;}
+{const _b=biteWell;biteWell=function(){if(D.alt<.3){const mx=D.x+Math.cos(D.ang)*70,my=D.y+Math.sin(D.ang)*70,p=rpNear(mx,my,RP130.biteR,true)||rpNear(D.x,D.y,RP130.biteR,true);
+    if(p){rpSmash(p,'bite');D.eatCD=.45;D.eatT=.3;return true;}}return _b.apply(this,arguments);};}
+{const _s=doStomp;doStomp=function(){const r=_s.apply(this,arguments);for(const p of rpNear(D.x,D.y,DR.stompR+10,false))rpSmash(p,'stomp');return r;};}
+{const _c=clawScratch;clawScratch=function(){const r=_c.apply(this,arguments);if(r!==false&&D.alt<.6){const p=rpNear(D.x,D.y,RP130.clawR,true);if(p)rpSmash(p,'claw');}return r;};}
+// drawing: the ancient ruins without their smashed pillars / lintel (rubble stubs where they stood)
+{const _dw=drawWildDecor;drawWildDecor=function(o){if(!o||o.k!=='ruin')return _dw.apply(this,arguments);const si=RUINS.findIndex(q=>q.x===o.x&&q.y===o.y);
+  if(si<0||!G.rp130||G.rp130.slice(si*5,si*5+5).indexOf('1')<0)return _dw.apply(this,arguments);
+  SJC=ctx;const x=o.x,y=o.y,w=o.w;sE(x+20,y+8,w*.6,w*.14,'rgba(0,0,0,.25)');sP([x-w/2,y,x-w*.42,y-w*.12,x+w*.42,y-w*.12,x+w/2,y],'#8a8676');sP([x-w*.34,y-w*.12,x-w*.28,y-w*.24,x+w*.28,y-w*.24,x+w*.34,y-w*.12],'#9a9686');
+  RP_PILL.forEach((px,k)=>{if(rpDead(si*5+k)){sR(x+px*w-7,y-w*.24-6,14,6,'#8e8a76');sR(x+px*w-2,y-w*.24-9,6,4,'#a4a08a');return;}const h=px===.12?w*.22:w*.42;sR(x+px*w-6,y-w*.24-h,12,h,'#a8a492');sR(x+px*w-8,y-w*.24-h-5,16,6,'#b8b4a2');});
+  if(!rpDead(si*5+4))sR(x-w*.3-6,y-w*.66-10,w*.4+12,10,'#a8a492');
+  sE(x+w*.05,y-w*.3,10,7,'#6a8a4a');txt('ancient ruins',x,y+16,10,'rgba(255,255,220,.55)','center');return true;};}
+{const _dt=drawTemple;drawTemple=function(s){if(!s||s.state!=='ruin'||!G.rp130||G.rp130.slice(rpSiteN()).indexOf('1')<0)return _dt.apply(this,arguments);
+  const x=s.x,y=s.y,b=rpSiteN();ell(x,y+6,96,30,'rgba(0,0,0,.18)');for(let i=0;i<RP130.rubble;i++){if(rpDead(b+i))continue;const a=i*2.1,r=20+(i*37%60);rect(x+Math.cos(a)*r-9,y+Math.sin(a)*r*.4-8,18,12,i%2?'#8e8a76':'#a4a08a');}
+  if(!rpDead(b+RP130.rubble)){rect(x-30,y-16,14,22,'#9a9680');line(x-30,y-16,x-10,y-30,'#4f7a2a',3);}ell(x+20,y-6,16,8,'#4a7a2a');ell(x-48,y+2,14,7,'#5a8a34');
+  for(const q of JT_BITS){ell(q.x,q.y+2,q.s*.8,q.s*.3,'rgba(0,0,0,.2)');rect(q.x-q.s/2,q.y-q.z-q.s/2,q.s,q.s,q.c);}};}
+// smash bits from the ancient ruins sites fly even when the temple stands
+try{const S=TALLY_SECT.find(s=>s.id==='build');if(S&&!S.keys.some(k=>k[0]==='rpStone'))S.keys.push(['rpStone','Ancient ruin stones smashed']);TALLY_LABEL.rpStone='Ancient ruin stones smashed';}catch(e){}
+if(typeof REGION_SUB!=='undefined'&&REGION_SUB.jungle&&REGION_SUB.jungle.indexOf('ruin stone')<0)REGION_SUB.jungle+=(/[.!]$/.test(REGION_SUB.jungle)?' ':'. ')+'Smash ancient ruin stones (bite, stomp or claw) for +5 gold each';
+// ======================= queue 131-132: savanna animal sizes =======================
+// Drawn art used to be: elephant ~55x40 px, giraffe ~43x61 px, lion ~38x24 px, while the hippo is drawn x1.25 (~117x57 px).
+// Now elephants x2.4 (~132x80, the biggest land animal), giraffes x1.9 (~82x116, taller than everything), lions x1.35
+// (never smaller than before), hippos unchanged. The white alpha adds x1.25 on top (x3.0 overall, ~165x100).
+// The hitboxes grow with them: bites, flames and stomps reach a big animal's body, not just its centre point.
+const SZ131={elephant:2.4,giraffe:1.9,lion:1.35};
+const SZ131_R={elephant:34,giraffe:22,lion:5}; // extra hit radius (px) beyond the old centre point; hippos keep 0
+function szBase(u){return (u&&SZ131[u.species])||1;}
+function szK(u){let k=szBase(u);if(u&&k!==1&&typeof tfIsLeader==='function'&&TF_L[u.species]&&tfIsLeader(u))k*=TF_L[u.species].scale||1;return k;}
+function szR(u){const r=u&&SZ131_R[u.species];if(!r)return 0;const L=typeof tfIsLeader==='function'&&TF_L[u.species]&&tfIsLeader(u)?TF_L[u.species].scale||1:1;return r*L;}
+{const _da=drawAnimal;drawAnimal=function(u){const k=szBase(u);if(k===1||!u||u.nr)return _da.apply(this,arguments);
+  ctx.save();ctx.translate(u.x,u.y);ctx.scale(k,k);ctx.translate(-u.x,-u.y);try{return _da.apply(this,arguments);}finally{ctx.restore();}};}
+// bites: a big animal counts as in the jaws when any part of its body is
+{const _bt=biteTargets;biteTargets=function(){const T=_bt.apply(this,arguments);const gr=D.alt<0.3,r=(gr?DR.eatRGround:DR.eatRAir)*1.3,mx=D.x+Math.cos(D.ang)*80,my=D.y+Math.sin(D.ang)*80;
+  const add=[];for(const u of units){const e=szR(u);if(!e||u.dead||u.inside||u.type!=='animal'||T.includes(u))continue;if(u.dgInv>0||(typeof TG_NOBITE!=='undefined'&&TG_NOBITE&&TG_NOBITE.has(u)))continue;
+    const dm=d2(u.x,u.y,mx,my)-e,dd=dist(u,D)-e,fa=Math.abs(angDiff(Math.atan2(u.y-D.y,u.x-D.x),D.ang));
+    if(dm<r||(dd<r+(gr?90:30)&&fa<BITE_ARC&&dd>20-e)||dd+12<r*.8)add.push(u);}
+  if(!add.length)return T;const key=u=>Math.min(d2(u.x,u.y,mx,my),dist(u,D)+12)-szR(u);return T.concat(add).sort((a,b)=>key(a)-key(b));};}
+// flames: also test the body edges of a big animal (only if the centre point was not already in the flames this tick)
+{const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);
+  for(const u of units){const e=szR(u);if(!e||u.dead||u.inside||inFire(u.x,u.y,ox,oy))continue;const h=e*.9;
+    if(inFire(u.x-h,u.y-h*.5,ox,oy)||inFire(u.x+h,u.y-h*.5,ox,oy)||inFire(u.x,u.y-h,ox,oy)){u.burn=1.4;hurtUnit(u,DR.fireDps*dt,'fire');G.szFire=(G.szFire||0)+1;}}return r;};}
+// stomps: reach the body edge too
+{const _s=doStomp;doStomp=function(){const r=_s.apply(this,arguments);const R0=DR.stompR;
+  for(const u of units){const e=szR(u);if(!e||u.dead||u.inside)continue;const d=dist(u,D);if(d>=R0&&d<R0+e){hurtUnit(u,DR.stompDmg,'stomp');G.szStomp=(G.szStomp||0)+1;}}return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}

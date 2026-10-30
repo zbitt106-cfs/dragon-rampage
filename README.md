@@ -29,7 +29,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partP.js: Princess Elizabeth inside the great keep, under its stone roof
 - partY.js: the Dragon's Tally (bestiary) and the pause menu (P / Esc)
 - partWK.js: worker respawn for rebuilt work buildings
-- partSV.js: save / load (3 slots plus an autosave)
+- partSV.js: save / load (3 manual slots)
 - partSC.js: supply carts and the Castle Storehouse
 - partCS.js: claw scratch while swimming
 - partHC.js: the hoard and trophies carry over between castle levels
@@ -51,7 +51,7 @@ cat part1.html partD0.js partW.js partF.js part2.js part3.js part4.js part5.js p
 - partPB.js: plant fire in every biome (acacias, savanna grass, jungle trees and ferns, cacti, desert scrub, palms, mountain pines, Dragon Peaks heather)
 - partHU.js: three hunters per hunters' cabin
 - partCB.js: the three hunters' cabins (Deepwood north, Deepwood south, the Eastwood), each with its own trio of hunters
-- partNW.js: gorilla troops (a 92 HP silverback alpha with a silver back that chest-beats *THUMP THUMP* to call the troop, who drop what they're doing to defend it; 6-point blow with a small shove), giant river otters, dolphins, orcas, flying fish and marine iguanas; small wild dragons give +5 permanent max stamina
+- partNW.js: gorilla troops (a 92 HP silverback alpha with a silver back that chest-beats *THUMP THUMP* to call the troop, who drop what they're doing to defend it; 7.2-point blow with a small shove), giant river otters, dolphins, orcas, flying fish and marine iguanas; small wild dragons give +5 permanent max stamina
 - partAL.js: alpha / turf leaders (male lion, white alpha wolf, silverback) shrug off the first bite; worn to ~80% HP (1-2 hits of bite, claw, stomp, fire or lava) they get dizzy stars and become edible. Their turf call **rallies** the alpha and every responder: +12% damage and +8% speed (responders also take 10% less damage; the alpha's wear-down is unchanged), shown by a soft orange glow and sparkles, fading 10 s after the dragon leaves or the alpha is eaten
 - partWF.js: Dragon Peaks wild dragons are immune to your fire (lava, bites, claws and stomps still hurt); their weak fire is only for hunting goats, birds and mountain lions (never hurts you; small scorches only; mountain lions swipe back); a guarded 3-egg nest: eat an egg for +5 permanent max fire (kept across levels on the same life, reset on death/new game, saved), or smash it (stomp, claw, lava, full-belly bite) for no bonus; the guards attack when you come near. Eggs reset every castle level
 - Birds: fire breath (on the ground or in the air) and lava splashes knock out sparrows, crows, ducks, gulls, hawks and eagles (feathers fly and they puff away). Bigger birds take a moment longer in the flames. Wyverns burn too; Dragon Peaks wild dragons stay fireproof.
@@ -122,10 +122,11 @@ Big touch targets, works in portrait, landscape and Flip 90°. Everything is sav
 
 ## The Northern Realms (beyond the Frostpeak range)
 The map doubles northward. A glowing **magic barrier** of crystal peaks runs along the Frostpeak range and blocks the way ("A magic barrier blocks the way — defeat the Wizard!") until you beat the **Storm Wizard**.
-- **The Storm Wizard** stands on top of his tower on a small island in the north-east deep sea (around x 11500, y −1500) and never leaves it. The whole isle and his widest wind-gust ring sit **south of the magic wind wall** (the isle clears it by about 1100 px, the gust ring by about 370 px), so you can always fly in and fight him before he is beaten. He wakes when you come near and casts three spells: **ice spikes** (the hardest hitting; your fire melts them), **telegraphed lightning** (a warning mark first, then a strike about a second later, so you can dodge it) and a **wind gust** that knocks you back (the weakest). His shield is 300 at every castle level (he never scales; lower on easy). His health bar is a **magic shield** (see *Queue update* below). When the shield breaks he is beaten: the barrier opens for the dragon only and you get +300 gold. He stays beaten, and the wall stays open, for the rest of that life (saved, and kept over castle level-ups). When your dragon is defeated he returns, with his tower and shield, and the wall closes again.
+- **The Storm Wizard** stands on top of his tower on a small island in the north-east deep sea (around x 11500, y −1500) and never leaves it. The whole isle and his widest wind-gust ring sit **south of the magic wind wall** (the isle clears it by about 1100 px, the gust ring by about 370 px), so you can always fly in and fight him before he is beaten. He wakes when you come near and casts three spells: **ice spikes** (the hardest hitting; your fire melts them), **telegraphed lightning** (a warning mark first, then a strike about a second later, so you can dodge it) and a **wind gust** that knocks you back (the weakest). His shield is 300 at every castle level (he never scales; lower on easy). His health bar is a **magic shield** (see *Queue update* below). When the shield breaks he is beaten: the barrier opens for the dragon only (he gives **no gold**, see *No gold in the fantasy lands* below). He stays beaten, and the wall stays open, for the rest of that life (saved, and kept over castle level-ups). When your dragon is defeated he returns, with his tower and shield, and the wall closes again.
+- **Wizard spells hit twice as hard (item 126):** every Storm Wizard and Dark Wizard spell does double damage, the same at every castle level. Storm Wizard: ice spike **18** (was 9), lightning **12** (was 6), wind gust **2** (was 1). Dark Wizard: lava shot **26** (was 13), eruption **12** (was 6), purple lightning **16** (was 8).
 - **The northern sea** above the Wizard's Isle is full of life: 3 narwhal pods (3-5 each), 2 orca pods, 3 dolphin pods, 3 whales and 5 fish schools (about 36 animals plus 35 schooling fish). They stay in open water well clear of the isle and the wizard's wind ring, appear only when you fly up into the north-east (so the rest of the map runs as before), and pods you eat come back a few seconds later out of sight.
 - **Two bands of realms.** The light band in the south has the Hobbit Shire (west), **Lumeria, the Elven Realm** (centre: purple grass, glowing trees, unicorns, centaurs, satyrs) and the Dwarf Holds (east). The dark band in the north has the Goblin Bogs (west), the **Orc Warlands** (centre) and the Cyclops Highlands (east), with trolls, wyverns, giant scorpions and red-eyed spiders. All vegetation up north burns.
-- **War.** The dark side raids south with small vanguards, and every 3 minutes it marches a big army to the border (announced only while you are in the north). The light side patrols its own lands and only ever defends. Army size grows with castle level, up to 46 a side. The war pauses while King William is suiting up, charging or fighting.
+- **War.** The dark side raids south with small vanguards, and every 3 minutes it marches a big army to the border (announced only while you are in the north). The light side patrols its own lands and only ever defends. Army size grows with castle level: 16 + 4 per level, and since item 127 also **×1.1 per castle level** (compounding), up to **52 a side** (was 46). Levels 1–5: 16 → 16, 20 → **22**, 24 → **29**, 28 → **37**, 32 → **47** a side. From level 4 an alpha troll or centaur band may join too. The war pauses while King William is suiting up, charging or fighting.
 - **Light units:** hobbit soldiers (small spearmen), armoured dwarves with a hammer or an axe (their plate nearly halves the damage they take), elves with a bow at range and a sword up close (they dodge-dash out of your fire with a short burst of invulnerability), and **elf unicorn riders**. A rider shows a glowing horn and a "!" (the telegraph), then makes a horn charge that knocks you back, then kites you and shoots arrows before charging again after a cooldown.
 - **Dark units:** sword goblins and goblin archers, **orcs** with great swords or battle axes (tougher and slower than goblins), trolls and **cyclopes**. A cyclops raises its club in a clear wind-up with an arc warning, then makes a wide club sweep that knocks back the dragon and any units in the arc. It has very high HP. Toughness order: goblin < orc < troll / cyclops.
 - The mix shifts with castle level: low levels are mostly hobbits and elves (or goblins); higher levels bring more dwarves, unicorn riders, orcs and cyclopes. The same units fill patrols, castle guards and the armies.
@@ -139,15 +140,15 @@ The map doubles northward. A glowing **magic barrier** of crystal peaks runs alo
 - **Sand worm safe zones:** the worm only hunts a dragon that has **landed in open desert**. It gives a rumble-ripple warning first, then bursts up. Towns (within 750 px of a village, e.g. Sandhaven), the oasis (its pool plus 260 px) and **the desert road from Sandhaven to the king's castle** (within 140 px of it) are safe, and flying is always safe.
 - **The worm comes for every landing:** land anywhere in open desert outside those safe zones and the worm tunnels in from wherever it is (it relocates under the sand about 280 px away), with a short **rumble… rumble** warning (about 1 s after landing), screen shake and ripples racing in, then bursts up about 2–2.5 s after you land. It stays up for only 2.5 s (was 4.5 s) before diving back under, unless it is dazed. Every landing, again and again, until you beat it (there is no more 150 s wait between worms).
 - **Tougher worm:** the sand worm has **270 health** (was 150) at castle level 1.
-- **Beaten stays beaten:** defeat or eat the worm and *"The sand worm is beaten! The dunes are quiet now."* It stays gone through saves and new castle levels, and only comes back when you lose this dragon (a new game).
+- **Comes back each castle level:** defeat or eat the worm and *"🪱 Sand worm beaten! It comes back at the next castle level"*. It stays gone for the rest of that level (also through save/load) and returns at the start of the next castle level. Its win counter and achievements are kept.
 - **Confined to the desert:** the worm never leaves the sand. Fly or walk off the desert (or into a safe zone) and a surfaced worm stops and sinks back down.
 - **No treasury cap:** the gold hoard has no upper limit. The HUD shortens big numbers (9999, 12.3k, 120k, 2.5M, 1.2B).
-- **Stone buildings:** when the kingdom has more than **100 stone**, it turns one wooden building into stone about **once per game minute**, spending stone each time. Stone buildings have grey walls and slate roofs, +60% health, take 40% of the fire damage and 60% of the other damage, and are saved. A rebuilt stone building stays stone if there is stone for it.
+- **Stone buildings:** when the kingdom has more than **100 stone**, it turns one wooden building into stone about **once per game minute**, spending stone each time. Stone buildings have grey walls and slate roofs, +60% health, take 50% of fire's wood damage (21 a second instead of 42) and 60% of the other damage, and **never catch fire or keep burning** (before: 40% of the fire damage, a 50% chance to catch fire, and then they burned on at 40%). They are saved. A rebuilt stone building stays stone if there is stone for it.
 - **Wild dragons land:** Dragon Peaks dragons land to fight when you are on the ground near them, walking, clawing and breathing fire, and take off again when you fly or when they are hurt. Grounded dragons are hit by ground attacks, airborne ones by air attacks.
 - **Mixed armies:** the big 5-minute armies, vanguards and patrols draw from all allied creatures. Light: elves, unicorn riders, dwarves, hobbit soldiers, centaurs, minotaurs, satyrs and unicorns. Dark: goblins, goblin archers, orcs, cyclopes, trolls, wyverns, giant spiders, giant scorpions and cerberus. Heavies are rarer. Drafted creatures fight the other side and the dragon.
-- **The Hydra (dark far west, Temple of the Hydra around x −16300, y −9300):** a cartoony mini-boss that replaced Medusa. It always has 3 heads. Each head has its own health (85 at castle level 1, +15% a level, see *Mini bosses grow with the castle level*). Heads bite up close and spit goo blobs from range. A head you knock down leaves a stump that **regrows after about 6 s** at 60% health (at most twice per head) unless you **burn the stump with fire**. When every head is down, the Hydra is beaten: it curls up asleep in its pool, you get **+50 max health** (the health bar keeps its width), and it stays beaten until your dragon is defeated. Once beaten, it can be gobbled up (+40 health, big food). Saving mid-fight keeps which heads are cut or burnt. Old saves where Medusa was beaten count the Hydra as beaten.
+- **The Hydra (dark far west, Temple of the Hydra around x −16300, y −9300):** a cartoony mini-boss that replaced Medusa. It always has 3 heads. Each head has its own health (85 at castle level 1, +15% a level, see *Mini bosses grow with the castle level*). Heads bite up close and spit goo blobs from range. A head you knock down leaves a stump that **regrows after about 6 s** at 60% health (at most twice per head) unless you **burn the stump with fire**. When every head is down, the Hydra is beaten: it curls up asleep in its pool, you get **+50 max health** (the health bar keeps its width), and it stays beaten for the rest of the castle level. **It comes back at the next castle level** (see *Mini bosses come back each castle level*). Once beaten, it can be gobbled up (+40 health, big food). Saving mid-fight keeps which heads are cut or burnt. Old saves where Medusa was beaten count the Hydra as beaten.
 - **Medusa (regular dark unit, mostly the far west):** a normal snake-haired dark creature with a small health bar. She joins dark armies and roams the Goblin Bogs (sometimes the Orc Warlands). Her eyes glow for about 0.9 s before her stone gaze. If you face her when it fires, you turn grey and are slowed for 1.2 s, which never hurts you; look away to dodge it. She also gives small snake-hair nips. She is edible like the other realm creatures.
-- **The Griffin (light lands):** a cartoony griffin mini-boss who slowly roams the elven, dwarf and hobbit lands. He switches between walking and flying and fights in both: claw swipes and pounces on the ground, talon dives from the sky. He attacks dark creatures that cross into his range (520), but he never heads off to join a big battle. He only fights one if he happens to wander into it. He is hostile to the dragon and has a boss bar. Defeating him gives **+50 max health** (the bar keeps its width). He stays beaten until your dragon is defeated, and you can gobble him up after the fight. His position and beaten state are saved.
+- **The Griffin (light lands):** a cartoony griffin mini-boss who slowly roams the elven, dwarf and hobbit lands. He switches between walking and flying and fights in both: claw swipes and pounces on the ground, talon dives from the sky. He attacks dark creatures that cross into his range (520), but he never heads off to join a big battle. He only fights one if he happens to wander into it. He is hostile to the dragon and has a boss bar. Defeating him gives **+50 max health** (the bar keeps its width). He stays beaten for the rest of the castle level and **comes back at the next castle level**, and you can gobble him up after the fight. His position and beaten state are saved.
 - **Watchtowers vs the dragon:** bites now do 32 damage to a realm turret (was 15). Stomps do 45 (scaled with stomp power; before, they did nothing). Fire is unchanged. Against ordinary buildings, a stomp (96) already beats a bite (40–70).
 - **Dizzy linger:** a creature beaten by fire, lava, stomps, claws or other non-bite attacks now stays dizzy (with stars) for about 1.3 s before it puffs away, and you can eat it in that window for its normal food. The princess, King William and the princes are unchanged.
 - **Lava caves in burrows:** a lava shot or splash on a meerkat burrow (the game's underground animal homes) caves it in to a scorched crater. The meerkats hiding inside pop out and flee (still edible), and the colony digs it out again after 60–90 s. A hidden sand worm hit by lava is forced up, dazed.
@@ -159,12 +160,12 @@ The map doubles northward. A glowing **magic barrier** of crystal peaks runs alo
 - **Seagulls (seas and coasts):** small flocks circle over the southern sea, the northern sea on both sides of the wind wall, the shorelines, the dock, the lighthouse and passing trade and fishing ships (they follow the ship). Flocks land on the dock, the lighthouse rocks and beaches, and scatter with a squawk when the dragon comes close. Edible and hurt by fire. Only a few flocks exist at once, near the dragon, so performance stays within budget.
 - **Mermaids (light side):** family-friendly mermaids all swim **north of the magic wind wall**, in the light fantasy ocean along the dwarf coast (none south of the wall any more; old saves move them north on load). Most dive away from the dragon. Brave ones defend with a splash or a trident poke (small damage), and they also poke dark creatures that come near the water. You can only bite or burn them while they're surfaced. There are no river or lake mermaids, because the purple and elven lands have no rivers or lakes and the elven realm has no coast.
 - **Sunbathers on rocks and ice:** some mermaids lie back on sea rocks, the ice floes (11 of them, all north of the wall) and the dwarf-coast beaches, flicking their tails. When the dragon comes close they slide into the sea and dive.
-- **Nessie, the Loch Ness Monster (mini boss):** a friendly-looking green plesiosaur with her own loch in the **southern part of the light fantasy ocean, north of the wind wall** (about x 9700, y −3500), clear of the Kraken Deep. Old saves that had her south of the wall move her there on load. Her loch is one soft gradient, a darker heart fading smoothly to open water with no rings or hard edges. Once beaten she naps there and can be gulped down in one big cartoony GULP (food 90, +60 HP), then she is gone until the dragon is defeated. She lurks, surfaces and dives, and attacks with a neck lunge, a tail slap and a wave splash. She has a fixed-width boss bar, and her health grows gently with the castle level (800, +15% a level). Beating her gives **+50 max health**. She **stays beaten until the dragon dies**: that carries through the next level and save/load, and a new game resets it. Her health and beaten state are saved.
+- **Nessie, the Loch Ness Monster (mini boss):** a friendly-looking green plesiosaur with her own loch in the **southern part of the light fantasy ocean, north of the wind wall** (about x 9700, y −3500), clear of the Kraken Deep. Old saves that had her south of the wall move her there on load. Her loch is one soft gradient, a darker heart fading smoothly to open water with no rings or hard edges. Once beaten she naps there and can be gulped down in one big cartoony GULP (food 90, +60 HP), then she is gone for the rest of the castle level. She lurks, surfaces and dives, and attacks with a neck lunge, a tail slap and a wave splash. She has a fixed-width boss bar, and her health grows gently with the castle level (800, +15% a level). Beating her gives **+50 max health**. She **stays beaten for the rest of the castle level** (also through save/load) and **comes back at the next castle level**. Her health and beaten state are saved.
 - **No movement-state row:** the health panel no longer has the flying / grounded / swimming row or the "F: take off / F: land" bar, on any device. The dragon's wings and the water show its state, and the FLY button, the F key and the controls help still cover taking off and landing. The panel now ends right under the last bar, and the CASTLE LV and resources panels move up to close the gap.
 - **No griffin "· flying" label:** the Griffin's boss bar just shows its name and health now, because you can see it flying. The other boss bars never had a flying or ground label.
 - **Dragon no longer hidden by set pieces:** when the dragon walks or lands near the Temple of the Hydra, the temple floor and pool are drawn under it, and the pillars, the Hydra, a grounded or dizzy Griffin, Nessie and dizzy units are depth-sorted with the dragon. Anything behind the dragon is drawn first, anything in front of it is drawn after. When flying, the dragon is always on top.
 - **HUD title restored:** a line-break slip in the phone-landscape HUD update (item 45) had commented out the "THE DRAGON" title on the health panel. It's back.
-- **Alpha trolls and centaurs:** 3 **troll caves** in the dark north, each home to a white alpha troll with 3–4 regular trolls, and 3 **sacred glades** in the light north, each home to a silver-and-gold alpha centaur with 3–4 regular centaurs. They follow the lion and white-wolf alpha rules: they defend the turf, the alpha's call rallies the band (+12% damage, +8% speed, 10% less damage taken, 10 s, orange glow), helpers refill about every 40 s, and a new alpha takes over about 75 s after one is beaten. An alpha can only be eaten once worn below 80%. A few regular trolls and centaurs still roam freely. From level 4 an alpha may lead its band in the big armies and goes home afterwards.
+- **Alpha trolls and centaurs:** 3 **troll caves** in the dark north, each home to a white alpha troll with 3–4 regular trolls, and 3 **sacred glades** in the light north, each home to a silver-and-gold alpha centaur with 3–4 regular centaurs. They follow the lion and white-wolf alpha rules: they defend the turf, the alpha's call rallies the band (+12% damage, +8% speed, 10% less damage taken, 10 s, orange glow), helpers refill about every 40 s, and a new alpha takes over about 75 s after one is beaten. An alpha can only be eaten once worn below 80%. Alphas hit **+20% harder**: alpha troll ×1.8 a troll's blow (was ×1.5), alpha centaur ×1.92 (was ×1.6), and the centaur charge 8.4 (was 7; easy 4.8, was 4). A few regular trolls and centaurs still roam freely. From level 4 an alpha may lead its band in the big armies and goes home afterwards.
 - **Wizard's tower and magic shield:** while the wizard is alive, his tower is invulnerable. Every attack on the tower or on him (fire, lava, stomp, claw, dive, bite) drains his **magic shield** instead, shown as a shimmering bubble that fades as it drops. When the shield breaks he is beaten, goes dizzy and can be eaten (it counts as food). His tower can then be burned or smashed into rubble. He, his tower and his shield return when your dragon is defeated.
 
 - **Wizard's Isle, flat:** the wizard's island has no mountains any more, just sand and his tower, on the world and the minimap/big map.
@@ -185,18 +186,20 @@ The map doubles northward. A glowing **magic barrier** of crystal peaks runs alo
 Every creature, villager, soldier, animal and mini boss can be eaten once it's worn down or beaten, with a soft white puff and a GULP (no gore). Mini bosses: the Kraken and the giant octopus (dazed), the sand worm (surfaced), the Hydra, the Griffin, the Storm Wizard, the Dark Wizard, Cerberus, Medusa, trolls and cyclopes (dizzy), wild dragons, alphas, princes (under 30%), raid champions (under 50%) and now **Nessie** (beaten). Only three can **never** be eaten: **King William**, **Princess Elizabeth** (she is carried, never harmed) and **your own lair guardian dragons** (they're on your side). A bite at the king just goes *CLANG!*
 
 ## The Dark Wizard of Cinder Isle (northern dark ocean)
-On **Cinder Isle**, a small ash-grey volcano island in the northern dark ocean (about x 9700, y −9000), the **Dark Wizard** guards his own volcano.
-- **Magic shield:** the same rules as the Storm Wizard: every hit (fire, lava, stomp, dive, claw, bite) drains his shield, and his obsidian spire is invulnerable until he is beaten. Shield **525** (1.75× the Storm Wizard's 300); it does **not** grow with the castle level. Easy mode: ×0.7.
+On **Cinder Isle**, a small ash-grey volcano island in the northern dark ocean (about x 9700, y −9000), the **Dark Wizard** hovers over his own volcano and guards it. There is no tower or spire on the island, only the volcano.
+- **Magic shield:** the same rules as the Storm Wizard: every hit (fire, lava, stomp, dive, claw, bite) drains his shield. Shield **525** (1.75× the Storm Wizard's 300); it does **not** grow with the castle level. Easy mode: ×0.7.
 - **Spells** (every 2 s, Easy 2.8 s), starting when you come within 1,400 px:
-  - **Lava shots:** 5 lava blobs, 13 damage each. These never melt in water.
-  - **Eruption:** his volcano erupts in a ring that grows to 900 px over 1.5 s: 6 damage and a strong knockback (stronger than the wind wall's push).
-  - **Purple lightning:** a purple mark appears for 1 s, then the bolt hits for 8 damage.
-- **Beat him:** your reward is **his volcano and the purple triple lava shot** (below), plus a full heal, the *Volcano Tamer* achievement and a horn. There is no gold or max-health bonus for beating him. He lies dizzy and can be eaten (+40 HP, *Spicy Snack* achievement). His spire can then be smashed for +100 gold.
+  - **Lava shots:** 5 lava blobs, **26** damage each (was 13). These never melt in water.
+  - **Eruption:** his volcano erupts in a ring that grows to 900 px over 1.5 s: **12** damage (was 6) and a strong knockback (stronger than the wind wall's push).
+  - **Purple lightning:** a purple mark appears for 1 s, then the bolt hits for **16** damage (was 8).
+- **Beat him:** your reward is **his volcano and the purple triple lava shot** (below), plus a full heal, the *Volcano Tamer* achievement and a horn. There is no gold or max-health bonus for beating him. He lies dizzy and can be eaten (+40 HP, *Spicy Snack* achievement).
 - **He stays beaten** through every level-up and save/load; he never respawns in that game. Starting a new game (after your dragon is defeated) brings him back, like the Storm Wizard.
 
 ## Purple TRIPLE lava (the Dark Wizard's reward)
-Beating the Dark Wizard unlocks **his volcano for lava drinking**: land anywhere by the crater on Cinder Isle and press **E** (pad X / touch DRINK). The rules are exactly the same as at Mount Cinder: a full load of 20 shots, an 8-second refill cooldown, and *Already full of lava!* when you are topped up. Before he is beaten, his shield keeps you away. While he lies dizzy on the rim, the first **E** gulps him and after that **E** drinks. The unlock is saved and kept through level-ups; only a new game resets it. and upgrades lava at **every** volcano (Mount Cinder, Mount Ember and Cinder Isle). A small alert announces it: *"🌋 Purple TRIPLE lava shot!"* (*Dark Wizard beaten · his volcano is yours · 3 purple globs, +50% damage each, at every volcano*).
-- Each lava press now lobs **3 dark-purple globs** (straight ahead and ±8°) for the cost of **1 lava**.
+Beating the Dark Wizard unlocks **his volcano for lava drinking**: land anywhere by the crater on Cinder Isle and press **E** (pad X / touch DRINK). The rules are exactly the same as at Mount Cinder: a full load of 20 shots, an 8-second refill cooldown, and *Already full of lava!* when you are topped up. Before he is beaten, his shield keeps you away. While he lies dizzy on the rim, the first **E** gulps him and after that **E** drinks. The unlock is saved and kept through level-ups; only a new game resets it.
+
+Beating him also upgrades lava at **every** volcano (Mount Cinder, Mount Ember and Cinder Isle). A small alert announces it: *"🌋 Purple TRIPLE lava shot!"* (*Dark Wizard beaten · his volcano is yours · 3 purple globs, +50% damage each, at every volcano*).
+- Each lava press now lobs **3 dark-purple globs** (straight ahead and ±18°, a 36° fan). They are big, with a purple glow and a short trail, so the three shots are easy to tell apart even on a phone. All three cost just **1 lava**.
 - Each glob does **+50% damage**: units 30 → 45 (wet units 25 → 37.5), stone buildings 55 → 82.5, wooden buildings 60 → 90, ships 70 → 105, siege engines 70 → 105. Cooling puddles are unchanged (2 per tick).
 - The upgrade is saved and kept through every level-up. Like the Dark Wizard's beaten state, it resets only on a new game.
 
@@ -207,6 +210,13 @@ Beating the Dark Wizard unlocks **his volcano for lava drinking**: land anywhere
 | ![](screenshots/304_dark_wizard_beaten_alert.png) | ![](screenshots/305_purple_triple_lava_shot.png) |
 | Volcano Tamer achievement hint | Drinking lava at Cinder Isle |
 | ![](screenshots/306_volcano_tamer_hint.png) | ![](screenshots/307_cinder_isle_drinking_lava.png) |
+| Cinder Isle: no tower, the wizard hovers over the volcano | |
+| ![](screenshots/308_cinder_isle_no_tower.png) | |
+
+## No gold in the fantasy lands
+Nothing north of the magic wind wall gives gold: not the light or dark realms, their seas and isles, the fantasy castles and citadels, creatures, mini bosses, buildings or spires, and not the two wizards (the Storm Wizard's isle sits just south of the wall but counts as fantasy too). They still give everything else: health, max health, fire, lava, food and achievements. Gold comes only from the human lands, as before.
+- **Removed:** the Storm Wizard's +300 gold (he now just opens the barrier), the Dark Wizard's +400 gold and the Cinder Isle spire's +100 gold (the spire itself is gone).
+- **Safety nets:** building coins, dropped coins, sunk-ship loot, seashells and raider purses can never appear north of the wall (none did before either).
 
 ## Wanted tiers and the MILITIA
 The WANTED meter rises as you cause damage and cools down faster the farther you are from where the trouble was. Wild animals never raise it. The kingdom's response grows in tiers:
@@ -288,7 +298,7 @@ The HUD shows gold as icons next to the wood and stone: a **castle + coin** with
 The HUD's castle panel shows only the **castle level**. There is no Princess Elizabeth status line, no lair-hoard points line and no blinking *break the stone roof* label over the keep. The wanted/alarm bar stays, and your score is in the pause menu.
 
 
-**No carrying:** every bit of gold you collect (castle gold piles, coins from buildings, tax sacks, caravans, pirate loot, seashells and so on) goes **straight into the lair hoard** the moment you grab it. A little coin and **+N** pops up next to the dragon icon on the HUD. Raids, raid cooldowns, the ransom and save/load all work from that hoard total.
+**No carrying:** every bit of gold you collect (castle gold piles, coins from buildings, tax sacks, caravans, pirate loot, seashells and so on, all from the human lands; nothing in the fantasy lands gives gold) goes **straight into the lair hoard** the moment you grab it. A little coin and **+N** pops up next to the dragon icon on the HUD. Raids, raid cooldowns, the ransom and save/load all work from that hoard total.
 
 The gold lands on a visible treasure pile inside the lair, and the pile grows smoothly as your total rises:
 
@@ -342,6 +352,10 @@ Controls are the usual ones: fire, stomp, and bite/eat (E, pad X, or the BITE bu
 ## The Ancient Jungle Temple
 On the east flank of **Mount Ember**, the jungle volcano in the far west of the Emerald Jungle, stands a stepped stone temple, overgrown with vines, with a gold-glinting shrine on top. It is **fire-proof** and too solid for most attacks: use **bites**, the **Q stomp** or **lava shots**. When it crumbles: KA-BOOM, stone blocks fly, and **+100 gold** goes straight to your lair. It is never rebuilt, but a new one stands every level. It has its own Tally line, and a world-map marker once you have seen it.
 - **Ember power (once per game):** the first time you wreck the temple you also get a **permanent +10 max fire** on top of the 100 gold, shown in the small alert at the bottom of the screen (*"🔥 Max fire +10!"*). It stacks with the nest-egg fire boosts, carries over every castle level and is kept in saves. Wrecking the temple again on later levels still gives the 100 gold, but no more fire. A new game resets it.
+- **Ruin stones, 5 gold each (item 130):** every piece of jungle temple ruin can now be smashed for **+5 gold** (*"Smash! +5 gold"*). Bite it (on the ground), stomp it (Q) or rake it with a claw; stone never burns, so fire alone does nothing. There are **30 pieces, 150 gold in all**:
+  - the **3 overgrown "ancient ruins"** in the jungle: 4 pillars and 1 lintel each, **15 pieces (75 gold)**. The lintel rests on the two west pillars, so knocking out either of those brings it down too (+5 for each);
+  - the **rubble of the wrecked temple**: 14 rubble blocks and 1 leaning broken pillar, **15 pieces (75 gold)**. They only appear once the temple itself has been wrecked (which still pays its own 100 gold).
+  - Smashed stones stay smashed in a save; all 30 are back at the start of the next castle level, like the temple. They count in the Dragon's Tally (*Ancient ruin stones smashed*), and the jungle hint mentions them.
 
 ## Mount Ember (the second volcano)
 A second volcano, **Mount Ember**, smokes in the far south-west of the jungle. You can drink lava there just like at Mount Cinder (lava shots). It erupts now and then, raining embers that can set nearby jungle plants and trees alight and leaving lava puddles. Both volcanoes show on the world map. Trees, decorations and animals never spawn on its cone.
@@ -356,15 +370,28 @@ Houses (huts and adobes) slowly earn gold, and merchant shops (stalls, fishmonge
 ## The rich desert caravan and Sandhaven's troops
 One of Sandhaven's two camel caravans is a **rich caravan**: three colourful camels (striped blankets, tassels and bells), one carrying a **treasure chest**, and two richly dressed traders. It plods along the roads from Sandhaven to the castle gate and back again (about 67% of its old pace: lead trader 38 → 25.5 px/s), resting at each end.
 - **Escort:** exactly **10 desert soldiers** (turban, sand robe, scimitar and round shield) and **6 desert archers** (blue turban and a curved bow, which shoot from about 420 px), marching in formation: two files of soldiers flanking the camels, archers at the front, rear and sides.
-- **Desert troops are tougher** than the kingdom's regulars: desert soldier 35 HP (regular foot soldier 24), desert archer 32 HP (regular archer 22), and they hit 25% harder (5 instead of 4). HP still grows with the level.
+- **Desert troops are tougher** than the kingdom's regulars: desert soldier 35 HP (regular foot soldier 24), desert archer 32 HP (regular archer 22), and they hit 75% harder than regulars. **Toughened again:** desert soldier **53 HP** (was 35), desert archer **48 HP** (was 32), camel rider **90 HP** (was 60), so +50% HP; and **+40% attack**: sword and arrow hits 7 (were 5), camel-rider scimitar 10.5 (was 7.5). This covers every desert soldier: escort, camel riders, Sandhaven garrison and tower archers. HP still grows with the level.
 - **Sandhaven garrison:** 3 desert soldiers + 2 desert archers always guard the town, separate from the escort, fresh every level (and saved).
 - **The escort defends the caravan:** guards stay on a leash around the camels. When the dragon comes within 300 px of the caravan, the guards turn out and chase it, but never more than 380 px from the lead trader ("Back to the caravan!"); then they regroup into formation. In a test, a dragon landing next to the caravan drew guards at most 368 px away, and they regrouped to 156 px. (Before, guards could be pulled over 1000 px away.)
 - **Camel soldiers:** each caravan (the rich one and the ordinary one) has **2 camel riders** (desert soldiers riding camels, with swords) that keep to the caravan under the same leash rules, and **4 camel riders** guard Sandhaven every level. They are saved and have their own *Camel soldiers* Tally line.
 - **Predators:** lions, hyenas, big cats, wolves, bears, scorpions, snakes and the like that come near the caravan get chased off by the escort; the animal fights back, and once worn down it simply runs off (nobody is defeated for good). If the dragon attacks, the guards turn on the dragon first.
-- **Raid it:** take down the lead trader or the treasure camel and **+20 gold** goes to your lair, whether you catch it on the way to the castle or on the way back after it has paid the king.
-- **It pays the king:** every time the rich caravan reaches the castle gate, **+50** goes into the king's treasury.
+- **Raid it:** take down the lead trader or the treasure camel and the treasure chest bursts open: **50 gold coins** spill on the ground for you to collect (was +20 gold straight to the lair). The ordinary desert caravan drops 50 coins too when its lead trader falls. This works whether you catch it on the way to the castle or on the way back after it has paid the king.
+- **It pays the king:** every time the rich caravan reaches the castle gate safely, **+100 gold** (was +50) goes into the king's treasury, with a small alert: *"🐪 The desert caravan reached the castle safely: +100 gold for the king's treasury"*.
+- **The escort grows:** every time the rich caravan arrives safely at **either end** (the castle or Sandhaven), its escort gains one more guard (soldier, soldier, archer, repeating; the live caravan gets the new guard at once). Cap: **+8 extra guards at level 1**, and the cap grows 10% per castle level (8, 9, 10, 11, 12 at levels 1–5). The growth is saved, carries over to new castle levels and resets only with a new game.
+- **Bigger caravans each castle level (item 128):** every caravan starts a level with about 10% more guards per castle level (×1.1 per level, compounding, rounded, and at least +1 every two levels), on top of the per-arrival growth above.
+
+| Castle level | Rich caravan guards (before → now) | Ordinary caravan camel riders (before → now) | Per-arrival cap |
+|---|---|---|---|
+| 1 | 18 → 18 | 2 → 2 | +8 |
+| 2 | 18 → 20 | 2 → 2 | +9 |
+| 3 | 18 → 21 | 2 → 3 | +10 |
+| 4 | 18 → 23 | 2 → 3 | +11 |
+| 5 | 18 → 25 | 2 → 4 | +12 |
+
+Rich caravan counts are 16 foot soldiers and archers plus 2 camel riders; the level extras are foot troops (soldier, soldier, archer, repeating). Caps for performance: +16 level extras for the rich caravan and +4 camel riders for an ordinary one.
+- **Sandhaven's garrison grows:** once all **8 towers** stand, each caravan arrival at Sandhaven adds **2 desert soldiers + 1 desert archer** to the town garrison (*"Sandhaven's garrison grows"*), up to **15 extra troops**. If a tower has been burned down, the caravan rebuilds the tower first and adds no troops that time. Saved; it belongs to the current castle level like the towers.
 - **Respawn:** a raided rich caravan comes back from Sandhaven **10 minutes** later, quietly (no announcement). Fresh every level.
-- **Reward towers:** each time a caravan that has paid the king gets safely back to Sandhaven, Sandhaven raises a **sandstone tower** (blue and gold pennant) with a desert archer on top, in the desert around the town (never overlapping). Up to **5**. Towers can be burned down; the archer then joins the town guard, and the next caravan home rebuilds a ruined tower first. Towers are saved with the game and belong to the current castle level (a new level or new game starts with none). Tally: *Sandhaven towers*.
+- **Reward towers:** each time a caravan that has paid the king gets safely back to Sandhaven, Sandhaven raises a **sandstone tower** (blue and gold pennant) with a desert archer on top, in the desert around the town (never overlapping). Up to **8** (was 5). Towers can be burned down; the archer then joins the town guard, and the next caravan home rebuilds a ruined tower first. Towers are saved with the game and belong to the current castle level (a new level or new game starts with none). Tally: *Sandhaven towers*.
 - Surviving guards stay on as **Sandhaven's town guard**. When the kingdom musters (militia), desert soldiers and archers guard Sandhaven too.
 - Desert soldiers, desert archers and raided rich caravans have their own **Sandhaven** section in the Tally. The caravan and the town guard are saved.
 
@@ -374,7 +401,7 @@ Sandhaven and its bazaar, an oasis, camel caravans on the road, desert animals, 
 ## The Golden Savanna and the Emerald Jungle (far west, past the desert)
 The map is 36% wider (27,200 px instead of 20,000). Past the desert crossing, the sand blends into the **Golden Savanna**: golden grass, acacia trees, termite mounds, rocky kopjes and **two watering holes** (the big one in the middle and a smaller one further south-west, about 1,500 px away; animals drink at both, crocodiles lurk in the big one, and firefighters fetch water from either). Further west, the savanna blends into the **Emerald Jungle**: dense canopy trees with vines, giant ferns, the **jungle river** (it runs out to the sea) and overgrown **ruins**. The borders fade smoothly; there are no hard edges.
 - **Savanna prey:** zebras, gazelles, wildebeest, giraffes, elephants (a feast: food 70), warthogs, ostriches. **Predators:** lion prides, cheetahs, hyenas and circling vultures.
-- **Male lions:** every pride is led by a bigger, maned male lion (54 HP and a 6-point swipe that gives the dragon a small shove, against a lioness's 22 HP and 3). He guards the pride's home turf. When he spots the dragon in or near it, he ROARS (visible rings and a roar sound) and calls the pride: any lioness that is hunting drops her hunt and runs in to fight. Once the dragon has been away from the turf for a few seconds, they calm down and go back to normal. He has his own Tally line ("Male lions").
+- **Male lions:** every pride is led by a bigger, maned male lion (54 HP and a 7.2-point swipe (was 6) that gives the dragon a small shove, against a lioness's 22 HP and 3). He guards the pride's home turf. When he spots the dragon in or near it, he ROARS (visible rings and a roar sound) and calls the pride: any lioness that is hunting drops her hunt and runs in to fight. Once the dragon has been away from the turf for a few seconds, they calm down and go back to normal. He has his own Tally line ("Male lions").
 - **Jungle prey:** monkeys, tapirs, capybaras, frogs, parrots and toucans. **Predators:** jaguars, tigers, pythons, and crocodiles in the jungle river. The jungle has about 5% more animals: 13 monkeys, 7 tapirs, 11 capybaras, 15 frogs and 13 river fish (up from 12, 6, 10, 14 and 12). Predator numbers are unchanged. The ancient ruins are python country: 12 pythons coil around the three ruin sites (5, 4 and 3, biggest ruin first) and 2 more roam the jungle, 14 in all (up from 4). Pythons that are eaten come back at the ruins.
 - Every existing rule applies: they hunt, respawn only in their home region, count for the Glutton milestone, never raise the wanted level, and have Tally entries (greyed out until discovered). The regions have their own banners, fog, world-map labels and minimap colours, and are saved and loaded.
 - Hunger: 1.1× in the savanna, normal in the jungle. Flying nonstop from the castle you arrive in the savanna hungry, so snack on a lizard or camel in the desert on the way (the test does this and arrives with plenty left).
@@ -403,7 +430,7 @@ The fog of war you've cleared and the places you've discovered stay revealed whe
 Crocodiles live only in **fresh water**: the Silver River, Mirror Lake, the ponds, the big savanna watering hole and the jungle river. They never appear in the sea or the desert oasis. They lurk with only their eyes and snout showing, then lunge at animals that come to drink, fish and birds. They **snap at the dragon** (8 damage) when it swims or walks close by. They are edible (food 22) and wild, so eating them never raises the wanted level. They respawn slowly (at most one every ~75 s), appear in the Tally and are saved and loaded.
 
 ## Princess ransom
-When you deliver Princess Elizabeth to your lair (a level win), **King William pays a ransom** at the start of the next level: **100 gold + 50 per castle level beyond the first + 10% of the gold still in the castle treasury**. A banner reads *"King William pays a ransom for Princess Elizabeth: +X gold!"* and coins fly into your hoard, on top of the gold you carried over. The ransom counts toward raid thresholds, but a raid can't start in the first 45 seconds of a level.
+When you deliver Princess Elizabeth to your lair (a level win), **King William pays a ransom** at the start of the next level: **50% of the gold still in the castle treasury + 100 gold + 50 × (castle level − 1)** (nothing extra at level 1). *Before:* 10% of the treasury + 100 + 50 × (level − 1). Examples (old → new): level 1 with an empty treasury 100 → 100; level 1 with 1,000 gold 200 → 600; level 3 with 500 gold 250 → 450; level 5 with 2,000 gold 500 → 1,300; level 10 with 4,000 gold 950 → 2,550. A banner reads *"King William pays a ransom for Princess Elizabeth: +X gold!"* and coins fly into your hoard, on top of the gold you carried over. The ransom counts toward raid thresholds, but a raid can't start in the first 45 seconds of a level.
 
 ## Prince boss armies (every 5th castle level)
 At castle level 5, 10, 15 and so on, a named **prince** comes for the dragon. A herald announces *"Hear ye! Prince … vows before King William to slay the dragon!"*, then after a horn call and war drums his **royal war fleet** sails in from the southern sea edge: 2 warships at level 5 and one more for each later prince. While at sea, the ships can be burned, hit with lava shots or raked with a claw scratch. Sinking a ship dumps its soldiers into the sea; they can't swim in armour, so they cling to barrels and are fished out (no drowning). The ships that make it beach at the landing spot (⚓ on the map), and from then on **the prince and his whole army hunt the dragon down together as one group**, wherever you are on the map. The prince rides his white warhorse at the head and his soldiers march in formation (rows of four) behind him. About every 1.2 seconds he re-targets your current position. Long distances follow King William's roads, short ones go straight across dry land, and they never wade into water: if you hover over the sea or a lake, they head for the nearest dry ground. His army is **separate from the regular soldier waves**. It doesn't count toward wave reinforcements, and defeating his soldiers doesn't raise the WANTED meter, so regular waves still come only from the WANTED level. The empty ships stay on the beach and can be burned. The prince has a boss health bar (600 HP at level 5, +650 per later prince) and can only be eaten below 30% health. Beating him gives 250 gold (+150 per later prince), 1,500 points per prince level and his royal banner as a trophy. There are no hoard raids during a prince attack.
@@ -420,8 +447,8 @@ At castle level 5, 10, 15 and so on, a named **prince** comes for the dragon. A 
 His soldiers get tougher per tier too (foot 26 HP +6, knights 48 +8, archers 20 +4, cavalry 85 +10). Easy mode gives the prince 25% less health and 2 fewer soldiers.
 
 ## King William's trade ships
-When something is wrecked and the stockpile can't cover the rebuild, **King William orders a shipload of wood and/or stone worth 25% of the castle treasury** (at 4 gold per wood, 6 per stone; split evenly by value when both are needed, and only the goods the rebuild needs). The shipload always covers at least the shortfall and is worth at least 40 gold; if 25% isn't enough for that he still buys the shortfall, if the treasury can cover it. He never buys for watchtowers, and never twice at once.
-- *Before:* each ship brought exactly the shortfall, e.g. 6 wood + 6 stone (60 gold) for a wrecked gate with an empty storehouse. *Now:* with 1,400 gold in the treasury the same gate gets a 348-gold shipload of 42 wood + 30 stone; with 2,400 gold, 73 wood + 51 stone (598 gold). (Briefly, item 90 had ships carry 2.5× the shortfall; item 91 replaced that with the treasury rule before release.)
+When something is wrecked and the stockpile can't cover the rebuild, **King William orders a shipload of wood and/or stone worth 25% of the castle treasury** (at **2 gold per wood, 4 per stone**, were 4 and 6; split evenly by value when both are needed, and only the goods the rebuild needs). The shipload always covers at least the shortfall and is worth at least 40 gold; if 25% isn't enough for that he still buys the shortfall, if the treasury can cover it. He never buys for watchtowers, and never twice at once.
+- *Before:* each ship brought exactly the shortfall, e.g. 6 wood + 6 stone (60 gold) for a wrecked gate with an empty storehouse. *Now:* with 1,400 gold in the treasury the same gate gets a 348-gold shipload of 42 wood + 30 stone; with 2,400 gold, 73 wood + 51 stone (598 gold). (Briefly, item 90 had ships carry 2.5× the shortfall; item 91 replaced that with the treasury rule before release.) *Cheaper goods (item 122):* the shipload is still worth 25% of the treasury, but each gold now buys more: with 1,400 gold the gate gets 85 wood + 45 stone (350 gold, was 42 + 30), and with 2,400 gold 148 wood + 76 stone (600 gold, was 73 + 51). Escort tiers still go by the gold value, so they are unchanged.
 - **Bigger shipments get bigger escorts** (by the shipload's gold value). The banner names the tier and escort:
 
 | Tier | Shipload value | Trade ship HP | Escort per cart | Escort warships |
@@ -441,6 +468,23 @@ When something is wrecked and the stockpile can't cover the rebuild, **King Will
 - At the quay the goods go onto a **cart escorted by soldiers** (see the tiers above) that drives to the castle storehouse.
 - **Sink the ship or smash the cart** and the goods are lost (tallied as *Royal trade ship* / *Royal trade cart*). After a cooldown the king re-buys only if the rebuild still needs it and the treasury can afford it.
 - Ships, carts, guards and archers in transit are saved and restored, with their tier. Escort warships are re-launched beside a loaded ship.
+
+### The castle detachment meets the ship
+The moment a trade ship is **announced**, Castle Aldric sends a detachment (blue-grey tabards) out of the gate to the King's Quay. It marches at a pace set from the ship's arrival time (never slower than a walk), so it is already **standing in line on the shore when the ship ties up** (about 6 s after the announcement vs. about 27 s for the ship). If it is ever late (say a faster ship), the carts wait at the quay until it is there (at most 30 s). The banner adds *"N castle soldiers march to the quay to meet it"*.
+When the goods are on the carts, the detachment falls in beside them (*"N castle soldiers fall in to escort the carts"*) and walks them to the castle, **on top of** the carts' own guards. They fight a dragon that comes close, like any soldier. After delivery (or if the cart is smashed or the ship sunk) the survivors march back through the gate to the garrison.
+
+| Tier | Castle detachment |
+|---|---|
+| Small | 2 (2 foot soldiers) |
+| Medium | 4 (2 foot, 1 knight, 1 archer) |
+| Large | 6 (2 foot, 2 knights, 2 archers) |
+| Grand | 9 (3 foot, 3 knights, 3 archers) |
+
+Saving keeps a detachment that walks with a cart; a ship still at sea gets a fresh detachment from the gate after loading. Older saves load fine.
+
+| Grand detachment waiting as the ship arrives | Grand detachment escorting the carts |
+|---|---|
+| ![](screenshots/309_castle_detachment_grand_waiting.png) | ![](screenshots/310_castle_detachment_grand_escort.png) |
 
 ## King William
 Castle Aldric belongs to **King William**. He stands in the castle courtyard with a gold name tag, and when the dragon comes close he shouts orders, starting with *King William: "Guards! Protect Princess Elizabeth!"*. While you carry the princess away, he calls for her rescue. He can't be eaten or hurt. His name is used in the raid and prince announcements (*"… vows before King William to claim the dragon's hoard!"*), the ransom banner, the prince's march, the tax collectors (*"King William's taxes! Begone!"*), the militia (*"By order of King William!"*) and the castle label.
@@ -474,6 +518,16 @@ Your bite **always deals damage**. If the target can be eaten, it is swallowed a
 
 ## Kingdom watchtowers
 **Starting stock:** the kingdom starts with **100 wood and 20 stone** (it used to be 8 and 4). This applies to every new game **and to every new castle level**, because moving up a level rebuilds the kingdom from scratch. Loading a save restores whatever the kingdom had when you saved. The starting stock doesn't count toward watchtowers: they still need wood and stone *delivered by carts* during the level. It does let the villagers build carts and upgrade bridges to stone sooner.
+
+**Starting stock grows with the castle level (item 125):** the kingdom's starting gold, wood and stone grow **10% per castle level, compounding** (×1.1 for each level after the first), applied when each new level begins. Level 1 is unchanged. The castle's 5 gold piles already started bigger each level (20 + 10 per level each); the 10% growth comes on top.
+
+| Castle level | Multiplier | Treasury gold (before → now) | Wood (before → now) | Stone (before → now) |
+|---|---|---|---|---|
+| 1 | ×1 | 100 → 100 | 100 → 100 | 20 → 20 |
+| 2 | ×1.1 | 150 → 165 | 100 → 110 | 20 → 22 |
+| 3 | ×1.21 | 200 → 240 | 100 → 121 | 20 → 24 |
+| 4 | ×1.331 | 250 → 335 | 100 → 133 | 20 → 27 |
+| 5 | ×1.4641 | 300 → 440 | 100 → 146 | 20 → 29 |
 
 **Surplus rule (newer):** towers are only paid for from **surplus**. A wooden archer tower needs the castle's wood to be above the wood it would take to rebuild the *whole* kingdom; a stone crossbow (scorpion) tower needs the stone stock to be above the stone it would take to rebuild the whole kingdom *in stone* (whether or not it has turned to stone yet). Only the amount above the reserve is spent. Once the kingdom is at its tower maximum, stone surplus turns standing archer towers into crossbow towers, one at a time. The older rules below still apply on top.
 
@@ -526,7 +580,7 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 ## Wildlife (spawns and respawns only in its home region; bigger animals heal more)
 - **Farmland:** cows, pigs, sheep, chickens, horses (in paddocks), crows
 - **Forest (the Deepwood and the Eastwood):** deer, rabbits, boars, foxes, wolves (packs that nip back), bears (fight back harder, big heal)
-- **White alpha wolves:** every wolf pack has a bigger, white-furred alpha (40 HP and a 5-point bite with a small shove, against a wolf's 14 HP and 2). Like the male lion, he guards the pack's woods turf: when he spots the dragon he HOWLS (visible rings and a howl sound) and every wolf that is hunting stops and joins the fight. They calm down after the dragon leaves. A pack that loses its leader gets a new one after a while. He has his own Tally line ("White alpha wolves") and is saved and loaded.
+- **White alpha wolves:** every wolf pack has a bigger, white-furred alpha (40 HP and a 6-point bite (was 5) with a small shove, against a wolf's 14 HP and 2). Like the male lion, he guards the pack's woods turf: when he spots the dragon he HOWLS (visible rings and a howl sound) and every wolf that is hunting stops and joins the fight. They calm down after the dragon leaves. A pack that loses its leader gets a new one after a while. He has his own Tally line ("White alpha wolves") and is saved and loaded.
 - **Lake/river:** ducks, geese, jumping fish, beavers
 - **Mountains/cliffs:** mountain goats, eagles, hawks
 - **Coast:** seagulls, crabs, seals
@@ -543,7 +597,7 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 
 ## Dragon's Tally, pause, save and load
 - Press **P** or **Esc** to pause. The pause menu has the **Dragon's Tally**, a bestiary that counts everything you've gobbled or beaten this game and all-time, plus **Save** and **Load**.
-- There are three save slots and an **autosave** every 2 minutes, all stored in the browser.
+- There are three save slots, stored in the browser. **The game only saves when you save it** (Pause → Save): there is no autosave any more (no timed save, no save on pause, level-up or closing the page). An *Old autosave* from an earlier version still shows in Load and still loads.
 
 ## Mounted knights
 - Fast lance cavalry rides out of the castle gate. They charge in a straight line (the lance only hits a grounded dragon) and then wheel around for another pass.
@@ -565,6 +619,18 @@ All sound is generated in code with Web Audio; there are no audio files. **Every
 - Ground units, cavalry, patrols and siege engines can't cross a broken bridge. They detour to another bridge, or around the lake if every bridge is out.
 - Villagers rebuild bridges in wood first. From level 3, with enough stone, they rebuild or upgrade them in stone. A progress bar shows the build.
 - Stone bridges are fireproof but can be wrecked by repeated stomps (about 5) or heavy dive slams (about 4).
+
+### Dragon fire on stone (item 124)
+Dragon fire still hurts stone buildings directly, at **about half its wood damage**, but stone **never catches fire and never keeps burning**. Wood is unchanged: fire breath does 42 damage a second to a wooden building, sets it alight, and it burns on at 9 a second until villagers put it out or it collapses.
+
+| Target | Before | Now |
+|---|---|---|
+| Wooden buildings | 42/s, catches fire, burns on at 9/s | unchanged |
+| Castle stone (walls, towers, keep, princess tower, lighthouse) | 3.6/s, never below 35% health | **21/s**, still never below 35% from fire alone (stomps, dive slams, lava and the claw finish it); no burning |
+| Stone-upgraded town buildings | 16.8/s, 50% chance to catch fire, then burned on at 3.6/s | **21/s**, never catch fire |
+| Fantasy-realm stone (elven castle, dwarf hall/forge/mine/Ironhold Gate, cyclops cave) | 30/s, like wooden realm buildings | **15/s** (wooden realm buildings stay 30/s) |
+
+Unchanged: the keep roof (it barely notices fire), wells and fountains (fireproof), stone bridges (fireproof), the Jungle Temple (fire-proof).
 - Each wrecked bridge is worth +80.
 
 ## Graphics (High / Low)
@@ -582,6 +648,14 @@ Pick it in **Settings** (title screen or pause menu): LOW, MEDIUM or HIGH. **G**
 - Day and night: a full cycle every 5 minutes, with dusk tint, night darkness, warm light pools around fires, windows, torches and the lair, and the Lonely Lighthouse's rotating beam. Also a vignette and fire bloom.
 
 **Low** keeps the original flat look. It has no day/night cycle and is the fastest choice for old machines.
+
+## Mini bosses come back each castle level
+
+Every mini boss returns at the start of each new castle level, even if you beat or ate it on the level before. A small banner names them: *"👹 New castle level: the mini bosses are back (Hydra, Griffin, Nessie, Sand worm)"*.
+- **Now come back (used to stay beaten for the whole game):** the Hydra, the Griffin, Nessie and the Sand worm.
+- **Already came back each level:** the Kraken (giant squid), the giant octopus, Cerberus, the wild dragons of the Dragon Peaks, and the turf alphas (male lions, white alpha wolves, silverbacks, alpha hippos, white alpha trolls, alpha centaurs).
+- **Stay beaten for the whole game:** the **Storm Wizard** and the **Dark Wizard**, and their rewards (the open barrier to the Northern Realms, the lava shot) stay unlocked.
+- Rewards and progress are kept: win counters, Tally lines, earned achievements and the bosses' extra-health growth all carry on.
 
 ## Mini bosses grow with the castle level
 The king's castle gets about **+31% gate health per level** (260 + 80 a level). Mini bosses, the two fantasy citadels and your guardian dragons grow about **half as fast**, and they **keep growing at every level with no upper cap**:
@@ -658,7 +732,7 @@ Each of the two savanna watering holes has its own **alpha hippo**: a big lilac-
 | Stat | Alpha hippo |
 |---|---|
 | Health | 150 (doesn't grow with the castle level, like other wild animals) |
-| Bite | 7 every 2 s (Easy mode lowers it, as with all damage) |
+| Bite | 8.4 every 2 s (was 7; Easy mode lowers it, as with all damage) |
 | Charge speed | 88 (wading home: 40) |
 | Notices you | within ~200 px of the water, on the ground or flying low |
 | Leash | ~300 px from its pool |
@@ -667,10 +741,42 @@ Each of the two savanna watering holes has its own **alpha hippo**: a big lilac-
 | Comes back | ~2 min later |
 
 
+## The white alpha elephant and his herd (item 129)
+A big **white alpha elephant** with a red-and-gold blanket, a gold crest and gold tusks now patrols the savanna with **his herd of 4 elephants**. He walks a **random route of random waypoints** (a new spot 500 to 2,400 px away each time he arrives, never into a watering hole) and his herd follows behind him in a file.
+- **He calls his herd.** Attack him or any elephant in his herd and he trumpets (*"PAWOOOOO!"*), and the whole herd comes running to protect him (the herd gets the alpha rally bonus: ×1.12 damage).
+- **Elephants fight back (gently).** Any savanna elephant you hurt now pushes back for about 8 s while you are on the ground nearby: *Trunk swat!* (5), *Tusk shove!* (5, pushes you back) and *Ground stomp!* (6, shakes the screen). Flying high keeps you safe.
+- **Alpha rules, like the other alphas:** he shrugs off bites while he has more than half his health (each bite still costs him 15%), shows dizzy stars below half, and then you can gulp him. Beating or eating him gives **+300 points**; eating him is a feast (90 food, 60 health). His stats grow with the castle level like the mini bosses, and his bite includes the +20% alpha bonus (item 119).
+- **He comes back:** a new white alpha takes over the herd about 60 s after you fly away, and if the whole herd is gone, a new herd arrives about 2 minutes later once you've left the savanna. The herd is not saved; loading a save brings in a fresh one.
+- **Achievement:** *Herd Guardian*, first defeat (🎁 *+300 points · gulp him for +60 health*).
+
+| Castle level | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| White alpha health | 180 | 207 | 234 | 261 | 288 |
+| White alpha bite (every 1.6 s, 110 knockback) | 8.4 | 8.9 | 9.41 | 9.91 | 10.42 |
+
+Herd elephants: 60 health, bite 5 (5.6 rallied). Before this change an elephant only swatted you (5) if you stood within about 75 px of it on the ground; now a hurt elephant comes after you (up to about 700 px, for about 8 s) with all three moves.
+
+![The white alpha elephant's herd charges the dragon](screenshots/311_elephant_herd_fight.png)
+
+## Savanna animal sizes (items 131 and 132)
+Elephants and giraffes now really look (and hit) like the giants of the savanna. Measured drawn size (width × height in pixels, at normal zoom):
+
+| Animal | Before | Now | Hitbox |
+|---|---|---|---|
+| Elephant | 56 × 37 | **137 × 87** (×2.4), the biggest land animal | +34 px body radius |
+| White alpha elephant | (new) | **171 × 122** (×3.0) | +42.5 px |
+| Giraffe | 43 × 65 | **85 × 124** (×1.9), the tallest | +22 px |
+| Hippo | 101 × 64 | unchanged | unchanged (centre point) |
+| Lion | 42 × 24 | **57 × 33** (×1.35; male leaders still ×1.22 on top) | +5 px |
+
+Bites, flames and stomps now reach a big animal's body, not just its centre point, so a bigger animal is easier to hit. Zebras (39 × 30) and the other animals are unchanged.
+
+![Size comparison: lion, hippo, giraffe, elephant and the white alpha elephant](screenshots/312_savanna_sizes.png)
+
 ## Achievements
 Open **🏆 Achievements** from the title menu (it shows *N of 74* right on the button) or from the pause menu (between *Settings* and *Flip screen*). It's a scrollable list sized for touch: big **▲ Up / ▼ Down** buttons, drag or swipe to scroll, **Show: All / Locked / Unlocked** to filter, and **◀ Back**. On a keyboard: ↑/↓ scroll, ←/→ page, A cycles the filter, Esc/B goes back.
 - **Nothing is hidden.** Every locked achievement shows its name and a one-line how-to, so the list doubles as a guide to everything there is to do. Counters show progress (e.g. *260 / 500* gold, *3 / 10* eggs, *1% / 50%* explored).
-- **Reward hints.** Anything that gives an in-game reward shows a 🎁 line, even while locked: the bosses' *+50 max health*, the wizard's *+300 gold*, the temple's *+100 gold · +10 max fire (once per game)*, the rich caravan's *+20 gold*, dragon eggs' *+5 max fire*, wild dragons' *+5 max stamina*, the guardian egg hatchlings, trade-ship cooldowns, the hippo's *+250 points*, raid purses, and more. These numbers are read from the game's own settings, so they always match the game.
+- **Reward hints.** Anything that gives an in-game reward shows a 🎁 line, even while locked: the bosses' *+50 max health*, the wizard opening *the barrier to the Northern Realms*, the temple's *+100 gold · +10 max fire (once per game)*, the rich caravan's *+50 gold*, dragon eggs' *+5 max fire*, wild dragons' *+5 max stamina*, the guardian egg hatchlings, trade-ship cooldowns, the hippo's *+250 points*, raid purses, and more. These numbers are read from the game's own settings, so they always match the game.
 - **Unlocking** shows a small alert at the bottom of the screen (*"🏆 Name — Achievement unlocked"* plus the reward). If several unlock at once you see two alerts and a *"+N more"* one.
 - **Saved on this device** (browser storage key `dr_ach_v1`), separately from save games: unlocks carry across new games, restarts and reloads, and never alert twice.
 
@@ -678,9 +784,9 @@ What's in the list (74):
 - **Castle, hoard & princess:** first gold home, 500 / 2000 gold stashed, smashing the keep's roof, grabbing Princess Elizabeth (she is never harmed), flying her home (the ransom), castle levels 3, 5 and 10.
 - **Dragons & dragon eggs:** eat your first and 10th wild dragon egg, beat 1 and 5 wild dragons, carry home and hatch the **light (white) egg** from the Lumenspire Citadel and the **dark (black) egg** from the Doomforge Citadel (one achievement each, each hint names the guardian dragon you get), and the Glutton boost (eat a whale's worth of food).
 - **Bosses:** the wizard (defeat him, and gobble him), the Dark Wizard (*Volcano Tamer*, with a 🎁 *Purple TRIPLE lava shot at every volcano (+50% damage each) · his volcano unlocks* hint, and *Spicy Snack* for eating him), the hydra, griffin, Nessie, the giant squid, the giant octopus, the sand worm, Medusa, Cerberus, and wrecking the jungle temple.
-- **Alpha guardians (first defeat of each type):** the savanna pride's male lion, the Deepwood's white alpha wolf, the jungle's silverback gorilla, the alpha hippo, the white alpha troll and the alpha centaur. **Alphas come back:** a new lion, wolf or silverback takes over about 60 s after you fly away, a new hippo wades in about 2 minutes later, and a new troll or centaur alpha arrives about 75 s later, so you can always find one.
+- **Alpha guardians (first defeat of each type):** the savanna pride's male lion, the Deepwood's white alpha wolf, the jungle's silverback gorilla, the alpha hippo, the white alpha elephant (*Herd Guardian*), the white alpha troll and the alpha centaur. **Alphas come back:** a new lion, wolf or silverback takes over about 60 s after you fly away, a new hippo wades in about 2 minutes later, a new white elephant leads the herd about 60 s later (a whole new herd about 2 minutes after the old one is gone), and a new troll or centaur alpha arrives about 75 s later, so you can always find one.
 - **Hoard raids & royal fleets:** beat a hoard-raiding champion (1 and 5), pick up a gold sack a raiding knight dropped, stop a prince's royal war fleet, sink a royal warship.
-- **Kingdom:** stop a royal **trade ship at sea**, and separately stop a trade ship **on land** (unloading at the quay, or its carts unloading on shore), destroy the **rich desert caravan** (*+20 gold*), break the castle gate, wreck the barracks, topple 3 towers, knock down the lighthouse, wreck a catapult, stop a tax collector, defeat a knight, defeat 50 of King William's soldiers, burn 10 crop fields, knock down or burn 25 trees, and wreck 5 carts.
+- **Kingdom:** stop a royal **trade ship at sea**, and separately stop a trade ship **on land** (unloading at the quay, or its carts unloading on shore), destroy the **rich desert caravan** (*+50 gold*), break the castle gate, wreck the barracks, topple 3 towers, knock down the lighthouse, wreck a catapult, stop a tax collector, defeat a knight, defeat 50 of King William's soldiers, burn 10 crop fields, knock down or burn 25 trees, and wreck 5 carts.
 - **Exploring:** 25%, 50%, 75% and **100%** of the map (the minimap fog), and visiting every region (the list shows which regions you haven't seen yet). All of it is reachable by flying; the far north opens once the wizard's barrier falls.
 - **Region feasts:** one per region (Farmlands, Deepwood, lake & rivers, hills & mountains, coast & sea, desert, savanna, jungle) for **eating** at least one of every animal type that lives there. Each shows *eaten / total* and a *"Still to eat: …"* list. Only gulping counts, not burning or knocking out. The princess and the king never count, and alphas have their own achievements instead.
 - **First encounters:** one for each other group in the Dragon's Tally (people, the king's army, the desert army, the light and dark lands, boats and siege engines, buildings, and so on).
