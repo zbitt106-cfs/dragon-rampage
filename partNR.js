@@ -692,7 +692,7 @@ function nrTurRebuild(t){t.st='ok';t.maxHp=nrTurMaxHp(t);t.hp=t.maxHp;t.cd=2;G.n
 {const _af=applyFire;applyFire=function(ox,oy,dt){const r=_af.apply(this,arguments);for(const t of NR_TUR)if(t.st==='ok'&&Math.abs(t.x-ox)<DR.fireRange+60&&Math.abs(t.y-oy)<DR.fireRange+60&&inFire(t.x,t.y,ox,oy)){t.burnT=G.t;nrTurHurt(t,DR.fireDps*.3*dt,'fire');}return r;};}
 {const _te=tryEat;tryEat=function(){for(const t of NR_TUR)if(t.st==='ok'&&Math.hypot(D.x-t.x,D.y-t.y)<110&&D.alt<.5){D.eatCD=.6;nrTurHurt(t,NR_TUR_BITE,'bite');float(D.x,D.y-90,'Crunch the tower!','#ffd27a');return;}return _te.apply(this,arguments);};}
 // (QUEUE 34/35) magic turrets crack under a dragon's weight: bite 32 (was 15), STOMP 45 (was none) - stomp is the strongest; fire unchanged
-const NR_TUR_BITE=32,NR_TUR_STOMP=45;
+const NR_TUR_BITE=25,NR_TUR_STOMP=45;
 {const _st=doStomp;doStomp=function(){const r=_st.apply(this,arguments);let n=0;for(const t of NR_TUR)if(t.st==='ok'&&Math.hypot(D.x-t.x,D.y-t.y)<DR.stompR+60){nrTurHurt(t,NR_TUR_STOMP*DR.stompDmg/60,'stomp');n++;}if(n){G.nrTurStomps=(G.nrTurStomps||0)+n;float(D.x,D.y-110,'STOMP! The tower cracks','#ffd27a');}return r;};}
 // slowed by frost
 {const _uc=updCruise;updCruise=function(){const r=_uc.apply(this,arguments);return D.nrSlowT>0?r*.6:r;};}
@@ -3167,3 +3167,257 @@ const WZ140={hpMul:()=>1,back:0};
   if(g.wzBeat===undefined)G.wzBeat=g.nrOpen?1:0;   // pre-140 saves: an open barrier meant he was beaten
   if(g.dwKey===undefined)G.dwKey=g.dwDown?1:0;
   return r;};}
+
+// ======================= queue 142 / 142a / 142b: only four kinds of on-screen direction arrows (all modes) =======================
+// REMOVED: the small blue (knight) and green (archer) edge arrows that pointed at EVERY off-screen knight and archer (part6 drawHUD).
+// KEPT: the gold LAIR arrow (partLA). ADDED, each only while it applies:
+//   RAID arrow -> the hoard-raid party while it MARCHES to the lair (RAID.cur.phase==='march'; not during the warning or the run home)
+//   PRINCE arrow -> the landed prince while his army hunts the dragon (princeActive, boss alive)
+//   KING arrow -> King William while he CHARGES after the dragon (KA.phase==='charge')
+const AR142={on:0,drawn:[],cnt:{raid:0,prince:0,king:0}};
+{const _p=poly;poly=function(pts,c){if(AR142.on&&pts&&pts.length===6&&pts[0]===8&&pts[1]===0&&pts[2]===-6&&pts[3]===-6&&(c==='rgba(80,160,255,.85)'||c==='rgba(80,255,80,.85)')){AR142.cut=(AR142.cut||0)+1;return;}return _p.apply(this,arguments);};}
+function ar142Targets(){const T=[];
+  try{const r=RAID.cur;if(r&&r.phase==='march'){let t=r.champ&&!r.champ.dead?r.champ:(r.members||[]).find(u=>!u.dead);if(t)T.push({k:'raid',x:t.x,y:t.y,col:'#6ab0ff',lab:'RAID'});}}catch(e){}
+  try{const c=PRN.cur;if(princeActive()&&c.boss&&!c.boss.dead&&!c.done)T.push({k:'prince',x:c.boss.x,y:c.boss.y,col:'#f0d050',edge:c.col,lab:'PRINCE'});}catch(e){}
+  try{if(KA.phase==='charge'&&KA.u&&!KA.u.dead)T.push({k:'king',x:KA.u.x,y:KA.u.y,col:'#ffcc33',edge:'#a01818',lab:'KING'});}catch(e){}
+  return T;}
+function ar142Draw(){AR142.drawn=[];if(laHide())return;const T=ar142Targets();if(!T.length)return;
+  const sm=VW<760,S=typeof SAFE!=='undefined'?SAFE:{l:0,r:0,t:0,b:0},M=sm?20:24,
+    top=(TOUCH&&TOUCH.on?118:sm?96:140)+S.t+(typeof princeHudOn==='function'&&princeHudOn()?(sm?36:30):0),bot=VH-S.b-M-(TOUCH&&TOUCH.on?0:14),lft=S.l+M,rgt=VW-S.r-M;
+  const taken=LA.last?[{x:LA.last.x,y:LA.last.y}]:[];ctx.setTransform(DPR,0,0,DPR,0,0);
+  for(const t of T){const sx=(t.x-cam.x)*cam.z+VW/2,sy=(t.y-cam.y)*cam.z+VH/2;if(sx>30&&sx<VW-30&&sy>30&&sy<VH-30)continue;
+    const cx=(lft+rgt)/2,cy=(top+bot)/2,dx=sx-cx,dy=sy-cy;const tx=dx>0?(rgt-cx)/dx:dx<0?(lft-cx)/dx:1e9,ty=dy>0?(bot-cy)/dy:dy<0?(top-cy)/dy:1e9,tt=Math.min(tx,ty),side=tx<ty?'v':'h';
+    let x=clamp(cx+dx*tt,lft,rgt),y=clamp(cy+dy*tt,top,bot);
+    const ok=(x,y)=>!laBlocked(x,y,14)&&!taken.some(q=>Math.hypot(q.x-x,q.y-y)<44);
+    if(!ok(x,y)){let best=null;for(let k=1;k<60&&!best;k++)for(const sg of[1,-1]){const o=k*10*sg,nx=side==='v'?x:clamp(x+o,lft,rgt),ny=side==='v'?clamp(y+o,top,bot):y;if(ok(nx,ny)){best={x:nx,y:ny};break;}}if(best){x=best.x;y=best.y;}}
+    const a=Math.atan2(sy-y,sx-x),pl=.5+.5*Math.sin(G.t*5),dist=Math.round(Math.hypot(t.x-D.x,t.y-D.y)/10);taken.push({x,y});
+    ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.scale(.5,.5);ctx.globalAlpha=.85+.15*pl;poly([24,0,-10,-14,-3,0,-10,14],t.col);ctx.lineWidth=2.5;ctx.strokeStyle=t.edge||'rgba(10,30,70,.9)';ctx.stroke();ctx.restore();ctx.globalAlpha=1;
+    let lx=clamp(x-Math.cos(a)*30,lft+24,rgt-24),ly=clamp(y-Math.sin(a)*16+4,top+8,bot-2);txt(`${t.lab} ${dist} m`,lx,ly,10,t.col,'center');
+    AR142.drawn.push({k:t.k,x,y,a});AR142.cnt[t.k]++;}}
+{const _h=drawHUD;drawHUD=function(){AR142.on=1;AR142.cut=0;try{_h.apply(this,arguments);}finally{AR142.on=0;}};}
+// drawn in the lair arrow's slot (after every HUD layer), so the HUD layout test treats all guide arrows alike
+{const _l=drawLairArrow;drawLairArrow=function(){const r=_l.apply(this,arguments);ar142Draw();return r;};}
+
+// ======================= queue 143 / 143a: every tiger is an ALPHA that guards its own turf (all modes) =======================
+// Alpha rules (same as the white elephant, item 129): a tiger above 50% health shrugs off a bite (it stings him); at/below 50% he is
+// dizzy (stars) and can be gulped. Item 119's +20% alpha hit bonus. Alpha level scaling: health +15% and damage +6% per castle level
+// (TG143.lvHp / TG143.lvDm: the hard-mode switch (139j, 7.5% compounding) can swap these later; hard mode is NOT built).
+// Tigers keep hunting tapirs, capybaras and monkeys (partHN) and now GUARD A TURF: a circle (TG143.R) around the middle of their home ground.
+// A dragon on the ground inside it, or a soldier/hunter who walks in, is attacked; once the intruder leaves, the tiger walks back.
+// 143a: tigers are drawn x1.6 on top of their own x1.15 art (~x1.84 overall), bigger than lions (x1.35) and male lions (x1.65). Lions are unchanged.
+const TG143={hp0:70,bite0:7,th:.5,R:450,leash:700,pts:150,sz:1.6,szR:8,
+  lvHp:l=>1+.15*(l-1),lvDm:l=>1+.06*(l-1),base:{hp:FAUNA.tiger.hp,bite:FAUNA.tiger.bite,aggro:FAUNA.tiger.aggro}};
+function tgLv(){return (G&&G.lvl)||1;}
+function tgHp(l){return Math.round(TG143.hp0*TG143.lvHp(l||tgLv()));}
+function tgBite(l){return +(TG143.bite0*AL119.mul*TG143.lvDm(l||tgLv())).toFixed(2);}
+AL119.before.tiger=TG143.base.bite;
+SZ131.tiger=TG143.sz;SZ131_R.tiger=TG143.szR;
+function tgTurf(u){if(!u.tgTurf){const H=u.home;u.tgTurf=H?{x:H.x+H.w/2,y:H.y+H.h/2}:{x:u.x,y:u.y};}return u.tgTurf;}
+function tgMake(u){const mx=tgHp(),k=u.maxHp?u.hp/u.maxHp:1;u.tgA=1;u.alpha=1;u.maxHp=mx;u.hp=Math.max(1,Math.round(mx*Math.min(1,k)));u.tgL=tgLv();tgTurf(u);return u;}
+function tgSync(){const F=FAUNA.tiger;F.bite=tgBite();F.hp=tgHp();F.say=`Tiger swipe! -${Math.round(F.bite)}`;
+  for(const u of units)if(!u.dead&&u.type==='animal'&&u.species==='tiger'&&(!u.tgA||u.tgL!==tgLv()))tgMake(u);}
+function tgIntruder(u){const T=tgTurf(u);let best=null,bd=TG143.R*TG143.R;
+  for(const v of units){if(v.dead||v.gone||v.inside||!(v.type==='knight'||v.type==='archer'||v.type==='hunter'))continue;const d=(v.x-T.x)**2+(v.y-T.y)**2;if(d<bd){bd=d;best=v;}}
+  return best;}
+// AI: the dragon (on the ground) inside the turf -> the tiger hunts it down (leashed); a soldier/hunter inside -> pounce on him; otherwise its usual life (hunting prey),
+// and if it has wandered well off its turf with nothing to do, it walks home
+{const _uw=updWild;updWild=function(u,dt){
+  if(!u||u.dead||u.species!=='tiger'||!u.tgA||G.over||G.won||u.burn>0||u.bolted>0)return _uw.apply(this,arguments);
+  const T=tgTurf(u),F=FAUNA.tiger,dIn=Math.hypot(D.x-T.x,D.y-T.y)<TG143.R&&D.alt<.4,uT=Math.hypot(u.x-T.x,u.y-T.y);
+  if(dIn&&uT<TG143.leash){u.tgGuard=1;if(!u.tgRoar||G.t-u.tgRoar>8){u.tgRoar=G.t;G.tgTurfAlarm=(G.tgTurfAlarm||0)+1;if(dist(u,D)<1400)float(u.x,u.y-60,'ROARRR! This is MY turf!','#ffb060');}
+    if(u.hPrey&&typeof hnDrop==='function')hnDrop(u);
+    const a0=F.aggro;F.aggro=1e4;try{return _uw.apply(this,arguments);}finally{F.aggro=a0;}}
+  const I=uT<TG143.leash?tgIntruder(u):null;
+  if(I){u.tgGuard=2;u.cd=(u.cd||0)-dt;const Z=ZONES[u.zone],ox=u.x,oy=u.y,dd=dist(u,I);u.state='hunt';
+    if(dd>30)moveTo(u,I.x,I.y,F.sp*1.05,dt);else if(u.cd<=0){u.cd=F.cd;hurtUnit(I,F.bite*3,'tiger');G.tgIntruderHits=(G.tgIntruderHits||0)+1;if(dist(u,D)<1200)float(I.x,I.y-40,'Tiger pounce!','#ffb060');}
+    if(Z&&!Z.ok(u.x,u.y)){u.x=ox;u.y=oy;}u.anim=(u.anim||0)+dt*8;return;}
+  if(u.tgGuard){u.tgGuard=0;u.state='idle';u.tgHome=1;}
+  if(u.tgHome||(!u.hPrey&&uT>TG143.R*1.4)){if(uT<TG143.R*.5){u.tgHome=0;}else{const Z=ZONES[u.zone],ox=u.x,oy=u.y;moveTo(u,T.x,T.y,F.sp*.7,dt);if(Z&&!Z.ok(u.x,u.y)&&Z.ok(ox,oy)){u.x=ox;u.y=oy;u.tgHome=0;}u.anim=(u.anim||0)+dt*6;return;}}
+  return _uw.apply(this,arguments);};updWild._base=_uw._base;}
+// alpha rule: above 50% a bite is shrugged off (and stings him)
+{const prev=TOUGH.tiger;TOUGH.tiger={chk:u=>u.tgA?u.hp>u.maxHp*TG143.th:!!(prev&&prev.chk(u)),
+  hit:u=>{if(!u.tgA){if(prev)prev.hit(u);return;}hurtUnit(u,Math.ceil(u.maxHp*.15),'bite');u.roarFx=1.2;G.tgShrug=(G.tgShrug||0)+1;
+    if(dist(u,D)<1200)float(u.x,u.y-70,'The tiger shrugs off the bite! Wear him below 50% first','#ffd27a');}};}
+// beaten / gulped: points
+function tgDown(u){if(u._tgDown)return;u._tgDown=1;G.stats.kPts=(G.stats.kPts||0)+TG143.pts;G.tgBeaten=(G.tgBeaten||0)+1;if(dist(u,D)<1500)float(u.x,u.y-70,`The alpha tiger is ${u.eaten?'gulped':'beaten'}! +${TG143.pts}`,'#ffd9a0');}
+{const _hu=hurtUnit;hurtUnit=function(u){const w=u&&!u.dead&&u.tgA;const r=_hu.apply(this,arguments);if(w&&u.dead)tgDown(u);return r;};}
+{const _e=eatUnit;eatUnit=function(u){const w=u&&!u.dead&&u.tgA;const r=_e.apply(this,arguments);if(w&&u.dead)tgDown(u);return r;};}
+// dizzy stars once he is at/below 50% (edible) + a health bar while hurt
+{const _da=drawAnimal;drawAnimal=function(u){const r=_da.apply(this,arguments);if(u&&u.tgA&&!u.dead){const k=szBase(u)*1.15;
+  if(u.hp<=u.maxHp*TG143.th){if(!u.tgDz){u.tgDz=1;G.tgDizzy=(G.tgDizzy||0)+1;}const hy=u.y-30*k,t=G.t*3.2;for(let i=0;i<3;i++){const a=t+i*TAU/3;hnStar(u.x+Math.cos(a)*12*k,hy+Math.sin(a)*4,3.2,i%2?'#ffe35a':'#fff7c0');}}
+  if(u.hp<u.maxHp){const w=44,y=u.y-34*k;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(u.x-w/2,y,w,5);ctx.fillStyle=u.hp>u.maxHp*TG143.th?'#e05050':'#ffd23a';ctx.fillRect(u.x-w/2,y,w*Math.max(0,u.hp/u.maxHp),5);}}return r;};}
+{const _up=updParts;updParts=function(dt){const r=_up.apply(this,arguments);if(scene==='play'&&G&&!G.over)tgSync();return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);try{tgSync();}catch(e){}return r;};}
+{const _sa=svApply;svApply=function(){const r=_sa.apply(this,arguments);try{for(const u of units)if(u.species==='tiger')u.tgL=0;tgSync();}catch(e){}return r;};}
+if(typeof REGION_SUB!=='undefined'&&REGION_SUB.jungle&&!/alpha tigers/.test(REGION_SUB.jungle))REGION_SUB.jungle+=' Alpha tigers guard their own turf.';
+
+// ======================= queue 144a: NORMAL mode King William is weaker (all non-hard modes) =======================
+// -25% attack (sword swing and shield bash) and -50% health compared with before; he still scales with the castle level exactly as
+// before (health 600 +100/level up to 1600, sword 10 +1.5/level up to 22, bash 8+level, all then x0.5 / x0.75). Easy mode keeps its
+// own extra reduction on top. HARD-MODE HOOK: KW144.full() returning true (hard mode, item 139, not built yet) gives him full strength.
+const KW144={hpMul:.5,atkMul:.75,full:()=>!!(G&&G.hard)};
+{const _k=kaStats;kaStats=function(){const S=_k.apply(this,arguments);if(KW144.full())return S;
+  S.hp=Math.round(S.hp*KW144.hpMul);S.dmg=Math.round(S.dmg*KW144.atkMul);S.bash=Math.round(S.bash*KW144.atkMul);return S;};}
+
+// ======================= queue 145 / 145a / 145b: bite = 50, eat at 50 or less; bite buildings; stronger stomp =======================
+// 145 (NORMAL mode): the bite deals 50 damage to an enemy. A target with 50 health or less is eaten in that bite (as before).
+//   A plain soldier/animal with more than 50 health is no longer swallowed whole: the bite takes 50 off it, and the next bite eats it.
+//   Never eaten (unchanged): King William (CLANG; his dizzy-bite stays 40), Princess Elizabeth, the guardian dragons.
+//   Alphas / champions / the prince / bears / wild dragons keep their own "wear it down below X% first" rule; every bite on them now
+//   deals 50 (never below 1 HP) instead of 18-24, and once they are below their line they are eaten whole as before.
+//   Bosses (griffin, hydra, Nessie, the wizards) keep their own boss bites (18 / 14) - not units, not changed.
+//   HARD-MODE HOOK (139b): BT145.on() (false in hard mode) and BT145.mustHurtFirst(u) (return true for a fighter at full health
+//   to force "damage before you can eat").
+// 145a (all modes): a bite on a building: wooden 30, stone 25 (realm turrets 32 -> 25, NR_TUR_BITE in i.js).
+// 145b (all modes): stomp vs soldiers & animals 18 -> 30 (stompFoe .3 -> .5; also scales stomp vs champions, bosses and siege x5/3).
+const BT145={dmg:50,eatAt:50,wood:30,stone:25,oldMin:24,on:()=>!(G&&G.hard),mustHurtFirst:u=>false,hits:0,bld:0,last:null,
+  types:['villager','animal','crew','archer','knight','hunter'],
+  nrStone:{elfspire:1,dwhall:1,dwforge:1,dwmine:1,dwgate:1,orcfort:1,orcwall:1,cyccave:1}};
+AB138.stompFoe=.5;
+{let kingBite=0;Object.defineProperty(AB138,'biteMin',{get:()=>BT145.on()&&!kingBite?BT145.dmg:BT145.oldMin,set:v=>{BT145.oldMin=v;},configurable:true});
+ const _h=hurtUnit;hurtUnit=function(u,d,src){const k=src==='bite'&&u&&u.isKingArmor;if(k)kingBite++;try{return _h.apply(this,arguments);}finally{if(k)kingBite--;}};}
+{const _b=btDmg;btDmg=function(u){return BT145.on()&&!(u&&u.isKingArmor)?BT145.dmg:_b.apply(this,arguments);};}
+function bt145Safe(u){return !u||u.dead||u.inside||u.princess||u.isPrincess||u.isKing||u.king||u.isKingArmor||u.isPrince||u.champ||u.alpha||u.tgA||u.gd||u.guardian||u.carried||u.grabbed;}
+function bt145Tough(u){return (typeof toughNow==='function'&&toughNow(u))||u.species==='bear'||u.species==='elephant'||u.species==='sandworm'||u.type==='sea'||!!TOUGH[toughKey(u)];}
+function bt145Big(u){return BT145.on()&&!bt145Safe(u)&&BT145.types.includes(u.type)&&!bt145Tough(u)&&(u.hp>BT145.eatAt||!!BT145.mustHurtFirst(u));}
+let BT145_SKIP=null;
+{const _bt=biteTargets;biteTargets=function(){const T=_bt.apply(this,arguments);return BT145_SKIP?T.filter(u=>!BT145_SKIP.has(u)):T;};}
+function bt145Bld(){if(D.alt>=.3)return false;const mx=D.x+Math.cos(D.ang)*70,my=D.y+Math.sin(D.ang)*70;let best=null,bd=1e9,nr=false;
+  for(const s of structures){if(s.state==='ruin')continue;const r=(s.r||Math.max(s.w||0,s.h||0)/2||40)+28,d=Math.hypot(s.x-mx,s.y-my);if(d<r&&d<bd){bd=d;best=s;nr=false;}}
+  if(typeof nrbList==='function'&&D.y<MWY0+400)for(const o of nrbList()){if(o.bst!=='ok')continue;const r=NR_BLD[o.k][1]*(o.s||1)*.7+20,d=Math.hypot(o.x-mx,o.y-my);if(d<r&&d<bd){bd=d;best=o;nr=true;}}
+  if(!best)return false;let st,dmg;
+  if(nr){st=!!BT145.nrStone[best.k];dmg=st?BT145.stone:BT145.wood;nrbHurt(best,dmg,'bite');}
+  else{st=stoneish(best);dmg=st?BT145.stone:BT145.wood;const hv=HEAVY;HEAVY=true;try{hurtStruct(best,dmg);}finally{HEAVY=hv;}if(!st)splinters(best.x,best.y,3);}
+  BT145.bld++;BT145.last={bld:best.kind||best.k,stone:st,dmg};D.eatCD=.45;D.eatT=.3;G.shake=Math.max(G.shake||0,2.5);
+  float(best.x,best.y-50,`CRUNCH! -${dmg}`,st?'#d8d8d8':'#e8c090');if(typeof SFX!=='undefined'&&SFX.chomp)SFX.chomp(1);return true;}
+{const _te=tryEat;tryEat=function(){
+  if(!G||G.over||G.won||scene!=='play'||D.eatCD>0||D.princess||D.carry)return _te.apply(this,arguments);
+  let T=[];try{T=biteTargets();}catch(e){}
+  if(T.length&&bt145Big(T[0])){const u=T[0];if(typeof dgTry==='function'&&dgTry(u,'bite')){D.eatCD=.45;return;}
+    const h0=u.hp,dm=Math.min(BT145.dmg,Math.max(0,Math.ceil(u.hp)-1));if(dm>0)hurtUnit(u,dm,'bite');const dealt=Math.max(0,Math.round(h0-(u.dead?0:u.hp)));BT145.hits++;BT145.last={sp:u.species||u.type,dealt,hp:u.hp};
+    if(typeof btCue==='function')btCue(u,dealt);if(!u.dead&&dist(u,D)<1200)float(u.x,u.y-56,u.hp<=BT145.eatAt?'Weak enough - bite again to eat!':'Too big to swallow - keep biting!','#ffd27a');
+    D.eatCD=D.alt<.3?.45:.9;D.eatT=.3;return;}
+  const big=T.filter(bt145Big);BT145_SKIP=big.length?new Set(big):null;const cd0=D.eatCD;let r;
+  try{r=_te.apply(this,arguments);}finally{BT145_SKIP=null;}
+  if(!T.length&&D.eatCD===.25&&cd0!==.25)bt145Bld();
+  return r;};}
+
+// ======================= queue 146: repeat wizard wins give a PERMANENT +2.5% attack (all modes) =======================
+// The FIRST time you beat a wizard in a game you get his reward (140/140a). Every LATER win over a wizard you already beat in this game
+// (Storm or Dark, he comes back each castle level) adds +2.5% to ALL dragon attacks: bite, stomp, dive, claw scratch, fire + burning, lava.
+// Additive: n repeat wins = +2.5% x n (10 repeat wins = +25%). PERMANENT: kept through levels AND through losing the dragon (a new game
+// keeps it) - stored in its own browser key (like achievements) and also written into every save; loading a save keeps the larger count.
+// The eat line stays 50 HP (145); a bite that was meant to leave a target alive (hp-1 cap) still leaves it alive.
+const PB146={step:.025,key:'dr_perm_v1',n:0,c:0,in:0,
+  mul(){return 1+PB146.step*PB146.n;},
+  load(){try{const j=JSON.parse(localStorage.getItem(PB146.key)||'null');if(j&&j.atk>0)PB146.n=Math.max(PB146.n,j.atk|0);}catch(e){}},
+  save(){try{localStorage.setItem(PB146.key,JSON.stringify({v:1,atk:PB146.n}));}catch(e){}if(G)G.pb146=PB146.n;}};
+PB146.load();
+function pb146Win(who){PB146.n++;PB146.save();G.pb146Wins=(G.pb146Wins||0)+1;
+  boostAlert('⚔️ Attack up! +2.5%',`${who} beaten again · all your attacks +${(PB146.step*PB146.n*100).toFixed(1).replace(/\.0$/,'')}% for good (kept even if you lose this dragon)`);}
+{const _d=wzDefeat;wzDefeat=function(){const had=!!G.nrOpen,was=!!WZB.on;const r=_d.apply(this,arguments);if(had&&was)pb146Win('Storm Wizard');return r;};}
+{const _d=dwDefeat;dwDefeat=function(){const had=!!(G.lavaUp&&G.dwKey),was=!!DWB.on;const r=_d.apply(this,arguments);if(had&&was)pb146Win('Dark Wizard');return r;};}
+// dragon-attack context: damage dealt while one of these runs is the dragon's
+for(const nm of['tryEat','doStomp','crashStomp','applyFire','updFire','lavaSplash','clawScratch']){
+  const f={tryEat,doStomp,crashStomp,applyFire,updFire,lavaSplash,clawScratch}[nm];
+  const w=function(){PB146.c++;try{return f.apply(this,arguments);}finally{PB146.c--;}};
+  if(nm==='tryEat')tryEat=w;else if(nm==='doStomp')doStomp=w;else if(nm==='crashStomp')crashStomp=w;else if(nm==='applyFire')applyFire=w;
+  else if(nm==='updFire')updFire=w;else if(nm==='lavaSplash')lavaSplash=w;else clawScratch=w;}
+// scale once at the OUTERMOST damage funnel (nested funnels, e.g. hurtUnit -> hurtSea, dwHit -> dwHurt, are not scaled twice)
+function pb146Wrap(f,di,cap){return function(){const a=[].slice.call(arguments);
+  if(!PB146.c||PB146.in||PB146.n<=0||typeof a[di]!=='number'||!(a[di]>0))return f.apply(this,a);
+  const d0=a[di];a[di]=d0*PB146.mul();if(cap){const u=a[0];if(u&&a[2]==='bite'&&typeof u.hp==='number'&&d0<u.hp)a[di]=Math.min(a[di],Math.max(d0,u.hp-1));}
+  G.pb146Dmg=(G.pb146Dmg||0)+(a[di]-d0);PB146.in++;try{return f.apply(this,a);}finally{PB146.in--;}};}
+hurtUnit=pb146Wrap(hurtUnit,1,true);hurtSea=pb146Wrap(hurtSea,1);hurtShip=pb146Wrap(hurtShip,1);hurtSiege=pb146Wrap(hurtSiege,1);hurtStruct=pb146Wrap(hurtStruct,1);
+nrbHurt=pb146Wrap(nrbHurt,1);nrTurHurt=pb146Wrap(nrTurHurt,1);blFenceHit=pb146Wrap(blFenceHit,1);mmBurn=pb146Wrap(mmBurn,1);
+hyHurt=pb146Wrap(hyHurt,0);grHurt=pb146Wrap(grHurt,0);nsHurt=pb146Wrap(nsHurt,0);dwHit=pb146Wrap(dwHit,0);dwHurt=pb146Wrap(dwHurt,0);wzHurt=pb146Wrap(wzHurt,0);
+{const _n=newGame;newGame=function(){const r=_n.apply(this,arguments);PB146.load();G.pb146=PB146.n;return r;};}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);const g=d&&d.G||{};if(g.pb146>PB146.n){PB146.n=g.pb146|0;PB146.save();}G.pb146=PB146.n;return r;};}
+
+// ======================= queue 147: tax collectors ride HORSES (all modes) =======================
+// Every tax collector rides a brown horse (purple saddle cloth): 2x faster than on foot (96 riding his route, 140 fleeing), but when an
+// escort is with him he slows to the guards' walking pace so they keep up. Like mounted knights, FIRE or a STOMP that he survives throws
+// him off: the horse bolts (a free horse runs wild) and he carries on on foot at the old speed. A bite simply gobbles horse and rider.
+const TX147={sp:2,cur:0,off:0};
+const tx147Rides=u=>u&&u.tax&&!u.dead&&!u.txFoot;
+{const _m=moveTo;moveTo=function(u,tx,ty,sp,dt){if(TX147.cur&&u===TX147.cur&&typeof sp==='number')sp*=TX147.sp;return _m.call(this,u,tx,ty,sp,dt);};}
+{const _t=updTax;updTax=function(u,dt){const ride=tx147Rides(u)&&!(typeof txeOf==='function'&&txeOf(u).length);const p=TX147.cur;TX147.cur=ride?u:0;
+  if(tx147Rides(u))u.anim=(u.anim||0)+dt*(ride?6:2);try{return _t.apply(this,arguments);}finally{TX147.cur=p;}};}
+function tx147Off(u){u.txFoot=1;TX147.off++;G.tx147Off=(G.tx147Off||0)+1;
+  const h=mkUnit('animal',u.x+R(-10,10),u.y+8,{species:'horse',wild:true,zone:'any',home:{x:u.x-300,y:u.y-200,w:600,h:400},hp:18,maxHp:18,free:true,bolted:4,t:0,face:-(u.face||1)});units.push(h);
+  if(dist(u,D)<1200)float(u.x,u.y-44,'Whoa! My horse!','#ffe0a0');}
+{const _h=hurtUnit;hurtUnit=function(u,d,src){const r=_h.apply(this,arguments);if(tx147Rides(u)&&u.hp>0&&(src==='fire'||src==='stomp'))tx147Off(u);return r;};}
+function tx147Horse(u){const x=u.x,y=u.y,f=u.face||1,g=Math.sin((u.anim||0)*1.6);
+  ell(x,y+2,16,5,'rgba(0,0,0,.25)');for(const lx of[-8,-4,5,9])line(x+lx,y-7,x+lx+g*3*(lx>0?1:-1),y+1,'#3a2410',2.2);
+  const c=u.burn>0?'#a64':'#8a5a32';ell(x,y-11,13,6,c);rect(x-7,y-15,14,6,'#5a2a6a');rect(x-7,y-10,14,1.5,'#e0c050');
+  ell(x+f*12,y-17,3.6,5.5,c);ell(x+f*15,y-21,4.6,3,c);ell(x+f*16,y-22,1,1,'#111');line(x+f*10,y-21,x+f*8,y-14,'#3a2410',2);line(x-f*13,y-12,x-f*17,y-4,'#3a2410',2.5);}
+{const _p=drawPerson;drawPerson=function(u){if(!tx147Rides(u))return _p.apply(this,arguments);tx147Horse(u);tx147Bag(u);ctx.save();ctx.translate(0,-13);try{return _p.apply(this,arguments);}finally{ctx.restore();}};}
+// riding: the coin sack hangs as a saddlebag on the horse's rump (drawn before the rider), only the tall hat is drawn on top
+function tx147Bag(u){const f=u.face||1,x=u.x-f*10,y=u.y-9,s=4+Math.min(5,(u.sack||0)/5);ell(x,y,s,s+1,'#a07a40');ell(x,y-s,2.4,1.6,'#7a5a28');ctx.fillStyle='#ffe58a';ctx.font='bold 7px Georgia';ctx.textAlign='center';ctx.fillText('$',x,y+2);}
+{const _s=drawTaxSack;drawTaxSack=function(u){if(!tx147Rides(u))return _s.apply(this,arguments);rect(u.x-5,u.y-35,10,3,"#2a1a2a");rect(u.x-3,u.y-39,6,4,"#2a1a2a");};}
+// ===== QUEUE 147a-147e: mounted tax collectors BOLT to the castle when they see the dragon; up to 4 at once, one per region (east, north, south, desert) =====
+// The escort call is unchanged (147b): 2/3/4 guards at 25/40/60 coins from a patrol he passes within 200 px.
+const TXR={see:450,cap:4,capBroken:2,regs:['east','north','south','desert'],maxStops:4,bolts:0};
+function txRegion(x,y){return x<0?'desert':x>=3700?'east':y<2200?'north':'south';}
+// ===== QUEUE 148/148a/148b: hidden-gold earning tiers - WORKING buildings 4x, MARKETS 2.5x, HOUSES 1x =====
+const EC148={work:new Set(['smithy','bakery','sawmill','minehead','cabin','barn']),market:new Set(['stall','fishmonger','jeweler']),workMul:4,marketMul:2.5,workCap:60,
+  nm:{sawmill:'the lumber camp',minehead:'the mine',cabin:'the hunters\' cabin'}};
+for(const k of EC148.work)EC_SHOP.add(k);
+const ec148Tier=s=>EC148.work.has(s.kind)?'work':EC148.market.has(s.kind)?'market':ecHouse(s)?'house':null;
+const ec148Rate=s=>{const t=ec148Tier(s);return EC.houseRate*(t==='work'?EC148.workMul:t==='market'?EC148.marketMul:1);};
+const ec148Cap=s=>{const t=ec148Tier(s);return t==='work'?EC148.workCap:t==='market'?EC.shopCap:EC.houseCap;};
+ecUpd=function(dt){for(const s of structures){if(!ec148Tier(s))continue;ecInit(s);const c=ec148Cap(s);if(s.state==='ok'&&s.sg<c)s.sg=Math.min(c,s.sg+ec148Rate(s)*dt);}};
+const ec148Key=s=>s.kind+'@'+Math.round(s.x)+','+Math.round(s.y);
+const ec148Lone=s=>s.state==='ok'&&EC148.work.has(s.kind)&&!(s.v>=0)&&!s.market; // a working site outside any village or market: its own tax stop
+{const _p=ecPayers;ecPayers=function(tg){if(tg&&tg.wk)return structures.filter(s=>s.state==='ok'&&ec148Key(s)===tg.wk);return _p.apply(this,arguments);};}
+{const _t=taxTargets;taxTargets=function(){const T=_t.apply(this,arguments);
+  for(const s of structures){if(!ec148Lone(s))continue;const k=ec148Key(s),t={x:s.x,y:s.y+50,wk:k,mk:k,name:(s.kind==='cabin'&&s.cb!==undefined?(CABINS[s.cb]&&CABINS[s.cb].name||['Deepwood north','Deepwood south','Eastwood'][s.cb])+' cabin':EC148.nm[s.kind]||s.kind)};
+    const P=ecPayers(t);if(P.length){t.amt=P.reduce((a,q)=>a+ecTaxable(q),0);T.push(t);}}
+  for(const t of T)t.rg=txRegion(t.x,t.y);return T;};}
+function tx147Order(T){const out=[];let p={x:GATE.x,y:GATE.y};const L=T.slice();while(L.length){L.sort((a,b)=>dist(a,p)-dist(b,p));p=L.shift();out.push(p);}return out;}
+spawnTaxman=function(){const act=units.filter(u=>u.tax&&!u.dead),have=new Set(act.map(u=>u.txRg)),by={};
+  for(const t of taxTargets())(by[t.rg]=by[t.rg]||[]).push(t);
+  const sum=r=>by[r].reduce((a,t)=>a+(t.amt||0),0),free=TXR.regs.filter(r=>!have.has(r)&&by[r]&&by[r].length).sort((a,b)=>sum(b)-sum(a)); // richest uncovered region first
+  if(!free.length)return null;const rg=free[0];const route=tx147Order(by[rg].sort(()=>Math.random()-.5).slice(0,TXR.maxStops));
+  const u=mkUnit('villager',GATE.x,GATE.y+20,{job:'tax',tax:true,route,ri:0,sack:0,hp:10,maxHp:10,shirt:'#5a2a6a',home:{x:GATE.x,y:GATE.y+20},v:-1});u.txRg=rg;units.push(u);
+  const ne=G.easy?1:RI(1,2);for(let i=0;i<ne;i++){const k=mkUnit('knight',GATE.x+R(-20,20),GATE.y+10,{hp:45,maxHp:45,atk:0,colr:'#c9a227',escort:u,eo:i?-1:1,born:G.t});units.push(k);}
+  G.taxmen=(G.taxmen||0)+1;return u;};
+const tx147Cap=()=>castleHealth('gate')>0?TXR.cap:TXR.capBroken;
+{const _u=updTaxes;updTaxes=function(dt){const n0=G.taxmen||0,t0=G.taxT;const r=_u.apply(this,arguments);
+  if(t0!==undefined&&G.taxT>t0&&(G.taxmen||0)===n0&&units.filter(u=>u.tax&&!u.dead).length<tx147Cap())spawnTaxman();return r;};}
+{const _t=updTax;updTax=function(u,dt){if(!tx147Rides(u)||G.over||u.dead)return _t.apply(this,arguments);
+  const dd=dist(u,D);if(!u.txBolt&&dd<TXR.see){u.txBolt=1;TXR.bolts++;G.tx147Bolt=(G.tx147Bolt||0)+1;if(dd<1200)float(u.x,u.y-44,'The dragon! Back to the castle!','#ffe0a0');}
+  if(!u.txBolt)return _t.apply(this,arguments);
+  if(u.route)u.ri=u.route.length;u.wait=0;if(u.state==='flee')u.state='walk';const hx=GATE.x,hy=GATE.y+10;
+  if(dist(u,{x:hx,y:hy})<22)return _t.apply(this,arguments); // home: the normal delivery line
+  const p=TX147.cur;TX147.cur=u;try{moveTo(u,hx,hy,70,dt);}finally{TX147.cur=p;}u.anim=(u.anim||0)+dt*8;
+  if(dd<200&&(!u.yelp||G.t-u.yelp>5)){u.yelp=G.t;float(u.x,u.y-44,['Gallop! Gallop!','The King\'s coin must get home!','Make way, make way!'][RI(0,2)],'#ffe0a0');}};}
+{const _s=svSnapshot;svSnapshot=function(){const d=_s.apply(this,arguments);if(Array.isArray(d.TX)){const L=units.filter(u=>u.tax&&!u.dead);
+  d.TX.forEach((t,i)=>{const u=L[i];if(u){t.foot=u.txFoot?1:0;t.rg=u.txRg||null;t.bolt=u.txBolt?1:0;}});}return d;};}
+{const _a=svApply;svApply=function(d){const r=_a.apply(this,arguments);if(d&&Array.isArray(d.TX)){const L=units.filter(u=>u.tax);
+  d.TX.forEach((t,i)=>{const u=L[i];if(!u)return;if(t.foot)u.txFoot=1;if(t.bolt)u.txBolt=1;const s0=u.route&&u.route[0];u.txRg=t.rg||(s0?txRegion(s0.x,s0.y):txRegion(u.x,u.y));});}return r;};}
+// ===== QUEUE 149: TRADE (merchant) ships sail the slowest of all ships =====
+const TS149={sp:36};SHIPK.merchant.sp=TS149.sp;
+{const _u=updShip;updShip=function(s,dt){if(s&&s.kind==='merchant'&&s.sp!==TS149.sp)s.sp=TS149.sp;return _u.apply(this,arguments);};}
+// ======================= QUEUE 147f-147h(-fix): carry-home taxes, no sack cap, richest AREA first =======================
+// 147f: gold is only credited when the collector walks into the castle (partK updTax 'home' step); catching/eating him on the road sends the sack
+//       to the lair instead (partEC taxSacks). Nothing is credited at collection time - verified by t147f.
+// 147g: no carry cap - the old per-stop cap of 30 coins is lifted: at each stop he takes every taxable coin (houses still keep 1, shops/markets/work sites 3).
+// 147h-fix: his region's stops are grouped into AREAS (a village, a market, or a cluster of working sites within 700 px); areas are ranked by their
+//       TOTAL stored taxes, he goes to the richest area first and collects from every building there before moving to the next-richest area.
+const TXH={areas:4,cluster:700,extra:0};
+{const _t=updTax;updTax=function(u,dt){const ri0=u.ri,s0=u.sack,tg=u.route&&ri0<u.route.length?u.route[ri0]:null;const r=_t.apply(this,arguments);
+  if(tg&&!tg.home&&u.ri>ri0&&!u.dead&&(tg.vi!==undefined||tg.mk)){const more=ecCollect(tg,1e9);if(more>0){u.sack+=more;TXH.extra+=more;G.ecTaxed=(G.ecTaxed||0)+more;
+      if(dist(u,D)<900)float(u.x,u.y-48,`Every coin! sack ${Math.floor(u.sack)} gold`,'#ffd84a');}
+    u.txGot=(u.txGot||[]);u.txGot.push(Math.floor(u.sack-s0));}
+  return r;};}
+function txAreaKey(t){return t.wk?'wk':t.vi!==undefined?'v'+t.vi:'m'+t.mk;}
+function txAreas(T){const A=[];for(const t of T){const live=ecPayers(t).reduce((a,q)=>a+ecTaxable(q),0);t.amt=live;
+    if(t.wk){let a=A.find(z=>z.wk&&z.stops.some(s=>dist(s,t)<TXH.cluster));if(!a){a={wk:1,key:'wk'+A.length,stops:[],tot:0};A.push(a);}a.stops.push(t);a.tot+=live;}
+    else{const k=txAreaKey(t);let a=A.find(z=>z.key===k);if(!a){a={key:k,stops:[],tot:0};A.push(a);}a.stops.push(t);a.tot+=live;}}
+  return A.sort((a,b)=>b.tot-a.tot);}
+{const _sp=spawnTaxman;spawnTaxman=function(){const u=_sp.apply(this,arguments);if(!u||!u.txRg)return u;
+  const T=taxTargets().filter(t=>t.rg===u.txRg),A=txAreas(T).filter(a=>a.tot>0).slice(0,TXH.areas);
+  if(A.length){let p={x:GATE.x,y:GATE.y};const route=[];for(const a of A){const L=a.stops.slice();while(L.length){L.sort((x,y)=>dist(x,p)-dist(y,p));p=L.shift();route.push(p);}}
+    u.route=route;u.ri=0;u.txAreas=A.map(a=>({key:a.key,tot:a.tot,n:a.stops.length,names:a.stops.map(s=>s.name||s.wk||s.mk||('village '+s.vi))}));}
+  return u;};}

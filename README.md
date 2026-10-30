@@ -541,7 +541,7 @@ Placement starts beside the roads near the castle and moves outward (spaced abou
 When a tower is finished, a banner says **"The kingdom builds an Archer Tower!"** or **"The kingdom builds a Scorpion Tower!"**. The pause menu shows `Towers n/max (a archer · b scorpion)`. The tally counts **Archer towers** and **Scorpion towers** separately. A destroyed tower leaves rubble that still counts toward the maximum, and it is rebuilt as the same type once the stock is there again. Towers, with their type, are saved with the game.
 
 ## The lair arrow
-A gold arrow circles the dragon and points home to the lair, with the distance. It hides while the lair is on screen, glows while you carry the princess (not for gold, which goes home on its own), and stays clear of the HUD panels and touch buttons.
+A gold arrow circles the dragon and points home to the lair (see also *On-screen direction arrows* for the only other arrows), with the distance. It hides while the lair is on screen, glows while you carry the princess (not for gold, which goes home on its own), and stays clear of the HUD panels and touch buttons.
 
 ## Music and sound
 All sound is generated in code with Web Audio; there are no audio files. **Every region has its own theme**, and themes crossfade over about 2 s as you cross a border:
@@ -818,37 +818,144 @@ The dragon dot and the princess marker are still drawn on top of the icons. Fort
 ## Attack balance (queue 138)
 Each attack now has its own job. Dive is unchanged. Stomp is a building-breaker. Bite is the best close-range move against creatures. Direct fire is the weakest hit, but things that catch fire keep burning, and ships burn hardest. Stone never catches fire.
 
-| Target | Attack | Before | After |
+| Target | Attack | Before 138 | After 138 | Now (145/145a/145b) |
+|---|---|---|---|---|
+| Soldiers / animals | Bite | swallowed whole | swallowed whole | 50 damage; anything at 50 health or less is eaten in that bite |
+| Soldiers / animals | Stomp | 60 | 18 | **30** |
+| Soldiers / animals | Dive | 96 | 96 | 96 (unchanged) |
+| Soldiers / animals | Direct fire | 60 per second | 15 per second | 15 per second |
+| Soldiers / animals | Burning afterwards | 10/s for 1.4 s (14) | 16/s for 3 s (48) | 16/s for 3 s (48) |
+| Shielded champion | Bite / Stomp / Dive | 14.4 / 48 / 76.8 | 19.2 / 14.4 / 76.8 | **40 / 24** / 76.8 (his shield takes 20% off the 50 bite and 30 stomp) |
+| Bosses (griffin, hydra, Nessie) | Stomp / Fire | 30 / 30 per second | 9 / 7.5 per second | **15** / 7.5 per second (bite unchanged at 18) |
+| Wooden buildings | Stomp | 120 | 150 | 150 |
+| Wooden buildings | Bite | none | none | **30** |
+| Wooden buildings | Dive | smashed flat | smashed flat | smashed flat |
+| Wooden buildings | Direct fire / Burning | 42/s / 9/s | 21/s / 13.5/s | 21/s / 13.5/s |
+| Stone buildings | Stomp | 96 | 120 | 120 |
+| Stone buildings | Bite | none | none | **25** |
+| Stone buildings | Dive | 263.6 | 263.6 | 263.6 |
+| Stone buildings | Fire | 21/s, never ignites | 21/s, never ignites | 21/s, never ignites |
+| Realm turrets | Stomp / Bite | 45 / 32 | 56 / 32 | 56 / **25** |
+| Ships | Bite / Dive | 18 / 80 | 18 / 80 | 18 / 80 |
+| Ships | Direct fire | 30 per second | 15 per second | 15 per second |
+| Ships | Burning | 6 per second | 18 per second | 18 per second |
+| Siege engines | Stomp / Fire / Burning | 78 / 30/s / 18/s | 23.4 / 15/s / 22.5/s | **39** / 15/s / 22.5/s |
+
+All of these are base numbers. Each repeat wizard win (queue 146) adds +2.5% to every one of the dragon's attacks.
+
+## King William is weaker in normal mode (queue 144a)
+In normal mode King William starts with **half the health** and **25% less attack** (sword and shield-bash), and he still grows with the castle level. Easy mode applies its own discount on top of this. A hard-mode hook (`KW144.full()`) keeps him at full strength; hard mode itself is not built yet.
+
+| Castle level | Health before -> now | Sword before -> now | Shield bash before -> now |
 |---|---|---|---|
-| Soldiers / animals | Bite | swallowed whole | swallowed whole |
-| Soldiers / animals | Stomp | 60 | 18 |
-| Soldiers / animals | Dive | 96 | 96 (unchanged) |
-| Soldiers / animals | Direct fire | 60 per second | 15 per second |
-| Soldiers / animals | Burning afterwards | 10/s for 1.4 s (14) | 16/s for 3 s (48) |
-| Shielded champion | Bite / Stomp / Dive | 14.4 / 48 / 76.8 | 19.2 / 14.4 / 76.8 |
-| Bosses (griffin, hydra, Nessie) | Stomp / Fire | 30 / 30 per second | 9 / 7.5 per second (bite unchanged at 18) |
-| Wooden buildings | Stomp | 120 | 150 |
-| Wooden buildings | Bite | none | none |
-| Wooden buildings | Dive | smashed flat | smashed flat |
-| Wooden buildings | Direct fire / Burning | 42/s / 9/s | 21/s / 13.5/s |
-| Stone buildings | Stomp | 96 | 120 |
-| Stone buildings | Dive | 263.6 | 263.6 |
-| Stone buildings | Fire | 21/s, never ignites | 21/s, never ignites |
-| Realm turrets | Stomp / Bite | 45 / 32 | 56 / 32 |
-| Ships | Bite / Dive | 18 / 80 | 18 / 80 |
-| Ships | Direct fire | 30 per second | 15 per second |
-| Ships | Burning | 6 per second | 18 per second |
-| Siege engines | Stomp / Fire / Burning | 78 / 30/s / 18/s | 23.4 / 15/s / 22.5/s |
+| 1 | 600 -> 300 | 10 -> 8 | 9 -> 7 |
+| 3 | 800 -> 400 | 13 -> 10 | 11 -> 8 |
+| 5 | 1000 -> 500 | 16 -> 12 | 13 -> 10 |
+| 10 (cap) | 1500 -> 750 | 22 -> 17 | 18 -> 14 |
+
+## Bite and stomp (queue 145, 145a, 145b; normal mode)
+- **Bite = 50 damage.** A soldier, villager, crew member, archer, knight, hunter or animal at **50 health or less is eaten in that bite**. Above 50, the bite takes 50 off (it never kills outright), and the next bite eats him once he is at 50 or less. A 51-health knight is left at 1.
+- **Never eaten:** King William (CLANG, and his dizzy bite still does 40), Princess Elizabeth and the guardian dragons.
+- **Alphas, champions, the prince, bears and wild dragons** keep their own "wear him down first" line (for example 50% for alphas). Every bite that doesn't eat them now does 50, never below 1 health, and once they are under their line they are eaten whole, even when that is above 50 health.
+- **Bosses** (griffin, hydra, Nessie, the wizards) keep their own bite damage (18 / 14). Ships still take 18 from a bite.
+- **Buildings (145a):** a ground bite on a building in front of the mouth does **30 to wooden** buildings and **25 to stone** ones (realm turrets 25 too), with a "CRUNCH!" pop.
+- **Stomp (145b):** **30** area damage to soldiers and animals (it was 18). Building stomp stays at 150 on wood and 120 on stone. The same change lifts champion stomp to 24, boss stomp to 15 and siege stomp to 39. Dive is unchanged.
+- **Hard-mode hooks:** `BT145.on()` (hard mode can bring back "eat whole"), `BT145.mustHurtFirst` for rule 139b ("damage a fighter before you can eat it"). Hard mode is not built yet.
+
+## Permanent attack boost from repeat wizard wins (queue 146)
+- The **first** time you beat a wizard in a game you get his normal reward. **Every later win** over a wizard you have already beaten in that game (Storm or Dark, since they come back every castle level) gives **+2.5% attack** to every dragon attack: bite, stomp, dive, claw scratch, fire breath and burning, and lava.
+- The boosts **add up**: +2.5% for each repeat win, so 4 repeat wins = +10%.
+- **Permanent:** it stays through castle levels **and** after you lose your dragon, because a new game keeps it. It is stored in the browser (like achievements) and written into every save. Loading a save keeps whichever count is bigger.
+- A small bottom pill shows "⚔️ Attack up! +2.5%" with your new total.
+- The eat line stays at 50 health, and a bite meant to leave a target alive still leaves it alive.
+
+## Tax collectors ride horses (queue 147)
+- Every tax collector now rides a brown horse with a purple saddle cloth. His coin sack hangs as a saddlebag.
+- He rides **twice as fast** as he used to walk (96 on his route, 140 when fleeing). When soldiers escort him, he slows to their walking pace so they can keep up.
+- **Like a mounted knight:** fire, or a stomp he survives, throws him off. The horse bolts away as a free horse, and he carries on on foot at the old speed. A bite simply gobbles horse and rider.
+
+Screenshots: `screenshots/321_tax_collector_horse_147.png` and `321_tax_collector_horse_147_zoom.png` (rider next to a collector who was thrown off).
+
+## Tax collectors: bolting, regions and caps (queue 147a-147e)
+- A tax collector on horseback who sees the dragon (within 450 px) gives up the rest of his route and gallops straight home to the castle at 140 px/s ("The dragon! Back to the castle!"). He still delivers whatever is in his sack.
+- The escort call is unchanged: 2 / 3 / 4 guards at 25 / 40 / 60 coins, borrowed from a patrol he passes within 200 px.
+- Up to 4 collectors ride at once (it was 2). While the castle gate is broken, the cap is 2 (it was 1). The spawn timer is unchanged: 40 s, or 55 s in easy mode.
+- Each collector covers one region, and each region has at most one collector:
+
+| Region | Where | Tax stops |
+|---|---|---|
+| East | x >= 3700 | Stonebrook, Saltmere, Crabhaven and their markets, the Eastwood hunters' cabin, the east mine and the east lumber camp |
+| North | y < 2200 | the five northern villages, the north mine and the north lumber camp |
+| South | the rest | Millbrook, Riverbend, Southwold, Haybury, the Castle Market and the Millbrook and Riverbend markets |
+| Desert | x < 0 | Sandhaven, the Sandhaven Bazaar, and the Deepwood north and Deepwood south hunters' cabins |
+
+- A route covers up to 4 areas in his region, richest area first (see queue 147h below).
+- When choosing a region, the richest uncovered region goes first (by the gold waiting to be taxed). With the gate broken, only the two richest uncovered regions get a collector.
+- The desert has no hunter camps of its own. The two Deepwood hunters' cabins on the western road to the desert are the "hunters" on the desert route.
+
+## Tax collectors carry every coin home, richest area first (queue 147f, 147g, 147h)
+
+- **Carried home (147f):** a collector's gold only reaches King William's treasury when he walks into the castle. Nothing is credited when he collects. If he is caught or eaten on the road, the treasury gets nothing and his whole sack goes to your lair.
+- **No carry cap (147g):** the old 30-coin limit per stop is gone. At each stop he takes every taxable coin (houses still keep 1 coin, and shops, market stalls and working sites keep 3). In the test he left Riverbend with 589 gold in one sack and delivered all 589.
+- **Richest area first (147h):** the stops in his region are grouped into areas: a village, a market, or a cluster of working sites within 700 px of each other. Areas are ranked by the total taxes they hold. He goes to the richest area first, collects from every building there, then moves on to the next-richest area, up to 4 areas per trip.
+
+## Earning tiers for hidden gold (queue 148, 148a, 148b)
+| Tier | Buildings | Rate | Cap | Always left behind |
+|---|---|---|---|---|
+| Working (most) | smithies, bakeries, lumber camps (sawmill), mines (minehead), hunters' cabins, farms (barns) | 4x (0.16 gold/s) | 60 | 3 |
+| Markets | stalls, fishmongers, jewellers | 2.5x (0.10 gold/s) | 40 | 3 |
+| Houses (least) | huts and Sandhaven adobe houses | 1x (0.04 gold/s) | 15 | 1 |
+
+- Barns pay at their village's stop. Smithies and bakeries pay at their market's stop.
+- Lumber camps, mines and hunters' cabins outside any village are now tax stops of their own.
+- The map has no separate mills, workshops or quarries. The sawmill is the lumber camp, and the mine is also the stone quarry. Wrecking any of these drops its stored gold on the lair pile, as before.
+
+## Ship speeds (queue 149)
+Trade (merchant) ships are now the slowest ships of all.
+
+| Ship | Cruise speed (px/s) | Notes |
+|---|---|---|
+| Trade / merchant ship | 48 -> **36** | flees at 1.25x = 45 |
+| Rowboat (small lake/river boat) | 40 | unchanged |
+| Fishing boat | 55 | flees at 1.25x |
+| King's trade/treasure ship (the quay order) | 58 | |
+| Royal escort warship | 66 | |
+| Pirate ship | 68 | 78 when attacking |
+| Prince fleet warship | 72 x 0.92-1.02 = 66-73 | |
 
 ## Wizards come back every level (queue 140)
 - Both wizards return at the start of every castle level, in every mode. The Storm Wizard comes back with his tower and a 300 shield (210 on easy). The Dark Wizard comes back with a 525 shield (368 on easy). Their shields don't grow with the level yet. A hard-mode switch can add that later through one hook (`WZ140.hpMul`).
 - **Rewards last until your dragon is defeated:**
   - Storm Wizard: the barrier stays open.
   - Dark Wizard: his volcano stays drinkable, and the purple triple lava shot stays on.
-  - Beating a wizard again while you have his reward doesn't double anything. You get a "beaten again" message, his normal beat bonuses (the Dark Wizard's full heal, the horn) and the gobble.
+  - Beating a wizard again while you have his reward doesn't double anything. You get a "beaten again" message, his normal beat bonuses (the Dark Wizard's full heal, the horn) and the gobble. Each repeat win now also gives a permanent +2.5% attack (queue 146).
 - **The Dark Wizard's volcano while he's back:** you can still drink if you hold the unlock. His shield no longer keeps you off the rim, but he keeps casting lava, eruptions and lightning at you, so it's risky. Without the unlock, the old "his shield keeps you from the lava" rule applies.
 - **Defeat:** when your dragon is defeated, the restart is a brand-new game. The barrier closes, the Cinder Isle volcano locks and the triple shot is gone until you beat each wizard again.
 - **Save and load:** saves record both "beaten this level" and "reward held". Loading a save restores exactly what that save had. You can't save on the game-over screen (the autosave stops too), so a save from before a defeat brings back the rewards you held at that point. Old saves with a beaten wizard load as "beaten this level, reward held".
+
+## On-screen direction arrows (queue 142)
+Only four kinds of direction arrow are left on screen (all modes). Each one is pinned to the screen edge and kept clear of the HUD and touch buttons, and each one hides while its target is on screen:
+- **Lair** (gold): points home, as before.
+- **Raid** (blue, "RAID ... m"): points to the hoard-raid knights only while they march on your lair. It is not shown during the warning or while they run back to the castle.
+- **Prince** (gold with his colours, "PRINCE ... m"): only while a landed prince is hunting you. It is not shown before he lands or after he is beaten.
+- **King William** (gold and red, "KING ... m"): only while he charges after the dragon. It is not shown while he fights next to his castle or rides home.
+
+**Removed:** the small blue (knight) and green (archer) edge arrows that pointed to every off-screen knight and archer. That included wave knights and archers, mounted knights, raid knights outside a march and a prince's soldiers (guards standing at a post never had one). No other on-screen direction arrows existed in the game. Map markers such as the ⚓ landing spot and the minimap icons are not direction arrows and are unchanged.
+
+## Alpha tigers that guard their turf (queue 143)
+
+Every tiger in the Emerald Jungle is now an **alpha** and follows the same rules as the other alphas:
+
+- **Too strong to gulp above half health.** Biting a tiger above 50% health doesn't eat him: he shrugs it off (the bite still takes 50 off, never below 1 health; queue 145). Wear him down below 50% first. Then he gets dizzy (spinning stars) and can be eaten.
+- **+20% alpha hit bonus** (item 119): his swipe hits for 7 x 1.2 = 8.4 at castle level 1 (it was 4).
+- **Alpha level scaling:** 70 health at level 1, +15% health and +6% damage per castle level (level 3: 91 health, 9.4 swipe).
+- Beating or gulping a tiger gives **+150 points**.
+- **He keeps hunting** tapirs, capybaras and monkeys just like before.
+- **He now guards a turf**, a circle about 450 px wide around the middle of his home ground. If the dragon lands inside it, the tiger roars "This is MY turf!" and charges, even from far beyond his normal attack range. Knights, archers and hunters who walk in get pounced on. When the intruder leaves (or the dragon takes off), he walks back to his turf. Outside his turf, a tiger is no more aggressive than before.
+
+**Size (143a):** tigers are now drawn about 1.84x (1.6 on top of their art, which was already 1.15x a lion's). That makes them bigger than lionesses (1.35x) and male lions (1.35 x 1.22 = about 1.65x). Lions were not shrunk.
+
+Screenshot: `screenshots/320_tiger_vs_lion_143.png` (tiger, male lion and lioness side by side).
 
 ## Achievements
 Open **🏆 Achievements** from the title menu (it shows *N of 74* right on the button) or from the pause menu (between *Settings* and *Flip screen*). It's a scrollable list sized for touch: big **▲ Up / ▼ Down** buttons, drag or swipe to scroll, **Show: All / Locked / Unlocked** to filter, and **◀ Back**. On a keyboard: ↑/↓ scroll, ←/→ page, A cycles the filter, Esc/B goes back.
