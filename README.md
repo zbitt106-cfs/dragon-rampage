@@ -841,7 +841,7 @@ Each attack now has its own job. Dive is unchanged. Stomp is a building-breaker.
 | Ships | Burning | 6 per second | 18 per second | 18 per second |
 | Siege engines | Stomp / Fire / Burning | 78 / 30/s / 18/s | 23.4 / 15/s / 22.5/s | **39** / 15/s / 22.5/s |
 
-All of these are base numbers. Each repeat wizard win (queue 146) adds +2.5% to every one of the dragon's attacks.
+All of these are base numbers. Each repeat wizard win (queue 146, 146a) adds +7.5% to every one of the dragon's attacks on normal (+5% hard, +10% easy) until the dragon is defeated.
 
 ## King William is weaker in normal mode (queue 144a)
 In normal mode King William starts with **half the health** and **25% less attack** (sword and shield-bash), and he still grows with the castle level. Easy mode applies its own discount on top of this. A hard-mode hook (`KW144.full()`) keeps him at full strength; hard mode itself is not built yet.
@@ -862,11 +862,11 @@ In normal mode King William starts with **half the health** and **25% less attac
 - **Stomp (145b):** **30** area damage to soldiers and animals (it was 18). Building stomp stays at 150 on wood and 120 on stone. The same change lifts champion stomp to 24, boss stomp to 15 and siege stomp to 39. Dive is unchanged.
 - **Hard-mode hooks:** `BT145.on()` (hard mode can bring back "eat whole"), `BT145.mustHurtFirst` for rule 139b ("damage a fighter before you can eat it"). Hard mode (queue 139) uses `BT145.mustHurtFirst`.
 
-## Permanent attack boost from repeat wizard wins (queue 146)
-- The **first** time you beat a wizard in a game you get his normal reward. **Every later win** over a wizard you have already beaten in that game (Storm or Dark, since they come back every castle level) gives **+2.5% attack** to every dragon attack: bite, stomp, dive, claw scratch, fire breath and burning, and lava.
-- The boosts **add up**: +2.5% for each repeat win, so 4 repeat wins = +10%.
-- **Permanent:** it stays through castle levels **and** after you lose your dragon, because a new game keeps it. It is stored in the browser (like achievements) and written into every save. Loading a save keeps whichever count is bigger.
-- A small bottom pill shows "⚔️ Attack up! +2.5%" with your new total.
+## Attack boost from repeat wizard wins (queue 146, 146a, 146b)
+- The **first** time you beat a wizard in a game you get his normal reward. **Every later win** over a wizard you have already beaten in that game (Storm or Dark, since they come back every castle level) boosts every dragon attack: bite, stomp, dive, claw scratch, fire breath and burning, and lava.
+- **Size of each boost (146a):** +7.5% on normal, +5% on hard, +10% on easy. The boosts **add up**: 4 repeat wins on normal = +30%.
+- **How long it lasts (146b):** it carries over from castle level to castle level, but it is **lost when your dragon is defeated**. A new game starts at +0%. It is kept in your autosave and manual saves, so *Continue* brings back the boost that save had. (The old "kept forever in the browser" boost is retired.)
+- A small bottom pill shows "⚔️ Attack up! +7.5%" (or +5% / +10%) with your new total.
 - The eat line stays at 50 health, and a bite meant to leave a target alive still leaves it alive.
 
 ## Tax collectors ride horses (queue 147)
@@ -1120,7 +1120,7 @@ After being knocked out dizzy he also charges again as soon as he wakes, so in h
 - **Rewards last until your dragon is defeated:**
   - Storm Wizard: the barrier stays open.
   - Dark Wizard: his volcano stays drinkable, and the purple triple lava shot stays on.
-  - Beating a wizard again while you have his reward doesn't double anything. You get a "beaten again" message, his normal beat bonuses (the Dark Wizard's full heal, the horn) and the gobble. Each repeat win now also gives a permanent +2.5% attack (queue 146).
+  - Beating a wizard again while you have his reward doesn't double anything. You get a "beaten again" message, his normal beat bonuses (the Dark Wizard's full heal, the horn) and the gobble. Each repeat win also gives +7.5% attack on normal (+5% hard, +10% easy) until your dragon is defeated (queue 146, 146a, 146b).
 - **The Dark Wizard's volcano while he's back:** you can still drink if you hold the unlock. His shield no longer keeps you off the rim, but he keeps casting lava, eruptions and lightning at you, so it's risky. Without the unlock, the old "his shield keeps you from the lava" rule applies.
 - **Defeat:** when your dragon is defeated you go to the main menu. *New game* is a brand-new game; *Continue* loads your last autosave (with the wizard rewards that save held). The barrier closes, the Cinder Isle volcano locks and the triple shot is gone until you beat each wizard again.
 - **Save and load:** saves record both "beaten this level" and "reward held". Loading a save restores exactly what that save had. You can't save on the game-over screen and the autosave never saves a dying dragon, so a save from before a defeat brings back the rewards you held at that point. Old saves with a beaten wizard load as "beaten this level, reward held".
@@ -1206,3 +1206,24 @@ Gamepad Select / "-" (button 8) toggles the big map once per press (LB still wor
 ![Lair gold 1k](screenshots/q171_lair_gold_1k.png)
 ![Lair gold 10k](screenshots/q171_lair_gold_10k.png)
 ![Gamepad Select opens map](screenshots/q172_gamepad_select_opens_map.png)
+
+## Every bite counts (queue 173, 173a)
+- A bite that neither eats nor hurts the target now does 18 damage anyway (never below 1 HP). Before, the whale's "too big" check, an awake giant squid, and the bear / elephant / champion / sand worm "tough" checks did no damage to the target.
+- Health is the only gate for eating: anything is eaten once it is at or below 35% health (or 50 HP for big ones). King William, Princess Elizabeth and the guardian dragons are never eaten.
+
+## Bites go where the jaws point (queue 191, 191a)
+- **Front only:** a bite reaches targets in a cone of about ±50° in front of the dragon's head (big animals count by the edge of their body), or right at the tip of the snout. Things beside or behind the dragon can no longer be bitten.
+- **Swoop-bite stays:** flying low over ground targets and biting still snatches them.
+- **No ground-to-air bites:** from the ground the dragon can't bite things in the air: airborne wild dragons, leaping flying fish and dolphins, flying fairies and vampire bats. Birds in the air were already out of reach from the ground, and the griffin can only be bitten when both of you are low. Flying bites at flying things in front still work.
+- **Mouth capacity (191a):** one bite can grab several small things at once, up to 4 "mouthfuls":
+  - small = 1 (villagers, sheep, pigs, wolves, deer, foxes and the like),
+  - medium = 2 (knights, hunters, and animals with 25+ health),
+  - large = the whole mouth, always bitten alone (elephants, giraffes, hippos, bears, gorillas, lions, tigers, bulls, crocodiles, camels, mounted riders, champions, whales, giant squid, orcas, octopuses, narwhals, fish schools, sand worms, wild dragons, and anything with 60+ health).
+  - The closest target is always taken first. Combo bonuses work as before, now up to ×4.
+
+## Water puts out fires (queue 193)
+- An enemy standing or swimming in water (sea creatures always, others in water and not on a bridge) takes **no burning damage over time**. A burning enemy that is in water, or walks into it, is put out at once with a puff of steam.
+- **Lava splashes** no longer hurt enemies in water.
+- A **direct fire-breath hit** still does its normal damage. Ships still catch fire and burn as before.
+- The dragon has no burning status, so nothing changes for the dragon.
+

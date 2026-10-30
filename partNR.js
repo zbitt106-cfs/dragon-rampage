@@ -3638,7 +3638,8 @@ function vkLongSunk(s){G.vkLongSunk=(G.vkLongSunk||0)+1;const t=texts[texts.leng
   if(u.vk==='chief'&&u.bear&&u.bearHp>0){u.bearHp-=d;if(u.bearHp<=0){u.bear=0;u.bearHp=0;puff(u.x,u.y,16,'rgba(150,110,70,',90,10);float(u.x,u.y-50,'The war bear runs off! The chief fights on foot!','#ffd0a0');G.vkBears=(G.vkBears||0)+1;}return;}
   const was=u.dead;const r=_h.call(this,u,d,src);
   if(!was&&u.dead){G.vkDown=(G.vkDown||0)+1;const t=texts[texts.length-1];if(t&&/down!$/.test(t.txt))t.txt=u.vk==='chief'?'The Viking chief falls!':'Viking down!';}return r;};}
-{const _e=eatUnit;eatUnit=function(u){if(u&&u.vk==='chief'&&u.bear&&!u.dead){hurtUnit(u,50,'bite');float(u.x,u.y-40,'The war bear is too big to eat!','#ffd0a0');return;}return _e.apply(this,arguments);};}
+// queue 173a: no size gate - the war bear can be eaten once it is worn down (at/below 35% health or 50 HP); before that a bite wears it down
+{const _e=eatUnit;eatUnit=function(u){if(u&&u.vk==='chief'&&u.bear&&!u.dead&&!bt173Low(u)){const dm=Math.min(50,Math.max(0,Math.ceil(u.hp)-1));if(dm>0)hurtUnit(u,dm,'bite');float(u.x,u.y-40,'The war bear is still too strong to eat - wear it down!','#ffd0a0');return;}return _e.apply(this,arguments);};}
 {const _hs=hurtStruct;hurtStruct=function(s,d){if(s&&VK.CASTLE.has(s.kind)&&s.state!=='ruin'&&d2(s.x,s.y,GATE.x,GATE.y)<1300)G.vkHitT=G.t;return _hs.apply(this,arguments);};}
 {const _up=update;update=function(dt){const r=_up.apply(this,arguments);try{if(G&&!G.over&&typeof scene!=='undefined'&&scene==='play')vkStep(dt);}catch(e){if(!VK.err){VK.err=String(e&&e.stack||e);console.warn('vk',e);}}return r;};}
 function vkReset(){VKG=[];if(typeof ships!=='undefined')ships=ships.filter(s=>!s.vk);if(typeof units!=='undefined')for(const u of units)if(u.vk){u.dead=true;u.gone=true;}}
@@ -4337,6 +4338,34 @@ hoardK=function(g){return clamp(Math.pow(Math.max(0,g)/(260*HD171.mul),.55),0,1.
   if(!menu&&now&&!pv){if(!hadR)delete pressed['r'];pressed['m']=true;GPAD.sel172=(GPAD.sel172||0)+1;}
   return r;};}
 
+// ======================= queue 173 / 173a: every bite hurts; nothing is "too big" (or too small) to eat =======================
+// 173: if a bite neither eats nor hurts the first thing in the dragon's jaws, it now takes BT173.dmg (18) damage anyway - never below 1 HP,
+//      so the bite always wears the target down. (Blockers found: the whale's "too big" check in eatSea did no damage; an awake giant
+//      squid took none; the bear / elephant / champion / sandworm "tough" checks only hurt the DRAGON, not the target; in hard mode the
+//      queue-145 50-damage bite is off.)
+// 173a: health is the only gate. A target the old rules refused to swallow is eaten once its health is low enough
+//      (at/below 35% of max, or 50 HP for big ones). King William, Princess Elizabeth and the guardian dragons are never eaten.
+const BT173={dmg:18,low:.35,lowAbs:50,hits:0,eats:0,last:null};
+function bt173Never(u){return !u||u.isKing||u.king||u.isKingArmor||u.princess||u.isPrincess||u.gd||u.guardian;}
+function bt173Low(u){return u.hp<=Math.max(u.maxHp*BT173.low,Math.min(BT173.lowAbs,u.maxHp*.5));}
+function bt173Gone(u){return !!(u.dead||u.eaten||(u.type==='sea'?false:units.indexOf(u)<0));}
+{const _te=tryEat;tryEat=function(){
+  if(!G||G.over||G.won||scene!=='play'||D.eatCD>0||D.princess||D.carry)return _te.apply(this,arguments);
+  if(typeof PR!=='undefined'&&PR.state==='tower'&&d2(D.x,D.y,PR.x,PR.y)<160)return _te.apply(this,arguments);
+  let T=[];try{T=biteTargets();}catch(e){}const f=T[0];if(!f||bt173Never(f))return _te.apply(this,arguments);
+  const h0=f.hp,g0=D.gold,n0=f.type==='sea'&&f.kind==='school'?f.n:0,dg0=typeof DG!=='undefined'?DG.n:0;const r=_te.apply(this,arguments);
+  if((typeof DG!=='undefined'&&DG.n!==dg0)||f.dgInv>0||D.gold!==g0||D.princess||D.carry||bt173Gone(f)||f.hp<h0-.01||(f.kind==='school'&&f.n!==n0))return r;
+  if(f.kind==='school'){return r;}
+  if(bt173Low(f)){BT173.eats++;BT173.last={sp:f.species||f.kind||f.type,eat:1,hp:Math.round(f.hp)};
+    if(f.type==='sea'){if(f.kind==='squid')f.state='dazed';const hp=f.hp;if(f.kind==='whale')f.hp=Math.min(f.hp,f.maxHp*.5);eatSea(f);if(!f.dead)f.hp=hp;}
+    else eatUnit(f);
+    if(!bt173Gone(f)){f.dead=true;f.eaten=true;}D.eatCD=D.alt<.3?.45:.9;D.eatT=.3;return r;}
+  const dm=Math.min(BT173.dmg,Math.max(0,Math.ceil(f.hp)-1));
+  if(dm>0){const hp=f.hp;if(f.type==='sea')hurtSea(f,dm,'bite');else hurtUnit(f,dm,'bite');if(!(f.hp<hp-.01)&&!f.dead)f.hp=Math.max(1,hp-dm);}
+  BT173.hits++;BT173.last={sp:f.species||f.kind||f.type,dealt:Math.round(h0-f.hp),hp:Math.round(f.hp)};
+  if(dist(f,D)<1200)float(f.x,f.y-62,bt173Low(f)?'Worn down - bite again to eat!':`Bite! -${Math.round(h0-f.hp)} - keep wearing it down`,'#ffd27a');
+  D.eatCD=Math.max(D.eatCD||0,D.alt<.3?.45:.9);D.eatT=.3;return r;};}
+
 // ======================= queue 183 / 183a: RESTART is now MAIN MENU (game over, win screen, pause menu) =======================
 // Game over: Enter / Space / R / tap / A / Start / Back now go to the title MAIN MENU (instead of instantly restarting). The Mode row (the
 // EASY / NORMAL / HARD difficulty picker) is highlighted with the current difficulty, Start game begins a new game, Continue loads the
@@ -4426,3 +4455,62 @@ function as184Continue(){const res=svLoad('dr_save_auto');if(res===true){try{pmC
       const md=i.hard?'Hard':i.easy?'Easy':'Normal';txt(`⟲  Continue  (autosave · castle lvl ${i.lvl} · ${md} · ${svDur(i.playT)})`,W0/2-57,y+21,14,s?'#ffd24a':'#9fe09f','center');
       ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(W0/2+118,y+3,108,24);txt('📂 All saves ▶',W0/2+172,y+20,13,'#ddd','center',false);}
   }catch(e){}finally{ctx.setTransform(DPR,0,0,DPR,0,0);}};}
+// ======================= queue 191 / 191a: bites only hit what is IN FRONT of the jaws; mouth capacity for multi-bites =======================
+// 191:  a bite only reaches targets in a forward cone of +-50 degrees around the way the dragon faces (big animals count by their body
+//       edge), or right at the tip of the snout - no more 360-degree "belly bites" of things beside or behind the dragon.
+//       The swoop-bite (flying low onto ground targets) stays. From the GROUND the dragon can no longer bite flying things: airborne
+//       wild dragons, leaping flying fish / dolphins, flying fairies and vampire bats (birds in the air were already out of reach and the
+//       griffin needs both of you low). Flying-vs-flying bites in front still work.
+// 191a: one bite can take several SMALL things in the cone, up to the mouth capacity BC191.cap (4): small = 1 (villagers, sheep, wolves,
+//       deer...), medium = 2 (knights, hunters, archers on foot, 25+ HP animals), large = the whole mouth (elephants, hippos, bears,
+//       gorillas, lions, tigers, bulls, mounted riders, champions, princes, whales, squid, sandworms, wild dragons, anything 60+ HP).
+//       A large target is always bitten alone. Closest first.
+const BC191={cone:50*Math.PI/180,tip:28,cap:4,skipCone:0,skipAir:0,capCut:0,
+  big:new Set(['elephant','giraffe','hippo','rhippo','rhino','bear','gorilla','tiger','lion','bull','sandworm','wdragon','croc','camel']),
+  bigSea:new Set(['whale','squid','orca','octopus','narwhal','school'])};
+function bc191Airborne(u){return !!((u.alt||0)>.3||(u.fly||0)>.3||u.flying===true);}
+function bc191Cost(u){if(!u)return 1;if(u.type==='sea'?BC191.bigSea.has(u.kind):BC191.big.has(u.species))return BC191.cap;
+  if(u.mounted||u.horse||u.champ||u.prince||u.boss||(u.maxHp||0)>=60||(typeof szK==='function'&&szK(u)>=1.3))return BC191.cap;
+  if((u.maxHp||0)>=25||u.type==='knight'||u.type==='hunter')return 2;return 1;}
+function bc191InCone(u){const dd=dist(u,D),ext=typeof szR==='function'?szR(u)||0:0;
+  const mx=D.x+Math.cos(D.ang)*80,my=D.y+Math.sin(D.ang)*80;if(d2(u.x,u.y,mx,my)<BC191.tip+ext)return true;
+  if(dd<1)return false;const fa=Math.abs(angDiff(Math.atan2(u.y-D.y,u.x-D.x),D.ang));return fa<=BC191.cone+(ext?Math.atan2(ext,dd):0);}
+function bc191Pick(T){const out=[];let used=0;
+  for(const u of T){const c=bc191Cost(u);if(!out.length){out.push(u);used=c;if(c>=BC191.cap)break;continue;}
+    if(c>=BC191.cap)continue;if(used+c>BC191.cap)continue;out.push(u);used+=c;if(used>=BC191.cap)break;}
+  if(out.length<T.length)BC191.capCut++;return out;}
+{const _bt=biteTargets;biteTargets=function(){const T=_bt.apply(this,arguments);if(!T||!T.length||!D)return T;const gr=D.alt<0.3;
+  const F=T.filter(u=>{if(gr&&bc191Airborne(u)){BC191.skipAir++;return false;}if(!bc191InCone(u)){BC191.skipCone++;return false;}return true;});
+  return bc191Pick(F);};}
+// fairies / vampire bats (b3Eat) could be snapped out of the air from the ground: ground bites now only reach ones that have landed
+{const _b=b3Eat;b3Eat=function(){if(!D||D.alt>=.3)return _b.apply(this,arguments);const hid=[];
+  try{for(const b of birds)if(b.b3&&!b.dead&&b.state!=='ground'&&b.state!=='perch'&&(b.z||0)>25){b.dead=true;hid.push(b);}return _b.apply(this,arguments);}
+  finally{for(const b of hid)b.dead=false;if(hid.length)BC191.skipAir++;}};}
+// ======================= queue 146a / 146b: repeat wizard bonus by mode, kept until the dragon dies =======================
+// 146a: every repeat wizard win adds +7.5% attack on NORMAL, +5% on HARD, +10% on EASY (additive). The "Attack up!" pill shows the step.
+// 146b: the bonus carries over from castle level to castle level but is LOST when the dragon dies (a new game starts at 0). It is stored
+//       in the game itself (G.pb146 wins, G.pb146p bonus), so autosaves and manual saves keep it; the old forever-browser key is retired.
+function pb146Step(){return EASY?.10:(G&&G.hard?.05:.075);}
+PB146.p=0;PB146.n=0;PB146.mul=function(){return 1+(PB146.p||0);};PB146.load=function(){};
+PB146.save=function(){if(G){G.pb146=PB146.n;G.pb146p=PB146.p;}};
+try{localStorage.removeItem(PB146.key);}catch(e){}
+pb146Win=function(who){const s=pb146Step();PB146.n++;PB146.p=Math.round((PB146.p+s)*1000)/1000;PB146.save();G.pb146Wins=(G.pb146Wins||0)+1;
+  const pc=v=>(v*100).toFixed(1).replace(/\.0$/,'');
+  boostAlert(`⚔️ Attack up! +${pc(s)}%`,`${who} beaten again · all your attacks +${pc(PB146.p)}% until this dragon falls`);};
+{const _nl=nextLevel;nextLevel=function(){PB146.carry={n:PB146.n,p:PB146.p};try{return _nl.apply(this,arguments);}finally{PB146.carry=null;}};}
+{const _n=newGame;newGame=function(){const c=PB146.carry;const r=_n.apply(this,arguments);if(c){PB146.n=c.n;PB146.p=c.p;}else{PB146.n=0;PB146.p=0;}PB146.save();return r;};}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);const g=d&&d.G||{};PB146.n=g.pb146|0;
+  PB146.p=typeof g.pb146p==='number'?g.pb146p:Math.round(PB146.n*pb146Step()*1000)/1000; // older saves: count x this mode's step
+  PB146.save();return r;};}
+// ======================= queue 193: water puts out burning enemies and shields them from lava splashes =======================
+// Enemies standing or swimming in water (sea creatures always, others in water and not on a bridge) take no burning damage over time:
+// a burning unit that is in water, or walks into it, is put out at once with a puff of steam. Lava splashes no longer hurt enemies in
+// water. A direct fire-breath hit still does its normal damage. Ships still burn (unchanged). The dragon has no burning status, so no change.
+const WD193={out:0,shield:0,ls:0};
+function wd193Wet(u){if(!u||u.dead)return false;if((u.alt||0)>.3||(u.fly||0)>.3)return false;if(u.type==='sea')return true;
+  try{return inWater(u.x,u.y)&&!onBridge(u.x,u.y);}catch(e){return false;}}
+function wd193Douse(){for(const u of units)if(u.burn>0&&!u.dead&&wd193Wet(u)){u.burn=0;WD193.out++;
+  if(Math.abs(u.x-D.x)<1400&&Math.abs(u.y-D.y)<1000){try{puff(u.x,u.y-10,8,'rgba(235,240,245,',70,10);}catch(e){}}}}
+{const _u=updFire;updFire=function(){try{wd193Douse();}catch(e){console.warn('193',e);}return _u.apply(this,arguments);};}
+{const _l=lavaSplash;lavaSplash=function(){WD193.ls++;try{return _l.apply(this,arguments);}finally{WD193.ls--;}};}
+{const _h=hurtUnit;hurtUnit=function(u,d,src){if(WD193.ls>0&&src==='fire'&&wd193Wet(u)){WD193.shield++;return;}return _h.apply(this,arguments);};Object.assign(hurtUnit,_h);}
