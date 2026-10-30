@@ -324,20 +324,20 @@ A hoard attracts trouble. Raids come on a clock, not on gold growth: **5 minutes
 1. **Warning:** a banner reads, for example, *"Sir Gareth the Bold vows before King William to claim the dragon's hoard!"* A horn sounds, and you get **8 seconds** to get ready.
 2. **March:** the champion rides out of the castle gate with an escort of foot soldiers. The escort carries heraldic flags and spears with pennants in the champion's colours. The party goes east along King William's road, then up the mountain trail to Dragon Peak, which takes about 45 seconds.
 3. **The champion** is a mini-boss. They are bigger, with a plume, a coloured tabard and a crested kite shield, and have a name tag and health bar overhead. Fire does only 60% damage to them. They can't be swallowed until they're below half health; they raise their shield.
-4. **Theft:** if the champion reaches the hoard, they grab a share of it that grows with the raid tier (see below; never the whole pile) and carry the sacks back to the castle. Loaded raiders walk home **slower**: the more gold they carry, the slower they go (about 92% speed with 100 gold, 78% with 300, down to 55% with 600 or more), and you can see the gold sacks bouncing on them (1 to 4 sacks by load). If they get through the gate, that gold is gone.
+4. **Theft:** if the champion reaches the hoard, they grab **25% of it at every tier** (queue 136; never the whole pile) and carry the sacks back to the castle. Loaded raiders walk home **slower**: the more gold they carry, the slower they go (about 92% speed with 100 gold, 78% with 300, down to 55% with 600 or more), and you can see the gold sacks bouncing on them (1 to 4 sacks by load). If they get through the gate, that gold is gone.
 5. **Victory:** defeat or eat the champion (a cartoon gulp), even on the way back, and the sacks drop: all the stolen gold goes automatically back into the lair pile with a '+N' pop. There is **no lump-sum gold bonus**: the only gold is what each knight was carrying (the stolen sacks, which go straight back to the lair). Each knight also carries its own purse, which it drops on the ground when it falls; see *Raid knights drop gold*. You still get 300 + 150×raid points, and the *Raid defeated!* announcement shows every time, including when your guardians win without you (*"Your guardian dragons beat Sir …!"*).
 
 **Raid tiers (by hoard size):** the thresholds above still decide *when* a knight comes, and the 5-minute cooldown is unchanged. How *tough* the raid is depends on the size of your hoard at the moment the raid is announced: **Tier 1** under 250 gold, **Tier 2** from 250, **Tier 3** from 500, **Tier 4** from 1,000, then one more tier per extra 1,000 (2,000 = Tier 5, 3,000 = Tier 6...). The banner says so: *"Sir Gareth the Bold (Tier 3) rides for your hoard!"*
 
 | Tier | Hoard | Champion HP | Spearmen | Archers | Damage | Gold taken |
 |---|---|---|---|---|---|---|
-| 1 | 100–249 | 150 | 2 | 0 | ×1.0 | 20% |
-| 2 | 250–499 | 210 | 3 | 0 | ×1.1 | 25% |
-| 3 | 500–999 | 270 | 4 | 1 | ×1.2 | 30% |
-| 4 | 1,000–1,999 | 330 | 5 | 2 | ×1.3 | 35% |
-| 5 | 2,000–2,999 | 390 | 5 | 3 | ×1.4 | 40% |
-| 6 | 3,000–3,999 | 450 | 5 | 3 | ×1.5 | 45% |
-| 7+ | 4,000+ | 480+ | 5 | 3 | ×1.6 (max) | 50% (max) |
+| 1 | 100–249 | 150 | 2 | 0 | ×1.0 | 25% (was 20%) |
+| 2 | 250–499 | 210 | 3 | 0 | ×1.1 | 25% (unchanged) |
+| 3 | 500–999 | 270 | 4 | 1 | ×1.2 | 25% (was 30%) |
+| 4 | 1,000–1,999 | 330 | 5 | 2 | ×1.3 | 25% (was 35%) |
+| 5 | 2,000–2,999 | 390 | 5 | 3 | ×1.4 | 25% (was 40%) |
+| 6 | 3,000–3,999 | 450 | 5 | 3 | ×1.5 | 25% (was 45%) |
+| 7+ | 4,000+ | 480+ | 5 | 3 | ×1.6 (max) | 25% (was 50%) |
 
 Champion HP grows gently with the tier (and a little with the raid number), escorts get a bit tougher, and the party never exceeds 8 units, so iPhones stay smooth. Easy mode gives one fewer spearman and softer HP. A raid always leaves you at least 1 gold.
 
@@ -368,7 +368,7 @@ Houses (huts and adobes) slowly earn gold, and merchant shops (stalls, fishmonge
 - **Escort:** with a heavy sack (25+ gold) he asks any **patrol he passes within about 200 px** to walk him home: 2 guards at 25 gold, 3 at 40, 4 (the cap) at 60. He never calls patrols from afar, and they never detour; if none is near, he walks alone. The escort walks with him, fights you, and returns to its patrol route after delivery. His sack visibly fills up. Buildings' gold, the tax collector and his escort are all saved.
 
 ## The rich desert caravan and Sandhaven's troops
-One of Sandhaven's two camel caravans is a **rich caravan**: three colourful camels (striped blankets, tassels and bells), one carrying a **treasure chest**, and two richly dressed traders. It plods along the roads from Sandhaven to the castle gate and back again (about 67% of its old pace: lead trader 38 → 25.5 px/s), resting at each end.
+One of Sandhaven's two camel caravans is a **rich caravan**: three plain camels (no blankets, tassels or bells), one carrying a **treasure chest**, and two richly dressed traders. It plods along the roads from Sandhaven to the castle gate and back again (about 67% of its old pace: lead trader 38 → 25.5 px/s), resting at each end.
 - **Escort:** exactly **10 desert soldiers** (turban, sand robe, scimitar and round shield) and **6 desert archers** (blue turban and a curved bow, which shoot from about 420 px), marching in formation: two files of soldiers flanking the camels, archers at the front, rear and sides.
 - **Desert troops are tougher** than the kingdom's regulars: desert soldier 35 HP (regular foot soldier 24), desert archer 32 HP (regular archer 22), and they hit 75% harder than regulars. **Toughened again:** desert soldier **53 HP** (was 35), desert archer **48 HP** (was 32), camel rider **90 HP** (was 60), so +50% HP; and **+40% attack**: sword and arrow hits 7 (were 5), camel-rider scimitar 10.5 (was 7.5). This covers every desert soldier: escort, camel riders, Sandhaven garrison and tower archers. HP still grows with the level.
 - **Sandhaven garrison:** 3 desert soldiers + 2 desert archers always guard the town, separate from the escort, fresh every level (and saved).
@@ -718,11 +718,11 @@ Permanent boosts (max-health feasts such as *"Max health up! (+50)"*, mini-boss 
 
 - **Only your dragon can collect it.** Fly low or land within reach of a sack to add it to your hoard (*"+N raid gold → hoard"*). Guardians don't pick it up, and flying high over a sack doesn't collect it.
 - **Uncollected gold is up for grabs.** Knights of a later raid that pass close to a sack on their way scoop it up (*"… scoops up N gold!"*) and carry it on their belt. Defeat that knight and it drops its purse plus everything it scooped up.
-- Sacks that land close together merge into one bigger sack, labelled with its amount, and show as gold dots on the map. Knights that escape take their purse with them. The champion's stolen lair gold still goes straight back to the lair as before.
+- Sacks that land close together merge into one bigger sack, labelled with its amount, and show as gold dots on the map. **Escaped gold goes to King William (queue 135).** If the champion reaches the castle gate, his stolen sacks and his purse go into the king's treasury, and every raiding knight who escapes home pays its purse in too, with a small *"👑 +N gold to the king's treasury"* alert (a richer king fields bigger waves). Stop the champion first and the stolen lair gold still goes straight back to your lair as before. Guardian dragon rules are unchanged.
 - Sacks on the ground are kept in saves and cleared by a new game.
 
 ## Alpha hippos at the watering holes
-Each of the two savanna watering holes has its own **alpha hippo**: a big lilac-grey hippo with a little gold crown. It spends its time half-submerged in the middle of the pool, blowing ripples and giving the odd lazy yawn.
+Each of the two savanna watering holes has its own **alpha hippo**: a big lilac-grey hippo, a quarter bigger than the others, with pale scars across its back. Each pool also has a **regular hippo** (grey-brown, smaller) that wallows peacefully beside the alpha. It spends its time half-submerged in the middle of the pool, blowing ripples and giving the odd lazy yawn.
 - **It guards its pool.** If your dragon comes close **on the ground or flying low** (within about 200 px of the water's edge), it surfaces with a big yawn (*"HRRUMPH! The alpha hippo guards its watering hole!"*) and charges, chomping you for **7 damage every 2 s** (*"Hippo CHOMP!"*).
 - **It's a homebody.** It never chases you more than about 300 px from its pool. When you leave or fly high, it grumbles and wades back into the water.
 - **Hippos and crocodiles ignore each other.** The crocodile in the pool never hunts the hippo, and the hippo never fights the crocodile; they share the water peacefully.
@@ -742,7 +742,7 @@ Each of the two savanna watering holes has its own **alpha hippo**: a big lilac-
 
 
 ## The white alpha elephant and his herd (item 129)
-A big **white alpha elephant** with a red-and-gold blanket, a gold crest and gold tusks now patrols the savanna with **his herd of 4 elephants**. He walks a **random route of random waypoints** (a new spot 500 to 2,400 px away each time he arrives, never into a watering hole) and his herd follows behind him in a file.
+A big **white alpha elephant** (pale white hide with pink mottling on the ears and trunk, and long curved ivory tusks) now patrols the savanna with **his herd of 4 elephants**. He walks a **random route of random waypoints** (a new spot 500 to 2,400 px away each time he arrives, never into a watering hole) and his herd follows behind him in a file.
 - **He calls his herd.** Attack him or any elephant in his herd and he trumpets (*"PAWOOOOO!"*), and the whole herd comes running to protect him (the herd gets the alpha rally bonus: ×1.12 damage).
 - **Elephants fight back (gently).** Any savanna elephant you hurt now pushes back for about 8 s while you are on the ground nearby: *Trunk swat!* (5), *Tusk shove!* (5, pushes you back) and *Ground stomp!* (6, shakes the screen). Flying high keeps you safe.
 - **Alpha rules, like the other alphas:** he shrugs off bites while he has more than half his health (each bite still costs him 15%), shows dizzy stars below half, and then you can gulp him. Beating or eating him gives **+300 points**; eating him is a feast (90 food, 60 health). His stats grow with the castle level like the mini bosses, and his bite includes the +20% alpha bonus (item 119).
@@ -772,6 +772,48 @@ Elephants and giraffes now really look (and hit) like the giants of the savanna.
 Bites, flames and stomps now reach a big animal's body, not just its centre point, so a bigger animal is easier to hit. Zebras (39 × 30) and the other animals are unchanged.
 
 ![Size comparison: lion, hippo, giraffe, elephant and the white alpha elephant](screenshots/312_savanna_sizes.png)
+
+## Natural animals (queue 133 and 134)
+
+Real animals no longer wear clothes or accessories. Alphas stand out by **size, colour and natural markings** instead:
+
+| Animal | Removed | Now marked by |
+|---|---|---|
+| White alpha elephant | red-and-gold blanket, gold crest, red gem | white hide, pink mottling, long ivory tusks, ×3 size |
+| Alpha hippos | gold crown | lilac colour, ×1.25 size, pale back scars |
+| Bull | gold nose ring | (none needed) |
+| Cavalry horses | saddle cloth | (none needed) |
+| Prince's horse | caparison with crest, head plume | (none needed) |
+| Desert camel-rider camels | red-and-gold saddle blanket, tassels | (none needed) |
+| Rich caravan camels | striped blankets, tassels, bell, bridle | (none needed) |
+
+Lions, wolves, gorillas, giraffes, crocodiles, meerkats, goats, birds, whales and the other sea creatures already had none. Loads (cargo bags, the treasure chest, cart traces) stay, and humans and fantasy creatures keep their outfits.
+
+Each savanna watering hole now also has a **regular hippo** next to its alpha: 2 hippos per pond, 4 in total (before: 1 alpha per pond, 2 in total). Regular hippos are peaceful, wallow and drift in the water, dive away with a *SPLOOSH* when burned or hurt, stay inside their pond, and come back about 120 s after being eaten if the dragon is far away. They are not on the crocodiles' menu.
+
+| Before | After |
+|---|---|
+| ![Savanna animals before](screenshots/313_savanna_animals_before.png) | ![Savanna animals after](screenshots/314_savanna_animals_after.png) |
+
+![A savanna pond with its alpha hippo and a regular hippo](screenshots/315_savanna_pond_hippos.png)
+
+## Castles on the maps (queue 137)
+
+Castles are now drawn as proper castle icons (two towers, a keep with battlements, a gate and a waving pennant on a soft halo) on both the minimap and the big **M** map, instead of small squares. They are about 13 px on the minimap and 26 px on the big map, and the two forts are drawn at three quarters of that size.
+
+| Castle | Colour |
+|---|---|
+| Lumenspire Citadel | light (white and blue) |
+| Doomforge Citadel | dark (black and ember orange) |
+| Castle Aldric (King William) | warm stone and gold |
+| Ironhold Gate (fort) | light |
+| Gorgrim War-Fort (fort) | dark |
+
+The dragon dot and the princess marker are still drawn on top of the icons. Forts only show once you have uncovered them.
+
+![Minimap before and after](screenshots/316_map_castles_minimap.png)
+![Big map after](screenshots/317_map_castles_bigmap.png)
+![Big map before](screenshots/318_map_castles_bigmap_before.png)
 
 ## Achievements
 Open **🏆 Achievements** from the title menu (it shows *N of 74* right on the button) or from the pause menu (between *Settings* and *Flip screen*). It's a scrollable list sized for touch: big **▲ Up / ▼ Down** buttons, drag or swipe to scroll, **Show: All / Locked / Unlocked** to filter, and **◀ Back**. On a keyboard: ↑/↓ scroll, ←/→ page, A cycles the filter, Esc/B goes back.

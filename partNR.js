@@ -1098,7 +1098,7 @@ NR_DRAW.medusa=function(x,y,s,f,a,u){mdArt(x+6*s*f,y-4*s,f,s*.62,false,{gz:u.gz|
 // map marker
 {const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s;
   if(big||!mdDown()){ell(X(MDL.x),Y(MDL.y),big?5:3,big?5:3,mdDown()?'#9a9aa2':'#4fc39a');if(big)txt(mdDown()?'Hydra temple (asleep)':'🐉 Hydra',X(MDL.x)+8,Y(MDL.y)+4,10,'#e8ffe0','left');}
-  for(const k in NR_CC){const c=NR_CC[k];rect(X(c.x)-(big?5:3),Y(c.y)-(big?5:3),big?10:6,big?10:6,k==='L'?'#f0f0ff':'#2a2030');if(big)txt(c.n,X(c.x)+8,Y(c.y)+4,10,k==='L'?'#e8f0ff':'#ffb0a0','left');}}catch(e){}return r;};}
+  for(const k in NR_CC){const c=NR_CC[k];/* queue 137: the castle icon itself is drawn by mapCastles (q.js) */if(big)txt(c.n,X(c.x)+17,Y(c.y)+4,11,k==='L'?'#e8f0ff':'#ffb0a0','left');}}catch(e){}return r;};}
 // 10/12/32: stays down for the rest of this dragon's life: carried over levels, cleared when the dragon dies (newGame makes a fresh G)
 {const _nl=nextLevel;nextLevel=function(){const k={mdDown:G.mdDown,mdWins:G.mdWins,hyWins:G.hyWins,hyHp:G.hyHp,hyEaten:G.hyEaten};const r=_nl.apply(this,arguments);Object.assign(G,k);HYD.on=false;HYD.P=[];return r;};}
 {const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);HYD.on=false;HYD.koT=0;HYD.P=[];HYD.heads=[];D.mdStone=0;D.mdGrey=0;return r;};}
@@ -2175,16 +2175,18 @@ function hpMgr(dt){if(!G||typeof WHOLES==='undefined')return;for(let i=0;i<WHOLE
     if(!u&&G.t>=HIPPO_T[i]){const H=WHOLES[i];if(Math.hypot(D.x-H.x,D.y-H.y)>900){HIPPO_T[i]=0;HIPPOS[i]=hpSpawn(i);G.hpNew=(G.hpNew||0)+1;if(Math.hypot(D.x-H.x,D.y-H.y)<1800)float(H.x,H.y-90,'A new alpha hippo wades into the watering hole!','#fff2c0');}}}}
 {const _up=updParts;updParts=function(dt){const r=_up.apply(this,arguments);if(scene==='play'&&G&&!G.over)hpMgr(dt);return r;};}
 {const _ng=newGame;newGame=function(o){const r=_ng.apply(this,arguments);hpInit();return r;};}
-if(typeof REGION_SUB!=='undefined'&&REGION_SUB.savanna)REGION_SUB.savanna=REGION_SUB.savanna.replace('around the watering hole','around the watering holes, each guarded by an alpha hippo');
-// drawing: a big round lilac-grey hippo; half-submerged (eyes, ears, nostrils and back) while wallowing, fully out when it charges
-function drawHippo(u){const x=u.x,y=u.y,f=u.face||1,sub=clamp(u.sub||0,0,1),bob=Math.sin(G.t*1.4+u.id)*1.5,yw=u.yawn>0?Math.sin(Math.min(1,u.yawn)*Math.PI):0,sc=1.25;
-  const body='#8f7f9a',dk='#6c5d78',lt='#c9b3cf',pink='#f2a6b8';
+if(typeof REGION_SUB!=='undefined'&&REGION_SUB.savanna)REGION_SUB.savanna=REGION_SUB.savanna.replace('around the watering hole','around the watering holes, each guarded by an alpha hippo and its pod');
+// drawing: a big round lilac-grey hippo (the alpha: x1.25, with pale old scars on its back; no crown since queue 133; regular hippos: grey-brown, x1); half-submerged (eyes, ears, nostrils and back) while wallowing, fully out when it charges
+function drawHippo(u){const x=u.x,y=u.y,f=u.face||1,sub=clamp(u.sub||0,0,1),bob=Math.sin(G.t*1.4+u.id)*1.5,yw=u.yawn>0?Math.sin(Math.min(1,u.yawn)*Math.PI):0,A=!!u.alpha,sc=A?1.25:1;
+  const body=A?'#8f7f9a':'#8a7468',dk=A?'#6c5d78':'#665248',lt=A?'#c9b3cf':'#b39a8c',pink='#f2a6b8';
   const rp=(G.t*.5+u.id*.3)%1;ctx.strokeStyle=`rgba(220,240,255,${.5*(1-rp)*sub+.05})`;ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(x,y+3,30+26*rp,9+8*rp,0,0,TAU);ctx.stroke();
   ctx.save();ctx.translate(x,y+bob*sub);ctx.scale(sc,sc);
   if(sub<.5){ell(0,6,30,8,'rgba(0,0,0,.25)');for(const s of[-1,1])for(const k of[-14,12]){ell(k+s*3,4,5,7,dk);}}
   // body (only the back shows in the water)
   ctx.save();if(sub>=.5){ctx.beginPath();ctx.rect(-60,-60,120,58);ctx.clip();}
   ell(-f*4,-8,28,17,body);ell(-f*6,-14,20,8,lt);
+  // alpha: no clothes, just natural markings (old pale battle scars across its back)
+  if(A){ctx.strokeStyle='rgba(246,236,250,.9)';ctx.lineWidth=1.7;ctx.lineCap='round';ctx.beginPath();for(const[a,b,c,d]of[[-16,-21,-8,-16],[-9,-24,-1,-18],[-2,-23,5,-17]]){ctx.moveTo(f*a,b);ctx.lineTo(f*c,d);}ctx.stroke();ctx.lineWidth=1;}
   // head + muzzle (mouth opens in a big yawn)
   const hx=f*22,hy=-12;ell(hx,hy,15,13,body);
   if(yw>.05){poly([hx+f*6,hy+2,hx+f*30,hy-6-yw*14,hx+f*30,hy+12+yw*10,hx+f*6,hy+8],pink);ctx.fillStyle='#fff';for(const t of[-1,1])ctx.fillRect(hx+f*24-2,hy+(t<0?-5-yw*11:9+yw*7),4,5);}
@@ -2192,14 +2194,47 @@ function drawHippo(u){const x=u.x,y=u.y,f=u.face||1,sub=clamp(u.sub||0,0,1),bob=
   ctx.restore();
   // eyes + ears always visible
   ell(hx-f*2,hy-12,5,5,'#fff');ell(hx-f*1,hy-12,2.4,2.6,'#222');ell(hx-f*10,hy-15,4,5,dk);ell(hx-f*10,hy-15,2,2.5,pink);
-  // alpha crest: a little gold crown
-  poly([hx-f*8,hy-20,hx-f*6,hy-28,hx-f*3,hy-22,hx,hy-29,hx+f*2,hy-21],'#ffd23a');
+  // (queue 133: the alpha's little gold crown was removed: real animals wear no clothes or accessories)
   ctx.restore();
   if(sub>=.5){ctx.strokeStyle='rgba(225,245,255,.7)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(x,y-2,40,7,0,0,TAU);ctx.stroke();}
-  if(u.hp<u.maxHp&&!u.dead){const w=44;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(x-w/2,y-64,w,5);ctx.fillStyle=u.hp>u.maxHp*HP_A.th?'#e05050':'#ffd23a';ctx.fillRect(x-w/2,y-64,w*Math.max(0,u.hp/u.maxHp),5);}
-  if(!u.dead&&u.hp<=u.maxHp*HP_A.th){const t=G.t*3.2;for(let i=0;i<3;i++){const a=t+i*TAU/3;hnStar(x+f*22+Math.cos(a)*16,y-58+Math.sin(a)*4,3.2,i%2?'#ffe35a':'#fff7c0');}}}
+  if(u.hp<u.maxHp&&!u.dead){const w=44;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(x-w/2,y-64,w,5);ctx.fillStyle=!A||u.hp>u.maxHp*HP_A.th?'#e05050':'#ffd23a';ctx.fillRect(x-w/2,y-64,w*Math.max(0,u.hp/u.maxHp),5);}
+  if(A&&!u.dead&&u.hp<=u.maxHp*HP_A.th){const t=G.t*3.2;for(let i=0;i<3;i++){const a=t+i*TAU/3;hnStar(x+f*22+Math.cos(a)*16,y-58+Math.sin(a)*4,3.2,i%2?'#ffe35a':'#fff7c0');}}}
 FAUNA_ART.add('hippo');
 {const _df=drawFauna;drawFauna=function(u){if(u.species==='hippo'){drawHippo(u);return;}return _df.apply(this,arguments);};}
+// ======================= queue 134: more hippos in the savanna water (regular hippos share each watering hole) =======================
+// Each watering hole used to hold just its alpha hippo (2 hippos in all). Now HR134.per REGULAR hippos wallow beside each alpha, so every
+// pond has twice the hippos (1 -> 2; 2 -> 4 overall). The alphas are unchanged. Regular hippos are a separate species ('rhippo') so none
+// of the alpha rules touch them: they are smaller (x1), grey-brown with no scars, peaceful (they never bite the dragon and never fight
+// the crocodiles; crocs don't hunt them either), have no "too big to swallow" rule, and don't count for Hippo Hero.
+// Hurt or singed, they grunt, splash and dive to the far side of the pool. A lost one is replaced about 2 minutes later once the dragon
+// is more than 900 px from that pond (checked once a second; units aren't saved, so a loaded game simply starts with a full pod).
+const HR134={per:1,hp:40,sp:22,flee:55,back:120,far:900};
+FAUNA.rhippo={hp:HR134.hp,sp:HR134.sp,flee:0,zone:'savanna'};HEAL.rhippo=30;FOOD.rhippo=45;
+let HR_T=[],HR_CK=0;
+function hrSpawn(i,k){const H=WHOLES[i],a=1.3+k*2.1+i,r=.32,x=H.x+Math.cos(a)*H.rx*r,y=H.y+Math.sin(a)*H.ry*r;
+  const u=mkUnit('animal',x,y,{species:'rhippo',wild:true,zone:'savanna',hole:i,hrK:k,hp:HR134.hp,maxHp:HR134.hp,free:true,t:R(0,3),jt:0,
+    home:{x:H.x-H.rx,y:H.y-H.ry,w:H.rx*2,h:H.ry*2},face:rnd()<.5?1:-1,st:'wallow',yawn:0,sub:1});units.push(u);return u;}
+function hrInit(){HR_T=[];HR_CK=0;if(typeof WHOLES==='undefined')return;for(let i=0;i<WHOLES.length;i++){HR_T[i]=0;for(let k=0;k<HR134.per;k++)hrSpawn(i,k);}}
+function hrUpd(u,dt){const H=WHOLES[u.hole];if(!H)return;u.t-=dt;u.yawn=Math.max(0,(u.yawn||0)-dt);u.anim=(u.anim||0)+dt*.4;
+  const inHole=inWHole1(H,u.x,u.y,1);u.sub+=((inHole?1:0)-u.sub)*Math.min(1,dt*3);
+  if((u.burn>0||(u.hitT&&G.t-u.hitT<.2))&&u.st!=='dive'){u.st='dive';u.yawn=.8;const a=Math.atan2(u.y-D.y,u.x-D.x);u.tgt={x:H.x+Math.cos(a)*H.rx*.5,y:H.y+Math.sin(a)*H.ry*.5};
+    if(dist(u,D)<1300)float(u.x,u.y-44,'*SPLOOSH* The hippo dives away!','#d8e8ff');puff(u.x,u.y,5,'rgba(200,230,255,',40,4);}
+  const sp=u.st==='dive'?HR134.flee:HR134.sp;
+  if(!u.tgt||u.t<=0&&u.st!=='dive'){u.st='wallow';u.t=R(3,8);const a=R(0,TAU),r=R(.1,.55);u.tgt={x:H.x+Math.cos(a)*H.rx*r,y:H.y+Math.sin(a)*H.ry*r};if(rnd()<.2)u.yawn=1;}
+  if(moveTo(u,u.tgt.x,u.tgt.y,u.st==='dive'?sp:12,dt)){u.tgt=null;u.st='wallow';}
+  // never wander out of its pond
+  const ex=Math.hypot((u.x-H.x)/H.rx,(u.y-H.y)/H.ry);if(ex>.85){u.x=H.x+(u.x-H.x)*.85/ex;u.y=H.y+(u.y-H.y)*.85/ex;}}
+{const _uw=updWild;updWild=function(u,dt){if(u.species==='rhippo'){hrUpd(u,dt);return;}return _uw.apply(this,arguments);};updWild._base=_uw._base;}
+{const _hu=hurtUnit;hurtUnit=function(u,d,src){if(u&&u.species==='rhippo'&&!u.dead)u.hitT=G.t;return _hu.apply(this,arguments);};}
+function hrMgr(){if(!G||typeof WHOLES==='undefined'||G.t<HR_CK)return;HR_CK=G.t+1;
+  const n=WHOLES.map(()=>0);for(const u of units)if(u.species==='rhippo'&&!u.dead&&n[u.hole]!=null)n[u.hole]++;
+  for(let i=0;i<WHOLES.length;i++){if(n[i]>=HR134.per){HR_T[i]=0;continue;}
+    if(!HR_T[i]){HR_T[i]=G.t+HR134.back;continue;}
+    const H=WHOLES[i];if(G.t>=HR_T[i]&&Math.hypot(D.x-H.x,D.y-H.y)>HR134.far){HR_T[i]=0;hrSpawn(i,n[i]);G.hrNew=(G.hrNew||0)+1;}}}
+{const _up=updParts;updParts=function(dt){const r=_up.apply(this,arguments);if(scene==='play'&&G&&!G.over)hrMgr();return r;};}
+{const _ng=newGame;newGame=function(o){const r=_ng.apply(this,arguments);hrInit();return r;};}
+FAUNA_ART.add('rhippo');
+{const _df=drawFauna;drawFauna=function(u){if(u.species==='rhippo'){drawHippo(u);return;}return _df.apply(this,arguments);};}
 // ======================= queue 79: wrecking the ancient jungle temple also gives a PERMANENT +10 max fire (once per game) =======================
 // On top of the 100 gold. Only the first wreck in a game counts (the temple is back every level, but the flag G.jtFire carries over levels and
 // is in saves). The bonus goes into D.fireBonus (same pool as the nest-egg fire), so it carries over castle levels and is saved. Small bottom alert.
@@ -2789,7 +2824,7 @@ RC_FORM.sol.push([-230,-30],[-230,30],[-260,-30],[-260,30],[-290,-30],[-290,30])
 // ===================== item 129: savanna elephants fight back + the WHITE ALPHA GUARDIAN ELEPHANT and his herd =====================
 // Family-friendly: trunk swats, tusk shoves and ground stomps (no gore).
 // 1) Any savanna elephant that gets hurt by the dragon stays cross for EL129.mad seconds and chases a dragon on the ground (up to EL129.madR px).
-// 2) One big white alpha elephant (gold head-crest) PATROLS the savanna with his herd on a random route: he walks to a random savanna
+// 2) One big white alpha elephant (extra big, white hide, long ivory tusks) PATROLS the savanna with his herd on a random route: he walks to a random savanna
 //    waypoint, picks a brand-new random one when he arrives (so the route is different every time), and the herd follows him.
 //    When he or any herd member is attacked (or the dragon lands near the herd) he TRUMPETS (rings + sound) and calls the herd to protect him.
 //    He uses the shared partTF turf-leader system (call, rally, fight, leash, calm down, a new leader ~60 s later once you fly away).
@@ -2872,14 +2907,16 @@ if(typeof REGION_SUB!=='undefined'&&REGION_SUB.savanna&&!/white elephant/.test(R
 {const _b=achBuild;achBuild=function(){const L=_b.apply(this,arguments);const a=L.find(q=>q.id==='al_elephant');
   if(a){a.name='Herd Guardian';a.how=`Defeat the white alpha elephant who patrols the savanna with his herd (a new one takes over about ${TF_NEWLEADER}s after, once you fly away)`;
     a.ok=()=>!!ACH.ev.al_elephant||achG('elBeaten')>0;a.rew=()=>`+${EL129.pts} points · gulp him for +${TF_L.elephant.heal} health`;}return L;};if(ACH.list)ACH.list=null;}
-// drawing: a big white elephant with a gold head-crest and a red-and-gold blanket; dizzy stars only once he is under 50% (edible)
+// drawing: a big white elephant (queue 133: no blanket, crest or gem any more: real animals wear nothing) marked out by its size,
+// its white hide, long curved ivory tusks and natural pale-pink mottling on the ears and trunk; dizzy stars only once he is under 50% (edible)
 function el129Draw(u){const x=u.x,y=u.y,f=u.face||1,W='#eef0f4',S='#cdd2dc';ctx.lineCap='round';
   const by=sjQuad(u,{bw:22,bh:13,leg:12,c:W,dk:S,lw:7});
-  ctx.fillStyle='#c0392b';ctx.fillRect(x-11,by-12,20,13);ctx.fillStyle='#ffd23a';ctx.fillRect(x-11,by+0,20,2.2);ctx.fillRect(x-11,by-12,20,2);
   ell(x+f*20,by-4,10,10,W);ell(x+f*14,by-3,7,11,S);
   ctx.strokeStyle=W;ctx.lineWidth=4.5;ctx.beginPath();ctx.moveTo(x+f*27,by);ctx.quadraticCurveTo(x+f*31,by+10,x+f*28+Math.sin(G.t*1.4+u.id*7)*3*f,by+16);ctx.stroke();
-  line(x+f*25,by+4,x+f*31,by+8,'#fff4c8',2.8);sjEye(x+f*23,by-6,1.4);line(x-f*22,by-2,x-f*24,by+8,'#aab0bc',1.6);
-  poly([x+f*16,by-12,x+f*19,by-19,x+f*21,by-13,x+f*23,by-19,x+f*25,by-12],'#ffd23a');ell(x+f*20.5,by-13,1.6,1.6,'#e8342a');}
+  ctx.strokeStyle='#fff4c8';ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(x+f*24,by+4);ctx.quadraticCurveTo(x+f*33,by+13,x+f*37,by+3);ctx.stroke();ctx.lineWidth=1; // long curved ivory tusk
+  for(const[a,b,r]of[[12.5,-7,2.2],[15,-1,1.7],[13,4,1.4],[16,-9,1.2]])ell(x+f*a,by+b,r,r*1.25,'#efc9cf');ell(x+f*26.5,by+2,1.8,1.4,'#efc9cf');ell(x+f*29,by+7,1.4,1.1,'#efc9cf'); // natural pink mottling
+  sjEye(x+f*23,by-6,1.4);line(x-f*22,by-2,x-f*24,by+8,'#aab0bc',1.6);
+}
 FAUNA_ART.add('elephant');
 {const _df=drawFauna;drawFauna=function(u){if(!(u&&u.species==='elephant'&&tfIsLeader(u)))return _df.apply(this,arguments);const L=TF_L.elephant;
   tfRings(u);if(tfRallied(u)){ctx.save();ctx.globalAlpha=.25;ell(u.x,u.y-10*L.scale,16*L.scale,9*L.scale,'#ffb347');ctx.restore();}
@@ -2957,3 +2994,124 @@ function szR(u){const r=u&&SZ131_R[u.species];if(!r)return 0;const L=typeof tfIs
 // stomps: reach the body edge too
 {const _s=doStomp;doStomp=function(){const r=_s.apply(this,arguments);const R0=DR.stompR;
   for(const u of units){const e=szR(u);if(!e||u.dead||u.inside)continue;const d=dist(u,D);if(d>=R0&&d<R0+e){hurtUnit(u,DR.stompDmg,'stomp');G.szStomp=(G.szStomp||0)+1;}}return r;};}
+
+// ======================= queue 133: real animals wear no clothes or accessories =======================
+// Every real animal is drawn bare: the white alpha elephant lost his red-and-gold blanket, gold crest and forehead gem, the alpha
+// hippos their little gold crowns (both above), the bulls their gold nose rings, cavalry horses their coloured saddle cloths, the
+// prince's white horse its heraldic caparison and head plume, the desert camel riders' camels their red-and-gold saddle blankets
+// and tassels, and the rich caravan's camels their striped blankets, tassels, bell and bridle. Alphas are told apart by size, colour
+// and natural markings instead. Fantasy creatures and humans keep their outfits; cargo (packs, the treasure chest) and the cart
+// horse's traces to its cart stay, since they are loads, not clothing.
+// The originals live in partBL/partF/partPR/partRC (not editable here), so these are the same functions minus the accessories.
+drawBull=function(u){const x=u.x,y=u.y,f=u.face,mad=u.bst==='paw'||u.bst==='charge',lift=animalLift(u),bob=u.bst==='charge'?Math.abs(Math.sin(u.anim))*2:0;
+  ell(x,y+2,13,4,'rgba(0,0,0,.25)');ctx.save();ctx.translate(0,-lift-bob);
+  const leg=u.bst==='paw'?Math.sin(u.anim)*3:Math.sin(u.anim)*1.2;
+  for(const lx of[-7,-3,4,8]){const sw=lx===8&&u.bst==='paw'?leg:Math.sin(u.anim+lx)*1.2;line(x+lx*f,y-4,x+lx*f+sw,y+1,'#2e1c10',2);}
+  ell(x,y-8,12,6.5,'#4a2c1a');ell(x-f*2,y-11,7,3,'#5c3820');ell(x-f*12,y-9,1.6,1.6,'#2e1c10');line(x-f*12,y-9,x-f*14,y-3,'#2e1c10',1.2);
+  const hx=x+f*12,hy=y-10;ell(hx,hy,5.5,4.6,'#3e2414');ell(hx+f*3.5,hy+2,3,2.4,'#7a5040');
+  ctx.strokeStyle='#f2e8cc';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(hx-2,hy-3);ctx.quadraticCurveTo(hx-6,hy-8,hx-3,hy-11);ctx.moveTo(hx+2,hy-3);ctx.quadraticCurveTo(hx+7,hy-7,hx+5,hy-11);ctx.stroke();ctx.lineWidth=1;
+  ell(hx+f*1.5,hy-1.5,1.2,1.2,mad?'#ff3a2a':'#111');
+  if(u.bst==='paw'){ctx.fillStyle='#ff4a3a';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText('!',x,y-28);}
+  if(u.burn>0)ell(x,y-8,9,5,'rgba(255,120,0,.55)');ctx.restore();
+  if(u.hp<u.maxHp)miniBar(x,y-34-lift,u.hp/u.maxHp,28);};
+drawCavalry=function(u){const x=u.x,y=u.y,f=u.face,g=Math.sin(u.anim*1.6);
+  ell(x,y+2,16,5,'rgba(0,0,0,.25)');for(const lx of[-8,-4,5,9])line(x+lx,y-7,x+lx+g*3*(lx>0?1:-1),y+1,'#3a2410',2.2);
+  ell(x,y-11,13,6,u.burn>0?'#a64':'#e8e2d4');ell(x+f*12,y-17,3.6,5.5,'#e8e2d4');ell(x+f*15,y-21,4.6,3,'#e8e2d4');ell(x+f*16,y-22,1,1,'#111');line(x-f*13,y-12,x-f*17,y-4,'#888',2.5);
+  rect(x-3,y-27,6,11,'#c8ccd4');ell(x,y-30,3.3,3.3,'#aab0ba');poly([x-3,y-33,x+3,y-33,x,y-38],u.colr);
+  if(u.cs==='charge')line(x-f*8,y-22,x+f*34,y-18,'#8a6a40',2.5);else line(x-f*4,y-20,x+f*20,y-44,'#8a6a40',2.2);
+  if(u.cs==='charge'){ctx.fillStyle='#ddd';ell(x+f*35,y-18,2.2,2.2,'#eee');}
+  if(u.banner)drawFlag(x-f*4,y-28,u);
+  if(u.hp<u.maxHp){rect(x-10,y-44,20,2.5,'#400');rect(x-10,y-44,20*u.hp/u.maxHp,2.5,'#e44');}};
+drawPrince=function(u){const c=u.prince||{},x=u.x,y=u.y,f=u.face||1,g=Math.sin(u.anim*1.6),s=1.45,ch=u.cs==='charge'||u.thrust>0,sh=u.shieldT>0;
+  ell(x,y+3,24,7,'rgba(0,0,0,.28)');
+  if(sh){ctx.strokeStyle=`rgba(255,230,140,${.5+.3*Math.sin(G.t*14)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x+f*16,y-34,18,26,0,0,TAU);ctx.stroke();}
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  for(const lx of[-8,-4,5,9]){const ex=lx+g*3*(lx>0?1:-1);line(lx,-7,ex,1,'#e4e0d6',2.4);ell(ex,1.2,1.4,.9,'#555');}
+  line(-f*13,-12,-f*17,-3,'#f2f0ea',3);ell(0,-11,13.5,6.4,u.burn>0?'#e0b090':'#fbfaf6');
+  
+  ell(f*12,-17,3.8,5.8,'#fbfaf6');ell(f*15.5,-21.5,4.8,3.1,'#fbfaf6');ell(f*16.6,-22.4,1,1,'#111');line(f*10,-22,f*11.5,-14,'#e6dcc0',2);
+  ctx.fillStyle=c.col;ctx.beginPath();ctx.moveTo(-f*1,-29);ctx.quadraticCurveTo(-f*10,-23+g,-f*12,-12);ctx.lineTo(-f*3,-14);ctx.closePath();ctx.fill();ctx.strokeStyle=c.trim;ctx.lineWidth=1;ctx.stroke();
+  rect(-3.6,-29,7.2,13,'#e2e7ee');rect(-3.6,-29,2,13,'#ffffff');rect(-3,-25,6,5,c.col);line(-3,-20.5,3,-20.5,c.trim,1);
+  ell(0,-32,3.5,3.5,'#e8ecf2');ell(f*1.2,-31.6,1.8,2,'#f0c8a0');
+  poly([-3.8,-34.5,3.8,-34.5,3.8,-38.4,1.9,-36.4,0,-39.6,-1.9,-36.4,-3.8,-38.4],'#ffd23a');ell(0,-35.6,.8,.8,'#e33');
+  if(ch){line(-f*6,-22,f*40,-19,'#d8c090',2.6);poly([f*40,-20.6,f*45,-19,f*40,-17.4],'#eef');poly([f*30,-19.5,f*22,-17,f*30,-15],c.col);}
+  else{line(-f*3,-18,f*18,-50,'#d8c090',2.2);poly([f*18,-50,f*12,-46,f*16.6,-47.8],'#eef');poly([f*16.4,-47,f*7,-44,f*14.6,-42.6],c.col);}
+  if(sh){ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(f*5,-31);ctx.lineTo(f*15,-31);ctx.lineTo(f*15,-22);ctx.lineTo(f*10,-15);ctx.lineTo(f*5,-22);ctx.closePath();ctx.fill();
+    ctx.fillStyle=c.col;ctx.beginPath();ctx.moveTo(f*6,-30);ctx.lineTo(f*14,-30);ctx.lineTo(f*14,-22.5);ctx.lineTo(f*10,-16.5);ctx.lineTo(f*6,-22.5);ctx.closePath();ctx.fill();drawCrest(f*10,-25,.75,c.crest,c.trim);}
+  else{ctx.fillStyle=c.trim;ctx.beginPath();ctx.moveTo(-f*2,-27);ctx.lineTo(-f*8,-27);ctx.lineTo(-f*8,-22);ctx.lineTo(-f*5,-18);ctx.lineTo(-f*2,-22);ctx.closePath();ctx.fill();ctx.fillStyle=c.col;ctx.fillRect(f>0?-7.4:2.6,-26.4,4.8,3.6);}
+  ctx.restore();
+  const ty=y-72,w=70;rect(x-w/2-1,ty-1,w+2,7,'#000');rect(x-w/2,ty,w,5,'#401010');rect(x-w/2,ty,w*Math.max(0,u.hp/u.maxHp),5,u.hp>u.maxHp*.3?'#ffc23a':'#ff5a3a');
+  txt(`👑 ${c.name||'Prince'}`,x,ty-5,11,'#fff4c0','center',true);if(u.hp<=u.maxHp*.3)txt('weak! gobble him!',x,ty+16,10,'#ffb08a','center',true);};
+drawCamelRider=function(u){const x=u.x,y=u.y,f=u.face||1,w=Math.sin(u.anim||0),b=Math.abs(w)*1.2,burn=u.burn>0,fur=burn?'#f60':'#d4a464';
+  ell(x,y+2,17,4,'rgba(0,0,0,.25)');if(u.dguard)ell(x,y+2,19,5,'rgba(255,220,120,.25)');
+  for(const lx of[-9,-5,6,10])line(x+lx*f,y-14,x+lx*f+w*(lx<0?3:-3),y,'#b8874a',2.4);
+  ell(x,y-17-b,15,7,fur);ell(x-2*f,y-23-b,7,6,fur);line(x+12*f,y-18-b,x+17*f,y-30-b,fur,4.5);ell(x+20*f,y-31-b,5.5,3.2,fur);
+  ell(x+18.5*f,y-33-b,1,1,'#222');ell(x+24.5*f,y-30.5-b,1,.8,'#6a4a2a');line(x-15*f,y-18-b,x-17*f,y-12-b+w,'#b8874a',1.5); // eye, nose, tail
+  
+  const ry=y-27-b;line(x+f,ry,x+4*f,ry+6,'#5a4a3a',1.8);
+  poly([x-3.6,ry-10,x+3.6,ry-10,x+4.4,ry,x-4.4,ry],burn?'#f60':'#e2cfa0');rect(x-3.6,ry-6,7.2,1.3,'#b0302a');
+  ell(x,ry-12,2.5,2.5,'#c99a70');ell(x,ry-14,3.4,2.2,'#f4ecd8');ell(f*.8+x,ry-15.2,2.2,1.2,'#e8dcc0');rect(x-f*3.4-.4,ry-14,1,3,'#f4ecd8');
+  if(u.cm==='bow'){const bx=x+f*3;ctx.strokeStyle='#7a4a1a';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(bx,ry-13);ctx.quadraticCurveTo(bx+f*5,ry-11,bx+f*2.5,ry-7);ctx.quadraticCurveTo(bx+f*5,ry-3,bx,ry-1);ctx.stroke();line(bx-(u.draw>0?f*2:0),ry-7,bx,ry-13,'#eee',.6);line(bx-(u.draw>0?f*2:0),ry-7,bx,ry-1,'#eee',.6);rect(x-f*4-1,ry-11,2,6,'#8a5a2a');}
+  else{const sw=u.swing>0?-1.2:0;ctx.strokeStyle='#dfe4ea';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x+f*3,ry-7);ctx.quadraticCurveTo(x+f*(9+sw*-3),ry-11+sw*3,x+f*(8+sw*-4),ry-16+sw*5);ctx.stroke();rect(x+f*3-1,ry-7.6,2,1.4,'#c9a227');rect(x-f*4-1,ry-11,2,6,'#8a5a2a');}
+  if(u.hp<u.maxHp){rect(x-9,y-56-b,18,2,'#400');rect(x-9,y-56-b,18*u.hp/u.maxHp,2,'#e44');}};
+{const _f=drawDesertFauna;drawDesertFauna=function(u){if(!(u&&u.rc&&u.species==='camel'))return _f.apply(this,arguments);const rc=u.rc;u.rc=0;let r;try{r=_f.apply(this,arguments);}finally{u.rc=rc;}
+  const x=u.x,y=u.y,b=Math.abs(Math.sin(u.anim||0))*1.5;
+  if(u.rcChest){rect(x-8,y-45-b,16,10,'#7a4a1a');rect(x-8,y-45-b,16,3,'#a0662a');rect(x-8.5,y-41.5-b,17,1.4,'#e8c050');rect(x-1.5,y-42-b,3,4,'#e8c050');
+      ell(x-4,y-46-b,2,1.4,'#ffd84a');ell(x+3,y-46.5-b,2,1.4,'#ffd84a');if(Math.sin(G.t*5)>.6)ell(x+R(-6,6),y-48-b,1.2,1.2,'#fff4b0');}
+  return r;};}
+// ======================= queue 136: knight hoard raids steal a FLAT 25% of the hoard at every tier =======================
+// Old per-tier shares (partRK raidShare): T1 20%, T2 25%, T3 30%, T4 35%, T5 40%, T6 45%, T7+ 50%. Now every tier carries off 25%
+// (raidTake still leaves at least 1 gold and takes at least 1). Tier still sets the champion's strength and escort size.
+// Guardian dragon rules (queue 69-72) are untouched: standing guardians still stop the grab, and beating or eating the champion brings it all back.
+const RK136={share:.25};
+raidShare=function(T){return RK136.share;};
+// ======================= queue 135: stolen raid gold that ESCAPES goes into King William's treasury =======================
+// Before: a champion who reached the gate just vanished with his sacks (and his purse), and escorts who retreated home took their
+// purses with them; none of it went anywhere. Now, on arrival at the castle gate, the stolen sacks + the champion's purse, and each escaped
+// raider's purse, are added to the treasury (the castle gold piles, like taxes and caravans), with a small "+N gold to the king's treasury" alert.
+const KT135={gap:1.2,gate:45};
+function kgTreasuryAdd(n){n=Math.floor(n||0);if(!(n>0)||typeof goldPiles==='undefined'||!goldPiles||!goldPiles.length)return 0;
+  const p=goldPiles.reduce((a,b)=>a.amt<=b.amt?a:b);p.amt+=n;G.kgRaidIn=(G.kgRaidIn||0)+n;G.kgPend=(G.kgPend||0)+n;
+  float(GATE.x,GATE.y-90,`+${n} gold to the king's treasury`,'#ffd84a');return n;}
+function kgPurse(u){if(!u||!u.rgT||u.rgDone)return 0;u.rgDone=true;const n=rgPurse(u.rgT,u.champ)+(u.rgP||0);u.rgP=0;return n;}
+{const _e=raidEscaped;raidEscaped=function(){const r=RAID.cur,ch=r&&r.champ;const loot=r?Math.floor(r.loot||0):0,purse=kgPurse(ch);const res=_e.apply(this,arguments);
+  const n=kgTreasuryAdd(loot+purse);G.kgChampEsc=(G.kgChampEsc||0)+1;
+  if(n>0&&G.banner&&String(G.banner.text||'').indexOf('returns to King William')>=0)G.banner.sub=`+${n} gold to the king's treasury (${loot} stolen${purse?` + ${purse} purse`:''}). The hoard is smaller.`;
+  return res;};}
+function kgEscCheck(u,wasGone){if(!wasGone&&u&&u.gone&&u.rgT&&!u.rgDone&&!u.champ&&dist(u,GATE)<KT135.gate){G.kgEscN=(G.kgEscN||0)+1;kgTreasuryAdd(kgPurse(u));}}
+{const _k=updKnight;updKnight=function(u,dt){const g=u&&u.gone;const r=_k.apply(this,arguments);kgEscCheck(u,g);return r;};}
+{const _a=updArcher;updArcher=function(u,dt){const g=u&&u.gone;const r=_a.apply(this,arguments);kgEscCheck(u,g);return r;};}
+{const _u=updParts;updParts=function(dt){const res=_u.apply(this,arguments);
+  if(scene==='play'&&G&&G.kgPend>0&&G.t-(G.kgToastT||-99)>KT135.gap){G.kgToastT=G.t;if(typeof showToast==='function')showToast(`👑 +${G.kgPend} gold to the king's treasury`);G.kgPend=0;}
+  return res;};}
+// ======================= queue 137: CASTLES are bigger, clearer icons on the minimap and the big M map =======================
+// Little castle silhouettes (two towers, a keep, crenellations, a gate and a pennant) with a soft halo and an outline, in place of the
+// old 6-10 px squares: Lumenspire Citadel light (white/silver, blue outline), Doomforge Citadel dark (black iron, ember outline),
+// King William's Castle Aldric in warm stone with a gold pennant, plus the two northern fortresses (Ironhold Gate light, Gorgrim War-Fort dark) a size smaller.
+// Size: minimap 13 px wide (forts 10), big map 26 px (forts 19). Drawn last, on top of the fog, roads and unit dots.
+const MAPC={mini:13,big:26,fort:.75,pal:{
+  L:{f:'#f4f6ff',s:'#c3cbe8',o:'#2c3c86',g:'#5a6aa8',fl:'#7fd0ff',h:'rgba(255,255,255,.45)'},
+  D:{f:'#2c2234',s:'#17111c',o:'#ff7a3a',g:'#ff5a20',fl:'#e0302a',h:'rgba(255,90,40,.35)'},
+  K:{f:'#e2d6b8',s:'#ab9c7c',o:'#3a2a10',g:'#4a3418',fl:'#ffd84a',h:'rgba(255,230,150,.45)'}}};
+function mapCastle(cx,cy,w,p,big){const h=w*.9,lw=big?1.5:1,tw=w*.27,top=cy-h*.55,bot=cy+h*.38,kw=w*.5;ctx.save();
+  ctx.fillStyle=p.h;ctx.beginPath();ctx.ellipse(cx,cy,w*.78,h*.72,0,0,TAU);ctx.fill();
+  const merl=(x,y,ww,n)=>{const m=ww/(2*n-1);for(let i=0;i<n;i++)ctx.rect(x+i*2*m,y-m*1.1,m,m*1.1);};
+  ctx.beginPath();
+  ctx.rect(cx-kw/2,cy-h*.3,kw,bot-(cy-h*.3));merl(cx-kw/2,cy-h*.3,kw,3);           // keep wall
+  ctx.rect(cx-w/2,top,tw,bot-top);merl(cx-w/2,top,tw,2);                           // left tower
+  ctx.rect(cx+w/2-tw,top,tw,bot-top);merl(cx+w/2-tw,top,tw,2);                     // right tower
+  ctx.fillStyle=p.f;ctx.fill();ctx.strokeStyle=p.o;ctx.lineWidth=lw;ctx.lineJoin='round';ctx.stroke();
+  ctx.fillStyle=p.s;ctx.fillRect(cx+w/2-tw*.45,top+.5,tw*.45-lw*.5,bot-top-1);ctx.fillRect(cx-kw/2+lw*.5,bot-h*.12,kw-lw,h*.12-lw*.5);   // shading
+  const gw=kw*.42,gh=h*.32;ctx.fillStyle=p.g;ctx.beginPath();ctx.moveTo(cx-gw/2,bot);ctx.lineTo(cx-gw/2,bot-gh+gw/2);ctx.arc(cx,bot-gh+gw/2,gw/2,Math.PI,0);ctx.lineTo(cx+gw/2,bot);ctx.closePath();ctx.fill(); // gate
+  if(big){ctx.fillStyle=p.g;for(const sx of[-1,1])ctx.fillRect(cx+sx*(w/2-tw/2)-.8,top+h*.22,1.6,h*.14);}                       // tower windows
+  const px=cx,py=cy-h*.3-w*.09;ctx.strokeStyle=p.o;ctx.lineWidth=big?1.2:.8;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py-h*.38);ctx.stroke(); // pennant
+  ctx.fillStyle=p.fl;ctx.beginPath();ctx.moveTo(px,py-h*.38);ctx.lineTo(px+w*.26,py-h*.3+Math.sin(G.t*4)*.6);ctx.lineTo(px,py-h*.22);ctx.closePath();ctx.fill();
+  ctx.restore();}
+function mapCastles(mmx,mmy,mmw,big){const s=mmw/(WX1-WX0),X=x=>mmx+(x-WX0)*s,Y=y=>mmy+(y-WY0)*s,W=big?MAPC.big:MAPC.mini,P=MAPC.pal;
+  if(typeof NR_TOWNS!=='undefined')for(const [n,k] of [['Ironhold Gate','L'],['Gorgrim War-Fort','D']]){const t=NRT(n);if(t&&(big?seen(t.x,t.y):true))mapCastle(X(t.x),Y(t.y),W*MAPC.fort,P[k],big);}
+  if(typeof NR_CC!=='undefined')for(const k in NR_CC){const c=NR_CC[k];mapCastle(X(c.x),Y(c.y),W,P[k],big);}
+  mapCastle(X(CASTLE.x),Y(CASTLE.y)+(big?2:1),W,P.K,big);G.mapCastleN=(G.mapCastleN||0)+1;
+  // the princess and the dragon dot stay on top of the icons
+  if(typeof PR!=='undefined'&&PR.state==='tower'){const pb=big?5:2.4;ell(X(PR.x),Y(PR.y),pb+1.5,pb+1.5,'#fff');ell(X(PR.x),Y(PR.y),pb,pb,'#f6c');}
+  ell(X(D.x),Y(D.y),big?6:4,big?6:4,Math.floor(G.t*4)%2?'#f33':'#ff0');}
+{const _m=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_m.apply(this,arguments);try{mapCastles(mmx,mmy,mmw,big);}catch(e){}return r;};}
