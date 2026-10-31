@@ -1313,3 +1313,28 @@ On an iPhone held upright, the main menu used to start under the notch, so its t
 - Checked the whole game: only the player dragon has hunger and can starve. NPC "belly" only changes what they want to do (hunt, graze) and never costs health, so no NPC can starve. No code change was needed; a test (t178) now guards this.
 
 **Test note**: the Viking "ship returns to its post" check (t156) failed now and then, on the old build too. A wandering giant octopus or squid sometimes parked its no-go circle over the ship's route home, and the ship waits outside such circles by design. The test now moves the sea bosses out of the way while it checks the trip home. The game itself is unchanged.
+
+## Batch I: ambush pythons (175), whale size (179/179a), caravan respawn (165a), Viking ships route round sea bosses (156s)
+
+**Ambush pythons on trees and ruins (175)**
+- About half the jungle pythons now coil around something: up to 2 per ruin site wrap round a ruin pillar, and roaming ones wrap round a jungle tree.
+- A coiled python stays on its tree or pillar. When the dragon comes within 170 px, whether flying or on the ground, it rears back (a 0.35 s warning, with a hiss) and lunges.
+- A lunge hits for 4 damage (3 on easy, 5 on hard). The python then recoils back to its anchor and waits 2.6 s (3.4 s on easy) before it can lunge again.
+- If its tree burns or its pillar is smashed, the python uncoils and becomes a normal python. You can still bite it and eat it.
+
+**Whale vs dragon size (179/179a)**
+- Measured drawn lengths: elephant 134 px, dragon 309 px, whale 299 px, so the dragon was slightly bigger than the whale.
+- Whales are now drawn 9% larger (about 326 px), so the dragon is about 95% of a whale and still about 2.3 times an elephant. The dragon's own size is unchanged.
+
+**Rich caravan respawn (165a)**
+- A destroyed rich caravan now comes back after 6 minutes on normal and easy, and 4 minutes on hard.
+
+**Viking ships never stall on the way home (156s)**
+- The giant octopus and squid wander, and Viking ships keep out of a circle around each one (141aa). Sometimes that circle drifted over a ship's route home or over its berth, and the ship circled in place for ever.
+- A ship heading home that makes no progress for 5 s now:
+  - leaves a boss circle by the most direct way if it is inside one;
+  - sails round the edge of a circle that blocks its route, on open water, taking the shorter clear way;
+  - waits just outside if its berth itself is covered, then docks once the boss moves on; if the boss stays on the berth for 20 s, the ship anchors in open water just outside the circle, then sails on to its berth once the boss has gone;
+  - plans its route home again if it lost its path or if land is in the way.
+- Ships still never fight the sea bosses or enter their circles on purpose.
+- A new test, tvk156s, covers these cases: an octopus pinned on the coast corner, a ship starting inside a circle, a boss that leaves the berth, a boss that stays on the berth (the ship anchors outside, then docks when it finally leaves), and six homeward runs with the bosses wandering freely. The old build failed two of these cases; the new build passes all of them. The original t156 return check (t156u, with no boss parking) also passes again.

@@ -11826,6 +11826,9 @@ vkHireStep=function(){const ev=G.hard?VK.hEvery:VK.every,cost=G.hard?VK.hCost:VK
   const g=vkSpawnFleet();const where=g&&g.role==='gar'?'to guard the castle lake':g&&g.role==='lake'?'to patrol the lake':'to patrol the coast';
   if(!vkQuiet()){G.banner={text:'⚔️ King William hired Viking mercenaries!',sub:`A Viking warship sails up from the south ${where} · his treasury passed ${m*ev} gold (${cost} gold)`,t:4.5};G.vkAlerts=(G.vkAlerts||0)+1;}else G.vkQuietHires=(G.vkQuietHires||0)+1;};
 
+// ======================= queue 165a: rich caravan respawn 360 s (normal, easy) / 240 s (hard); first spawn stays 6 s =======================
+try{Object.defineProperty(RCV,'respawn',{get(){return G&&G.hard?240:360;},set(v){},configurable:true});}catch(e){}
+
 // ======================= queue 171: the lair gold pile grows ~2.5x slower =======================
 // Every size step now needs 2.5x the gold: stages at 0 / 62 / 200 / 500 (were 0 / 25 / 80 / 200); the size curve is the same
 // power-0.55 (about square-root) curve stretched 2.5x, so the pile reaches its old full size at 650 gold (was 260) and tops out ~1,120 (was ~450).
@@ -11894,6 +11897,59 @@ if(typeof tgMake==='function'){const _tm=tgMake;tgMake=function(u){const r=_tm.a
 // Any existing scaling (hard-mode G.dmgMul, boss-level scaling) still multiplies on top inside hurtDragon.
 const SW177={normal:1.5,hard:1.75,hits:0};
 {const _hd=hurtDragon;hurtDragon=function(d,src){if(src==='sandworm'&&G&&!G.easy){d*=G.hard?SW177.hard:SW177.normal;SW177.hits++;}return _hd.call(this,d,src);};}
+
+// ======================= queue 175: ambush pythons coiled around trees and ruins =======================
+// About half the jungle pythons (chosen by their id) coil up: at most 2 per ruin site round a ruin pillar, and roaming ones round a jungle tree.
+// A coiled python stays wrapped round its anchor; when the dragon comes within 170 px - flying or on the ground - it rears back (0.35 s
+// warning), lunges out, hits for 4 (easy 3, hard 5; G.dmgMul on top) and recoils back to its anchor, then waits 2.6 s (easy 3.4 s).
+// If the tree burns down or the pillar is smashed it uncoils and becomes a normal python. Bites (173/173a) wear it down and eat it.
+const PY175={perSite:2,r:170,reach:150,dmg:4,dmgEasy:3,dmgHard:5,cd:2.6,cdEasy:3.4,warn:.35,strike:.22,back:.45,coiled:0,lunges:0,hits:0};
+function py175Anchor(u){if(u.ruin&&typeof rpPieces==='function'){if(units.filter(o=>o!==u&&!o.dead&&o.py175&&o.ruin===u.ruin).length>=PY175.perSite)return null;let best=null,bd=1e9;for(const p of rpPieces()){if(p.site!==u.ruin-1||!rpLive(p)||p.kind!=='pillar')continue;
+    if(units.some(o=>o!==u&&!o.dead&&o.py175&&o.py175.k==='ruin'&&o.py175.i===p.i))continue;const d=Math.hypot(p.x-u.x,p.y-u.y);if(d<bd){bd=d;best=p;}}
+    if(best)return {k:'ruin',i:best.i,x:best.x,y:best.y};return null;}
+  // Roaming pythons: the jungle canopy trees are decor objects (DECOR k:'jtree'), not the burnable forest trees.
+  let bt=null,bd=600;for(const t of DECOR){if(t.k!=='jtree'||t.gone)continue;const d=Math.hypot(t.x-u.x,t.y-u.y);if(d>=bd)continue;
+    if(units.some(o=>o!==u&&!o.dead&&o.py175&&o.py175.t===t))continue;bd=d;bt=t;}
+  return bt?{k:'tree',t:bt,x:bt.x,y:bt.y}:null;}
+function py175Live(a){if(a.k==='tree')return !a.t.gone;const p=rpPieces().find(q=>q.i===a.i);return !!p&&rpLive(p);}
+function py175Pick(u){if(u.py175!==undefined)return;if(u.ruin&&Math.floor((u.id||0)*1000)%2!==0){u.py175=null;return;}const a=py175Anchor(u);u.py175=a?Object.assign(a,{st:'coil',t0:0,cd:1}):null;
+  if(u.py175){u.x=a.x;u.y=a.y+4;PY175.coiled++;}}
+function py175Upd(u,dt){const a=u.py175;if(!py175Live(a)){u.py175=null;u.home={x:u.x-300,y:u.y-200,w:600,h:400};float(u.x,u.y-30,'The python slithers off!','#c8e090');return false;}
+  u.anim=(u.anim||0)+dt*3;a.cd-=dt;a.t0+=dt;u.burn=u.burn||0;const ax=a.x,ay=a.y+4,dd=Math.hypot(D.x-ax,D.y-ay),E=G.easy,H=G.hard;
+  if(a.st==='coil'){u.x=ax;u.y=ay;u.face=D.x<ax?-1:1;if(dd<PY175.r&&a.cd<=0&&!(u.dizzy>0)&&!D.dead){a.st='warn';a.t0=0;float(ax,ay-40,'Hssss!','#c8e090');}}
+  else if(a.st==='warn'){u.x=ax;u.y=ay;if(a.t0>=PY175.warn){a.st='strike';a.t0=0;a.ang=Math.atan2(D.y-ay,D.x-ax);PY175.lunges++;}}
+  else if(a.st==='strike'){const k=Math.min(1,a.t0/PY175.strike),L=Math.min(PY175.reach,dd)*k;u.x=ax+Math.cos(a.ang)*L;u.y=ay+Math.sin(a.ang)*L;
+    if(k>=1){const hit=Math.hypot(D.x-u.x,D.y-u.y)<70;if(hit){const dm=E?PY175.dmgEasy:H?PY175.dmgHard:PY175.dmg;hurtDragon(dm,'python');PY175.hits++;
+        float(D.x,D.y-90,(D.alt>.3?'Python lunge snags you in the air! -':'Python lunge! -')+dm,'#ffb0a0');}
+      a.st='back';a.t0=0;a.hx=u.x;a.hy=u.y;}}
+  else if(a.st==='back'){const k=Math.min(1,a.t0/PY175.back);u.x=a.hx+(ax-a.hx)*k;u.y=a.hy+(ay-a.hy)*k;if(k>=1){a.st='coil';a.cd=E?PY175.cdEasy:PY175.cd;}}
+  return true;}
+{const _w=updWild;updWild=function(u,dt){if(u&&u.species==='python'&&!u.dead){try{py175Pick(u);if(u.py175&&py175Upd(u,dt))return;}catch(e){u.py175=null;}}return _w.apply(this,arguments);};Object.assign(updWild,_w);}
+function py175Draw(u){const a=u.py175,ax=a.x,ay=a.y+4,f=u.face||1,top=a.k==='tree'?34:28,ext=a.st==='strike'||a.st==='back';
+  ell(ax,ay+2,13,4,'rgba(0,0,0,.18)');
+  // coils wrapped round the trunk / pillar
+  for(let i=0;i<4;i++){const yy=ay-4-i*(top/4),w=11-i*.6;ctx.strokeStyle=i%2?'#5e6e24':'#6a7a2a';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(ax,yy,w,3.2,0,.1,Math.PI-.1);ctx.stroke();
+    ell(ax-w*.5,yy+2,1.6,1.2,'#3a4a14');ell(ax+w*.4,yy+2.4,1.6,1.2,'#3a4a14');}
+  // neck from the top coil to the head
+  const hx0=ax+f*8,hy0=ay-4-top+6;let hx,hy;if(ext){hx=u.x;hy=u.y-14;}else if(a.st==='warn'){hx=ax-f*6;hy=hy0-12;}else{hx=ax+f*14+Math.sin(G.t*2+u.id)*2;hy=hy0-4+Math.sin(G.t*3+u.id)*2;}
+  ctx.strokeStyle='#6a7a2a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(hx0,hy0);ctx.quadraticCurveTo((hx0+hx)/2,Math.min(hy0,hy)-10,hx,hy);ctx.stroke();
+  const ff=ext?(Math.cos(a.ang||0)<0?-1:1):f;ell(hx+ff*2,hy,4.5,3.4,'#7a8a34');sjEye(hx+ff*3,hy-1.5,.9);
+  if(a.st==='warn'||Math.sin(G.t*5+u.id*3)>.6)line(hx+ff*6,hy,hx+ff*10,hy+1,'#e03a3a',1);}
+{const _df=drawFauna;drawFauna=function(u){if(u&&u.species==='python'&&u.py175&&!u.dead){try{py175Draw(u);return;}catch(e){}}return _df.apply(this,arguments);};}
+{const _hs=hnStart;hnStart=function(p){if(p&&p.py175)return;return _hs.apply(this,arguments);};}
+
+// ---------- queue 178: no NPC starvation (audit) ----------
+// Hunger systems found: only the player's (part2 updHunger / HUNGER: hunger drains, then D.starveT -> starveHp damage, G.starved).
+// NPCs only have a "belly" for behaviour (partHN hunting: eating fills belly, belly slowly empties while resting); it never hurts them,
+// so there was no NPC hunger damage or starvation death to remove. Test t178 checks that hungry NPCs keep their health.
+
+// ---------- queue 179/179a: player dragon vs elephant vs whale ----------
+// Measured drawn length (same renderer, cam zoom 1): elephant 134 px, player dragon 309 px (DS 1.4, fixed: the dragon does not
+// grow in size with level or age; Glutton only adds max health), whale 299 px. So the dragon was 103% of the whale.
+// Fix without shrinking anything: whales (the biggest sea animal) are drawn 1.09x -> ~326 px, so the dragon is ~95% of the whale
+// and still ~2.3x the elephant. The dragon's own size is unchanged, so no camera change is needed.
+const WH179={k:1.09};
+{const _ds=drawSeaUnit;drawSeaUnit=function(u){if(u&&u.kind==='whale'){ctx.save();ctx.translate(u.x,u.y);ctx.scale(WH179.k,WH179.k);ctx.translate(-u.x,-u.y);try{return _ds.apply(this,arguments);}finally{ctx.restore();}}return _ds.apply(this,arguments);};Object.assign(drawSeaUnit,_ds);}
 
 // ======================= queue 182: HARD mode - King William's GOLDEN SHIELD block =======================
 // Hard only (normal/easy unchanged). The armoured King (on foot) carries a big golden shield. Sometimes he raises it:
@@ -12259,6 +12315,53 @@ function tt198On(){return !!(typeof TOUCH!=='undefined'&&TOUCH.on&&VH>VW*1.05);}
   try{return _dt.apply(this,arguments);}finally{delete ctx.setTransform;delete ctx.fillText;if(ctx.setTransform!==S)ctx.setTransform=S;if(ctx.fillText!==FT)ctx.fillText=FT;
     if(mw>0){TT198.w=Math.max(460,mw);TT198.h=mh;}TT198.k=k2;TT198.dy=dy;TT198.on=1;
     const g=TOUCH.tg;if(g)TOUCH.tg={k:k2,ox:(VW-VW*k2)/2,cx:VW/2,y0:(g.y0||112)+dy/k2};S.call(ctx,DPR,0,0,DPR,0,0);}};}
+
+// ======================= queue 156s: Viking ships never stall on the way home when a sea boss circle sits on the route =======================
+// The giant squid / octopus wander, and their kept-out circles (141aa, 900 px) can drift over a homeward ship or its next waypoint.
+// The ship used to spin in place for ever ("sail" mode never ended). Now, when a homeward ship makes no progress for 5 s:
+//  - inside a boss circle: it sails straight out of it (the nearest open water just past the edge),
+//  - outside, with a circle in the way: it adds a detour waypoint round the edge of the circle (open sea, clear straight line),
+//  - its berth itself inside a circle: it waits just outside and goes in once the boss has moved on (re-checked every 5 s);
+//    if the boss stays on the berth for 20 s, the ship anchors in open water just outside the circle instead, and sails on to its berth once the boss has gone,
+//  - path lost while still sailing home: it plans the route home again (or docks if already there).
+// Any other slow-down (land, other ships) is left to the existing 156b slide logic.
+const VH156={stall:5,pad:160,waitMax:20,exits:0,detours:0,waits:0,repaths:0,parks:0,unparks:0};
+function vh156Wet(s,g,x,y){if(s.kind==='vkwar'&&g&&g.role!=='sea')return inLake0(x,y)&&d2(x,y,LAKE.x,LAKE.y)<LAKE.rx;return inSea(x,y)&&!vkFant(x,y)&&seaD(x,y)>s.r*.8;}
+function vh156Clear(s,g,x0,y0,x1,y1){const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)/60));for(let i=1;i<=n;i++){const x=x0+(x1-x0)*i/n,y=y0+(y1-y0)*i/n;if(vkNoGo(x,y)||!vh156Wet(s,g,x,y))return false;}return true;}
+function vh156Ring(s,g,z,T,from){// best open-water point just outside circle z, reachable in a straight line from `from`, closest overall toward T
+  const a0=Math.atan2(from.y-z.y,from.x-z.x),R=z.r+VH156.pad;let best=null,bc=1e18;
+  for(let k=0;k<=24;k++)for(const sg of k?[1,-1]:[1]){const a=a0+sg*k*.13,x=z.x+Math.cos(a)*R,y=z.y+Math.sin(a)*R;
+    if(vkNoGo(x,y)||!vh156Wet(s,g,x,y))continue;if(!from.inside&&!vh156Clear(s,g,from.x,from.y,x,y))continue;
+    if(from.inside)return {x,y,vh:1}; // leaving a circle: the most direct way out (moves away from the boss from the first step)
+    const c=Math.hypot(x-from.x,y-from.y)+Math.hypot(T.x-x,T.y-y);if(c<bc){bc=c;best={x,y,vh:1};}}return best;}
+function vh156Arc(s,g,z,from,T){// waypoints round circle z (open water just outside its edge) from `from` to where T is in view; the shorter clear way round
+  const R=z.r+VH156.pad,a1=Math.atan2(from.y-z.y,from.x-z.x),a2=Math.atan2(T.y-z.y,T.x-z.x);let best=null;
+  for(const dir of [1,-1]){let sp=dir*(a2-a1);sp=((sp%TAU)+TAU)%TAU;const n=Math.max(1,Math.ceil(sp/.35)),P=[];let ok=true,px=from.x,py=from.y;
+    for(let i=0;i<=n&&ok;i++){const a=a1+dir*sp*i/n,x=z.x+Math.cos(a)*R,y=z.y+Math.sin(a)*R;if(vkNoGo(x,y)||!vh156Wet(s,g,x,y)||!vh156Clear(s,g,px,py,x,y))ok=false;else{P.push({x,y,vh:1});px=x;py=y;}}
+    if(ok&&!vkNearBoss(T.x,T.y)&&!vh156Clear(s,g,px,py,T.x,T.y))ok=false;
+    if(ok&&(!best||P.length<best.length))best=P;}
+  return best;}
+function vh156Step(s,g,dt){const B=vkBerth(g.role,g.slot);
+  if(!s.path||!s.path.length){if(d2(s.x,s.y,B.x,B.y)<80){s.path=null;g.mode='aboard';return;}s.path=vkPath(s.x,s.y,B);VH156.repaths++;g.vh={p:null,b:1e9,t:0};return;}
+  const p=s.path[0],h=g.vh||(g.vh={p:null,b:1e9,t:0}),d=d2(s.x,s.y,p.x,p.y);
+  if(h.wt&&!vkNearBoss(B.x,B.y))h.wt=0;
+  if(h.p!==p){h.p=p;h.b=d;h.t=0;return;}if(d<h.b-20){h.b=d;h.t=0;return;}h.t+=dt;if(h.t<VH156.stall)return;h.t=0;h.b=1e9;
+  const zIn=vkNearBoss(s.x,s.y);
+  if(zIn){const q=vh156Ring(s,g,zIn,p,{x:s.x,y:s.y,inside:1});if(q){s.path.unshift(q);VH156.exits++;}return;}
+  const zT=vkNearBoss(p.x,p.y);
+  if(zT&&s.path.length===1){VH156.waits++;h.wt=(h.wt||0)+VH156.stall; // berth covered: wait outside, check again in 5 s
+    if(h.wt>=VH156.waitMax&&!p.vh){const q=vh156Ring(s,g,zT,B,{x:s.x,y:s.y});if(q){s.path=[q];h.wt=0;g.vhPark=1;VH156.parks++;}} // boss stays put: anchor in open water just outside its circle instead
+    return;}
+  if(zT){const A=vh156Arc(s,g,zT,{x:s.x,y:s.y},s.path[1]);if(A){s.path.splice(0,1,...A);VH156.detours++;}else VH156.waits++;return;} // a covered turning point (e.g. the coast corner): use open water just outside the circle instead
+  let zB=null;for(const z of vkZones()){const n=Math.ceil(Math.hypot(p.x-s.x,p.y-s.y)/60);for(let i=1;i<=n;i++){const x=s.x+(p.x-s.x)*i/n,y=s.y+(p.y-s.y)*i/n;if(d2(x,y,z.x,z.y)<z.r){zB=z;break;}}if(zB)break;}
+  if(zB){const A=vh156Arc(s,g,zB,{x:s.x,y:s.y},p);if(A){s.path.unshift(...A);VH156.detours++;}else VH156.waits++;return;}
+  // no circle in the way, but land is (a turning point was dropped earlier): plan the sea route home again (it re-adds the coast corner)
+  if(inSea(s.x,s.y)&&!vh156Clear(s,g,s.x,s.y,p.x,p.y)){const P=vkPath(s.x,s.y,B);if(P.length>s.path.length){s.path=P;VH156.repaths++;}}}
+function vh156Unpark(s,g,dt){// anchored outside a boss circle (park): once the berth is clear again, sail home to it
+  if(g.mode!=='aboard'||g.ship!==s||s.path){g.vhPark=0;return;}g.vhPk=(g.vhPk||0)+dt;if(g.vhPk<2)return;g.vhPk=0;
+  const B=vkBerth(g.role,g.slot);if(vkNearBoss(B.x,B.y))return;g.vhPark=0;if(d2(s.x,s.y,B.x,B.y)<80)return;
+  s.path=vkPath(s.x,s.y,B);g.mode='sail';g.vh=null;VH156.unparks++;}
+{const _s=updVkShip;updVkShip=function(s,dt){const r=_s.apply(this,arguments);try{if(s&&s.state!=='sink'&&!s.gone){const g=vkG(s.vkg);if(g&&g.mode==='sail'&&g.ship===s)vh156Step(s,g,dt);else if(g&&g.vhPark)vh156Unpark(s,g,dt);}}catch(e){}return r;};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
