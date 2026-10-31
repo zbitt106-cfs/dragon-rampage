@@ -4898,3 +4898,58 @@ function vh156Unpark(s,g,dt){// anchored outside a boss circle (park): once the 
   const B=vkBerth(g.role,g.slot);if(vkNearBoss(B.x,B.y))return;g.vhPark=0;if(d2(s.x,s.y,B.x,B.y)<80)return;
   s.path=vkPath(s.x,s.y,B);g.mode='sail';g.vh=null;VH156.unparks++;}
 {const _s=updVkShip;updVkShip=function(s,dt){const r=_s.apply(this,arguments);try{if(s&&s.state!=='sink'&&!s.gone){const g=vkG(s.vkg);if(g&&g.mode==='sail'&&g.ship===s)vh156Step(s,g,dt);else if(g&&g.vhPark)vh156Unpark(s,g,dt);}}catch(e){}return r;};}
+
+// ======================= queue 200-200g: LOAD on the Main Menu (directly below Continue) + Continue loads the NEWEST save =======================
+// 200/200a/200c/200e: the Main Menu now has its own "Load game" row directly below Continue. It opens the same Load screen as the
+// Pause menu's "Load Game" (200f: that row is still there): the Autosave plus the three save slots, 4 entries (an empty Autosave
+// now shows as empty instead of being left out). The old "All saves" side button on the Continue row is gone (Load replaces it).
+// 200g: Continue loads the MOST RECENT save, whichever of the Autosave and Slots 1-3 was saved last (it used to load only the autosave).
+// Like every load it starts the dragon at the lair. With no saves at all the Continue row is greyed out and opens the Load screen.
+// Menu rows: New game · Mode · Settings · Continue · Load game · Achievements. The six rows take the same height as the old five
+// (30 px apart instead of 36, rows 26 px tall), so nothing below moves and the menu still fits in iPhone portrait (198 scaling unchanged).
+const LD200={y0:112,p:30,h:26,cont:0,last:null,taps:0,keys:0};
+function ld200Newest(){let b=null;try{for(const s of svList())if(s&&s.raw&&s.info&&!s.info.old&&(!b||(s.info.when||0)>(b.info.when||0)))b=s;}catch(e){}return b;}
+as184Continue=function(){const s=ld200Newest();if(!s){pmOpen('load','title');pmSay('No saves yet: start a New game.');return false;}
+  const res=svLoad(s.key);if(res===true){try{pmClose();}catch(e){}paused=false;scene='play';pressed={};AS184.cont=(AS184.cont||0)+1;
+    G.as184Hurt=-99;G.as184Hit=-99;AS184.t=0;AS184.pend=null;LD200.cont++;LD200.last=s.key;
+    showToast(s.key==='dr_save_auto'?'📂 Continued from your autosave':`📂 Continued from ${s.name}`);return true;}
+  pmOpen('load','title');pmSay(res);return false;};
+// the Load screen always lists the Autosave first (empty or not), then Slots 1-3
+{const _sl=svList;svList=function(){const L=_sl.apply(this,arguments);
+  try{if(typeof PM!=='undefined'&&PM.on&&PM.scr==='load'&&L&&!L.some(s=>s.key==='dr_save_auto'))return [{key:'dr_save_auto',name:'Autosave',auto:true,raw:false,info:null}].concat(L);}catch(e){}return L;};}
+// drawing: the older layers draw 5 rows 36 px apart; their row drawing is moved onto the new 6-row grid (old row 4 Achievements -> row 5),
+// the old Continue/Load row 3 is skipped, and the new Continue (3) and Load game (4) rows are drawn here.
+function ld200Map(y){const r=y-LD200.y0;if(!(r>=-4&&r<5*36-2))return null;let i=Math.floor((r+4)/36);const o=r-i*36;if(i===3)return{skip:1};if(i===4)i=5;
+  return{y:LD200.y0+i*LD200.p+o*LD200.h/30};}
+{const _dt=drawTitle;drawTitle=function(){const sel=titleSel,_p=panel,_t=txt,FR=ctx.fillRect,SR=ctx.strokeRect;let dep=0;
+  titleSel=sel===5?4:sel>=3?-1:sel;
+  panel=function(x,y,w,h){if(dep)return _p.apply(this,arguments);const m=ld200Map(y);if(!m)return _p.apply(this,arguments);if(m.skip)return;dep++;try{return _p.call(this,x,m.y,w,h*LD200.h/30);}finally{dep--;}};
+  txt=function(s,x,y,size){if(dep)return _t.apply(this,arguments);const m=ld200Map(y);if(!m)return _t.apply(this,arguments);if(m.skip)return;
+    const a=[].slice.call(arguments);a[2]=m.y;a[3]=(size||16)*.94;dep++;try{return _t.apply(this,a);}finally{dep--;}};
+  ctx.fillRect=function(x,y,w,h){if(dep)return FR.apply(ctx,arguments);const m=ld200Map(y);if(!m||h>40)return FR.apply(ctx,arguments);if(m.skip)return;return FR.call(ctx,x,m.y,w,h*LD200.h/30);};
+  ctx.strokeRect=function(x,y,w,h){if(dep)return SR.apply(ctx,arguments);const m=ld200Map(y);if(!m||h>40)return SR.apply(ctx,arguments);if(m.skip)return;return SR.call(ctx,x,m.y,w,h*LD200.h/30);};
+  try{_dt.apply(this,arguments);}finally{titleSel=sel;panel=_p;txt=_t;delete ctx.fillRect;delete ctx.strokeRect;if(ctx.fillRect!==FR)ctx.fillRect=FR;if(ctx.strokeRect!==SR)ctx.strokeRect=SR;}
+  const T=TOUCH.tg;if(!T)return;
+  try{ctx.setTransform(DPR*T.k,0,0,DPR*T.k,DPR*T.ox,0);const W0=VW,s=ld200Newest();
+    const row=(i,label,size,col)=>{const y=T.y0+i*LD200.p,on=titleSel===i;panel(W0/2-230,y,460,LD200.h);if(on){ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;ctx.strokeRect(W0/2-230,y,460,LD200.h);}
+      txt(label,W0/2,y+18,size,on?'#ffd24a':col,'center');};
+    if(s){const i=s.info,md=i.hard?'Hard':i.easy?'Easy':'Normal';
+      row(3,`⟲  Continue  (${s.key==='dr_save_auto'?'autosave':s.name} · castle lvl ${i.lvl} · ${md} · ${svDur(i.playT)})`,13.5,'#9fe09f');}
+    else row(3,'⟲  Continue  (no saves yet)',15,'#888');
+    row(4,'📂  Load game  (Autosave + 3 save slots)',15,'#ddd');
+  }catch(e){}finally{ctx.setTransform(DPR,0,0,DPR,0,0);}};}
+// keyboard / gamepad: 6 rows. Runs right after the pad is read, before the old title code (which only knows 5 rows) sees the keys.
+function ld200Keys(){if(scene!=='title'||PM.on)return;
+  if(P('arrowdown')||P('s')){titleSel=Math.min(5,titleSel+1);delete pressed['arrowdown'];delete pressed['s'];LD200.keys++;}
+  if(P('arrowup')||P('w')){titleSel=Math.max(0,titleSel-1);delete pressed['arrowup'];delete pressed['w'];LD200.keys++;}
+  if(titleSel>=3&&P('enter')){delete pressed['enter'];LD200.keys++;if(titleSel===3)as184Continue();else if(titleSel===4)pmOpen('load','title');else pmOpen('ach','title');}
+  else if(titleSel>=4&&(P('arrowleft')||P('arrowright')||P('a')||P('d'))){delete pressed['arrowleft'];delete pressed['arrowright'];delete pressed['a'];delete pressed['d'];}}
+{const _pp=pollPad;pollPad=function(dt){const r=_pp.apply(this,arguments);try{ld200Keys();}catch(e){console.warn('200',e);}return r;};}
+{const _f=frameBody;frameBody=function(ts){try{ld200Keys();}catch(e){console.warn('200',e);}return _f.apply(this,arguments);};}
+// taps and mouse clicks on the 6-row grid (rows 0-2 are passed on to the older code at their old position)
+{const _tt=titleTap;titleTap=function(x,y){try{const g=TOUCH.tg,f=flipBtn();
+  if(g&&!(Math.hypot(x-f.x,y-f.y)<f.r*1.25)){const lx=(x-g.ox)/g.k,ly=y/g.k;
+    if(lx>g.cx-230&&lx<g.cx+230&&ly>=g.y0-3&&ly<g.y0+5*LD200.p+LD200.h+3){const i=clamp(Math.floor((ly-g.y0+2)/LD200.p),0,5);LD200.taps++;
+      if(i===3){titleSel=3;as184Continue();return true;}if(i===4){titleSel=4;pmOpen('load','title');return true;}if(i===5){titleSel=5;pmOpen('ach','title');return true;}
+      return _tt.call(this,x,(g.y0+i*36+15)*g.k);}}}catch(e){console.warn('200 tap',e);}
+  return _tt.apply(this,arguments);};}

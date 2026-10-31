@@ -1338,3 +1338,11 @@ On an iPhone held upright, the main menu used to start under the notch, so its t
   - plans its route home again if it lost its path or if land is in the way.
 - Ships still never fight the sea bosses or enter their circles on purpose.
 - A new test, tvk156s, covers these cases: an octopus pinned on the coast corner, a ship starting inside a circle, a boss that leaves the berth, a boss that stays on the berth (the ship anchors outside, then docks when it finally leaves), and six homeward runs with the bosses wandering freely. The old build failed two of these cases; the new build passes all of them. The original t156 return check (t156u, with no boss parking) also passes again.
+
+## Load on the Main Menu; Continue loads your newest save (queue 200-200g)
+- The Main Menu now has six rows: New game · Mode · Settings · **Continue** · **Load game** · Achievements. Load game is directly below Continue.
+- **Load game** opens the Load screen: the **Autosave** plus **Slots 1-3**, each with its date, castle level, play time and mode (empty ones say so). The Pause menu's **Load Game** opens the same screen.
+- **Continue** loads your **most recent save**, whichever of the Autosave and the three slots was saved last. It shows which one it will load (for example "Slot 2 · castle lvl 4 · Hard · 12m 05s"). Like every load, the dragon starts at its lair. With no saves yet the row is greyed out, and picking it opens the Load screen.
+- Keyboard and controller: Up/Down move through all six rows; Enter / A picks one. Tapping or clicking a row works too.
+- The six rows take the same space as the old five, so nothing below them moves and the menu still fits on an iPhone held upright.
+- Screenshots: screenshots/q200_menu_desk.png, q200_menu_iph.png (Main Menu), q200_pause_*.png (Pause menu), q200_load_menu_*.png and q200_load_pause_*.png (the Load screen from each menu).
