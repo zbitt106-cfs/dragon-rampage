@@ -1407,3 +1407,34 @@ On an iPhone held upright, the main menu used to start under the notch, so its t
 - Saving and loading while she waits keeps her at the lair, and the prince comes again.
 - Levels without a prince keep the old rule: bring her home and the level is won.
 - Screenshots: screenshots/q190_objective_desktop.png, screenshots/q190_objective_iphone.png, screenshots/q190_held_at_lair_desktop.png, screenshots/q190_held_at_lair_iphone.png, screenshots/q190_kingdom_claimed_desktop.png, screenshots/q190_kingdom_claimed_iphone.png.
+
+## Batch M: egg guardians, Elandor the Elf Champion and Grimtusk the Orc Warlord (192-192i)
+
+**Eggs moved inside:** the white egg (Lumenspire) and the black egg (Doomforge) used to sit in the courtyard, just inside the gate (castle centre +0,+40). They now sit **inside the keep doorway** (castle centre +0,-42). Every egg return (snatched back, guardian dragon lost, new game, loading a save) puts the egg at the new spot.
+
+**Elandor the Elf Champion** guards the white egg. He fights with **two swords** up close and fires **arrow volleys** at range (1 arrow on easy, 2 on normal, 3 on hard). He is **defensive**: he waits by the egg until the dragon comes close (520 px), chases within an 850 px leash, then walks back inside to his post.
+
+**Grimtusk the Orc Warlord** guards the black egg. He fights with **two giant axes** and **throws spinning axes** that fly back to his hands (1 on easy and normal, 3 on hard). He is **more aggressive and slightly stronger** than the elf: about +15% health and damage, he attacks more often, and he comes out after the dragon from 1,400 px away.
+- Normal and easy: he chases within a 1,500 px leash.
+- Hard: he chases while his castle is still on screen. Because the castle leaves the screen at about 1,000-1,100 px, which is less than the normal leash, he also keeps chasing anywhere within 2,250 px (1.5x the leash), so hard is never gentler than normal.
+- If the dragon is carrying the black egg, he chases with no leash to get it back.
+- **192i:** if the black egg is outside its spot (for example, when the raiders snatch it back and drop it at the Doomforge gate), he first walks to it, carries it back inside, and only then goes out to hunt the dragon.
+
+**Stats at castle level 1:**
+
+| | Health | Sword/axe hit | Arrow/axe hit | Swing every | Volley every | Comes out at | Leash |
+|---|---|---|---|---|---|---|---|
+| Elandor | 220 | 4 | 2.5 | 0.8 s | 2.4 s | 520 px | 850 px |
+| Grimtusk | 253 | 4.6 | 2.9 | 0.65 s | 1.9 s | 1,400 px | 1,500 px (hard: on screen or 2,250 px) |
+
+**Levelling (192h):** both champions scale exactly like the castle gate (260 hp, +80 per castle level, so x(1 + 80/260 per level)). On hard they also get the castle troops' x1.05 per level. Examples: level 5 on normal or easy is x2.23 (Elandor 491 hp, Grimtusk 564 hp), level 5 on hard is x2.71 (597 / 686), and level 9 on normal is x3.46 (762 / 876). Damage scales the same way.
+
+**Beating them:** they can never be eaten, but every bite hurts them. When beaten, they go dizzy and then vanish in a puff of smoke. They stay beaten, including through save and load, until:
+- the next castle level-up, or
+- their guardian dragon (white for Elandor, black for Grimtusk) is lost. That also puts the egg back inside the keep, even in the middle of a level.
+
+**How the guardian-dragon cycle works:** a hatched guardian dragon is only lost when your dragon falls. When that happens, its egg goes back inside its castle and the champion returns at full strength.
+
+**Hooks used:** the guardian-dragon loss transition (nrTick), nextLevel, newGame, svApply (save/load), eggReturn and eggPos (egg spot), tryEat, eatUnit (bite instead of eat), nrUpd, nrEggFx, and NR_DRAW. All of this is added code at the end of partNR.js.
+
+Screenshots: screenshots/q192_elf_champion_desktop.png, screenshots/q192_elf_champion_iphone.png, screenshots/q192_orc_warlord_axes_desktop.png, screenshots/q192_orc_warlord_axes_iphone.png, screenshots/q192_orc_fetches_egg_desktop.png, screenshots/q192_orc_fetches_egg_iphone.png.

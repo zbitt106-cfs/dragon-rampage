@@ -12570,6 +12570,153 @@ function h199Vig(){const n=nightAmt();if(n>.01||!GX.vig)return null;const f=1-n/
 // fix (found while testing 199): the croc's ripple ring could get a negative radius and throw, which stopped the frame from drawing. Draw the croc safely.
 const CROC_ERR={n:0,last:null};
 {const _dc=drawCroc;drawCroc=function(u){try{return _dc.apply(this,arguments);}catch(e){CROC_ERR.n++;if(!CROC_ERR.last)CROC_ERR.last={t:G&&G.t,id:u&&u.id,msg:String(e).slice(0,120)};try{ctx.globalAlpha=1;}catch(_){}}};}
+// ======================= queue 192-192i: egg guardians (the Elf Champion of Lumenspire, the Orc Warlord of Doomforge) =======================
+// 192  The eggs move from the castle courtyard (80 px in front of the keep, castle +0,+40) INTO the keep doorway (castle +0,-42, the keep's arched door).
+//      Each egg gets a named champion who stands beside it: Elandor the Elf Champion (two swords + arrow volleys: 1 easy / 2 normal / 3 hard) and
+//      Grimtusk the Orc Warlord (two giant axes + thrown axes that spin and come back: 1 easy / 1 normal / 3 hard). Never eaten (a bite only hurts);
+//      a beaten champion goes dizzy and puffs away like every realm fighter.
+// 192a/g Elandor waits by the egg until the dragon comes close (520), chases within a leash (850 around his post), then walks back inside.
+//      Grimtusk does not wait: he comes out from far away (1400), charges, attacks more often; leash 1500 on easy/normal; on HARD he chases until
+//      his castle is off-screen from the dragon. The castle leaves the screen ~1,000-1,100 px away on desktop and iPhone (less than his
+//      1,500 leash), so on HARD he also chases out to 1.5x his leash (2,250): he only turns back once BOTH are true. If the dragon carries his egg he chases it like the rescue party (up to 5,200 from the castle).
+// 192b/c/d A beaten champion stays beaten until (a) his guardian dragon dies (egg back inside, champion back) or (b) the next castle level.
+// 192f Grimtusk = Elandor +15% health and damage, shorter cooldowns, faster wind-up.
+// 192h Both scale exactly like the castle: x(1 + 80/260 per level) (the gate's +80 per level on 260) in every mode, and on HARD also the castle
+//      troops' per-level x1.05 (139c). Easy keeps its usual 0.55 damage-taken factor.
+// 192i If the black egg is not in its spot (the raiders "snatch it back" and drop it at the Doomforge gate), Grimtusk first walks to it,
+//      carries it back into the keep, and only then hunts the dragon.
+const G192={
+  W:{k:'W',cc:'L',sp:'elfchamp',name:'Elandor the Elf Champion',short:'Elandor',hp:220,sw:4,swCd:.8,swR:66,shot:2.5,vCd:2.4,vN:{easy:1,normal:2,hard:3},rng:460,
+     aggro:520,leash:850,spd:135,charge:1,chT:0,post:{x:44,y:8}},
+  B:{k:'B',cc:'D',sp:'orcwar',name:'Grimtusk the Orc Warlord',short:'Grimtusk',hp:253,sw:4.6,swCd:.65,swR:70,shot:2.9,vCd:1.9,vN:{easy:1,normal:1,hard:3},rng:480,
+     aggro:1400,leash:1500,spd:128,charge:1.7,chT:1.3,post:{x:-46,y:8}},
+  EGG_DY:-42,HARD_LEASH:1.5,SPAWN:2600,DESPAWN:3400,FAR:5200,FETCH_OFF:15,P:[],U:{W:null,B:null},stats:{volleys:0,shots:0,axes:0,axHits:0,slashes:0,bites:0,fetched:0,respawns:0,beaten:0},err:null};
+NR_EGG.W.dy=NR_EGG.B.dy=G192.EGG_DY;
+NRS.elfchamp={hp:220,sp:135,side:'L',dm:4,cd:.8,rng:460,sz:1.3,food:30};
+NRS.orcwar={hp:253,sp:128,side:'D',dm:4.6,cd:.65,rng:480,sz:1.45,food:34};
+for(const k of ['elfchamp','orcwar']){NR_SP.add(k);HEAL[k]=FOOD[k]=NRS[k].food;FAUNA[k]={hp:NRS[k].hp,sp:NRS[k].sp,zone:'nr'};}
+NR_NAMES.elfchamp='Elf champions';NR_NAMES.orcwar='Orc warlords';
+function g192Mode(){return G&&G.hard?'hard':(typeof EASY!=='undefined'&&EASY)?'easy':'normal';}
+function g192Mul(){const L=Math.max(1,(G&&G.lvl)||1);return (1+(80/260)*(L-1))*(G&&G.hard?Math.pow(HM.troopLv,L-1):1);}
+function g192MaxHp(k){return Math.round(G192[k].hp*g192Mul());}
+function g192Home(k){const c=NR_CC[G192[k].cc];return{x:c.x+NR_EGG[k].dx,y:c.y+G192.EGG_DY};}
+function g192Post(k){const h=g192Home(k),o=G192[k].post;return{x:h.x+o.x,y:h.y+o.y};}
+function g192Up(k){return G&&G['g192'+k]!=='down';}
+function g192Drop(k){return k==='B'&&G&&G.g192BdX?{x:G.g192BdX,y:G.g192BdY}:null;}
+// the black egg's position while it is dropped / being carried back by Grimtusk
+{const _ep=eggPos;eggPos=function(e){if(e&&e.k==='B'&&eggState('B')==='nest'){const d=g192Drop('B');if(d){const u=G192.U.B;if(u&&!u.dead&&u.hold)return{x:u.x,y:u.y-6};return d;}}return _ep.apply(this,arguments);};}
+function g192CastleOnScreen(k){const c=NR_CC[G192[k].cc],z=(cam&&cam.z)||1,hw=VW/z/2,hh=VH/z/2;
+  return D.x+hw>c.x-CC_W-40&&D.x-hw<c.x+CC_W+40&&D.y+hh>c.y-CC_H-300&&D.y-hh<c.y+CC_H+40;}
+function g192Respawn(k,why){const was=G['g192'+k];G['g192'+k]='up';G['g192hp'+k]=0;if(k==='B'){G.g192BdX=0;G.g192BdY=0;}
+  const u=G192.U[k];if(u&&!u.dead){u.hp=u.maxHp=g192MaxHp(k);u.st='back';}else G192.U[k]=null;
+  if(was==='down'){G192.stats.respawns++;G.g192Resp=(G.g192Resp||0)+1;if(why)showToast(why);}}
+function g192Spawn(k){const C=G192[k],p=g192Post(k),M=g192MaxHp(k),hp=G['g192hp'+k]>0?Math.min(M,G['g192hp'+k]):M,c=NR_CC[C.cc];
+  const u=nrSpawn(C.sp,p.x,p.y,{guardian:1,g192:k,role:'g192',home:{x:c.x-CC_W,y:c.y-CC_H,w:CC_W*2,h:CC_H*2},hp,maxHp:M,face:k==='W'?-1:1,cd:.5,vcd:1,st:'guard',axOut:0,hold:0});
+  u.hp=hp;u.maxHp=M;G192.U[k]=u;return u;}
+function g192Bite(f){const h0=f.hp,dm=Math.min(typeof btDmg==='function'?btDmg(f):BT173.dmg,f.hp+1);hurtUnit(f,dm,'bite');if(!(f.hp<h0-.01)&&!f.dead){f.hp=Math.max(0,h0-dm);if(f.hp<=0){f.hp=0;f.dead=true;f.nrKO=1;nrKO(f);}}
+  G192.stats.bites++;f.hitT=G.t;float(f.x,f.y-70,`Bite! -${Math.round(h0-f.hp)} (${G192[f.g192].short} can't be eaten)`,'#ffd27a');D.eatCD=Math.max(D.eatCD||0,D.alt<.3?.45:.9);D.eatT=.3;}
+{const _te=tryEat;tryEat=function(){if(!G||G.over||G.won||scene!=='play'||D.eatCD>0||D.princess||D.carry)return _te.apply(this,arguments);
+  const f=g192BiteTarget();if(!f)return _te.apply(this,arguments);let T=[];try{T=biteTargets();}catch(e){}
+  if(T.length&&T[0]!==f&&Math.hypot(T[0].x-D.x,T[0].y-D.y)<Math.hypot(f.x-D.x,f.y-D.y))return _te.apply(this,arguments);
+  if(tryGrab())return;g192Bite(f);};}
+// the champions carry the guardian flag (so no other eat rule can swallow them), which also hides them from biteTargets: find them here
+function g192BiteTarget(){const gr=D.alt<0.3,r=(gr?DR.eatRGround:DR.eatRAir)*1.3,mx=D.x+Math.cos(D.ang)*80,my=D.y+Math.sin(D.ang)*80;let best=null,bd=1e9;
+  for(const k of ['W','B']){const u=G192.U[k];if(!u||u.dead||!units.includes(u))continue;const dm=Math.hypot(u.x-mx,u.y-my),dd=Math.hypot(u.x-D.x,u.y-D.y),fa=Math.abs(angDiff(Math.atan2(u.y-D.y,u.x-D.x),D.ang));
+    if((dm<r||(dd<r+(gr?90:30)&&fa<BITE_ARC&&dd>20)||dd+12<r*.8)&&Math.min(dm,dd)<bd){bd=Math.min(dm,dd);best=u;}}return best;}
+{const _eu=eatUnit;eatUnit=function(u){if(u&&u.g192&&!u.dead){g192Bite(u);return;}return _eu.apply(this,arguments);};}
+// the dark raiders who snatch the black egg back drop it at the Doomforge gate; Grimtusk carries it back in (192i)
+{const _er=eggReturn;eggReturn=function(k,why){const rescue=k==='B'&&D.nrEgg==='B'&&G&&!G.over;const r=_er.call(this,k,rescue?'🛡️ The dark raiders snatched back the BLACK egg — they dropped it at the Doomforge gate':why);
+  if(rescue){const c=NR_CC.D;G.g192BdX=c.x+70;G.g192BdY=c.y+CC_H-70;G.g192Drops=(G.g192Drops||0)+1;}else if(k==='B'){G.g192BdX=0;G.g192BdY=0;}return r;};}
+function g192Volley(u,C,mul){const n=C.vN[g192Mode()],tz=heightOf();G192.stats.volleys++;
+  for(let i=0;i<n;i++){const off=(i-(n-1)/2)*26;
+    if(u.g192==='W'){nrShoot(u,D.x+off,D.y+off*.4,tz,'arrow',C.shot*mul,D);G192.stats.shots++;}
+    else{const tx=D.x+off,ty=D.y+off*.4;G192.P.push({x:u.x,y:u.y,z:30,tx,ty,tz,ph:'out',sp:430,a:0,dmg:C.shot*mul,u});u.axOut++;G192.stats.axes++;}}
+  u.bowT=.35;}
+function g192UpdP(dt){for(const p of G192.P){p.a+=dt*16;if(p.ph==='out'){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy),s=p.sp*dt;p.z+=(p.tz-p.z)*Math.min(1,dt*4);
+      if(d<=s){p.x=p.tx;p.y=p.ty;p.ph='back';if(!G.over&&!G.won&&Math.hypot(D.x-p.x,D.y-p.y)<55+(D.alt>.3?30:0)){hurtDragon(p.dmg,'orcwar');G192.stats.axHits++;}}
+      else{p.x+=dx/d*s;p.y+=dy/d*s;}}
+    else{const u=p.u;if(!u||u.dead){p.done=1;continue;}const dx=u.x-p.x,dy=u.y-p.y,d=Math.hypot(dx,dy),s=p.sp*1.15*dt;p.z+=(30-p.z)*Math.min(1,dt*4);
+      if(d<=s+8){p.done=1;u.axOut=Math.max(0,u.axOut-1);}else{p.x+=dx/d*s;p.y+=dy/d*s;}}}
+  if(G192.P.length)G192.P=G192.P.filter(p=>!p.done);}
+function g192Upd(u,dt){const k=u.g192,C=G192[k],mul=g192Mul(),post=g192Post(k),c=NR_CC[C.cc],alive=!G.over&&!G.won;
+  u.cd-=dt;u.vcd-=dt;if(u.bowT>0)u.bowT-=dt;if(u.swT>0)u.swT-=dt;if(u.chT>0)u.chT-=dt;if(u.nrSlowT>0)u.nrSlowT-=dt;
+  const slow=u.nrSlowT>0?.6:1,sp=C.spd*slow,dd=Math.hypot(D.x-u.x,D.y-u.y),carry=D.nrEgg===k;u.anim=(u.anim||0)+dt*8;
+  // 192i: the black egg is not in its spot -> fetch it first
+  const drop=g192Drop(k);
+  if(drop&&eggState(k)==='nest'&&!carry){u.st='fetch';
+    if(!u.hold){if(moveTo(u,drop.x,drop.y,sp,dt)||Math.hypot(u.x-drop.x,u.y-drop.y)<14){u.hold=1;float(u.x,u.y-80,C.short+' picks up the black egg!','#ffe0a0');}}
+    else{const h=g192Home(k);if(moveTo(u,h.x,h.y+14,sp*.9,dt)||Math.hypot(u.x-h.x,u.y-h.y-14)<14){u.hold=0;G.g192BdX=0;G.g192BdY=0;G192.stats.fetched++;G.g192Fetch=(G.g192Fetch||0)+1;
+        float(h.x,h.y-90,'The black egg is back in the keep!','#ffe0a0');u.st='guard';}}
+    return;}
+  u.hold=0;
+  let leashOK;if(carry&&k==='B')leashOK=Math.hypot(D.x-c.x,D.y-c.y)<G192.FAR;
+  else if(k==='B'&&G.hard)leashOK=g192CastleOnScreen(k)||Math.hypot(D.x-post.x,D.y-post.y)<C.leash*G192.HARD_LEASH;
+  else leashOK=Math.hypot(D.x-post.x,D.y-post.y)<C.leash;
+  const near=Math.hypot(D.x-post.x,D.y-post.y)<C.aggro||(carry&&k==='B')||(G.t-(u.hitT||-99)<2&&dd<C.leash);
+  if(!alive){if(u.st!=='guard')u.st='back';}
+  else if(u.st==='hunt'&&!leashOK){u.st='back';float(u.x,u.y-80,k==='W'?C.short+' heads back to guard the egg':C.short+' stomps back to his egg','#d8e8ff');}
+  else if(u.st!=='hunt'&&near&&leashOK){u.st='hunt';u.chT=C.chT;G.g192Out=(G.g192Out||0)+1;if(u.st0!==G.t)float(u.x,u.y-80,k==='W'?C.short+': "For the Light!"':C.short+': "GRAAAH!"','#fff2c0');u.st0=G.t;}
+  if(u.st==='hunt'){u.face=D.x>u.x?1:-1;const low=D.alt<.4,charge=u.chT>0?C.charge:1;
+    if(low&&dd<C.swR+40){if(dd>C.swR)moveTo(u,D.x,D.y,sp*charge,dt);else if(u.cd<=0){u.cd=C.swCd*R(.9,1.1);u.swT=.3;u.swS=(u.swS||0)^1;G192.stats.slashes++;hurtDragon(C.sw*mul,C.sp);}}
+    else{if(dd<C.rng&&u.vcd<=0&&(k==='W'||u.axOut===0)){u.vcd=C.vCd*R(.9,1.1);g192Volley(u,C,mul);}
+      if(low||dd>C.rng*.7)moveTo(u,D.x,D.y,sp*charge,dt);}
+    u.face=D.x>u.x?1:-1;}
+  else{if(moveTo(u,post.x,post.y,sp*.85,dt)||Math.hypot(u.x-post.x,u.y-post.y)<6){u.st='guard';u.face=D.x>u.x?1:-1;u.anim=0;}}
+  // stay inside the realm side: never past his castle's far edge of the map play area
+  if(typeof nrClamp==='function')nrClamp(u);}
+{const _nu=nrUpd;nrUpd=function(u,dt){if(u&&u.g192){try{g192Upd(u,dt);}catch(e){G192.err=G192.err||String(e).slice(0,160);}return;}return _nu.apply(this,arguments);};}
+function g192Tick(dt){if(scene!=='play'||!G)return;
+  for(const k of ['W','B']){if(G['g192'+k]===undefined)G['g192'+k]='up';
+    // 192b/c/d: his guardian dragon died (the guardian count dropped to 0 while not hatching) -> egg already back inside via eggReturn, champion back
+    const gd=G['nrGd'+k]||0,pk='g192pg'+k;if((G[pk]||0)>0&&gd<=0){g192Respawn(k,k==='W'?'🧝 The white guardian is gone: Elandor the Elf Champion stands guard over the white egg again':'🪓 The black guardian is gone: Grimtusk the Orc Warlord stands guard over the black egg again');G.g192DragonDeaths=(G.g192DragonDeaths||0)+1;}
+    G[pk]=gd;
+    let u=G192.U[k];
+    if(u&&(u.gone||(u.dead&&u.g192Gone))){G192.U[k]=u=null;}
+    if(u&&u.dead){G['g192'+k]='down';G['g192hp'+k]=0;G.g192Beat=(G.g192Beat||0)+1;G192.stats.beaten++;G192.U[k]=null;u=null;
+      showToast(k==='W'?'💫 Elandor the Elf Champion is dizzy and puffs away! He returns when the white guardian dragon is gone, or next castle level':'💫 Grimtusk the Orc Warlord is dizzy and puffs away! He returns when the black guardian dragon is gone, or next castle level');}
+    const c=NR_CC[G192[k].cc],dc=Math.hypot(D.x-c.x,D.y-c.y);
+    if(!u&&g192Up(k)&&dc<G192.SPAWN&&!G.over)u=g192Spawn(k);
+    if(u&&!u.dead&&u.st!=='hunt'&&dc>G192.DESPAWN){G['g192hp'+k]=u.hp;u.g192Gone=1;nrGone(u);G192.U[k]=null;u=null;}
+    if(u&&!u.dead&&u.st==='hunt'&&dc>G192.FAR+600){G['g192hp'+k]=u.hp;u.g192Gone=1;nrGone(u);G192.U[k]=null;u=null;}
+    if(u&&!u.dead)G['g192hp'+k]=u.hp;
+    // nobody to carry the dropped black egg while the dragon is far away: Grimtusk does it off-screen
+    if(k==='B'&&!u&&g192Drop('B')&&g192Up('B')&&eggState('B')==='nest'){G.g192BoffT=(G.g192BoffT||0)+dt;if(G.g192BoffT>G192.FETCH_OFF){G.g192BdX=0;G.g192BdY=0;G.g192BoffT=0;G192.stats.fetched++;}}else if(k==='B')G.g192BoffT=0;
+    if(k==='B'&&eggState('B')!=='nest'&&g192Drop('B')){G.g192BdX=0;G.g192BdY=0;if(u)u.hold=0;}}
+  g192UpdP(dt);}
+{const _t=nrTick;nrTick=function(dt){_t(dt);try{g192Tick(dt);}catch(e){G192.err=G192.err||String(e).slice(0,160);}};}
+// level up: both champions are back at full strength (G is new each level; make it explicit), projectiles cleared
+{const _nl=nextLevel;nextLevel=function(){const r=_nl.apply(this,arguments);for(const k of ['W','B']){if(G['g192'+k]==='down'){G192.stats.respawns++;G.g192Resp=(G.g192Resp||0)+1;}G['g192'+k]='up';G['g192hp'+k]=0;G['g192pg'+k]=G['nrGd'+k]||0;G192.U[k]=null;}
+  G.g192BdX=0;G.g192BdY=0;G192.P=[];return r;};}
+{const _ng=newGame;newGame=function(){G192.U={W:null,B:null};G192.P=[];return _ng.apply(this,arguments);};}
+{const _sa=svApply;svApply=function(d){G192.U={W:null,B:null};G192.P=[];const r=_sa.apply(this,arguments);for(const k of ['W','B']){if(G['g192'+k]!=='down')G['g192'+k]='up';G['g192pg'+k]=G['nrGd'+k]||0;}return r;};}
+// ---- art: cartoony champions ----
+function g192Sword(x,y,ang,L,s){const ex=x+Math.cos(ang)*L*s,ey=y+Math.sin(ang)*L*s;line(x,y,ex,ey,'#eef4ff',2.6*s);line(x,y,x+Math.cos(ang)*L*.3*s,y+Math.sin(ang)*L*.3*s,'#c8d4f0',1.2*s);
+  line(x-Math.sin(ang)*4*s,y+Math.cos(ang)*4*s,x+Math.sin(ang)*4*s,y-Math.cos(ang)*4*s,'#e0b040',2.2*s);}
+function g192Axe(x,y,ang,L,s){const ex=x+Math.cos(ang)*L*s,ey=y+Math.sin(ang)*L*s,px=-Math.sin(ang),py=Math.cos(ang);line(x,y,ex,ey,'#6a4320',3*s);
+  poly([ex,ey,ex+px*13*s-Math.cos(ang)*4*s,ey+py*13*s-Math.sin(ang)*4*s,ex+px*12*s-Math.cos(ang)*14*s,ey+py*12*s-Math.sin(ang)*14*s,ex-Math.cos(ang)*10*s,ey-Math.sin(ang)*10*s],'#b8bcc8');
+  poly([ex,ey,ex-px*10*s-Math.cos(ang)*4*s,ey-py*10*s-Math.sin(ang)*4*s,ex-px*9*s-Math.cos(ang)*12*s,ey-py*9*s-Math.sin(ang)*12*s,ex-Math.cos(ang)*10*s,ey-Math.sin(ang)*10*s],'#9ea2b0');}
+NR_DRAW.elfchamp=function(x,y,s,f,a,u){const sw=u.swT>0?(u.swS?1:-1):0;
+  poly([x-7*s,y-24*s,x+7*s,y-24*s,x+12*s*-f,y-4*s,x-2*s*f,y-6*s],'#3a7ad8'); // cape
+  nrHumanoid(x,y,s,f,a,{leg:'#2a4a3a',body:'#d8e0f0',belt:'#e0b040',skin:'#f4e0cc',h:28,wide:.95,head:.9,eye:'#2a5ab0'});
+  ell(x,y-15*s,5*s,3*s,'#b8c8e8');poly([x-6*s,y-27*s,x+6*s,y-27*s,x,y-38*s],'#f0e098');poly([x-5*s*f,y-25*s,x-12*s*f,y-29*s,x-5*s*f,y-23*s],'#f4e0cc');
+  rect(x-5*s,y-33*s,10*s,2*s,'#e0b040');ell(x,y-35*s,2*s,2*s,'#9ad8ff');
+  if(u.bowT>0){ctx.strokeStyle='#8a5a2a';ctx.lineWidth=2*s;ctx.beginPath();ctx.arc(x+10*s*f,y-18*s,9*s,f>0?-1.3:1.8,f>0?1.3:4.4);ctx.stroke();}
+  else{g192Sword(x+9*s*f,y-14*s,f>0?(-1.1+sw*.9):(Math.PI+1.1-sw*.9),20,s);g192Sword(x-7*s*f,y-14*s,f>0?(-2.0-sw*.6):(Math.PI+2.0+sw*.6),17,s);}
+  if(Math.hypot(x-D.x,y-D.y)<900)txt('Elandor',x,y-52*s,10,'#e8f4ff','center');};
+NR_DRAW.orcwar=function(x,y,s,f,a,u){const sw=u.swT>0?(u.swS?1:-1):0;
+  nrHumanoid(x,y,s,f,a,{leg:'#2a2a2a',body:'#4a4450',belt:'#a83a1a',skin:'#6a9a4a',h:26,wide:1.45,head:1.2,eye:'#ffd040'});
+  ell(x-8*s,y-20*s,5*s,4*s,'#6a6270');ell(x+8*s,y-20*s,5*s,4*s,'#6a6270');rect(x-9*s,y-22*s,18*s,3*s,'#2a262e');
+  poly([x-1*s,y-23*s,x+1*s,y-28*s,x+2*s,y-23*s],'#f0ecd8');poly([x+4*s*f,y-23*s,x+5*s*f,y-28*s,x+6*s*f,y-23*s],'#f0ecd8');
+  poly([x-7*s,y-31*s,x-10*s,y-38*s,x-4*s,y-32*s],'#d8d0c0');poly([x+7*s,y-31*s,x+10*s,y-38*s,x+4*s,y-32*s],'#d8d0c0'); // horned helm
+  const out=u.axOut||0;
+  if(out<1)g192Axe(x+11*s*f,y-12*s,f>0?(-1.2+sw*1):(Math.PI+1.2-sw*1),24,s);
+  if(out<2)g192Axe(x-9*s*f,y-12*s,f>0?(-1.9-sw*.7):(Math.PI+1.9+sw*.7),22,s);
+  if(u.hold)nrEggArt(x,y-40*s,'B',.7);
+  if(Math.hypot(x-D.x,y-D.y)<900)txt('Grimtusk',x,y-56*s,10,'#ffd8a0','center');};
+// spinning thrown axes + the dropped black egg (drawn with the other realm effects)
+{const _ef=nrEggFx;nrEggFx=function(){const d=g192Drop('B'),st=G.nrEggB;if(d&&st==='nest')G.nrEggB='g192';try{_ef.apply(this,arguments);}finally{if(d&&st==='nest')G.nrEggB=st;}
+  if(d&&st==='nest'){const u=G192.U.B;if(!(u&&!u.dead&&u.hold)){ell(d.x,d.y+2,16,5,'rgba(0,0,0,.25)');nrEggArt(d.x,d.y,'B',1);if(Math.hypot(d.x-D.x,d.y-D.y)<900)txt('dropped egg',d.x,d.y-48,10,'#e8d8ff','center');}}
+  for(const p of G192.P){if(Math.abs(p.x-cam.x)>VW/cam.z/2+200||Math.abs(p.y-cam.y)>VH/cam.z/2+300)continue;const Y=p.y-p.z;ctx.save();ctx.translate(p.x,Y);ctx.rotate(p.a);g192Axe(-10,0,0,20,.8);ctx.restore();}};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
