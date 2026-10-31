@@ -4557,6 +4557,42 @@ function as184Continue(){const res=svLoad('dr_save_auto');if(res===true){try{pmC
       const md=i.hard?'Hard':i.easy?'Easy':'Normal';txt(`⟲  Continue  (autosave · castle lvl ${i.lvl} · ${md} · ${svDur(i.playT)})`,W0/2-57,y+21,14,s?'#ffd24a':'#9fe09f','center');
       ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(W0/2+118,y+3,108,24);txt('📂 All saves ▶',W0/2+172,y+20,13,'#ddd','center',false);}
   }catch(e){}finally{ctx.setTransform(DPR,0,0,DPR,0,0);}};}
+// ======================= queue 185-185g: faster walk, out-of-combat SPRINT and FAST SWIM, crocodile tail =======================
+// 185: ground walk 135 -> 182 px/s (+35%); flying (255) unchanged; stride animation 35% faster.
+// 185a-c: on the ground, out of combat (no damage taken or dealt near the dragon for 4 s, not breathing fire / biting / stomping,
+//   no soldier / knight / warrior within 220 px) and walking steadily (stick held, no turn sharper than ~60 deg) for 1.5 s, the walk
+//   ramps over 1.2 s up to a SPRINT of 95% of the BASE flying speed (242 px/s). The cap is the un-boosted DR base 255, never cruise /
+//   dash / boosts, and the final speed is clamped so it can never pass it. Any attack, hit, a hard turn or stopping drops it at once.
+// 185d/e: not needed: base flying (255) stays above the sprint (242), and the out-of-combat flying cruise (up to 1.8x) is unchanged.
+// 185f: swimming (74 px/s, unchanged) uses the same out-of-combat + steady 1.5 s rule to ramp to a FAST SWIM of 80% of base fly (204).
+// 185g: while swimming the dragon sweeps its tail side to side (crocodile style, legs tucked), fast during the fast swim.
+const MV185={walk:1.35,sprintFly:.95,swimFly:.8,steady:1.5,ramp:1.2,calm:4,turn:1.05,near:220,FLY0:DR.airSpeed};
+function mv185Combat(){if(!D||!G)return true;if(D.breath||keys[' ']||GPAD.fire||D.eatT>0||D.stompT>0||(D.scratchT||0)>0)return true;
+  if(G.t-(G.as184Hurt==null?-99:G.as184Hurt)<MV185.calm||G.t-(G.mv185Hit==null?-99:G.mv185Hit)<MV185.calm)return true;
+  for(const u of units){if(u.dead||u.inside||u.type==='animal'||u.type==='villager'||u.type==='sea'||u.type==='bird')continue;
+    if(Math.abs(u.x-D.x)<MV185.near&&Math.abs(u.y-D.y)<MV185.near&&dist(u,D)<MV185.near)return true;}return false;}
+{const _h=hurtUnit;hurtUnit=function(u){if(G&&u&&D&&Math.abs(u.x-D.x)<450&&Math.abs(u.y-D.y)<450)G.mv185Hit=G.t;return _h.apply(this,arguments);};Object.assign(hurtUnit,_h);}
+{const _uc=updCruise;updCruise=function(dt,ix,iy){const m=_uc.apply(this,arguments);try{
+  const S=D.mv185||(D.mv185={t:0,k:0,a:null,ph:0,fast:0});
+  const gw=D.mode!=='air'&&D.alt<.3;if(!gw){S.t=0;S.k=0;S.a=null;S.fast=0;return m;}
+  const mag=Math.hypot(ix,iy);let stop=mag<.5||mv185Combat();
+  if(!stop){const a=Math.atan2(iy,ix);if(S.a!=null&&Math.abs(angDiff(a,S.a))>MV185.turn){stop=true;S.a=a;}else S.a=S.a==null?a:S.a+angDiff(a,S.a)*Math.min(1,2.5*dt);}
+  else if(mag<.5)S.a=null;
+  if(stop){S.t=0;S.k=0;}else{S.t+=dt;if(S.t>MV185.steady)S.k=Math.min(1,S.k+dt/MV185.ramp);}
+  const base=lerp(DR.groundSpeed,DR.airSpeed,D.alt)*(D.swim?.55:1);let f;
+  if(D.swim){const top=MV185.FLY0*MV185.swimFly/base;f=1+(top-1)*S.k;}
+  else{const w=clamp(1-D.alt/.3,0,1),wf=1+(MV185.walk-1)*w,top=Math.max(wf,MV185.FLY0*MV185.sprintFly/base);f=wf+(top-wf)*S.k*w;}
+  f=Math.min(f,MV185.FLY0/base); // never faster than base (un-boosted) flying
+  S.fast=S.k;G.mv185Peak=Math.max(G.mv185Peak||0,base*f);
+  if(mag>0&&!D.swim)D.walkT+=dt*7*(f-1); // stride keeps pace with the speed
+  if(D.swim)S.ph+=dt*(5+7*S.k);
+  return m*f;}catch(e){return m;}};}
+{const _dd=drawDragon;drawDragon=function(){if(!D||!D.swim)return _dd.apply(this,arguments);
+  const S=D.mv185||{ph:G.t*5,k:0},A=12+12*(S.k||0),ph=S.ph||0,L0=line,P0=poly;
+  const off=x=>x<-36?A*Math.sin(ph+(x+36)*.055)*Math.pow((-36-x)/90,1.2):0;
+  line=function(x1,y1,x2,y2,c,w){if(x1<=-36&&x2<-36)return L0(x1,y1+off(x1),x2,y2+off(x2),c,w);return L0.apply(this,arguments);};
+  poly=function(p,c,s){if(p&&p.length&&p[0]<-36){const q=p.slice();for(let i=0;i<q.length;i+=2)q[i+1]+=off(q[i]);return P0(q,c,s);}return P0.apply(this,arguments);};
+  try{return _dd.apply(this,arguments);}finally{line=L0;poly=P0;}};}
 // ======================= queue 187 / 188 / 188a / 188b: castle-level scaling only in HARD (except castles + resources) =======================
 // 188b: on NORMAL and EASY only the castle itself (gate, barracks, walls, its tower archers and castle guards, the king's own
 // Archer/Scorpion towers) and resources (castle gold piles, treasury, ransom, loot) grow with the castle level. Everything else plays

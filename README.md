@@ -1296,3 +1296,20 @@ On an iPhone held upright, the main menu used to start under the notch, so its t
 
 ![Main menu on iPhone portrait](screenshots/q198_menu_iphone_portrait.png)
 ![Main menu on iPhone landscape (unchanged)](screenshots/q198_menu_iphone_landscape.png)
+
+## Batch H: faster walking, sprinting and fast swimming (185-185g); NPC hunger check (178)
+
+**Walk / sprint (185, 185a-c)**
+- Walking on the ground is now 35% faster (135 -> 182 px/s).
+- Sprint: walk steadily for 1.5 s while out of combat and the dragon ramps up over 1.2 s to a sprint of 242 px/s (95% of flying speed). Running never beats flying (hard cap 255).
+- The sprint stops immediately when you breathe fire, bite or stomp, get hurt (and stays off for 4 s), an enemy comes within 220 px, you turn sharply (more than ~60°) or stop.
+- 185d/185e (flying stays faster than sprinting) needed no change: base flight (255) and the existing out-of-combat flight cruise (up to x1.8) are already faster than the sprint.
+
+**Fast swim with crocodile tail (185f, 185g)**
+- Swimming steadily out of combat now ramps from 74 to 204 px/s, with the same stop rules as the sprint.
+- While swimming the tail sweeps side to side like a crocodile's, wider and faster as the dragon speeds up.
+
+**NPC starvation (178)**
+- Checked the whole game: only the player dragon has hunger and can starve. NPC "belly" only changes what they want to do (hunt, graze) and never costs health, so no NPC can starve. No code change was needed; a test (t178) now guards this.
+
+**Test note**: the Viking "ship returns to its post" check (t156) failed now and then, on the old build too. A wandering giant octopus or squid sometimes parked its no-go circle over the ship's route home, and the ship waits outside such circles by design. The test now moves the sea bosses out of the way while it checks the trip home. The game itself is unchanged.
