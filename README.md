@@ -1363,3 +1363,31 @@ On an iPhone held upright, the main menu used to start under the notch, so its t
 
 **Croc drawing fix**
 - The croc's ripple ring could get a negative size and throw an error, which stopped that frame from drawing. This happened in the previous build too. The croc is now drawn safely.
+
+## Batch K: animals sized against the elephant (174), Viking berserkers (180, 180a)
+
+**Animals sized against the elephant (174)**
+- The elephant (about 7 m long as drawn) is the yardstick. Real animals that were drawn too small next to it are now drawn bigger. Nothing is drawn smaller.
+- Bite and fire hitboxes grow with the drawing, so a big cow or crocodile can be bitten or burned at its edges, not just at its centre.
+- Fantasy creatures, birds, fish, dragons and the elephant are unchanged. The silverback gorilla leader, the alpha leaders of the animal bands and pythons coiled round a tree (175) also keep their size.
+- 174a/174b are on hold: they would need a re-layout of the world.
+
+| Animal | Scale | Animal | Scale | Animal | Scale |
+|---|---|---|---|---|---|
+| deer | 1.76 | boar | 1.24 | wolf | 1.19 |
+| bear | 1.39 | horse | 1.44 | beaver | 1.06 |
+| mountain goat | 1.63 | goat | 1.43 | seal | 1.38 |
+| camel | 1.19 | crocodile | 2.22 | zebra | 1.38 |
+| gazelle | 1.09 | wildebeest | 1.64 | giraffe | 1.06 |
+| warthog | 1.25 | ostrich | 1.35 | hyena | 1.06 |
+| tapir | 1.26 | jaguar | 1.14 | python | 1.48 |
+| gorilla | 1.09 | hippo | 1.08 | sheep | 1.68 |
+| cow | 2.22 | pig | 1.82 | chicken | 1.24 |
+| bull | 1.64 | | | | |
+
+- Before/after lineups: screenshots/q174_lineup_before_desktop.png, screenshots/q174_lineup_after_desktop.png (and _iphone).
+
+**Viking berserkers (180, 180a)**
+- Berserkers are drawn 1.12x bigger than a regular Viking, and their hitbox grows with them.
+- New berserk mode: when their crew is fighting and the dragon is within 320 px (outside the fantasy lands), a berserker shouts "BERSERK!" and goes berserk for 3 s (5 s on hard). While berserk it glows red, hits 50% harder and charges faster. Then it needs 6 s to cool down before it can go berserk again.
+- Screenshots: screenshots/q180_berserker_vs_viking_desktop.png, screenshots/q180_berserker_vs_viking_iphone.png (regular Viking, berserker, berserker in berserk mode).
