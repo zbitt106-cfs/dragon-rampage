@@ -1239,3 +1239,22 @@ Surfacing ambush 8 -> 12 (hard 14); chomp 5 -> 7.5 (hard 8.75). Easy is unchange
 On hard, the King sometimes raises a big golden shield: when your fire comes at him, when you are close on the ground, or right after you hurt him. The block lasts 1.8 s (then 3-5 s before the next). While blocking he can't attack and takes half damage. Normal and easy are unchanged.
 
 ![Golden shield](screenshots/q182_king_golden_shield_block.png)
+
+## Level scaling depends on difficulty (queue 187, 188, 188a, 188b)
+This replaces the per-level numbers given in earlier sections for enemies and creatures.
+- **Normal and easy:** only the **castle and resources** grow with the castle level: the king's gate (260 + 80 a level), the treasury and starting stock, the castle garrison (tower archers and gate guards), kingdom watchtowers, the stone bridge and the princess ransom. Everything else stays at **level-1 strength** at every level: mini bosses, the two wizards, King William, princes, patrols, work-site guards, raid champions and escorts, alarm waves, the northern realms army, caravans, the white elephant, alpha tigers, your guardian dragons and the dragon's own bite.
+- **Hard:** **mini bosses** get **+15% health and +10% damage per level** (level 5: ×1.6 health, ×1.4 damage; level 11: ×2.5 and ×2.0; level 21: ×4 and ×3). This covers the Kraken, the giant octopus, the sand worm, Nessie, the Hydra, the griffin, Cerberus, the wild dragons and the ice and storm turrets. The **Storm Wizard and Dark Wizard** get **+25% health and +20% damage per level** (300 health at level 1, 600 at level 5, 1050 at level 11). Everything else keeps its existing per-level growth on hard.
+- **Cerberus fix:** Cerberus's bites were scaled twice (+6% a level inside its attack on top of the mini-boss rule). Now they follow only the mini-boss rule: no growth on normal and easy, +10% a level on hard.
+
+| What | Normal / easy | Hard |
+|---|---|---|
+| Castle gate, treasury, garrison, watchtowers, bridge, ransom | grows per level | grows per level |
+| Mini bosses (health / damage) | level 1 | +15% / +10% per level |
+| Storm and Dark Wizard (health / damage) | level 1 | +25% / +20% per level |
+| King, princes, patrols, raids, waves, realms army, caravans, alphas, guardians, dragon bite | level 1 | grow as before |
+
+## Sand worm messages show the real damage (follow-up to queue 177)
+The "CHOMP! Worm bite!" and "A GIANT SAND WORM bursts from the dunes!" messages used to show fixed numbers (-5 and -8). They now show the damage the dragon actually took (for example -8 for a chomp on normal, -9 on hard, -3 on easy). If nothing gets through, no number is shown.
+
+![Worm chomp label, normal (-8)](screenshots/q177_worm_chomp_label_normal.png)
+![Worm chomp label, hard (-9)](screenshots/q177_worm_chomp_label_hard.png)

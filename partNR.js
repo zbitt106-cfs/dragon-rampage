@@ -1959,12 +1959,12 @@ function wormTunnel(u){const a0=Math.atan2(u.y-D.y,u.x-D.x);for(let i=0;i<16;i++
   if(was==='under'&&u.ws==='up'&&!u.stuck&&u.upT>WRM.upT){u.upT=WRM.upT;u.bite=Math.min(u.bite,.9);G.wormUpSet=(G.wormUpSet||0)+1;}
   return r;};}
 // ======================= queue 63-66: gentle per-castle-level scaling for MINI BOSSES and the two fantasy castles only =======================
-// The king's castle grows ~+31% gate health per level (260+80/level); mini bosses grow about HALF that: +15% health and +6% damage per castle level,
-// with NO upper cap (queue 76: the old level-8 cap is gone; x2.05 / x1.42 at level 8, x2.8 / x1.72 at 13, x4.0 / x2.2 at 21). Mini bosses: giant squid (Kraken), giant octopus, sand worm, Nessie,
+// 187/188a (Oct 2026): HARD only. Mini bosses grow +15% health and +10% damage per castle level (linear, no cap): x1.6 / x1.4 at level 5, x2.5 / x2.0 at 11, x4.0 / x3.0 at 21.
+// NORMAL and EASY (188a/188b): every mini boss, magic tower and wizard stays at its level-1 strength at every castle level. Mini bosses: giant squid (Kraken), giant octopus, sand worm, Nessie,
 // Hydra (per head; always 3 heads now), Griffin, Cerberus, and every other dragon (wild / rival dragons). The Lumenspire (light) and Doomforge (dark)
 // citadel towers scale the same way (and so do the realm's other magic towers - they belong to the same two castles' kingdoms).
-// The WIZARD never scales (300 health at every level), and regular soldiers, units and creatures (incl. pack alphas) no longer scale either.
-const LVS={hp:.15,dm:.06,cap:Infinity}; // queue 76: no level cap (guardians gdLv() and raid champions were never capped)
+// 188: the WIZARDS (Storm + Dark) count as bosses: hard +25% health / +20% spell damage per level (see the queue 188 block at the end); normal/easy 300 health (210 easy) at every level.
+const LVS={hp:.15,dm:.10,cap:Infinity}; // queue 76: no level cap (guardians gdLv() and raid champions were never capped)
 function lvsL(){return Math.min(LVS.cap,Math.max(1,(G&&G.lvl)||1));}
 function bossHpMul(){return 1+LVS.hp*(lvsL()-1);}
 function bossDmMul(){return 1+LVS.dm*(lvsL()-1);}
@@ -4535,6 +4535,47 @@ function as184Continue(){const res=svLoad('dr_save_auto');if(res===true){try{pmC
       const md=i.hard?'Hard':i.easy?'Easy':'Normal';txt(`⟲  Continue  (autosave · castle lvl ${i.lvl} · ${md} · ${svDur(i.playT)})`,W0/2-57,y+21,14,s?'#ffd24a':'#9fe09f','center');
       ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(W0/2+118,y+3,108,24);txt('📂 All saves ▶',W0/2+172,y+20,13,'#ddd','center',false);}
   }catch(e){}finally{ctx.setTransform(DPR,0,0,DPR,0,0);}};}
+// ======================= queue 187 / 188 / 188a / 188b: castle-level scaling only in HARD (except castles + resources) =======================
+// 188b: on NORMAL and EASY only the castle itself (gate, barracks, walls, its tower archers and castle guards, the king's own
+// Archer/Scorpion towers) and resources (castle gold piles, treasury, ransom, loot) grow with the castle level. Everything else plays
+// as castle level 1 on normal/easy: mini bosses, wizards, magic towers, King William, princes, raid champions + escorts, guardians,
+// patrols (count + size + health), work-site guards, alarm waves, caravan guards, realm armies, the white elephant, tigers,
+// realm creature damage (partNR cbAttack, was +6%/level) and the dragon's own "every bite hurts" damage (btDmg, was +5%/level).
+// HARD keeps every existing level rule, except 187/188a: regular mini bosses +15% health / +10% damage per level (linear; was 1.2^ / 1.1^),
+// and both wizards (Storm + Dark) count as bosses at +25% health / +20% damage per level (linear; was 1.2^ / 1.1^).
+const LV188={bossHp:.15,bossDm:.10,wizHp:.25,wizDm:.20,n:0,cb:0,cbFix:0};
+// G.hard is only written at the end of newGame, so while a new game/level is being built (bosses, elephant, tigers spawn) it is still unset:
+// fall back to the chosen mode then, the same way the end of newGame decides it.
+function lv188H(){if(!G)return false;if(G.hard!==undefined&&G.hard!==null)return !!G.hard;return !!(HM.force!==null?HM.force:(HARD&&!EASY));}
+function lv188Run(fn,self,args){if(!G||G.hard||!(G.lvl>1))return fn.apply(self,args);const l=G.lvl;G.lvl=1;LV188.n++;try{return fn.apply(self,args);}finally{G.lvl=l;}}
+// bosses (kraken, octopus, sand worm, Nessie, Hydra, Griffin, Cerberus, wild dragons, magic towers) - every path goes through these two
+bossHpMul=function(){return lv188H()?1+LV188.bossHp*(lvsL()-1):1;};
+bossDmMul=function(){return lv188H()?1+LV188.bossDm*(lvsL()-1):1;};
+function wz188Hp(){return lv188H()?1+LV188.wizHp*(lvsL()-1):1;}
+function wz188Dm(){return lv188H()?1+LV188.wizDm*(lvsL()-1):1;}
+WZ140.hpMul=wz188Hp;
+// wizard spell damage: the 139f hook (inside) multiplies hard-mode wizard spells by 1.1^(L-1); swap that for +20%/level
+{const _hd=hurtDragon;hurtDragon=function(d,src){if(lv188H()&&typeof d==='number'&&d>0&&HM_WIZ[src]&&(WZB.on||DWB.on))arguments[0]=d*wz188Dm()/Math.pow(HM.bossDm,lvsL()-1);return _hd.apply(this,arguments);};}
+// level readers that are not castle / resources: level 1 on normal/easy
+{const _f=nrLvl;nrLvl=function(){return lv188H()?_f.apply(this,arguments):1;};}
+{const _f=gdLv;gdLv=function(){return lv188H()?_f.apply(this,arguments):1;};}
+{const _f=cg128Lvl;cg128Lvl=function(){return lv188H()?_f.apply(this,arguments):1;};}
+{const _f=el129Lv;el129Lv=function(){return lv188H()?_f.apply(this,arguments):1;};}
+{const _f=tgLv;tgLv=function(){return lv188H()?_f.apply(this,arguments):1;};}
+{const _f=raidTierStats;raidTierStats=function(T,n,lvl,easy){return _f.call(this,T,n,lv188H()?lvl:1,easy);};}
+for(const k of ['kaStats','startRaidWarning','spawnPatrol','patrolTarget','wsSpawn','btDmg']){try{const _f=eval(k);if(typeof _f!=='function')continue;
+  const w=function(){return lv188Run(_f,this,arguments);};Object.assign(w,_f);eval(k+'=w');}catch(e){}}
+// Cerberus (partNR cbAttack, line 924 of the built file) multiplied its bites by +6%/level on top of the mini-boss hurtDragon hook (LVS_SRC.cerberus),
+// so it was counted twice. Cerberus is a mini boss: its bite now scales only through the boss rule (hard +10%/level, normal/easy x1).
+// The extra 924 factor is divided back out here in every mode (cbAttack itself runs at the real castle level, so a death inside it is unaffected).
+{const _f=cbAttack;cbAttack=function(){LV188.cb++;try{return _f.apply(this,arguments);}finally{LV188.cb--;}};}
+{const _hd=hurtDragon;hurtDragon=function(d,src){if(LV188.cb>0&&src==='cerberus'&&typeof d==='number'&&G&&G.lvl>1){arguments[0]=d/(1+.06*(G.lvl-1));LV188.cbFix++;}return _hd.apply(this,arguments);};}
+// princes: on normal/easy every prince fleet has the first prince's strength (names and colours still change)
+{const _f=princeInfo;princeInfo=function(l){const r=_f.apply(this,arguments);if(lv188H()||!(r&&r.k>1))return r;const b=_f.call(this,5);
+  return Object.assign({},b,{name:r.name,short:r.short,col:r.col,trim:r.trim,crest:r.crest,lvl:r.lvl});};}
+// alarm waves (knights riding out of the castle as the wanted bar climbs): no +25%/level on normal/easy
+{const _ng=newGame;newGame=function(opt){const r=_ng.apply(this,arguments);if(G&&!G.hard)G.waveMul=(EASY?.5:1);return r;};}
+
 // ======================= queue 191 / 191a: bites only hit what is IN FRONT of the jaws; mouth capacity for multi-bites =======================
 // 191:  a bite only reaches targets in a forward cone of +-50 degrees around the way the dragon faces (big animals count by their body
 //       edge), or right at the tip of the snout - no more 360-degree "belly bites" of things beside or behind the dragon.
@@ -4594,3 +4635,13 @@ function wd193Douse(){for(const u of units)if(u.burn>0&&!u.dead&&wd193Wet(u)){u.
 {const _u=updFire;updFire=function(){try{wd193Douse();}catch(e){console.warn('193',e);}return _u.apply(this,arguments);};}
 {const _l=lavaSplash;lavaSplash=function(){WD193.ls++;try{return _l.apply(this,arguments);}finally{WD193.ls--;}};}
 {const _h=hurtUnit;hurtUnit=function(u,d,src){if(WD193.ls>0&&src==='fire'&&wd193Wet(u)){WD193.shield++;return;}return _h.apply(this,arguments);};Object.assign(hurtUnit,_h);}
+
+// ======================= sand worm labels show the real damage (follow-up to 177) =======================
+// partD.js line 59/64 printed fixed text ("-8" ambush, "-5" chomp) although 177 and the level/hard rules change the bite.
+// The worm's hurtDragon call is measured (dragon health before/after) and the label shows that number; no number if the hit was blocked.
+const SWL={last:null,n:0};
+{const _hd=hurtDragon;hurtDragon=function(d,src){if(src!=='sandworm')return _hd.apply(this,arguments);const h0=D.hp;
+  try{return _hd.apply(this,arguments);}finally{SWL.last={t:G?G.t:0,d:Math.max(0,h0-D.hp)};}};}
+{const _fl=float;float=function(x,y,t,c){if(typeof t==='string'&&SWL.last&&G&&SWL.last.t===G.t){const m=/^(CHOMP! Worm bite!|A GIANT SAND WORM bursts from the dunes!) -[58]$/.exec(t);
+  if(m){const v=Math.round(SWL.last.d);t=v>0?m[1]+' -'+v:m[1];SWL.n++;}}return _fl.apply(this,[x,y,t,c].concat([].slice.call(arguments,4)));};}
+
