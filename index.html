@@ -11451,7 +11451,7 @@ function hmXbTick(dt){if(G.won||scene!=='play')return;const X=HM.xb;
       if(rnd()<.4)float(u.x,u.y-84,'Royal crossbow - three bolts!','#ffe08a');}
     else if(u.isPrince){u.xbT=R(X.cdP[0],X.cdP[1]);hmXbFire(u,a,X.prince);}
     else{u.xbT=R(X.cdK[0],X.cdK[1]);hmXbFire(u,a,X.knight*(u.hmM||1));}}}
-{const _dk=drawKnight;drawKnight=function(u){const r=_dk.apply(this,arguments);if(!HM.on()||!hmXbow(u))return r;
+{const _dk=drawKnight;drawKnight=function(u){const r=_dk.apply(this,arguments);if(!HM.on()||!hmXbow(u)||!(u.xbShow>0))return r; // 139w: only drawn while shooting
   const f=u.face||1,k=u.isKingArmor?1.35:1,x=u.x+f*9*k,y=u.y-(u.mounted?34:22)*k-(u.isKingArmor?8:0),aim=u.xbAim>0;
   line(x-f*7*k,y+2,x+f*9*k,y-(aim?2:0),'#6a4020',3*k);line(x+f*7*k,y-7*k,x+f*7*k,y+6*k,'#3a2a1a',2*k);line(x+f*7*k,y-7*k,x+f*1*k,y,'#ddd',1);line(x+f*7*k,y+6*k,x+f*1*k,y,'#ddd',1);
   if(aim)ell(x+f*10*k,y-1,2,2,'#ffe08a');return r;};}
@@ -11555,7 +11555,7 @@ function kb157Fire(u){const X=KB157,sp=520,dd=Math.hypot(D.x-u.x,D.y-u.y),T=dd/s
   if(!hmOwn){if(u.kbT===undefined)u.kbT=R(.6,1.2);u.kbT-=dt;if(u.xbAim>0)u.xbAim-=dt;const dd=Math.hypot(D.x-u.x,D.y-u.y);
     if(u.kbT<=0&&dd<KB157.range&&dd>60&&!G.over){u.kbT=R(KB157.cd[0],KB157.cd[1]);kb157Fire(u);}}};}
 // show his crossbow while he holds the bank in normal mode too (hard mode already draws it)
-{const _dk=drawKnight;drawKnight=function(u){const r=_dk.apply(this,arguments);if(!(u&&u.isKingArmor&&u.kb157)||(typeof HM!=='undefined'&&HM.on&&HM.on()))return r;
+{const _dk=drawKnight;drawKnight=function(u){const r=_dk.apply(this,arguments);if(!(u&&u.isKingArmor&&u.kb157)||!(u.xbShow>0)||(typeof HM!=='undefined'&&HM.on&&HM.on()))return r;
   const f=u.face||1,k=1.35,x=u.x+f*9*k,y=u.y-22*k-8,aim=u.xbAim>0;
   line(x-f*7*k,y+2,x+f*9*k,y-(aim?2:0),'#6a4020',3*k);line(x+f*7*k,y-7*k,x+f*7*k,y+6*k,'#3a2a1a',2*k);line(x+f*7*k,y-7*k,x+f*1*k,y,'#ddd',1);line(x+f*7*k,y+6*k,x+f*1*k,y,'#ddd',1);
   if(aim)ell(x+f*10*k,y-1,2,2,'#ffe08a');return r;};}
@@ -11787,6 +11787,28 @@ function pm170Line(){if(!(scene==='play'&&G&&PM.scr==='main'))return;const S=SAF
   let fs=touch?12:13;ctx.font=`bold ${fs}px Georgia`;while(fs>8&&ctx.measureText(t).width>W-24){fs--;ctx.font=`bold ${fs}px Georgia`;}txt(t,cx,y0+H-88,fs,'#ffe08a','center');}
 {const _p=drawPM;drawPM=function(){const r=_p.apply(this,arguments);try{ctx.setTransform(DPR,0,0,DPR,0,0);pm170Line();}catch(e){}return r;};}
 
+// ===== QUEUE 139v/139w/139x: hard-mode crossbows only for NAMED knights; crossbow only in hand while shooting =====
+// 139v replaced: 139d gave every mounted castle knight a crossbow. Now only the named raid champions (Sir Gareth the Bold etc.),
+// King William (3-bolt spread) and the foreign princes carry one. Regular knights fight with their lance/sword only, as in normal mode.
+hmXbow=function(u){return u.type==='knight'&&!u.dead&&!u.inside&&!u.vk&&(u.isKingArmor||u.isPrince||!!u.champ);};
+// 139w/139x: u.xbShow > 0 = crossbow drawn (and the melee weapon put away). Set just before a shot (in range, bolt about ready) and
+// for 0.7 s after it; otherwise the sprite shows the normal sword / lance only.
+const XB139={pre:.45,after:.7};
+{const _t=hmXbTick;hmXbTick=function(dt){const r=_t.apply(this,arguments);const X=HM.xb;
+  for(const u of HM.xbList||[]){if(u.dead)continue;if(u.xbAim>.3)u.xbShow=Math.max(u.xbShow||0,XB139.after);
+    const dd=Math.hypot(D.x-u.x,D.y-u.y);if(u.xbT!==undefined&&u.xbT<XB139.pre&&dd<=X.range&&dd>=X.min&&!u.inside&&!(u.dizzy>0))u.xbShow=Math.max(u.xbShow||0,.12);}return r;};}
+{const _f=kb157Fire;kb157Fire=function(u){const r=_f.apply(this,arguments);if(u)u.xbShow=XB139.after;return r;};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&G&&!paused){for(const u of units){if(u.xbShow>0)u.xbShow-=dt;
+    if(u.isKingArmor&&u.kb157&&!u.dead&&!(typeof HM!=='undefined'&&HM.on&&HM.on())&&u.kbT!==undefined&&u.kbT<XB139.pre){const dd=Math.hypot(D.x-u.x,D.y-u.y);if(dd<KB157.range&&dd>60)u.xbShow=Math.max(u.xbShow||0,.12);}}}return r;};}
+// hide the melee weapon while the crossbow is up: skip just the sword / lance strokes of that one sprite
+const XB139H={champ:{line:{'#eef':1,'#dde':1,'#c9a43a':1}},king:{line:{'#f4f6ff':1},lineW:{'#ffd23a':1.8},ell:{'#ffd23a':1.4}},prince:{line:{'#d8c090':1},poly:{'#eef':1}}};
+function xb139Draw(u,fn){const k=u.isKingArmor?'king':u.isPrince?'prince':u.champ?'champ':null,F=k&&XB139H[k];if(!F)return fn();
+  const L=line,P=poly,El=ell;let skipP=0;XB139.hid=(XB139.hid||0)+1;
+  line=function(x1,y1,x2,y2,c,w){if(F.line&&F.line[c])return;if(F.lineW&&F.lineW[c]===w)return;return L.apply(this,arguments);};
+  poly=function(pts,c){if(skipP>0){skipP--;return;}if(F.poly&&F.poly[c]){skipP=1;return;}return P.apply(this,arguments);}; // lance tip + its pennant
+  ell=function(x,y,rx,ry,c){if(F.ell&&F.ell[c]===rx)return;return El.apply(this,arguments);};
+  try{return fn();}finally{line=L;poly=P;ell=El;}}
+{const _dk=drawKnight;drawKnight=function(u){if(u&&u.xbShow>0&&!u.dead&&(u.isKingArmor||u.isPrince||u.champ)){const a=arguments,t=this;return xb139Draw(u,()=>_dk.apply(t,a));}return _dk.apply(this,arguments);};}
 // ======================= queue 141ac-141af: Viking hires on TREASURY milestones =======================
 // Replaces the old "every 1000 gold he EARNS" counter (141m/139g). A hire happens each time King William's treasury BALANCE climbs up
 // through a milestone (1000, 2000, 3000 ... or 500, 1000, 1500 ... in hard mode), also when it climbs back up after dropping below one.
@@ -12136,7 +12158,7 @@ function t194Troop(u){if(!u||u.dead||u.isKing||u.isKingArmor||u.isPrince||u.prin
   return !!(u.nr&&T194_NR.has(u.species)&&!al176Is(u));}
 function t194Kind(u){if(!u||u.dead)return null;if(al176Is(u))return 'a';if(t194Troop(u))return 't';return null;}
 function t194AtkMul(u){if(!t194On())return 1;const L=t194L();if(L<=1)return 1;const k=t194Kind(u);return k==='a'?Math.pow(T194.aAt,L-1):k==='t'?Math.pow(T194.tAt,L-1):1;}
-function t194Proj(A,n,m){if(!A)return;for(let i=Math.max(0,n);i<A.length;i++){const q=A[i];if(!q||q.t194)continue;q.t194=1;if(m>1&&typeof q.dmg==='number'&&q.dmg>0){q.dmg*=m;T194.proj++;}}}
+function t194Proj(A,n,m){if(!A)return;for(let i=Math.max(0,n);i<A.length;i++){const q=A[i];if(!q||q.t194)continue;q.t194=1;if(m!==1&&m>0&&typeof q.dmg==='number'&&q.dmg>0){q.dmg*=m;T194.proj++;}}}
 function t194Wrap(f){const w=function(u){if(!u||typeof u!=='object'||T194.cur===u)return f.apply(this,arguments);
     const p=T194.cur,a=projs,b=typeof NR_P!=='undefined'?NR_P:null,n0=a.length,n1=b?b.length:0;T194.cur=u;
     try{return f.apply(this,arguments);}finally{T194.cur=p;try{const na=projs===a&&a.length>n0,nb=b&&NR_P===b&&b.length>n1;
@@ -12144,7 +12166,7 @@ function t194Wrap(f){const w=function(u){if(!u||typeof u!=='object'||T194.cur===
   Object.assign(w,f);return w;}
 for(const k of['updKnight','updArcher','updCavalry','updHunter','updMilitia','updCrew','updWild','updAnimal','updCroc','updCougar','updWD','updRR','updNW','updOC',
   'updSeaUnit','updDCam','updBull','nrUpd','hpUpd','raidStep','escortStep','princeStep','soldierSwim']){try{const f=eval(k);if(typeof f!=='function')continue;const w=t194Wrap(f);eval(k+'=w');}catch(e){}}
-{const _hd=hurtDragon;hurtDragon=function(d,src){const u=T194.cur;if(u&&typeof d==='number'&&d>0){let m=1;try{m=t194AtkMul(u);}catch(e){}if(m>1){arguments[0]=d*m;T194.hits++;}}return _hd.apply(this,arguments);};}
+{const _hd=hurtDragon;hurtDragon=function(d,src){const u=T194.cur;if(u&&typeof d==='number'&&d>0){let m=1;try{m=t194AtkMul(u);}catch(e){}if(m!==1&&m>0){arguments[0]=d*m;T194.hits++;}}return _hd.apply(this,arguments);};}
 function t194Scan(){if(!t194On())return;const L=t194L();if(L<=1)return;const tm=Math.pow(T194.tHp,L-1),am=Math.pow(T194.aHp,L-1);
   const S=new Set(units);if(typeof NRU!=='undefined')for(const u of NRU)S.add(u);
   for(const u of S){if(!u||u.dead)continue;let m=0;const k=t194Kind(u);
@@ -12155,6 +12177,52 @@ function t194Scan(){if(!t194On())return;const L=t194L();if(L<=1)return;const tm=
 {const _sl=svLoad;svLoad=function(){const r=_sl.apply(this,arguments);try{t194Scan();}catch(e){}return r;};}
 // the tiger alpha rebuilds its health on a new level or after loading; clear the mark so it gets the boost again (same as 176)
 if(typeof tgMake==='function'){const _tm=tgMake;tgMake=function(u){const r=_tm.apply(this,arguments);if(u)u.a194=0;return r;};}
+// ======================= queue 195/195a-c, 196b/196c, 197: leader crossbows only while the dragon flies; weaker regular troops; Viking hire price =======================
+// 195: no common crossbowmen any more (139v above: only King William, the princes and the named raid knights carry one; regular
+//      knights fight with lance / sword only). 195a/b: those leaders draw and shoot the crossbow ONLY while the dragon is flying;
+//      when it walks / lands the crossbow stays holstered and they fight in melee. King William 3 bolts per volley, the others 1.
+// 196b/c: every regular troop of every faction (kingdom, desert, Vikings incl. the chief's bear, light and dark realms) starts with
+//      less health AND attack: easy x0.75, normal x0.80, hard x0.85. Not the King, princes, princess, named knights, guardians,
+//      bosses, alphas or animals. The 194a hard per-level growth comes on top.
+// 197: a Viking hire costs easy 200, normal 100, hard 50 gold (milestones and cooldowns unchanged).
+const XB195={fly:()=>!!(typeof D!=='undefined'&&D&&D.mode==='air'),held:0};
+function xb195Hold(){for(const u of units)if(u&&(u.isKingArmor||u.isPrince||u.champ)){u.xbShow=0;u.xbAim=0;}}
+{const _t=hmXbTick;hmXbTick=function(dt){if(!XB195.fly()){XB195.held++;for(const u of HM.xbList||[])if(u){u.xbShow=0;u.xbAim=0;}return;}return _t.apply(this,arguments);};}
+{const _f=kb157Fire;kb157Fire=function(u){if(!XB195.fly()){XB195.held++;if(u){u.xbShow=0;u.xbAim=0;}return;}return _f.apply(this,arguments);};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(scene==='play'&&G&&!XB195.fly())xb195Hold();return r;};}
+const W196={easy:.75,normal:.8,hard:.85,nT:0};
+function w196F(){if((G&&G.easy)||EASY)return W196.easy;return lv188H()?W196.hard:W196.normal;}
+function w196Troop(u){return !!(u&&!u.dead&&!u.champ&&!u.boss&&t194Troop(u)&&!al176Is(u));}
+{const _a=t194AtkMul;t194AtkMul=function(u){let m=_a.apply(this,arguments);try{if(w196Troop(u))m*=w196F();}catch(e){}return m;};}
+function w196Apply(u,f,keep){u.w196=f;u.maxHp=Math.max(1,Math.round((u.maxHp||u.hp)*f));u.hp=keep?Math.min(u.hp,u.maxHp):Math.max(1,Math.round(u.hp*f));
+  if(u.bearMax>0){u.bearMax=Math.max(1,Math.round(u.bearMax*f));u.bearHp=keep?Math.min(u.bearHp,u.bearMax):Math.max(0,Math.round((u.bearHp||0)*f));}W196.nT++;}
+function w196Scan(){if(!G)return;const f=w196F();const S=new Set(units);if(typeof NRU!=='undefined')for(const u of NRU)S.add(u);
+  for(const u of S)if(u&&!u.w196&&w196Troop(u))w196Apply(u,f,false);}
+// a Viking coming back ashore from his ship keeps the (already lowered) health he boarded with
+{const _m=vkMk;vkMk=function(g,r,x,y,a){const u=_m.apply(this,arguments);try{if(u&&a&&a.hp>0){const f=w196F();w196Apply(u,f,true);
+  if(t194On()&&t194L()>1){const tm=Math.pow(T194.tHp,t194L()-1);u.t194h=tm;u.maxHp=Math.round(u.maxHp*tm);u.hp=Math.min(u.hp,u.maxHp);}}}catch(e){}return u;};}
+{const _u=update;let acc=0;update=function(dt){const r=_u.apply(this,arguments);if(G&&scene==='play'&&!G.over){acc+=dt;if(acc>=.25){acc=0;try{w196Scan();}catch(e){}}}return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);try{w196Scan();}catch(e){}return r;};Object.assign(newGame,_ng);}
+{const _sl=svLoad;svLoad=function(){const r=_sl.apply(this,arguments);try{w196Scan();}catch(e){}return r;};}
+const VK197={easy:200,normal:100,hard:50};
+try{Object.defineProperty(VK,'cost',{get(){return (G&&G.easy)||EASY?VK197.easy:VK197.normal;},set(v){},configurable:true});
+  Object.defineProperty(VK,'hCost',{get(){return VK197.hard;},set(v){},configurable:true});}catch(e){}
+// ======================= queue 198: iPhone portrait - main menu fits the screen (safe area) =======================
+// In portrait on a touch screen the title menu started at the very top, under the iPhone status bar / Dynamic Island.
+// Now (portrait touch only) it starts below the safe-area top inset and is scaled to the widest line actually drawn, so it uses
+// the screen width. The tap areas (TOUCH.tg) follow the same scale and offset. Landscape and desktop are unchanged.
+const TT198={w:0,h:0,k:0,dy:0,on:0};
+function tt198On(){return !!(typeof TOUCH!=='undefined'&&TOUCH.on&&VH>VW*1.05);}
+{const _dt=drawTitle;drawTitle=function(){if(!tt198On()){TT198.on=0;return _dt.apply(this,arguments);}
+  const dy=Math.round((SAFE&&SAFE.t||0)+Math.max(8,VH*.015));let k2=Math.min(1.2,VH/470,VW/900);
+  if(TT198.w>200)k2=Math.max(k2*.8,Math.min(1.2,(VW-16)/TT198.w,(VH*.5-dy)/Math.max(200,TT198.h+12)));
+  const S=ctx.setTransform,FT=ctx.fillText;let sc=0,mw=0,mh=0;
+  ctx.setTransform=function(a,b,c,d,e,f){if(typeof a==='number'&&Math.abs(a-DPR)>1e-6){sc=1;return S.call(ctx,DPR*k2,0,0,DPR*k2,DPR*(VW-VW*k2)/2,DPR*dy);}sc=0;return S.apply(ctx,arguments);};
+  ctx.fillText=function(s,x,y){try{if(sc&&s){const w=ctx.measureText(String(s)).width,al=ctx.textAlign,c=VW/2;
+      const l=al==='center'?x-w/2:al==='right'||al==='end'?x-w:x,r=l+w;mw=Math.max(mw,2*Math.max(c-l,r-c));mh=Math.max(mh,y);}}catch(e){}return FT.apply(ctx,arguments);};
+  try{return _dt.apply(this,arguments);}finally{delete ctx.setTransform;delete ctx.fillText;if(ctx.setTransform!==S)ctx.setTransform=S;if(ctx.fillText!==FT)ctx.fillText=FT;
+    if(mw>0){TT198.w=Math.max(460,mw);TT198.h=mh;}TT198.k=k2;TT198.dy=dy;TT198.on=1;
+    const g=TOUCH.tg;if(g)TOUCH.tg={k:k2,ox:(VW-VW*k2)/2,cx:VW/2,y0:(g.y0||112)+dy/k2};S.call(ctx,DPR,0,0,DPR,0,0);}};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}

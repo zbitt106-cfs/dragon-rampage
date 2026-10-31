@@ -1271,3 +1271,28 @@ The "CHOMP! Worm bite!" and "A GIANT SAND WORM bursts from the dunes!" messages 
 While his golden shield is up, any sword swing or shield bash he makes is cancelled. His crossbow also holds fire until the block ends.
 
 Test note: an earlier check counted 12 "King attacks while blocking". Those hits came from ordinary knights fighting next to him, not from the King. The test now credits only the King's own hits to him, and 0 King attacks get through while blocking.
+
+## Crossbows only for leaders, and only at a flying dragon (queue 195, 195a, 195b)
+- **Common crossbowmen are gone.** Regular knights and soldiers fight with swords only.
+- Only **King William** (3 bolts per volley), the **princes** and the **named raid knights** (1 bolt each) carry crossbows.
+- They draw and shoot **only while the dragon is flying**. When the dragon lands, the crossbow goes back on their back and they fight with their swords. This covers King William's riverbank volley too.
+
+![Named knight aiming his crossbow at the flying dragon](screenshots/q195_crossbow_drawn_flying_zoom.png)
+![Full view: the dragon flying, the champion aiming](screenshots/q195_crossbow_drawn_flying.png)
+![Same knight with his sword out once the dragon lands](screenshots/q195_crossbow_holstered_ground_zoom.png)
+![Full view: the dragon on the ground](screenshots/q195_crossbow_holstered_ground.png)
+
+## Weaker regular troops (queue 196b, 196c)
+Every **regular troop of every faction** now starts with lower **health and attack**: **easy ×0.75, normal ×0.80, hard ×0.85**.
+- Factions: the kingdom (soldiers, knights, archers, hunters, militia), the desert, the Vikings (including the chief and his bear), and the Northern Realms troops (hobgoblin soldiers, elves, unicorn riders, dwarves, centaurs, goblins, goblin archers, orcs).
+- **Not changed:** King William, the princes, the princess, named raid knights, bosses and mini bosses, alphas, animals, and realm monsters such as trolls, cyclopes and minotaurs.
+- The hard-mode per-level troop bonus from queue 194a applies on top. For example, a level-5 troop on hard has ×0.85 × 1.04 health.
+
+## Viking hire prices by difficulty (queue 197)
+Hiring Vikings now costs **200 gold a ship on easy, 100 on normal and 50 on hard**. The milestones and cooldowns that unlock hires are unchanged.
+
+## Main menu fits iPhone portrait (queue 198)
+On an iPhone held upright, the main menu used to start under the notch, so its top was hidden. It now starts below the safe area and shrinks to fit the screen width. Taps still land on the right menu items. Landscape and desktop are unchanged.
+
+![Main menu on iPhone portrait](screenshots/q198_menu_iphone_portrait.png)
+![Main menu on iPhone landscape (unchanged)](screenshots/q198_menu_iphone_landscape.png)
