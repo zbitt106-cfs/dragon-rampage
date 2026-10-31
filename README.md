@@ -1258,3 +1258,16 @@ The "CHOMP! Worm bite!" and "A GIANT SAND WORM bursts from the dunes!" messages 
 
 ![Worm chomp label, normal (-8)](screenshots/q177_worm_chomp_label_normal.png)
 ![Worm chomp label, hard (-9)](screenshots/q177_worm_chomp_label_hard.png)
+
+## Tougher troops and alphas on hard (queue 194, 194a)
+**Hard mode only**, these bonuses grow **per castle level and compound**. They stack on top of every existing hard-mode rule, and on top of the alpha health boost from queue 176.
+- **Troops** get **+1% health and +5% attack per level**. Troops are soldiers, knights, archers, hunters, militia, guards, Vikings and the Northern Realms soldiers.
+- **Alphas** get **+5% health and +10% attack per level**. Alphas are the pack and herd leaders and the Northern Realms alphas.
+- Level 1 has no extra bonus. At level 5, troops have ×1.04 health and ×1.22 attack, and alphas have ×1.22 health and ×1.46 attack.
+- King William, the princes, the princess and your guardian dragons are not affected.
+- Normal and easy are unchanged.
+
+## King William never attacks behind his shield (queue 182b)
+While his golden shield is up, any sword swing or shield bash he makes is cancelled. His crossbow also holds fire until the block ends.
+
+Test note: an earlier check counted 12 "King attacks while blocking". Those hits came from ordinary knights fighting next to him, not from the King. The test now credits only the King's own hits to him, and 0 King attacks get through while blocking.

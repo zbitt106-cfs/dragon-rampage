@@ -4645,3 +4645,49 @@ const SWL={last:null,n:0};
 {const _fl=float;float=function(x,y,t,c){if(typeof t==='string'&&SWL.last&&G&&SWL.last.t===G.t){const m=/^(CHOMP! Worm bite!|A GIANT SAND WORM bursts from the dunes!) -[58]$/.exec(t);
   if(m){const v=Math.round(SWL.last.d);t=v>0?m[1]+' -'+v:m[1];SWL.n++;}}return _fl.apply(this,[x,y,t,c].concat([].slice.call(arguments,4)));};}
 
+
+// ======================= queue 182b: King William can never strike while his golden shield is up =======================
+// The tdiff "attacks while blocking" hits were traced to ordinary knights (base updKnight melee, 10 damage), not the King: his own
+// sword/bash timers are frozen during a block. Closed for good anyway: any sword/bash hit dealt from inside the King's own update while
+// his shield is raised is dropped, and on hard his royal crossbow also waits until the shield comes down.
+const KB182B={u:null,drop:0,xbHeld:0};
+{const _s=kaStep;kaStep=function(u){const p=KB182B.u;KB182B.u=u;try{return _s.apply(this,arguments);}finally{KB182B.u=p;}};Object.assign(kaStep,_s);}
+{const _hd=hurtDragon;hurtDragon=function(d,src){const k=KB182B.u;if(k&&k===KA.u&&k.kb182>0&&(src==='sword'||src==='bash')){KB182B.drop++;return;}return _hd.apply(this,arguments);};}
+{const _x=hmXbTick;hmXbTick=function(){const L=HM.xbList;if(!L||!L.some(u=>u&&u.isKingArmor&&u.kb182>0))return _x.apply(this,arguments);
+  HM.xbList=L.filter(u=>!(u&&u.isKingArmor&&u.kb182>0));KB182B.xbHeld++;try{return _x.apply(this,arguments);}finally{HM.xbList=L;}};}
+
+// ======================= queue 194a: HARD mode - troops and alphas get tougher every castle level =======================
+// HARD only (normal and easy unchanged). Per castle level, compounding, x1 at level 1:
+//   troops (knights, soldiers, archers, guards, hunters, militia, Vikings, raid champions, realm soldiers): health x1.01^(L-1), attack x1.05^(L-1)
+//   alphas (the 176 list: pack leaders, alpha hippos, tigers, realm alphas): health x1.05^(L-1), attack x1.10^(L-1), on top of 176
+// All existing hard rules (139 troop x1.3 x1.05/level, 139 alpha growth, 176) still apply first. Not King William, the prince, the
+// princess or the realm guardians. Attack = melee hits made during the unit's own update plus the arrows/axes/spears it fires.
+// Units are not saved (they respawn on load), so nothing is applied twice.
+const T194={tHp:1.01,tAt:1.05,aHp:1.05,aAt:1.10,cur:null,nT:0,nA:0,hits:0,proj:0};
+const T194_NR=new Set(['hobsol','elf','unirider','dwarf','centaur','goblin','gobarch','orc']);
+function t194L(){return Math.max(1,(G&&G.lvl)||1);}
+function t194On(){return !!(G&&!G.easy&&!EASY&&lv188H());}
+function t194Troop(u){if(!u||u.dead||u.isKing||u.isKingArmor||u.isPrince||u.princess||u.gd||u.guardian)return false;
+  if(u.type==='knight'||u.type==='archer'||u.type==='hunter'||u.militia||u.vk)return true;
+  return !!(u.nr&&T194_NR.has(u.species)&&!al176Is(u));}
+function t194Kind(u){if(!u||u.dead)return null;if(al176Is(u))return 'a';if(t194Troop(u))return 't';return null;}
+function t194AtkMul(u){if(!t194On())return 1;const L=t194L();if(L<=1)return 1;const k=t194Kind(u);return k==='a'?Math.pow(T194.aAt,L-1):k==='t'?Math.pow(T194.tAt,L-1):1;}
+function t194Proj(A,n,m){if(!A)return;for(let i=Math.max(0,n);i<A.length;i++){const q=A[i];if(!q||q.t194)continue;q.t194=1;if(m>1&&typeof q.dmg==='number'&&q.dmg>0){q.dmg*=m;T194.proj++;}}}
+function t194Wrap(f){const w=function(u){if(!u||typeof u!=='object'||T194.cur===u)return f.apply(this,arguments);
+    const p=T194.cur,a=projs,b=typeof NR_P!=='undefined'?NR_P:null,n0=a.length,n1=b?b.length:0;T194.cur=u;
+    try{return f.apply(this,arguments);}finally{T194.cur=p;try{const na=projs===a&&a.length>n0,nb=b&&NR_P===b&&b.length>n1;
+      if(na||nb){const m=t194AtkMul(u);if(na)t194Proj(a,n0,m);if(nb)t194Proj(b,n1,m);}}catch(e){}}};
+  Object.assign(w,f);return w;}
+for(const k of['updKnight','updArcher','updCavalry','updHunter','updMilitia','updCrew','updWild','updAnimal','updCroc','updCougar','updWD','updRR','updNW','updOC',
+  'updSeaUnit','updDCam','updBull','nrUpd','hpUpd','raidStep','escortStep','princeStep','soldierSwim']){try{const f=eval(k);if(typeof f!=='function')continue;const w=t194Wrap(f);eval(k+'=w');}catch(e){}}
+{const _hd=hurtDragon;hurtDragon=function(d,src){const u=T194.cur;if(u&&typeof d==='number'&&d>0){let m=1;try{m=t194AtkMul(u);}catch(e){}if(m>1){arguments[0]=d*m;T194.hits++;}}return _hd.apply(this,arguments);};}
+function t194Scan(){if(!t194On())return;const L=t194L();if(L<=1)return;const tm=Math.pow(T194.tHp,L-1),am=Math.pow(T194.aHp,L-1);
+  const S=new Set(units);if(typeof NRU!=='undefined')for(const u of NRU)S.add(u);
+  for(const u of S){if(!u||u.dead)continue;let m=0;const k=t194Kind(u);
+    if(k==='a'&&!u.a194){u.a194=am;m=am;T194.nA++;}else if(k==='t'&&!u.t194h){u.t194h=tm;m=tm;T194.nT++;}
+    if(m>1){u.maxHp=Math.round((u.maxHp||u.hp)*m);u.hp=Math.round(u.hp*m);}}}
+{const _u=update;let acc=0;update=function(dt){const r=_u.apply(this,arguments);if(G&&scene==='play'&&!G.over){acc+=dt;if(acc>=.25){acc=0;try{t194Scan();}catch(e){}}}return r;};}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);try{t194Scan();}catch(e){}return r;};Object.assign(newGame,_ng);}
+{const _sl=svLoad;svLoad=function(){const r=_sl.apply(this,arguments);try{t194Scan();}catch(e){}return r;};}
+// the tiger alpha rebuilds its health on a new level or after loading; clear the mark so it gets the boost again (same as 176)
+if(typeof tgMake==='function'){const _tm=tgMake;tgMake=function(u){const r=_tm.apply(this,arguments);if(u)u.a194=0;return r;};}
