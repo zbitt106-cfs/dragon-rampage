@@ -12197,6 +12197,37 @@ for(const k of ['kaStats','startRaidWarning','spawnPatrol','patrolTarget','wsSpa
 // alarm waves (knights riding out of the castle as the wanted bar climbs): no +25%/level on normal/easy
 {const _ng=newGame;newGame=function(opt){const r=_ng.apply(this,arguments);if(G&&!G.hard)G.waveMul=(EASY?.5:1);return r;};}
 
+// ======================= 190: prince levels need BOTH the prince defeated AND the princess at the lair =======================
+// Before: part7 updGoal won the level the moment Princess Elizabeth reached the lair (dist < 130), prince or no prince.
+// Now on prince levels (5, 10, 15...): if she arrives while the prince still lives, she STAYS at the lair (no level-up), the prince's
+// army marches on the lair whenever the dragon is away, and King William keeps riding out to rescue her. The level completes the
+// moment the prince is defeated (beaten, eaten or sunk) with her at the lair. Prince first, princess second = the old rule.
+const PR190={kaEvery:40,kaEveryEasy:55,away:650};
+function pr190Need(){return !!(G&&typeof princeLevel==='function'&&princeLevel(G.lvl)&&G.prState!=='done');}
+function pr190Win(){G.pr190Held=0;G.won=true;G.wonT=0;G.score=calcScore();if(G.score>best){best=G.score;try{localStorage.setItem('dr_best',best);}catch(e){}}rumble(.5,.5,300);
+  G.banner={text:'The kingdom is yours!',sub:'The prince is beaten and Princess Elizabeth is safe at your lair.',t:4};}
+{const _ug=updGoal;updGoal=function(dt){
+  if(G&&!G.over&&!G.won&&D&&D.princess&&pr190Need()&&d2(D.x,D.y,LAIR.x,LAIR.y)<130){
+    D.princess=false;D.quip=null;PR.state='lair';PR.x=LAIR.x+40;PR.y=LAIR.y;G.pr190Held=1;G.pr190KaT=6;
+    const c=typeof PRN!=='undefined'&&PRN.cur,nm=c&&c.name?c.name:'The prince';
+    G.banner={text:'Princess Elizabeth is at your lair...',sub:'...but the kingdom is not yours yet. Defeat the prince to claim the kingdom!',extra:`${nm} and King William will keep coming to rescue her.`,t:5};
+    float(LAIR.x+40,LAIR.y-50,'Defeat the prince to claim the kingdom!','#ffe08a');}
+  const r=_ug.apply(this,arguments);
+  if(G&&G.pr190Held&&!G.won&&!G.over){if(PR.state!=='lair')G.pr190Held=0;else if(G.prState==='done')pr190Win();}
+  return r;};}
+// the prince's army marches on the lair while she is held there and the dragon is away (with the dragon near, they fight it as before)
+{const _ht=prHuntTarget;prHuntTarget=function(){if(G&&G.pr190Held&&!G.won&&d2(D.x,D.y,LAIR.x,LAIR.y)>PR190.away)return{x:LAIR.x,y:LAIR.y+120};return _ht.apply(this,arguments);};}
+// King William: while she is held, "hiding in the lair" no longer sends him home, and he rides out again every 40 s (55 s on easy) when he is back home
+{const _al=kaAtLair;kaAtLair=function(){if(G&&G.pr190Held&&!G.won)return false;return _al.apply(this,arguments);};}
+function pr190King(dt){if(!G.pr190Held||G.won||G.over||typeof KA==='undefined')return;if(KA.phase!=='home'||KA.u){G.pr190KaT=Math.max(G.pr190KaT||0,8);return;}
+  G.pr190KaT=(G.pr190KaT||0)-dt;if(G.pr190KaT>0)return;G.pr190KaT=G.easy?PR190.kaEveryEasy:PR190.kaEvery;
+  try{if(KA.lavaHp>0){KA.hp=KA.lavaHp;KA.lavaHp=0;}else KA.hp=0;const pd=kaDoor();KING.x=pd.x;KING.y=pd.y;kaSpawn('King William: "Return my daughter, beast!"');KA.hp=KA.u.hp;KA.wind=1;kaCharge(true);G.pr190Rides=(G.pr190Rides||0)+1;}catch(e){G.pr190Err=String(e);}}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);try{if(scene==='play'&&G&&!paused)pr190King(dt);}catch(e){}return r;};}
+// objective text on prince levels (every device)
+{const _dh=drawHUD;drawHUD=function(){const r=_dh.apply(this,arguments);try{if(scene==='play'&&G&&!G.over&&!G.won&&pr190Need()){
+  const sm=VW<760,s=G.pr190Held?(sm?'👑 Defeat the prince to claim the kingdom!':'👑 Defeat the prince to claim the kingdom! (Princess Elizabeth waits at your lair)'):D.princess?(sm?'👑 Defeat the prince AND bring her home':'👑 Prince level: defeat the prince AND bring Princess Elizabeth home'):(sm?'👑 Defeat the prince + capture the princess':'👑 Prince level: defeat the prince and capture Princess Elizabeth');
+  ctx.setTransform(DPR,0,0,DPR,0,0);const y=sm||TOUCH.on?Math.round(VH*.25):VH-32;txt(s,VW/2,y,sm?11:13,'#ffe08a','center',true);}}catch(e){}return r;};}
+
 // ======================= queue 191 / 191a: bites only hit what is IN FRONT of the jaws; mouth capacity for multi-bites =======================
 // 191:  a bite only reaches targets in a forward cone of +-50 degrees around the way the dragon faces (big animals count by their body
 //       edge), or right at the tip of the snout - no more 360-degree "belly bites" of things beside or behind the dragon.

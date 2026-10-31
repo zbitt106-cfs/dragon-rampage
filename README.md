@@ -1391,3 +1391,19 @@ On an iPhone held upright, the main menu used to start under the notch, so its t
 - Berserkers are drawn 1.12x bigger than a regular Viking, and their hitbox grows with them.
 - New berserk mode: when their crew is fighting and the dragon is within 320 px (outside the fantasy lands), a berserker shouts "BERSERK!" and goes berserk for 3 s (5 s on hard). While berserk it glows red, hits 50% harder and charges faster. Then it needs 6 s to cool down before it can go berserk again.
 - Screenshots: screenshots/q180_berserker_vs_viking_desktop.png, screenshots/q180_berserker_vs_viking_iphone.png (regular Viking, berserker, berserker in berserk mode).
+
+## Batch L: prince levels need the prince beaten AND the princess at your lair (190)
+
+**Before:** a level was won the moment Princess Elizabeth reached your lair, even on a prince level with the prince still alive.
+
+**Now, on prince levels (castle levels 5, 10, 15 and so on, in every mode):**
+- **Both** are needed to finish the level: the prince must be beaten (defeated, gobbled or his flagship sunk) **and** Princess Elizabeth must be at your lair.
+- **Prince first, princess second:** same as before. The level is won as soon as she reaches the lair.
+- **Princess first:** she **stays at your lair** and the level does not end yet. The banner says *"Princess Elizabeth is at your lair... Defeat the prince to claim the kingdom!"*. Until the prince is beaten:
+  - the prince's army marches on the lair whenever you are away from it (more than 650 px); with you nearby they fight you as usual;
+  - King William no longer gives up because "the dragon hides in its lair". He rides out to rescue her (*"Return my daughter, beast!"*) and, after each charge ends, rides out again 40 s after he is back home (55 s on easy).
+- The moment the prince is beaten with her at the lair, the level is won (*"The kingdom is yours!"*) and the ransom is paid as usual.
+- **Objective line** at the bottom of the screen (near the top on phones), only on prince levels until the prince is beaten: *"Prince level: defeat the prince and capture Princess Elizabeth"*, *"... AND bring Princess Elizabeth home"* while you carry her, and *"Defeat the prince to claim the kingdom! (Princess Elizabeth waits at your lair)"* while she waits. Phones show a shorter version.
+- Saving and loading while she waits keeps her at the lair, and the prince comes again.
+- Levels without a prince keep the old rule: bring her home and the level is won.
+- Screenshots: screenshots/q190_objective_desktop.png, screenshots/q190_objective_iphone.png, screenshots/q190_held_at_lair_desktop.png, screenshots/q190_held_at_lair_iphone.png, screenshots/q190_kingdom_claimed_desktop.png, screenshots/q190_kingdom_claimed_iphone.png.
