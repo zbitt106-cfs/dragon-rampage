@@ -12417,6 +12417,85 @@ function ld200Keys(){if(scene!=='title'||PM.on)return;
       if(i===3){titleSel=3;as184Continue();return true;}if(i===4){titleSel=4;pmOpen('load','title');return true;}if(i===5){titleSel=5;pmOpen('ach','title');return true;}
       return _tt.call(this,x,(g.y0+i*36+15)*g.k);}}}catch(e){console.warn('200 tap',e);}
   return _tt.apply(this,arguments);};}
+// ======================= queue 199: HIGH graphics only: richer look (colour grade per region, ambient particles, fire/breath light on units, ripples, sun glow) =======================
+// Everything here runs only when the Graphics setting is HIGH (GFX_Q==='high'). LOW and MEDIUM draw exactly as before (this code returns at once).
+// No Math.random / rnd() is used (fixed hashes and the game clock), so the game itself plays the same on every setting.
+//  - colour grade per region (soft-light tint, blended smoothly as the dragon flies between regions): warm gold desert, cool blue mountains,
+//    green forest/jungle, red near the volcano / lair, violet in the fantasy lands, sea-teal at sea, soft sunny farmland;
+//  - ambient particles per region: falling snow (mountains), drifting dust (desert), floating pollen (green lands), ash and sparks (volcano),
+//    sparkles (fantasy); fireflies at night in green lands;
+//  - fire light on nearby units and buildings (not only the ground), dragon fire breath lights the ground and the units in front of it;
+//  - ripples round anyone swimming (dragon, soldiers, Vikings) and round ships;
+//  - soft sun glow from the top-left by day.
+const H199={on:1,grade:[255,216,144,.12],pk:'',pa:0,lt:-1,n:0,stat:{fr:0}};
+function h199On(){return H199.on&&GFX_Q==='high'&&typeof G!=='undefined'&&G&&scene!=='title';}
+function h199Hash(i,j){return hsh(i|0,j|0);}
+function h199Region(){const x=cam.x,y=cam.y;let k='farm';try{k=regionKey(x,y);}catch(e){}
+  try{if(nrFantasyAt(x,y))return'fant';}catch(e){}
+  try{for(const v of (typeof VOLCS==='function'?VOLCS():[VOLC]))if(v&&d2(x,y,v.x,v.y)<1100)return'volc';}catch(e){}
+  if(k==='lair')return'volc';if(k==='desert'||k==='savanna')return'desert';if(k==='mountain')return'snow';
+  if(k==='forest'||k==='jungle')return'green';if(k==='sea'||k==='deep'||k==='coast'||k==='isle')return'sea';return'farm';}
+const H199G={desert:[255,170,80,.24],snow:[150,190,255,.22],green:[90,190,100,.16],volc:[255,140,70,.12],fant:[170,140,255,.09],sea:[70,180,210,.16],farm:[255,216,144,.13]};
+const H199P={desert:'dust',snow:'snow',green:'pollen',volc:'ash',fant:'spark',farm:'pollen',sea:''};
+function h199World(){const z=cam.z,vx0=cam.x-VW/z/2,vx1=cam.x+VW/z/2,vy0=cam.y-VH/z/2,vy1=cam.y+VH/z/2,t=G.t||0,n=nightAmt();
+  const reg=h199Region(),dt=(H199.lt<0||t<H199.lt-.5)?1:clamp(t-H199.lt,0,.1);H199.lt=t;H199.reg=reg;
+  // fade the ambient particle kind in and out when the region changes
+  const want=H199P[reg]||'';if(H199.pk!==want){H199.pa-=dt*1.5;if(H199.pa<=0){H199.pa=0;H199.pk=want;}}else H199.pa=Math.min(1,H199.pa+dt*1.5);
+  const tg=H199G[reg]||H199G.farm,c=H199.grade,k=Math.min(1,dt*1.2);for(let i=0;i<4;i++)c[i]+=(tg[i]-c[i])*k;
+  const vis=(o,m)=>o.x>vx0-m&&o.x<vx1+m&&o.y>vy0-m&&o.y<vy1+m+80;
+  ctx.globalCompositeOperation='lighter';
+  // fire light falling on units and buildings near every fire (warm, flickering)
+  const F=GX.fires;let nl=0;
+  for(let i=0;i<F.length&&nl<40;i+=4,nl++){const r=F[i+2]*2.2*(1+.07*Math.sin(t*11+i*1.7));ctx.globalAlpha=.16+.14*n;ctx.drawImage(GX.glowO,F[i]-r,F[i+1]-r*1.25,r*2,r*1.6);}
+  // dragon fire breath lights the ground and the units in front of it
+  let nb=0;for(let i=0;i<parts.length&&nb<14;i++){const p=parts[i];if(p.kind!=='breath'||(i%5))continue;if(!vis(p,60))continue;const l=clamp(p.life/p.max,0,1),r=46+40*(1-l);
+    ctx.globalAlpha=.11*l+.06;ctx.drawImage(GX.glowO,p.x-r,p.y-r*.6,r*2,r*1.2);addLight(p.x,p.y,r*2.2,.8,1);nb++;}
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+  // ripples round swimmers and ships
+  const rip=(x,y,s,w)=>{for(let k2=0;k2<2;k2++){const ph=((t*.9+k2*.5+w)%1),rx=s*(.6+ph*1.3);ctx.globalAlpha=.42*(1-ph);ctx.beginPath();ctx.ellipse(x,y,rx,rx*.42,0,0,TAU);ctx.stroke();}};
+  ctx.strokeStyle='rgba(235,250,255,1)';ctx.lineWidth=1.4/Math.max(.5,z);let nr=0;
+  if(D.swim&&vis(D,40)){rip(D.x,D.y+4,46,0);nr++;}
+  for(const u of units){if(nr>=40)break;if(u.dead||u.inLong||u.species==='fish'||(u.z||0)>2||!vis(u,20))continue;
+    if(u._w199===undefined||((H199.stat.fr+((u.x|0)&7))&7)===0)u._w199=!!(u.vkSwim||soldierWet(u.x,u.y));if(!u._w199)continue;rip(u.x,u.y+2,14,h199Hash(u.x|0,7)*0);nr++;}
+  if(typeof ships!=='undefined')for(const s of ships){if(nr>=48)break;if(!s||s.gone||s.state==='sink'||!vis(s,80))continue;rip(s.x,s.y+4,(s.r||30)*1.15,.25);nr++;}
+  ctx.globalAlpha=1;
+  // ambient particles (world-anchored, so they drift past as the camera moves)
+  const pk=H199.pk,pa=H199.pa*(pk==='pollen'?1-.7*n:1);
+  if(pk&&pa>.02){const T=900,N=pk==='snow'?34:pk==='ash'?30:22,i0=Math.floor(vx0/T),i1=Math.floor(vx1/T),j0=Math.floor(vy0/T),j1=Math.floor(vy1/T),tiles=(i1-i0+1)*(j1-j0+1),step=tiles>16?2:1;
+    const sp={snow:[14,38],dust:[60,6],pollen:[10,-6],ash:[8,-14],spark:[0,-10]}[pk]||[0,0];
+    for(let ti=i0;ti<=i1;ti++)for(let tj=j0;tj<=j1;tj++)for(let i=0;i<N;i+=step){const a=h199Hash(i*7+3,ti*131+tj*977),b=h199Hash(i*13+5,ti*311+tj*71),c2=h199Hash(i*17+1,ti*29+tj*53);
+      const vx=sp[0]*(.6+c2*.8),vy=sp[1]*(.6+a*.8),x=ti*T+(((a*T+vx*t)%T)+T)%T+Math.sin(t*(.7+b)+i)*12,y=tj*T+(((b*T+vy*t)%T)+T)%T+Math.cos(t*(.5+a)+i)*6;
+      if(x<vx0||x>vx1||y<vy0||y>vy1)continue;const tw=.6+.4*Math.sin(t*(2+c2*3)+i);
+      if(pk==='snow'){ctx.globalAlpha=pa*(.55+.4*c2);ctx.fillStyle='#ffffff';const r=1.2+c2*1.8;ctx.fillRect(x-r,y-r,r*2,r*2);}
+      else if(pk==='dust'){ctx.globalAlpha=pa*.35*tw;ctx.fillStyle='#e8c890';ctx.fillRect(x,y,2+c2*2,1.2);}
+      else if(pk==='pollen'){ctx.globalAlpha=pa*.55*tw;ctx.fillStyle=c2>.5?'#fff6c0':'#ffffff';ctx.fillRect(x-1,y-1,2,2);}
+      else if(pk==='ash'){if(c2>.75){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=pa*.8*tw;ctx.fillStyle='#ffa040';ctx.fillRect(x-1,y-1,2,2);ctx.globalCompositeOperation='source-over';}else{ctx.globalAlpha=pa*.5;ctx.fillStyle='#5a5250';ctx.fillRect(x-1.5,y-1.5,3,3);}}
+      else if(pk==='spark'){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=pa*.7*tw;ctx.fillStyle=c2>.5?'#e0b0ff':'#a0e0ff';ctx.fillRect(x-1,y-1,2,2);ctx.globalCompositeOperation='source-over';}}
+    // fireflies at night in green lands
+    if(pk==='pollen'&&n>.2){ctx.globalCompositeOperation='lighter';for(let ti=i0;ti<=i1;ti++)for(let tj=j0;tj<=j1;tj++)for(let i=0;i<16;i+=step){const a=h199Hash(i*5+9,ti*17+tj*29),b=h199Hash(i*11+2,ti*41+tj*13);
+      const x=ti*T+a*T+Math.sin(t*.6+i*2)*30,y=tj*T+b*T+Math.cos(t*.45+i)*20;if(x<vx0||x>vx1||y<vy0||y>vy1)continue;const g=Math.max(0,Math.sin(t*2.2+i*1.9));
+      ctx.globalAlpha=n*pa*g;ctx.drawImage(GX.glowO,x-10,y-10,20,20);ctx.fillStyle='#f4ffa0';ctx.fillRect(x-1.2,y-1.2,2.4,2.4);addLight(x,y,36*g,.65,1);}
+      ctx.globalCompositeOperation='source-over';}
+    ctx.globalAlpha=1;}}
+// screen look for HIGH by day, at no extra cost per frame: the region tint, a soft sun glow from the top-left and the normal vignette are baked into ONE
+// cached full-screen image that is drawn instead of the plain vignette (the base gfxPost already draws that image every frame). It is only re-baked when the
+// tint/sun change (region change, dusk), in small steps. At night the normal night-light pass is used unchanged.
+function h199Vig(){const n=nightAmt();if(n>.01||!GX.vig)return null;const f=1-n/.01,du=Math.min(1,duskAmt()),c=H199.grade;
+  const ga=Math.round(c[3]*.42*f*100)/100,sa=Math.round(.34*f*(1-.6*du)*50)/50,r=(c[0]>>3)<<3,g=(c[1]>>3)<<3,b=(c[2]>>3)<<3;
+  const key=VW+'x'+VH+'|'+r+','+g+','+b+'|'+ga+'|'+sa;if(GX.vigH&&GX.vigH.width===VW&&GX.vigH.height===VH&&GX.vigH.k199===key)return GX.vigH;
+  if(!GX.vigH||GX.vigH.width!==VW||GX.vigH.height!==VH)GX.vigH=mkCv(VW,VH);const C=GX.vigH,x=C.getContext('2d');x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.clearRect(0,0,VW,VH);
+  if(ga>0){x.fillStyle=`rgba(${r},${g},${b},${ga})`;x.fillRect(0,0,VW,VH);}
+  if(sa>0){const bw=Math.ceil(VW/4),bh=Math.ceil(VH/4);if(!GX.sun199||GX.sun199.width!==bw||GX.sun199.height!==bh){GX.sun199=mkCv(bw,bh);const s=GX.sun199.getContext('2d'),gr=s.createRadialGradient(0,0,0,0,0,Math.hypot(bw,bh)*.75);
+      gr.addColorStop(0,'rgba(255,238,196,.55)');gr.addColorStop(.45,'rgba(255,228,172,.16)');gr.addColorStop(1,'rgba(255,222,164,0)');s.fillStyle=gr;s.fillRect(0,0,bw,bh);}
+    x.globalAlpha=sa;x.drawImage(GX.sun199,0,0,VW,VH);x.globalAlpha=1;}
+  x.drawImage(GX.vig,0,0,VW,VH);C.k199=key;H199.bakes=(H199.bakes||0)+1;return C;}
+{const _gp=gfxPost;gfxPost=function(){if(!h199On())return _gp.apply(this,arguments);
+  H199.stat.fr++;try{ctx.save();h199World();ctx.restore();}catch(e){ctx.restore();H199.err=String(e);}
+  let sw=false,old=null;try{const cv=h199Vig();if(cv){old=GX.vigF;GX.vigF=cv;sw=true;}}catch(e){H199.err=String(e);}
+  try{return _gp.apply(this,arguments);}finally{if(sw)GX.vigF=old;}};}
+// fix (found while testing 199): the croc's ripple ring could get a negative radius and throw, which stopped the frame from drawing. Draw the croc safely.
+const CROC_ERR={n:0,last:null};
+{const _dc=drawCroc;drawCroc=function(u){try{return _dc.apply(this,arguments);}catch(e){CROC_ERR.n++;if(!CROC_ERR.last)CROC_ERR.last={t:G&&G.t,id:u&&u.id,msg:String(e).slice(0,120)};try{ctx.globalAlpha=1;}catch(_){}}};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}

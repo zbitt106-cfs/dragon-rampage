@@ -1346,3 +1346,20 @@ On an iPhone held upright, the main menu used to start under the notch, so its t
 - Keyboard and controller: Up/Down move through all six rows; Enter / A picks one. Tapping or clicking a row works too.
 - The six rows take the same space as the old five, so nothing below them moves and the menu still fits on an iPhone held upright.
 - Screenshots: screenshots/q200_menu_desk.png, q200_menu_iph.png (Main Menu), q200_pause_*.png (Pause menu), q200_load_menu_*.png and q200_load_pause_*.png (the Load screen from each menu).
+
+## Batch J: HIGH graphics upgrade (199), croc drawing fix
+
+**Richer look on the HIGH graphics setting only (199)**
+- Everything here runs only when Graphics is set to HIGH. LOW and MEDIUM draw exactly as before: a test renders 8 scenes on each setting and compares every pixel with the previous build (desktop and iPhone size). They are identical.
+- Colour mood per region, blended smoothly as the dragon flies from one region to the next: warm gold in the desert, cool blue in the mountains, green in forests and jungle, warm orange near the volcano and the lair, a hint of violet in the fantasy lands, sea-teal at sea, soft sunlight over farmland.
+- Soft sunlight from the top-left of the screen by day, which fades out at dusk.
+- Ambient particles per region, fixed to the world so they don't slide with the camera: falling snow in the mountains, drifting dust in the desert, floating pollen in green lands, ash and sparks near the volcano, sparkles in the fantasy lands. At night, fireflies glow in forests, jungle and farmland and light up the ground around them.
+- Fire lights up the units and buildings around it, not only the ground. The dragon's fire breath lights the ground and the units in front of it.
+- Ripples spread round anyone swimming (the dragon, soldiers, Vikings) and round ships.
+- No extra full-screen drawing pass: the colour mood and sunlight are baked into the same cached screen image as the normal vignette, and that image is only re-baked when the mood changes. Frame time on HIGH stays close to the previous build: on average 0 to 11% slower depending on the scene, measured on desktop and iPhone size (the test allows at most 20%).
+- The new effects use no random numbers, so the game plays the same on every setting.
+- Not done (too costly or risky for now): a rim light on the dragon, sun-angle shadows, bloom on hits.
+- Before/after screenshots on HIGH: screenshots/q199_*_before_desk.png / q199_*_after_desk.png, and the same for iPhone (_iph).
+
+**Croc drawing fix**
+- The croc's ripple ring could get a negative size and throw an error, which stopped that frame from drawing. This happened in the previous build too. The croc is now drawn safely.
