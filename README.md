@@ -1505,3 +1505,13 @@ Screenshots: q186_offline_title_{desktop,iphone}, q186_offline_play_{desktop,iph
   The standard health bars stay. Their colour still shows when a hippo, elephant or tiger is worn down. The gorilla's chest-beat pose and the floating call text also stay.
 
 Screenshots: q169_goats_{desktop,iphone}, q166_burning_turf_{desktop,iphone}, q166a_before_{desktop,iphone}, q166a_after_{desktop,iphone}, q166a_troll_before_desktop, q166a_troll_after_desktop.
+
+## Batch Q: minimap size setting (164, 164a)
+
+- **Minimap size (164):** pick Small, Normal or Large in **Settings → Minimap**. Small is 90% and Normal is the current size, which is unchanged. Large is 110%. The minimap stays pinned to the top-right corner, and the HUD below it moves to fit. The choice is saved on the device and kept after a reload.
+- **Large never covers the HUD:** on iPhone landscape (844x390 and 956x440), Large is the full 110%. The map never grows into the centred WANTED panel or the touch buttons, so on smaller screens Large grows only as far as there is room:
+  - 1280x800 desktop: 108%.
+  - 1024x768 tablet, iPhone SE landscape and portrait iPhone: same as Normal, because Normal already uses all the room there.
+- **In the menu, not on the map (164a):** the size is a new SMALL / NORMAL / LARGE row in the Settings menu, which you can open from the pause menu or the title screen. Tap or click a size, or select the row with the arrow keys or a controller. Left and right change the size, and Enter cycles Small → Normal → Large. The pause menu now reads "Settings: sound · graphics · minimap". The Settings panel still fits on a 667x375 phone.
+
+Screenshots: q164_minimap_{small,normal,large}_{desktop,iphone}, q164a_settings_before_{desktop,iphone}, q164a_settings_after_{desktop,iphone}, q164a_settings_after_iphone_667x375, q164a_pause_menu_{desktop,iphone}.
