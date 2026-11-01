@@ -1515,3 +1515,12 @@ Screenshots: q169_goats_{desktop,iphone}, q166_burning_turf_{desktop,iphone}, q1
 - **In the menu, not on the map (164a):** the size is a new SMALL / NORMAL / LARGE row in the Settings menu, which you can open from the pause menu or the title screen. Tap or click a size, or select the row with the arrow keys or a controller. Left and right change the size, and Enter cycles Small → Normal → Large. The pause menu now reads "Settings: sound · graphics · minimap". The Settings panel still fits on a 667x375 phone.
 
 Screenshots: q164_minimap_{small,normal,large}_{desktop,iphone}, q164a_settings_before_{desktop,iphone}, q164a_settings_after_{desktop,iphone}, q164a_settings_after_iphone_667x375, q164a_pause_menu_{desktop,iphone}.
+
+## Batch 165: rich caravan guards stay with the gold
+
+- **Guards stay (165):** when the dragon raids a rich caravan, its whole escort (caravan soldiers, archers and camel riders) now stays with the caravan. They no longer turn straight into Sandhaven town guards. They form a ring around the spilled gold. Once the gold is gone, they ring the surviving camels instead.
+- **They fight for it:** if the dragon comes for the gold or the camels, the guards attack. They never chase more than a short leash away, then return to their posts.
+- **When they leave:** only after every rich-caravan camel is dead **and** all of the gold that caravan dropped is gone. The gold is gone once the dragon collects it, or once it fades after the usual 4 minutes. Then they shout "The caravan is finished. Back to Sandhaven!" and become town guards, heading home as before.
+- **Unchanged:** the next rich caravan still arrives on the usual timer, even while the old party is still guarding. A save and reload keeps the guarding party, its camels and its gold.
+
+Screenshots: q165_guards_before_{desktop,iphone}, q165_guards_hold_{desktop,iphone}, q165_guards_fight_desktop, q165_guards_release_{desktop,iphone}.
