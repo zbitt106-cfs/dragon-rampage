@@ -1534,3 +1534,13 @@ Screenshots: q165_guards_before_{desktop,iphone}, q165_guards_hold_{desktop,ipho
 - **Unchanged:** Viking longships still come up from the **south**. The small merchant ships that wander the sea are unchanged. Save and load keep a trade ship on its route.
 
 Screenshots: q162_before_fleet_{desktop,iphone}, q162_before_fleet_landing_desktop, q162a_before_trade_{desktop,iphone}, q162_fleet_east_{desktop,iphone}, q162_fleet_landing_desktop, q162a_trade_east_{desktop,iphone}, q162a_trade_quay_desktop, q162a_treasure_east_desktop.
+
+
+## Batch 163: royal knights raid the lair; who chases the dragon
+
+- **Royal knight raids (163a):** a hoard-raid party (the named champion with his spearmen and archers) now marches on the **lair** and never leaves its route to hunt the dragon. The champion only swings at a dragon that has landed right beside him; spearmen strike only when the dragon is next to them; archers shoot from where they stand but keep walking with the party. When a raid ends, the surviving raiders walk home to the castle instead of turning into ordinary dragon hunters.
+- **RAID arrow (163a):** the blue off-screen **RAID** arrow (like the PRINCE and KING arrows) now shows the whole time a raid party is out: while it marches to the lair or fights there, and also while the champion runs home with your gold. Before, it disappeared on the run home.
+- **Who chases the dragon (163b):** princes and their armies, King William, and the Vikings. Vikings chase only in **militia mode**, which starts when the WANTED bar reaches its top tier ("Militia", 90 of 100). The chase now lasts until the WANTED bar is all the way back at **zero**, and then the Viking crews go back to their posts. While it lasts, Viking fleets look for the dragon anywhere on the map. Outside militia mode the Vikings behave as before.
+- **Fantasy lands (163c):** if the dragon flies into the fantasy lands during a Viking chase, the Vikings do not follow it and do not go to the lair. They walk to the nearest point on the fantasy border and wait there. If the dragon comes back out while the WANTED bar is above zero, they chase it again; when the bar reaches zero they go home.
+
+Screenshots: q163_before_raid_arrow_desktop, q163_before_raid_march_desktop, q163_before_viking_desktop, q163_before_border_desktop, q163a_raid_arrow_desktop, q163a_raid_march_desktop, q163b_viking_chase_desktop, q163c_border_wait_desktop.

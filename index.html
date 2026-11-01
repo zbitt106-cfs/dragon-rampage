@@ -13122,6 +13122,74 @@ updKbWar=e162Wrap(updKbWar,'kbwar',1.8,true);
 {const _s=kbSpawnShip;kbSpawnShip=function(w,st,o){const s=_s.apply(this,arguments);try{if(s&&(!o||o.x==null)&&s.state!=='home'){const yl=e162LaneY(),y0=s.y,x0=s.x;
     s.x=E162.edge;s.y=yl;s.ang=Math.PI;s.e162=1;s.r162=e162In(s,yl,0);E162.stats.trade++;
     for(const e of ships)if(e&&e.kind==='kbwar'&&e.guard===s){e.x=s.x+e.side*130>WX1-60?s.x-60:s.x+e.side*130;e.y=s.y+70;e.ang=Math.PI;}}}catch(e){G.e162Err=String(e);}return s;};}
+
+// ======================= queue 163 / 163a-c: royal (raiding) knights RAID the lair; who chases the dragon; Viking militia chase =======================
+// Who chases the dragon now: the PRINCE (and his army), KING WILLIAM, and the VIKINGS (only in militia mode, 163b). Royal raiding knights never do.
+// 163a  A hoard raid (the champion "royal knight", his spearmen and archers) marches on the LAIR and never leaves its route to hunt the dragon:
+//       - the champion only strikes when the dragon is on the ground within his sword reach (RD163.reach 70 px); he no longer steps out of the
+//         march to go after a landed dragon up to 150 px away (old raidFight), on the way in or on the run home;
+//       - spearmen strike only a dragon right beside them (foot reach 58 px, standing still), otherwise they keep their place in the party;
+//         archers shoot from where they stand while the dragon is in bow range, but keep marching with the party (no stepping toward it);
+//       - the lair guardians fight (queue 69-72) and the gold-sack pick-ups (queue 75) are unchanged;
+//       - when a raid ends (champion beaten / eaten, or he got home) the surviving raiders walk home to the castle gate instead of turning
+//         into ordinary dragon-hunting knights.
+//       Off-screen RAID arrow (queue 142, blue "RAID n m"): kept while the party marches to / fights at the lair, and now ALSO while the
+//       champion runs home with the gold (phase 'flee'), i.e. the whole time the party is out. Not during the 8 s warning (nobody is out yet).
+// 163b  Viking crews chase the dragon only in MILITIA MODE: it starts when the WANTED bar reaches the top "Militia" tier (G.alarm >= 90 of 100,
+//       G.level 6, the same moment the villagers arm up) and now lasts until the WANTED bar is back at ZERO (G.alarm 0), not just below the
+//       first tier as before; then every chasing crew goes back to its post (berth). While it lasts, coastal fleets look for the dragon
+//       anywhere on the map (old limit: 3,000 px) and a crew that was sailing home turns round to hunt. Outside militia mode nothing changes
+//       (156 land fights / castle defence / patrols / escorts as before).
+// 163c  If the dragon is in the fantasy lands during a militia chase, Vikings do not follow (141ab) and do not go to the lair: a crew on land
+//       walks to the CLOSEST point on the fantasy border (nearest to the dragon, re-checked every 1.5 s) and waits there in formation;
+//       they do not give up / sail home while they wait. If the dragon comes back out while the WANTED bar is above zero they resume the chase;
+//       when it reaches zero they go back to their posts. (Ships at sea simply keep out of fantasy waters, as before.)
+const E163={v:1};
+const RD163={reach:70,noChase:0,strikes:0,shots:0,held:0,home:0};
+// --- 163a: the champion never steps out of the march toward the dragon (strikes only inside sword reach) ---
+{const _f=raidFight;raidFight=function(u,dt){if(u&&u.raid&&D&&!G.over){const dd=dist(u,D);if(D.alt<DR.hitAltSword&&dd>RD163.reach&&dd<=150){RD163.noChase++;return false;}}return _f.apply(this,arguments);};}
+// --- 163a: escorts fight back in place and otherwise keep marching with the party ---
+function rd163Inner(_r,u,dt){const ax=D.x,ay=D.y,aa=D.alt;D.x=ax+1e7;D.y=ay+1e7;D.alt=1e6;try{_r(u,dt);}finally{D.x=ax;D.y=ay;D.alt=aa;}return true;}
+{const _r=raidStep;raidStep=function(u,dt){const r=u&&u.raid;
+  if(!r||RAID.cur!==r||G.over||u.champ||!u.raidEsc||(r.phase!=='march'&&r.phase!=='flee')||!D)return _r.apply(this,arguments);
+  const ch=r.champ;if(!ch||ch.dead)return _r.apply(this,arguments);
+  const arch=u.type==='archer',dd=dist(u,D),ground=D.alt<DR.hitAltSword;
+  if(!(arch?dd<400:(ground&&dd<230)))return _r.apply(this,arguments);
+  if(!arch&&ground&&dd<=58){const x=u.x,y=u.y;updKnight(u,dt);u.x=x;u.y=y;u.face=D.x>u.x?1:-1;RD163.strikes++;return true;}
+  if(arch){const x=u.x,y=u.y,n0=projs.length;updArcher(u,dt);u.x=x;u.y=y;if(projs.length>n0)RD163.shots++;}
+  RD163.held++;rd163Inner(_r,u,dt);if(arch)u.face=D.x>u.x?1:-1;return true;};}
+// --- 163a: survivors of a finished raid go home ---
+{const _e=endRaid;endRaid=function(won){const r=RAID.cur,M=r?(r.members||[]).filter(u=>u&&!u.dead&&!u.champ):[];const res=_e.apply(this,arguments);
+  for(const u of M)if(!u.dead&&!u.retreat){u.retreat=true;RD163.home++;}return res;};}
+// --- 163a: the RAID arrow stays while the party runs home with the gold ---
+{const _t=ar142Targets;ar142Targets=function(){const T=_t.apply(this,arguments);
+  try{const r=RAID.cur;if(r&&r.phase==='flee'&&!T.some(t=>t.k==='raid')){const t=r.champ&&!r.champ.dead?r.champ:(r.members||[]).find(u=>!u.dead);if(t)T.unshift({k:'raid',x:t.x,y:t.y,col:'#6ab0ff',lab:'RAID'});}}catch(e){}
+  return T;};}
+// --- 163b/c: the Viking militia chase ---
+const V163={on:0,starts:0,ends:0,waitT:0,waits:0,far:0,turned:0,B:null,bT:0,out:null,seekR:3000};
+function v163Border(){if(V163.B&&G.t<V163.bT)return V163.B;let best=null,bd=1e18;
+  for(let dx=-2400;dx<=2400;dx+=40){const x=D.x+dx;if(x<WX0+120||x>WX1-120)continue;const y=nrEdge(x)+70;if(y<WY0+120||y>WY1-120)continue;
+    if(soldierWet(x,y)||vkFant(x,y))continue;const d=(x-D.x)*(x-D.x)+(y-D.y)*(y-D.y);if(d<bd){bd=d;best={x,y};}}
+  if(!best&&V163.out){const o=V163.out;best=!soldierWet(o.x,o.y)?{x:o.x,y:o.y}:dryNear(o.x,o.y);}
+  V163.B=best;V163.bT=G.t+1.5;return best;}
+function v163End(){V163.on=0;V163.ends++;V163.B=null;for(const g of VKG)if(!g.gone&&g.mode==='chase'){g.mode='return';g.v163w=0;}}
+function v163Latch(){if(!G||G.over){if(V163.on)v163End();return;}
+  if(!vkFant(D.x,D.y))V163.out={x:D.x,y:D.y};
+  if(!V163.on&&G.level>=6){V163.on=1;V163.starts++;}else if(V163.on&&!(G.alarm>0))v163End();}
+function v163Wait(g,dt){const L=v156Live(g);if(!L.length)return;const B=v163Border();g.awayT=0;g.eng=false;if(!g.v163w){g.v163w=1;V163.waits++;}V163.waitT+=dt;
+  if(!B){vkForm(g,dt,g.A||vkCentroid(L),true);return;}const c=vkCentroid(L);
+  if(soldierWet(c.x,c.y)||d2(c.x,c.y,B.x,B.y)>300)v156Lead(g,dt,B,L);else vkForm(g,dt,B,true);}
+{const _s=vkStep;vkStep=function(dt){try{v163Latch();}catch(e){}return _s.apply(this,arguments);};}
+{const _g=vkGroupStep;vkGroupStep=function(g,dt){if(!V163.on||G.over||!g)return _g.apply(this,arguments);
+  const fant=vkFant(D.x,D.y);
+  if(fant){const land=!g.ship&&g.units.some(u=>!u.dead&&!u.inLong);
+    if(land&&(g.mode==='chase'||g.mode==='furlret')){g.mode='__163';try{_g.apply(this,arguments);}finally{if(g.mode==='__163')g.mode='chase';}if(g.gone)return;v163Wait(g,dt);return;}
+    return _g.apply(this,arguments);}
+  g.v163w=0;const s=g.ship;
+  if(g.mode==='sail'&&s&&g.role==='sea'&&g.aboard.length&&!g.units.length&&!s.leave&&!vkNoGo(D.x,D.y)){g.mode='aboard';s.path=null;s.goal=null;V163.turned++;}
+  if(g.mode==='aboard'&&s&&g.role==='sea'&&!g.units.length&&d2(s.x,s.y,D.x,D.y)>=V163.seekR){g.mode='sail';try{_g.apply(this,arguments);}finally{if(g.mode==='sail')g.mode='aboard';}
+    if(!g.gone&&g.ship&&!g.units.length){V163.far++;vkSeek(g,g.ship,dt);}return;}
+  const L0=G.level;if(L0<6)G.level=6;try{return _g.apply(this,arguments);}finally{if(G.level===6)G.level=L0;}};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
