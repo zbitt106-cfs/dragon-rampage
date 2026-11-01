@@ -5253,3 +5253,129 @@ NR_DRAW.orcwar=function(x,y,s,f,a,u){const sw=u.swT>0?(u.swS?1:-1):0;
 {const _ef=nrEggFx;nrEggFx=function(){const d=g192Drop('B'),st=G.nrEggB;if(d&&st==='nest')G.nrEggB='g192';try{_ef.apply(this,arguments);}finally{if(d&&st==='nest')G.nrEggB=st;}
   if(d&&st==='nest'){const u=G192.U.B;if(!(u&&!u.dead&&u.hold)){ell(d.x,d.y+2,16,5,'rgba(0,0,0,.25)');nrEggArt(d.x,d.y,'B',1);if(Math.hypot(d.x-D.x,d.y-D.y)<900)txt('dropped egg',d.x,d.y-48,10,'#e8d8ff','center');}}
   for(const p of G192.P){if(Math.abs(p.x-cam.x)>VW/cam.z/2+200||Math.abs(p.y-cam.y)>VH/cam.z/2+300)continue;const Y=p.y-p.z;ctx.save();ctx.translate(p.x,Y);ctx.rotate(p.a);g192Axe(-10,0,0,20,.8);ctx.restore();}};}
+// ======================= queue 189-189g: GOLD and TROPHY FLAGS spill over the northern mountains =======================
+// 189  Once the lair pile is at its biggest (hoardK max 1.35 = 1,122 gold with 171's x2.5), more gold spills out as gilded slopes on the peaks and
+//      gold heaps between them, spreading outwards from the lair (nearest first) across ALL the northern mountains (Frostpeak range, its foothills
+//      and the Dragon Peaks) but never the desert-divide range. Coverage is logarithmic in banked gold: 0% at 1,122 -> 100% at 25,000.
+//      Decorative only (no collision; a few ellipses/polygons per visible site). Gold dots on the minimap / big map. Shrinks back when gold is spent/stolen.
+// 189a Achievement 'Mountains of Gold' when the spill covers every northern mountain (stash >= 25,000). One-time, saved (ACH + G flag).
+// 189b/c The lair keeps its 32 trophy slots (two rings). Every trophy after the 32nd is planted on the northern mountains among the gold, one per
+//      mountain sector (24 sectors, nearest to the lair first, then a 2nd and 3rd flag per sector). Flags never change the gold coverage.
+// 189d Achievement 'Mountains of Death' when trophy flags fly in all 24 sectors = 32 + 24 = 56 trophy banners. Driven only by the flag count.
+// 189e/f Prince banners grow with tier (castle level/5): taller (+16%/tier), WIDER (+22%/tier), thicker gold trim, tassels (tier 2+), jewels (3+),
+//      a long streamer (4+), a glowing crown with sparkles (5+); capped at tier 8. Knight banners stay as they are. Same at the lair and on the mountains.
+// 189g Banners only come from defeats: a prince banner only from princeDown (one per prince), a knight banner only from a beaten raid champion.
+const M189={GF:25000,LAIR:32,COLS:24,PER:3,G0:Math.round(260*HD171.mul*Math.pow(1.35,1/.55)),sites:null,cols:null,flagSites:null,heaps:null,
+  pend:null,champ:0,drawing:0,tro:null,trn:-1,chkT:0,n:0};
+M189.NEED=M189.LAIR+M189.COLS;
+function m189F(g){g=Math.max(0,g||0);if(g<=M189.G0)return 0;return clamp(Math.log(g/M189.G0)/Math.log(M189.GF/M189.G0),0,1);}
+function m189GoldAt(f){return Math.round(M189.G0*Math.pow(M189.GF/M189.G0,f));}
+function m189Ok(x,y){if(!(y<frostY(x)-60)||y<WY0+200||x<WX0+120||x>WX1-120)return false;
+  const k=regionKey(x,y);if(k!=='mountain'&&k!=='drpeaks')return false;if(inRange(x,y)||inSea(x,y)||inLake(x,y))return false;
+  if(Math.hypot(x-HX(),(y-HY())*1.15)<340)return false;if(typeof VOLC!=='undefined'&&Math.hypot(x-VOLC.x,y-VOLC.y)<300)return false;
+  if(typeof WDN!=='undefined'&&WDN&&Math.hypot(x-WDN.x,y-WDN.y)<300)return false;
+  if(typeof WD_NESTS!=='undefined'&&WD_NESTS.some(n=>Math.hypot(x-n.x,y-n.y)<150))return false;return true;}
+// all spill sites: every northern peak + gold-heap sites in the gaps (foothills, Dragon Peaks), ranked by distance from the lair (seeded jitter)
+function m189Build(){let s=18900;const r=()=>{s=Math.imul(s^s>>>15,2246822519)+0x9E3779B9|0;return((s^s>>>13)>>>0)/4294967296;};
+  const S=[],peaks=DECOR.filter(o=>o.k==='peak'&&m189Ok(o.x,o.y));
+  for(const o of peaks)S.push({o,x:o.x,y:o.y,pk:1});
+  const heaps=[];for(let y=WY0+260;y<0;y+=240)for(let x=WX0+150;x<WX1-150;x+=260){const jx=(r()-.5)*170,jy=(r()-.5)*140,px=x+jx,py=y+jy;
+    if(!m189Ok(px,py))continue;if(peaks.some(p=>Math.abs(p.x-px)<170&&Math.abs(p.y-py)<130))continue;
+    const h={k:'m189',x:px,y:py,s:.8+r()*.5,v:r(),g189:1};heaps.push(h);S.push({o:h,x:px,y:py,pk:0});}
+  for(const t of S)t.d=Math.hypot(t.x-HX(),(t.y-HY())*1.3)*(.9+.2*hr(t.x*.013+t.y*.007));
+  S.sort((a,b)=>a.d-b.d);S.forEach((t,i)=>{t.i=i;t.o.i189=i;t.o.s189=t;});
+  // flag sectors: equal-count x-columns, nearest column (centroid) to the lair first; up to 3 spread-out flag spots per column
+  const byX=S.slice().sort((a,b)=>a.x-b.x),C=[],n=M189.COLS;for(let c=0;c<n;c++){const L=byX.slice(Math.floor(c*byX.length/n),Math.floor((c+1)*byX.length/n));
+    const cx=L.reduce((a,t)=>a+t.x,0)/L.length,cy=L.reduce((a,t)=>a+t.y,0)/L.length;const spots=[];
+    for(const t of L.slice().sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy))){if(spots.length>=M189.PER)break;if(spots.every(q=>Math.hypot(q.x-t.x,q.y-t.y)>220))spots.push(t);}
+    C.push({c,cx,cy,x0:L[0].x,x1:L[L.length-1].x,spots,d:Math.hypot(cx-HX(),cy-HY())});}
+  C.sort((a,b)=>a.d-b.d);M189.sites=S;M189.cols=C;M189.heaps=heaps;M189.flagSites=[];
+  for(let j=0;j<M189.PER;j++)for(const c of C)if(c.spots[j])M189.flagSites.push({t:c.spots[j],col:c});}
+function m189Ensure(){if(!M189.sites)m189Build();
+  if(M189.heaps.length&&(DECOR!==M189.dref||M189.chkT<=0)){M189.dref=DECOR;M189.chkT=2;if(!DECOR.includes(M189.heaps[0]))for(const h of M189.heaps)if(!DECOR.includes(h))DECOR.push(h);}}
+// mountain trophies: index >= 32 -> flag spot (k-32); positions re-synced after loads / level carry-over (they copy lair-ring positions)
+function m189SyncFlags(){if(!M189.sites)return;let dirty=TROPHIES!==M189.tro||TROPHIES.length!==M189.trn;
+  if(!dirty)for(let i=M189.LAIR;i<TROPHIES.length;i++){const f=TROPHIES[i];if(!f.m189||f.x!==f.mx||f.y!==f.my){dirty=true;break;}}
+  if(!dirty)return;M189.tro=TROPHIES;M189.trn=TROPHIES.length;for(const t of M189.sites)t.o.fl189=null;
+  TROPHIES.forEach((f,i)=>{if(i<M189.LAIR){f.m189=0;return;}const sp=M189.flagSites[i-M189.LAIR];if(!sp){f.m189=2;f.x=f.mx=-1e6;f.y=f.my=-1e6;return;}
+    const t=sp.t,o=t.o,x=t.pk?o.x-o.w*.18:o.x-14,y=t.pk?o.y+10:o.y+6;f.m189=1;f.x=f.mx=x;f.y=f.my=y;f.a=Math.PI/2;f.col189=sp.col.c;(o.fl189||(o.fl189=[])).push(f);});}
+function m189FlagCount(){return Math.max(0,Math.min(TROPHIES.length-M189.LAIR,M189.flagSites?M189.flagSites.length:M189.COLS*M189.PER));}
+function m189Sectors(){if(!M189.flagSites)return Math.max(0,Math.min(M189.COLS,TROPHIES.length-M189.LAIR));const k=new Set();
+  for(let i=M189.LAIR;i<TROPHIES.length;i++){const sp=M189.flagSites[i-M189.LAIR];if(sp)k.add(sp.col.c);}return k.size;}
+function m189Fill(i){return clamp(M189.n-i,0,1);}
+// ---- drawing ----
+function m189Heap(x,y,R,sd,p){const r=R*(.3+.7*p);if(r<1.5)return;
+  ell(x+r*.18,y+2,r*1.2,r*.42,'rgba(0,0,0,.22)');ell(x,y,r,r*.5,'#a8780a');ell(x-r*.08,y-r*.17,r*.84,r*.42,'#dca22a');
+  ell(x-r*.2,y-r*.3,r*.52,r*.26,'#f3cb48');ell(x-r*.3,y-r*.38,r*.2,r*.09,'#fff1a0');
+  for(let k=0;k<4;k++){const a=sd*7.3+k*1.7,cx=x+Math.cos(a)*r*1.18,cy=y+Math.sin(a)*r*.5+2;ell(cx,cy,3.2,1.7,k%2?'#e8b830':'#ffd95a');}
+  if(GFX_HI&&p>=1){const tw=Math.sin(G.t*2.6+sd*13);if(tw>.75){const a=(tw-.75)*4,sx=x-r*.25,sy=y-r*.42;ctx.globalAlpha=a;line(sx-6,sy,sx+6,sy,'#fffbe0',1.4);line(sx,sy-6,sx,sy+6,'#fffbe0',1.4);ctx.globalAlpha=1;}}}
+function m189Gild(o,p){const x=o.x,y=o.y,w=o.w,h=w*o.h,ax=GFX_HI?x+leanOf(x)*.6*h:x,t=.16+.6*p,mx0=x+w*.06;
+  const lx=x-w/2+(ax-(x-w/2))*t,rx=x+w/2+(ax-(x+w/2))*t,ty=y-h*t,mx=mx0+(ax-mx0)*t;
+  poly([x-w/2-4,y+2,lx,ty,mx,ty-2,mx0,y+2],'#e7b53a');poly([mx0,y+2,mx,ty-2,rx,ty,x+w/2+4,y+2],'#b98a1c');
+  for(let k=0;k<5;k++){const u=k/4,bx=lx+(rx-lx)*u,by=ty-1+Math.sin(u*Math.PI)*-3,rr=w*(.045+.02*hr(o.x+k));ell(bx,by,rr,rr*.55,k<3?'#f5cf4c':'#d29e26');}
+  ell(lx+(mx-lx)*.5,ty+h*t*.35,w*.05,w*.025,'#fff0a0');
+  m189Heap(x+w*.04,y+7,w*.17,o.x*.01+o.y*.003,p);
+  if(GFX_HI&&p>=1){const tw=Math.sin(G.t*2.2+o.x*.031);if(tw>.8){ctx.globalAlpha=(tw-.8)*5;const sx=mx,sy=ty+6;line(sx-7,sy,sx+7,sy,'#fffbe0',1.5);line(sx,sy-7,sx,sy+7,'#fffbe0',1.5);ctx.globalAlpha=1;}}}
+function m189DrawFlags(o){if(!o.fl189)return;M189.drawing=1;try{for(const f of o.fl189)drawTrophy(f);}finally{M189.drawing=0;}}
+{const _dd=drawDecor;drawDecor=function(o){
+  if(o.k==='m189'){const p=o.i189===undefined?0:m189Fill(o.i189);if(p>0)m189Heap(o.x,o.y,26*o.s,o.v*50,p);m189DrawFlags(o);return;}
+  const r=_dd.apply(this,arguments);
+  if(o.k==='peak'&&o.i189!==undefined){const p=m189Fill(o.i189);if(p>0)m189Gild(o,p);m189DrawFlags(o);}
+  return r;};}
+// prince banners by tier (189e/f): drawn in world units, every visual grows with the tier
+function m189PrinceFlag(f){const tier=clamp(f.tier||1,1,8),q=tier-1,age=Math.min(1,Math.max(0,(G.t-f.t0)/1.2)),e=1-Math.pow(1-age,3),x=f.x,y=f.y,t=G.t;
+  if(e<=0)return;const S=1.6,gz=1+.15*q,H=54*S*(1+.16*q)*e,W=30*S*(1+.22*q),FH=20*S*(1+.12*q),gold='#ffd23a';
+  const gl=.35+.2*Math.sin(t*2.4+f.ph)+.04*q;ell(x,y+1,16*gz,6*gz,`rgba(255,210,60,${Math.min(.8,gl)})`);
+  ell(x-5*gz,y,6*gz,4*gz,'#8a8478');ell(x+5*gz,y,6*gz,4*gz,'#7a7468');ell(x,y-3*gz,5.5*gz,4*gz,'#9a9488');
+  const pw=4.5+.7*q;line(x,y-1,x,y-H,tier>=3?'#c8901c':'#6b4a2a',pw);line(x+pw*.25,y-1,x+pw*.25,y-H,tier>=3?'#ffe27a':'#8a6236',pw*.3);
+  if(tier>=2)for(let k=1;k<=Math.min(4,q);k++){const by=y-H*k/(q+2);line(x-pw*.7,by,x+pw*.7,by,gold,2.2);}
+  if(e<.98){ell(x,y-H-3,4,4,gold);return;}
+  const N=12,top=y-H+3,wind=1+.35*Math.sin(t*.7+f.ph),A=4.2*S*(1+.08*q);
+  const wy=u=>Math.sin(t*5.2*wind-u*4.2+f.ph)*u*A,wx=u=>u*W*(.84+.16*Math.cos(t*3+f.ph+u*2));
+  if(tier>=4){const L=W*1.25,ty=top-6;ctx.beginPath();ctx.moveTo(x+1,ty-3);for(let i=1;i<=10;i++){const u=i/10;ctx.lineTo(x+1+u*L,ty-3+Math.sin(t*6-u*5+f.ph)*u*7-u*2);}
+    for(let i=10;i>=0;i--){const u=i/10;ctx.lineTo(x+1+u*L,ty+3*(1-u)+Math.sin(t*6-u*5+f.ph)*u*7-u*2);}ctx.closePath();ctx.fillStyle=f.trim||gold;ctx.fill();ctx.strokeStyle=gold;ctx.lineWidth=1;ctx.stroke();}
+  ctx.beginPath();ctx.moveTo(x+1,top);for(let i=1;i<=N;i++){const u=i/N;ctx.lineTo(x+1+wx(u),top+wy(u));}
+  for(let i=N;i>=0;i--){const u=i/N;ctx.lineTo(x+1+wx(u),top+FH-u*3*S+wy(u));}ctx.closePath();
+  ctx.fillStyle=f.col;ctx.fill();ctx.strokeStyle=gold;ctx.lineWidth=2.4+.5*q;ctx.stroke();
+  if(tier>=2){ctx.strokeStyle='rgba(255,240,170,.9)';ctx.lineWidth=1;ctx.stroke();}
+  for(let i=1;i<N;i++){const u=i/N,sh=Math.cos(t*5.2*wind-u*4.2+f.ph);if(sh>.3){ctx.fillStyle=`rgba(0,0,0,${(sh-.3)*.18})`;ctx.fillRect(x+1+wx(u-.04),top+wy(u)+1,W/N,FH-u*3*S-2);}}
+  if(tier>=2){const nT=2+q;for(let k=1;k<=nT;k++){const u=k/(nT+1),bx=x+1+wx(u),by=top+FH-u*3*S+wy(u),L=6+q*1.2;line(bx,by,bx+1,by+L,gold,1.4);ell(bx+1,by+L+1.5,1.8+.15*q,2.4+.2*q,gold);}}
+  drawCrest(x+1+wx(.5),top+FH/2-2+wy(.5),1.9*S*(1+.12*q),f.crest,gold);
+  if(tier>=3){const J=['#e0204a','#2a6aff','#20c070','#b040ff'];for(let k=0;k<Math.min(4,q);k++){const u=[.18,.82,.3,.7][k],v=[.22,.22,.78,.78][k],jx=x+1+wx(u),jy=top+FH*v+wy(u);ell(jx,jy,2.4+.2*q,2.4+.2*q,gold);ell(jx,jy,1.6+.15*q,1.6+.15*q,J[k]);ell(jx-.6,jy-.6,.6,.6,'#fff');}}
+  const cs=1+.14*q,cy=y-H-1;
+  if(tier>=5){const a=.3+.15*Math.sin(t*3+f.ph);ell(x,cy-4*cs,16*cs,16*cs,`rgba(255,235,140,${a*.5})`);ell(x,cy-4*cs,9*cs,9*cs,`rgba(255,245,190,${a})`);
+    for(let k=0;k<4;k++){const an=t*1.5+k*Math.PI/2+f.ph,sx=x+Math.cos(an)*14*cs,sy=cy-4*cs+Math.sin(an)*9*cs;line(sx-3,sy,sx+3,sy,'#fffbe0',1.2);line(sx,sy-3,sx,sy+3,'#fffbe0',1.2);}}
+  ell(x,cy+1,3.6*cs,3.6*cs,gold);
+  poly([x-5*cs,cy-1,x+5*cs,cy-1,x+5*cs,cy-6*cs,x+2.5*cs,cy-3.5*cs,x,cy-8*cs,x-2.5*cs,cy-3.5*cs,x-5*cs,cy-6*cs],gold);
+  if(tier>=3){ell(x,cy-3.2*cs,1.3*cs,1.3*cs,'#e0204a');ell(x-3.6*cs,cy-4.6*cs,.9*cs,.9*cs,'#2a6aff');ell(x+3.6*cs,cy-4.6*cs,.9*cs,.9*cs,'#20c070');}}
+{const _dt=drawTrophy;drawTrophy=function(f){if(f.m189&&!M189.drawing)return;if(f.m189===2)return;if(f.big){m189PrinceFlag(f);return;}return _dt.apply(this,arguments);};}
+// 189g: banners only from defeats (prince -> princeDown, knight -> beaten raid champion); prince banners remember tier + castle level
+{const _pd=princeDown;princeDown=function(c){M189.pend=c&&!c.done?{tier:c.tier||c.k||1,lvl:c.lvl||(G&&G.lvl)||0}:null;try{return _pd.apply(this,arguments);}finally{M189.pend=null;}};}
+{const _rc=raidChampDown;raidChampDown=function(){M189.champ++;try{return _rc.apply(this,arguments);}finally{M189.champ--;}};}
+{const _pt=plantTrophy;plantTrophy=function(r){if(!r)return;if(r.big?!M189.pend:!M189.champ)return;const n0=TROPHIES.length,res=_pt.apply(this,arguments);
+  if(TROPHIES.length>n0){const f=TROPHIES[TROPHIES.length-1];if(r.big&&M189.pend){f.tier=M189.pend.tier;f.lvl=M189.pend.lvl;}
+    if(TROPHIES.length>M189.LAIR)setTimeout(()=>showToast(`🚩 ${r.short}'s banner flies over the northern mountains among your gold`),1700);}return res;};}
+// save: tier + level of every banner (TROPH keeps only colours/names)
+{const _ss=svSnapshot;svSnapshot=function(){const d=_ss.apply(this,arguments);try{d.T189=TROPHIES.map(f=>[f.tier||0,f.lvl||0]);}catch(e){}return d;};}
+{const _sa=svApply;svApply=function(d){const r=_sa.apply(this,arguments);try{if(d&&Array.isArray(d.T189))d.T189.forEach((v,i)=>{const f=TROPHIES[i];if(f&&Array.isArray(v)&&v[0]){f.tier=v[0];f.lvl=v[1]||0;}});}catch(e){}M189.trn=-1;return r;};}
+// spill amount (eases with the pile) + achievements
+function m189Tick(dt){m189Ensure();M189.chkT-=dt||0;const f=m189F(HOARD?HOARD.shown:0);M189.f=f;M189.n=M189.sites.length*f;m189SyncFlags();
+  if(scene!=='play'||!G||G.over)return;
+  if(!G.m189Gold&&(G.stash||0)>=M189.GF){G.m189Gold=1;const first=!ACH.got.m189gold;achEv('m189gold');
+    if(first)G.banner={text:'⛰ Mountains of Gold!',sub:'Your treasure has spilled over ALL the northern mountains',t:4.5};}
+  if(!G.m189Death&&m189Sectors()>=M189.COLS){G.m189Death=1;const first=!ACH.got.m189death;achEv('m189death');
+    if(first)G.banner={text:'🚩 Mountains of Death!',sub:'Banners of every beaten champion fly over ALL the northern peaks (they all limped home dizzy!)',t:4.5};}}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);try{m189Tick(dt);}catch(e){if(!M189.err){M189.err=1;console.warn('m189',e);}}return r;};}
+{const _ab=achBuild;achBuild=function(){const L=_ab.apply(this,arguments),A=(sec,id,name,how,ok,o)=>L.push(Object.assign({sec,id,name,how,ok},o||{}));
+  A('goal','m189gold','Mountains of Gold',`Bank ${M189.GF.toLocaleString('en-US')} gold: your hoard spills over the lair and gilds ALL the northern mountains`,
+    ()=>!!ACH.ev.m189gold||achG('m189Gold')>0,{prog:()=>[Math.round(m189F(achG('stash'))*100),100]});
+  A('raid','m189death','Mountains of Death',`Win ${M189.NEED} trophy banners from beaten champions and princes: after 32 at the lair they fly over ALL the northern mountains`,
+    ()=>!!ACH.ev.m189death||achG('m189Death')>0,{prog:()=>[Math.min(TROPHIES.length,M189.NEED),M189.NEED]});return L;};if(ACH.list)ACH.list=null;}
+// minimap + big map: gold dots for gilded sites, little pennants for mountain banners
+{const _dm=drawMap;drawMap=function(mmx,mmy,mmw,big){const r=_dm.apply(this,arguments);try{if(!M189.sites)return r;const s=mmw/(WX1-WX0),n=Math.floor(M189.n),z=big?2.2:1.3;
+  if(n>0){ctx.fillStyle='rgba(255,205,60,.8)';for(let i=0;i<n&&i<M189.sites.length;i++){const t=M189.sites[i];ctx.fillRect(mmx+(t.x-WX0)*s-z/2,mmy+(t.y-WY0)*s-z/2,z,z);}}
+  if(big)for(let i=M189.LAIR;i<TROPHIES.length;i++){const f=TROPHIES[i];if(f.m189!==1)continue;const px=mmx+(f.x-WX0)*s,py=mmy+(f.y-WY0)*s;ctx.fillStyle='#6b4a2a';ctx.fillRect(px,py-7,1,8);ctx.fillStyle=f.col;ctx.fillRect(px+1,py-7,4,3);}}catch(e){}return r;};}
+// 189 fix-up: keep a clear gap above the desert-divide range (no spill where the range meets the northern band), and
+// prince banners take their tier from the castle level (normal/easy princes fight at tier-1 strength since 188, but the banner still shows the level's tier)
+m189Ok=(function(_ok){return function(x,y){if(x>RANGE0-40&&x<RANGE1+40&&y>frostY(x)-400)return false;return _ok(x,y);};})(m189Ok);
+{const _pt=plantTrophy;plantTrophy=function(r){const n0=TROPHIES.length,res=_pt.apply(this,arguments);try{if(TROPHIES.length>n0){const f=TROPHIES[TROPHIES.length-1];if(f.big&&f.lvl)f.tier=Math.max(f.tier||1,princeTier(f.lvl));}}catch(e){}return res;};}

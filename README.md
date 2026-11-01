@@ -1438,3 +1438,32 @@ On an iPhone held upright, the main menu used to start under the notch, so its t
 **Hooks used:** the guardian-dragon loss transition (nrTick), nextLevel, newGame, svApply (save/load), eggReturn and eggPos (egg spot), tryEat, eatUnit (bite instead of eat), nrUpd, nrEggFx, and NR_DRAW. All of this is added code at the end of partNR.js.
 
 Screenshots: screenshots/q192_elf_champion_desktop.png, screenshots/q192_elf_champion_iphone.png, screenshots/q192_orc_warlord_axes_desktop.png, screenshots/q192_orc_warlord_axes_iphone.png, screenshots/q192_orc_fetches_egg_desktop.png, screenshots/q192_orc_fetches_egg_iphone.png.
+
+
+## Batch N: gold and flag mountains (189-189g)
+
+**Gold spill (189):** once the lair pile is at its maximum size (**1,122 gold** banked), extra gold spills out as gold heaps, coins and gilded slopes. It spreads outward from the lair over **all the northern mountains** (the mountain and dragon-peak regions north of the frost line). It never reaches the desert-divide range or the area around the lair, volcano, Wyrmden and the wyvern nests. The spread is on a log scale of banked gold:
+
+| Banked gold | Northern mountains covered |
+|---|---|
+| 1,122 | 0% (the spill starts) |
+| ~2,440 | 25% |
+| ~5,300 | 50% |
+| ~11,500 | 75% |
+| 25,000 | 100% |
+
+The spill follows the displayed hoard, so it **shrinks back** smoothly when gold is spent or stolen. There are 1,162 spill spots (850 gilded peaks + 312 gold heaps), from x -17,200 to x +8,300; the nearest is 459 px from the lair. The spill is decorative only (no collision or gameplay effect) and cheap to draw (about +4 ms per frame in a fully gilded mountain view in the test browser). Covered spots also show as gold dots on the minimap and the big map.
+
+**Mountains of Gold (189a):** this achievement unlocks the first time banked gold reaches 25,000, which means the spill covers all the northern mountains. It uses the existing achievement list (Goals) with a progress bar, unlocks once, and is saved.
+
+**Trophy flags on the mountains (189b, 189c):** the lair still holds the first 32 trophy flags in its two rings. **Flag 33 onward** is planted out on the northern mountains, among the gold heaps. The mountains are split into **24 sectors**, filled nearest-first, with up to 3 flags per sector (72 shown; any extra flags still count). Flags are decorative, and they have **no effect** on the gold spill or on Mountains of Gold.
+
+**Mountains of Death (189d):** this achievement unlocks when every one of the 24 sectors has at least one flag. That takes **56 trophy flags** (32 at the lair + 24 on the mountains). It depends only on flags, not on gold. It is one-time and saved, and its popup is family-friendly: "Banners of every beaten champion fly over ALL the northern peaks (they all limped home dizzy!)".
+
+**Prince flags by tier (189e, 189f):** prince flags now grow with the prince's tier, taken from the castle level he was beaten at (level 5 = tier 1, level 10 = tier 2, ... up to tier 8). Each tier makes the flag taller, **wider** and bigger. Tier 2 adds gold trim, bands and tassels. Tier 3 adds a gilded pole and jewels, and the crown gets jewels. Tier 4 adds a streamer. Tier 5 and up adds a glowing aura with sparkles. Knight and champion flags keep the simpler design. This applies at the lair and on the mountains, and each flag's tier is saved with the game.
+
+**Only earned flags (189g):** a flag is planted only when a prince (or raid champion) is actually defeated, one flag per defeat. Nothing is pre-placed, and a defeat cannot plant a flag twice.
+
+**Hooks used:** drawDecor, drawTrophy, drawMap, plantTrophy, princeDown, raidChampDown, svSnapshot/svApply, achBuild and update. All of this is added code at the end of partNR.js.
+
+Screenshots: q189_gold_spill_{2k5,6k,25k}_{desktop,iphone}, q189_gold_map_{6k,25k}_{desktop,iphone}, q189_flag_mountains_{desktop,iphone}, q189_flag_map_{desktop,iphone}, q189_prince_flag_tiers_{desktop,iphone}.
