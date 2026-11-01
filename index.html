@@ -12843,6 +12843,44 @@ function m189Tick(dt){m189Ensure();M189.chkT-=dt||0;const f=m189F(HOARD?HOARD.sh
 // prince banners take their tier from the castle level (normal/easy princes fight at tier-1 strength since 188, but the banner still shows the level's tier)
 m189Ok=(function(_ok){return function(x,y){if(x>RANGE0-40&&x<RANGE1+40&&y>frostY(x)-400)return false;return _ok(x,y);};})(m189Ok);
 {const _pt=plantTrophy;plantTrophy=function(r){const n0=TROPHIES.length,res=_pt.apply(this,arguments);try{if(TROPHIES.length>n0){const f=TROPHIES[TROPHIES.length-1];if(f.big&&f.lvl)f.tier=Math.max(f.tier||1,princeTier(f.lvl));}}catch(e){}return res;};}
+
+// ===================== 186: offline mode (PWA service worker) =====================
+// sw.js caches index.html, manifest.json and icons/ so the game (and the iPhone home-screen app) starts with no connection
+// after the first open. The page itself is fetched network-first, so an online start always runs the newest build.
+// When a new deploy's worker takes over while this page is open, the game reloads itself on the title screen,
+// or shows a small "new version" bar during play (Reload / Later) so a run is never cut off mid-fight.
+const SW186={reg:null,ready:false,updated:false,bar:null,hadCtl:false};
+function sw186Bar(){
+  if(SW186.bar||typeof document==='undefined')return;
+  const b=document.createElement('div');b.id='sw186bar';
+  b.style.cssText='position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;'+
+    'background:rgba(26,14,8,.94);color:#ffe9b0;border:2px solid #e0b040;border-radius:12px;padding:10px 14px;font:600 15px Georgia,serif;'+
+    'display:flex;gap:10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.5);box-sizing:border-box;width:max-content;max-width:min(92vw,560px)';
+  const t=document.createElement('span');t.style.cssText='flex:1 1 auto;min-width:0;line-height:1.25';t.textContent='A new version of Dragon Rampage is ready.';
+  const mk=(txt,bg,fn)=>{const x=document.createElement('button');x.textContent=txt;x.style.cssText='flex:none;white-space:nowrap;font:700 15px Georgia,serif;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;background:'+bg+';color:#1a0e08';
+    x.addEventListener('click',ev=>{ev.stopPropagation();fn();});x.addEventListener('touchstart',ev=>ev.stopPropagation(),{passive:true});return x;};
+  b.appendChild(t);b.appendChild(mk('Reload','#ffcf4a',()=>location.reload()));b.appendChild(mk('Later','#c9b28a',()=>{b.remove();}));
+  document.body.appendChild(b);SW186.bar=b;
+}
+function sw186Updated(){
+  if(SW186.updated)return;SW186.updated=true;
+  try{if(scene==='title'){location.reload();return;}}catch(e){}
+  sw186Bar();
+}
+(function(){
+  try{
+    if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
+    SW186.hadCtl=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{if(SW186.hadCtl)sw186Updated();SW186.hadCtl=true;});
+    const go=()=>navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'}).then(r=>{SW186.reg=r;SW186.ready=true;
+      const chk=()=>{try{r.update().catch(()=>{});}catch(e){}};
+      window.addEventListener('online',chk);
+      document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')chk();});
+      setInterval(chk,30*60*1000);setTimeout(chk,4000); // Chrome may postpone its own after-launch check while the game is busy
+    }).catch(()=>{});
+    if(document.readyState==='complete')go();else window.addEventListener('load',go);
+  }catch(e){}
+})();
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}

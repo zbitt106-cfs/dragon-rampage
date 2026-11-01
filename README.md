@@ -1467,3 +1467,26 @@ The spill follows the displayed hoard, so it **shrinks back** smoothly when gold
 **Hooks used:** drawDecor, drawTrophy, drawMap, plantTrophy, princeDown, raidChampDown, svSnapshot/svApply, achBuild and update. All of this is added code at the end of partNR.js.
 
 Screenshots: q189_gold_spill_{2k5,6k,25k}_{desktop,iphone}, q189_gold_map_{6k,25k}_{desktop,iphone}, q189_flag_mountains_{desktop,iphone}, q189_flag_map_{desktop,iphone}, q189_prince_flag_tiers_{desktop,iphone}.
+
+## Batch O: offline mode (186)
+
+Dragon Rampage now works **offline** after you've opened it once, including the iPhone home-screen app.
+
+- **What is saved for offline play:** `sw.js` (a service worker) keeps a copy of `index.html`, `manifest.json` and the 6 app icons/splash images. Nothing else is cached; `screenshots/` and the README are never stored.
+- **Updates can't get stuck:** the game page is always fetched from the network first, past the browser's normal 10-minute cache. A copy saved earlier is used only when there's no connection, or when the connection hangs for 6 seconds.
+- **New cache for every deploy:** `build.sh` now runs `mksw.sh`, which stamps `sw.js` with a hash of the new `index.html`. The cache is called `dr-<hash>`, so each deploy gets a new one. The browser picks up the changed worker and deletes the old cache.
+- **When an update arrives while you're playing:** the game checks for updates a few seconds after it starts, when the device comes back online, when the app returns to the foreground, and every 30 minutes.
+  - On the **title screen**, it simply reloads into the new version.
+  - **During a run**, it never reloads by itself. A small bar says "A new version of Dragon Rampage is ready." with **Reload** and **Later** buttons, so a fight is never cut off.
+- **Deploy rule:** always build with `sh build.sh`, which also stamps `sw.js`, and commit `index.html` and `sw.js` together.
+- **Tests:** `t186` runs its own little web server with GitHub-Pages-style caching. It checks:
+  - first open;
+  - a real offline relaunch, with the server shut down;
+  - an update while playing (the bar appears and Reload brings in the new build);
+  - an update on the title screen (it reloads by itself);
+  - a relaunch online after a deploy, which gets the new build at once, not the cached one;
+  - offline after an update, which starts the new build.
+
+  `t186live` checks the real site: the worker build matches the live `index.html`, and the game starts with the site unreachable.
+
+Screenshots: q186_offline_title_{desktop,iphone}, q186_offline_play_{desktop,iphone}, q186_update_prompt_{desktop,iphone}, q186_updated_title_{desktop,iphone}, q186_live_offline_title_{desktop,iphone}, q186_live_offline_play_{desktop,iphone}.
