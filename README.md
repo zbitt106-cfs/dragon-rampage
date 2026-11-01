@@ -1490,3 +1490,18 @@ Dragon Rampage now works **offline** after you've opened it once, including the 
   `t186live` checks the real site: the worker build matches the live `index.html`, and the game starts with the site unreachable.
 
 Screenshots: q186_offline_title_{desktop,iphone}, q186_offline_play_{desktop,iphone}, q186_update_prompt_{desktop,iphone}, q186_updated_title_{desktop,iphone}, q186_live_offline_title_{desktop,iphone}, q186_live_offline_play_{desktop,iphone}.
+
+## Batch P: more mountain goats, fearless turf animals (169, 166, 166a)
+
+- **More goats (169):** the mountains had about 46 goats; now about 96. 49 extra goats are spread evenly across the mountain ranges, from the far west to the far east (12 range bands instead of 9). None appear in fantasy lands, lakes, the sea, on buildings or in the dragon's lair. When goats are eaten, a new one appears every 8 seconds in the emptiest range, well away from the dragon, so the numbers stay up. The iPhone frame time was not slower (8.9 ms vs 9.2 ms live).
+- **Turf animals aren't scared of fire (166):** the animals that guard a turf keep fighting when they're burned instead of running away. This covers pride/pack leaders and members, alphas, the elephant, hippo, tiger, gorilla, and troll/centaur alphas. They still take burn damage. Other animals are unchanged and still run from fire.
+- **No head markers on turf animals (166a):** removed:
+  - roar/howl rings;
+  - the wolf howl line;
+  - the orange rally glow and sparkles;
+  - the dizzy stars shown when a leader was worn down;
+  - the troll/centaur alpha circlet with its blue gem.
+
+  The standard health bars stay. Their colour still shows when a hippo, elephant or tiger is worn down. The gorilla's chest-beat pose and the floating call text also stay.
+
+Screenshots: q169_goats_{desktop,iphone}, q166_burning_turf_{desktop,iphone}, q166a_before_{desktop,iphone}, q166a_after_{desktop,iphone}, q166a_troll_before_desktop, q166a_troll_after_desktop.

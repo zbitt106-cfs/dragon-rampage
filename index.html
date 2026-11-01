@@ -12881,6 +12881,57 @@ function sw186Updated(){
     if(document.readyState==='complete')go();else window.addEventListener('load',go);
   }catch(e){}
 })();
+
+// ======================= queue 169: about TWICE the mountain goats, spread over ALL the (non-fantasy) mountain ranges =======================
+// Before: 49 mountain goats (16 Dragon Peak slopes + 7 main range + 19 northern herds + 7 Dragon Peaks). Now +49 more ("range goats"),
+// spread evenly across every mountain band west to east (never in the fantasy lands / north realm, never at sea, the lair or in towns).
+// They respawn (one every 8 s while below the target, away from the dragon) so the numbers stay up.
+const GT169={n:49,every:8,bin:2200,cells:null,bins:null};
+function gt169Ok(x,y){return !inSea(x,y)&&regionKey(x,y)==='mountain'&&!(typeof nrFantasyAt==='function'&&nrFantasyAt(x,y))&&y>MWY0+450&&x>WX0+300&&d2(x,y,LAIR.x,LAIR.y)>260&&
+  !(typeof inLake==='function'&&inLake(x,y))&&!(typeof ghStructNear==='function'&&ghStructNear(x,y));}
+function gt169Cells(){if(GT169.bins)return GT169.bins;const B={};for(let x=WX0+200;x<WX1;x+=200)for(let y=MWY0+450;y<WY1;y+=200)if(gt169Ok(x,y)){const k=Math.floor((x-WX0)/GT169.bin);(B[k]=B[k]||[]).push([x,y]);}
+  GT169.bins=Object.keys(B).sort((a,b)=>a-b).map(k=>B[k]).filter(c=>c.length>=3);return GT169.bins;}
+ZONES.gt169={ok:(x,y)=>gt169Ok(x,y),s:()=>{const bs=gt169Cells();const c=bs[RI(0,bs.length-1)];const p=c[RI(0,c.length-1)];return{x:p[0]+R(-90,90),y:p[1]+R(-90,90)};}};
+function gt169Spawn(bi,far){const bs=gt169Cells();if(!bs.length)return null;const c=bs[((bi%bs.length)+bs.length)%bs.length];
+  for(let t=0;t<30;t++){const p=c[RI(0,c.length-1)],x=p[0]+R(-90,90),y=p[1]+R(-90,90);if(!gt169Ok(x,y))continue;if(far&&d2(x,y,D.x,D.y)<800)continue;
+    const F=FAUNA.mgoat,u=mkUnit('animal',x,y,{species:'mgoat',wild:true,zone:'gt169',gt169:1+(bi%bs.length),home:{x:x-350,y:y-225,w:700,h:450},hp:F.hp,maxHp:F.hp,free:true,pack:0,t:R(0,3),jt:0});units.push(u);return u;}
+  return null;}
+function gt169Count(){let n=0;for(const u of units)if(!u.dead&&u.gt169)n++;return n;}
+function gt169Init(){G.gt169T=GT169.every;const bs=gt169Cells();for(let i=0;i<GT169.n;i++)gt169Spawn(i,false);}
+{const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);try{if(gt169Count()===0)gt169Init();}catch(e){}return r;};}
+{const _u=update;update=function(dt){const r=_u.apply(this,arguments);if(G&&!G.over&&scene==='play'){G.gt169T=(G.gt169T==null?GT169.every:G.gt169T)-dt;
+  if(G.gt169T<=0){G.gt169T=GT169.every;const n=gt169Count();if(n<GT169.n){const bs=gt169Cells(),cnt=bs.map(()=>0);for(const u of units)if(!u.dead&&u.gt169)cnt[u.gt169-1]=(cnt[u.gt169-1]||0)+1;
+      let bi=0;for(let i=1;i<cnt.length;i++)if(cnt[i]<cnt[bi])bi=i;gt169Spawn(bi,true);}}}return r;};}
+
+
+// ======================= queue 166: turf animals are NOT scared of fire =======================
+// Lions, wolves, gorillas, elephants (herd leaders + herd), tigers, the alpha hippo and the north-realm turf bands keep fighting while
+// burning (the burn still hurts them every second as before; only the "burning = panic / run away" reaction is gone).
+function tf166(u){return !!(u&&!u.dead&&((u.type==='animal'&&u.pack&&TF_L[u.species])||(typeof tfIsLeader==='function'&&tfIsLeader(u))||u.herd==='el129'||u.turf||u.atAlpha||u.tgA||(u.hippo&&u.alpha)));}
+function tf166Run(u,f){const b=u.burn;if(!(b>0)||!tf166(u))return f();u.burn=0;G.tf166=(G.tf166||0)+1;
+  try{return f();}finally{if(!(u.burn>0))u.burn=b;}}
+{const _w=updWild;updWild=function(u,dt){return tf166Run(u,()=>_w.apply(this,arguments));};Object.assign(updWild,_w);}
+{const _n=nrUpd;nrUpd=function(u,dt){return tf166Run(u,()=>_n.apply(this,arguments));};Object.assign(nrUpd,_n);}
+
+// ======================= queue 166a: no drawings around turf animals' heads =======================
+// Removed: roar rings (lion/wolf/gorilla/elephant/tiger/north-realm), the wolf roar line, the rally glow + orange sparkles,
+// the elephant rally glow, the dizzy stars (lion/wolf leaders, elephant, tiger, hippo, north-realm alphas) and the alpha crown/circlet.
+// Kept: the standard health bars, the call/roar text and every animal's own body drawing.
+const TF166A={n:0};
+function tf166aDraw(u,f){if(!u||!tf166(u))return f();const rt=u.rallyT,rf=u.roarFx,h0=hnStar,r0=tfRings;u.rallyT=0;if(u.species!=='gorilla')u.roarFx=0;hnStar=function(){TF166A.n++;};tfRings=function(){};
+  try{return f();}finally{hnStar=h0;tfRings=r0;u.rallyT=rt;u.roarFx=rf;}}
+{const _da=drawAnimal;drawAnimal=function(u){return tf166aDraw(u,()=>_da.apply(this,arguments));};}
+{const _df=drawFauna;drawFauna=function(u){return tf166aDraw(u,()=>_df.apply(this,arguments));};}
+// 166a (cont.): the troll / centaur alphas' crown or circlet (drawn after the body by the queue 21-25 wrapper) is skipped too.
+// Only the crown strokes are dropped (the body, its white tint and the health bar are untouched).
+const TF166C={sup:0,n:0};
+{const _aw=atWith;atWith=function(u,fn){const r=_aw.apply(this,arguments);if(TF166C.on===u)TF166C.sup=1;return r;};}
+{const _p=poly,_l=line,_e=ell;
+  poly=function(){if(TF166C.sup){TF166C.n++;return;}return _p.apply(this,arguments);};
+  line=function(){if(TF166C.sup){TF166C.n++;return;}return _l.apply(this,arguments);};
+  ell=function(x,y,rx,ry,c){if(TF166C.sup&&c==='#a8e0ff'){TF166C.n++;return;}return _e.apply(this,arguments);};}
+{const _da=drawAnimal;drawAnimal=function(u){if(!(u&&u.atAlpha&&u.nr))return _da.apply(this,arguments);const o=TF166C.on,s=TF166C.sup;TF166C.on=u;TF166C.sup=0;
+  try{return _da.apply(this,arguments);}finally{TF166C.on=o;TF166C.sup=s;}};}
 function drawWorld(){
   const z=cam.z;ctx.setTransform(DPR*z,0,0,DPR*z,DPR*(VW/2-cam.x*z),DPR*(VH/2-cam.y*z));
   if(G.shake>0){ctx.translate(R(-G.shake,G.shake),R(-G.shake,G.shake));}
