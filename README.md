@@ -1524,3 +1524,13 @@ Screenshots: q164_minimap_{small,normal,large}_{desktop,iphone}, q164a_settings_
 - **Unchanged:** the next rich caravan still arrives on the usual timer, even while the old party is still guarding. A save and reload keeps the guarding party, its camels and its gold.
 
 Screenshots: q165_guards_before_{desktop,iphone}, q165_guards_hold_{desktop,iphone}, q165_guards_fight_desktop, q165_guards_release_{desktop,iphone}.
+
+## Batch 162: princes and trade ships come from the east
+
+- **Prince fleets (162):** every prince is a foreign prince, so his warships now sail in from the **east edge** of the map, across the eastern sea. They cross the Kraken Deep on a lane chosen well away from the giant squid's lair, round the south-east corner and follow the southern sea west to their landing beach. A beaten or recalled prince's ships still at sea sail home the same way, back off the east edge.
+- **Trade ships (162a):** King William's trade ships and their royal escort warships, the treasure ships carrying the King's gold away (batch 160) and the goods ships bringing back what that gold bought all arrive from, and leave by, the **east edge** too. They still tie up at the King's Quay exactly as before.
+- **Safe routes:** the lanes keep to open water. They stay clear of land and the Lighthouse isle and never enter the northern fantasy waters.
+- **Not too slow:** the eastern route is much longer, so ships sail faster while they are far from the dragon and at normal speed once the dragon is near.
+- **Unchanged:** Viking longships still come up from the **south**. The small merchant ships that wander the sea are unchanged. Save and load keep a trade ship on its route.
+
+Screenshots: q162_before_fleet_{desktop,iphone}, q162_before_fleet_landing_desktop, q162a_before_trade_{desktop,iphone}, q162_fleet_east_{desktop,iphone}, q162_fleet_landing_desktop, q162a_trade_east_{desktop,iphone}, q162a_trade_quay_desktop, q162a_treasure_east_desktop.

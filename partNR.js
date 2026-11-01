@@ -5589,3 +5589,72 @@ function rc165Threat(h,k){if(G.over||D.alt>=.6)return false;const T2=RCV.threatR
     const k=(o.k||[]).map(t=>{const c=mkUnit('animal',t.x,t.y,{species:'camel',rc:1,rcPal:t.p||undefined,hp:t.hp||34,maxHp:34,face:1,wild:true,zone:'desert',home:{x:t.x-300,y:t.y-200,w:600,h:400}});units.push(c);return c;});
     for(const p of (o.c||[]))coins.push({x:p[0],y:p[1],z:0,vz:0,t:0,ph:R(0,6),rc165:id});
     if(g.length)rc165Hold(id,o.x,o.y,g,k,false);}}catch(e){console.warn('rc165 load',e);}return r;};}
+// ===== QUEUE 162/162a: foreign ships come from the EAST =====
+// 162: "All princes are foreign, they come from the east": prince warship fleets used to appear at the SOUTH sea edge (partPR launchFleet,
+// y=WY1-170, right below the landing) and sailed home off the south edge. Now they appear at the EAST map edge (the far east sea), sail west
+// out of the Kraken Deep (shortest crossing, entry lane kept >=1200 px from the squid's lair), round the south-east corner of the Sapphire Coast
+// (well clear of the Lonely Lighthouse isle and far south of the northern fantasy waters / Storm Isle), run west along the open southern sea and
+// turn north for their usual landing on the southern shore. A beaten prince's fleet sails home the same way back to the east edge.
+// 162a: King William's trade ships (goods ships, incl. the 160 return-goods ships), their royal escort warships and the 160 treasure ships
+// leaving with the gold also arrive from / depart to the EAST edge by the same lanes. Viking warships are unchanged (they still come up from the south).
+// Long sea lanes: while a ship is on the lane and far from the dragon (>1900 px, off screen) it sails E162.boost x faster (and turns as tightly as at normal speed) so arrivals are not much later
+// than before; near the dragon every ship sails at its normal speed. Restored saves: a ship without a lane gets one from where it is
+// (a ship already in the southern sea below its anchor just sails straight in, exactly as before).
+const E162={edge:WX1-200,out:WX1+60,gx:10250,c:{x:9300,y:5150},sy:5050,wDy:430,boost:6,far:1900,squidGap:1200,y0:3000,y1:5600,stats:{fleets:0,trade:0,home:0,out:0}};
+function e162Squids(){return (typeof units!=='undefined'?units:[]).filter(u=>u&&!u.dead&&u.kind==='squid').map(u=>u.home||u);}
+// pick the entry/exit lane (y at the east edge): far from any live squid's lair, otherwise a random lane in the southern half of the east sea
+function e162LaneY(){const sq=e162Squids(),ok=[];for(let y=E162.y0;y<=E162.y1;y+=100){let m=9e9;
+    for(const p of sq){const dx=p.x<DEEPX(y)?DEEPX(y)-p.x:p.x>WX1?p.x-WX1:0;m=Math.min(m,Math.hypot(dx,p.y-y));}
+    if(m>=E162.squidGap&&inSea(E162.edge,y)&&inSea(E162.gx,y))ok.push({y,m});}
+  if(!ok.length)return R(3600,5400);if(!sq.length)return ok[RI(0,ok.length-1)].y;
+  ok.sort((a,b)=>b.m-a.m);const top=ok.slice(0,Math.max(1,Math.ceil(ok.length/3)));return top[RI(0,top.length-1)].y;}
+const e162P=(x,y)=>({x,y});
+// lane in: from where the ship is to just below its anchor (the original code does the last straight run north to the anchor)
+function e162In(s,yl,o){o=o||0;const A=s.anchor,W=e162P(A.x,Math.min(WY1-200,A.y+E162.wDy)),C=e162P(E162.c.x,E162.c.y+o*.6),out=[];
+  if(s.x>=E162.gx-60)out.push(e162P(E162.gx,(yl!=null?yl:s.y)+o*0),C,W);
+  else if(s.x>=9000)out.push(C,W);
+  else{if(Math.abs(s.x-A.x)>500){if(s.y<E162.sy-100)out.push(e162P(s.x,E162.sy));out.push(W);}}
+  return out.filter(p=>inSea(p.x,p.y));}
+// lane out: from where the ship is back to the east edge
+function e162Out(s){const yl=e162LaneY(),out=[];
+  if(s.x<9000)out.push(e162P(s.x,Math.max(s.y,E162.sy)),e162P(E162.c.x,E162.c.y),e162P(E162.gx,yl));
+  else if(s.x<E162.gx)out.push(e162P(E162.gx,yl));
+  out.push(e162P(E162.out,s.x<E162.gx?yl:s.y));return out.filter(p=>p.x>WX1-100||inSea(p.x,p.y));}
+function e162Blocked(s,nx,ny){return !(inSea(nx,ny)&&d2(nx,ny,LH.x,LH.y)>LH.r+s.r+20)&&nx<WX1-100;}
+// steer + move along the lane (after the kind's own update ran with speed 0 for fire, archers, ripples ...)
+function e162Move(s,dt,L,ang0,turn){const p=L[0];if(!p)return;s.ang=ang0;const far=d2(s.x,s.y,D.x,D.y)>E162.far,a=Math.atan2(p.y-s.y,p.x-s.x);s.ang+=angDiff(a,s.ang)*Math.min(1,turn*(far?E162.boost:1)*dt);
+  const sp=(s.sp||40)*(far?E162.boost:1),nx=s.x+Math.cos(s.ang)*sp*dt,ny=s.y+Math.sin(s.ang)*sp*dt;
+  if(e162Blocked(s,nx,ny)){s.b162=(s.b162||0)+dt;if(s.b162>3){L.shift();s.b162=0;}}else{s.x=nx;s.y=ny;s.b162=0;}
+  if(d2(s.x,s.y,p.x,p.y)<(far?140:90))L.shift();}
+// one wrapper for the three kinds: warship (prince), trade (goods + treasure), kbwar (royal escort)
+function e162Exit(s,exitGone){s.state='sink';s.t=99;if(exitGone)s.gone=true;E162.stats.out++;}
+function e162Wrap(orig,kind,turn,exitGone){return function(s,dt){
+  if(!s||s.kind!==kind||s.state==='sink'||!G||s.vk)return orig.apply(this,arguments);
+  if(s.state==='home'){if(!s.h162){s.h162=e162Out(s);s.e162=1;}else if(!s.h162.length&&s.x<=WX1-90)s.h162.push(e162P(E162.out,s.y));}
+  else if(s.state==='sail'&&kind!=='kbwar'&&!s.r162)s.r162=e162In(s,null,0);
+  const L=s.state==='home'?s.h162:s.state==='sail'&&kind!=='kbwar'?s.r162:null;
+  if(!L||!L.length||(!inSea(s.x,s.y)&&s.x<WX1-100)){
+    // kbwar sailing beside its trade ship: off screen it keeps up with the (boosted) ship by taking its station directly
+    if(kind==='kbwar'&&s.state==='sail'&&s.guard&&d2(s.x,s.y,D.x,D.y)>E162.far&&d2(s.guard.x,s.guard.y,D.x,D.y)>E162.far){const t=s.guard,tx=t.x+s.side*130,ty=t.y+70;
+      if(Math.hypot(tx-s.x,ty-s.y)>60&&inSea(tx,ty)&&d2(tx,ty,LH.x,LH.y)>LH.r+s.r){s.x=tx;s.y=ty;s.ang=t.ang;}}
+    return orig.apply(this,arguments);}
+  const sp=s.sp,an=s.anchor,ang0=s.ang,st0=s.state;s.sp=0;if(an)s.anchor={x:L[0].x,y:L[0].y};let r;
+  try{r=orig.apply(this,arguments);}finally{s.sp=sp;if(an)s.anchor=an;}
+  if(s.state==='sink')return r;
+  if(st0==='sail'&&s.state==='unload'){s.state='sail';s.state0=undefined;} // cannot happen (the lane point is far away), kept as a guard
+  if(s.state!==st0)return r;
+  e162Move(s,dt,L,ang0,turn);
+  // off the east edge: gone (one more pass through the kind's update so later hooks see s.gone in this frame, e.g. 160 treasure -> goods come back)
+  if(s.state==='home'&&s.x>WX1-90){e162Exit(s,exitGone);orig.apply(this,arguments);}
+  return r;};}
+updWarship=e162Wrap(updWarship,'warship',1.6,false);
+updTradeShip=e162Wrap(updTradeShip,'trade',1.6,true);
+updKbWar=e162Wrap(updKbWar,'kbwar',1.8,true);
+// 162: the prince's fleet appears at the east edge in a column on one lane
+{const _l=launchFleet;launchFleet=function(){const r=_l.apply(this,arguments);try{const c=PRN.cur;if(c&&c.fleet&&c.fleet.length){const yl=e162LaneY(),n=c.fleet.length;
+    const gap=Math.min(110,440/Math.max(1,n-1));c.fleet.forEach((s,i)=>{const o=(i-(n-1)/2)*gap;s.x=E162.edge-Math.abs(o)*.4-i*20;s.y=Math.max(2900,Math.min(WY1-250,yl+o));if(!inSea(s.x,s.y))s.y=yl;s.ang=Math.PI;s.e162=1;s.r162=e162In(s,s.y,o);});
+    c.e162={y:yl,n};E162.stats.fleets++;}}catch(e){G.e162Err=String(e);}return r;};}
+// 162a: fresh trade ships (and their escorts) appear at the east edge; restored saves (o.x given) keep their spot and get a lane from there
+{const _s=kbSpawnShip;kbSpawnShip=function(w,st,o){const s=_s.apply(this,arguments);try{if(s&&(!o||o.x==null)&&s.state!=='home'){const yl=e162LaneY(),y0=s.y,x0=s.x;
+    s.x=E162.edge;s.y=yl;s.ang=Math.PI;s.e162=1;s.r162=e162In(s,yl,0);E162.stats.trade++;
+    for(const e of ships)if(e&&e.kind==='kbwar'&&e.guard===s){e.x=s.x+e.side*130>WX1-60?s.x-60:s.x+e.side*130;e.y=s.y+70;e.ang=Math.PI;}}}catch(e){G.e162Err=String(e);}return s;};}
