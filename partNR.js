@@ -5726,3 +5726,36 @@ function v163Wait(g,dt){const L=v156Live(g);if(!L.length)return;const B=v163Bord
   if(g.mode==='aboard'&&s&&g.role==='sea'&&!g.units.length&&d2(s.x,s.y,D.x,D.y)>=V163.seekR){g.mode='sail';try{_g.apply(this,arguments);}finally{if(g.mode==='sail')g.mode='aboard';}
     if(!g.gone&&g.ship&&!g.units.length){V163.far++;vkSeek(g,g.ship,dt);}return;}
   const L0=G.level;if(L0<6)G.level=6;try{return _g.apply(this,arguments);}finally{if(G.level===6)G.level=L0;}};}
+// ===== batch 181: faction aggression ranking (most -> least): Vikings, dark fantasy, desert, kingdom, light fantasy =====
+// One table of per-faction knobs on top of each faction's own AI. Explicit rules (raid-only royal knights, prince/King chase,
+// Viking militia chase 163b/c, desert guard leash 165, light units never cross the dark border) are not touched.
+const A181={
+  vk:{cd:.75,defendT:30,retreat:0},            // fastest attacks; defend a hit garrison for 30 s (was 20)
+  dark:{cd:.85,aggro:1.3,retreat:0},           // spot the dragon from 30% farther, attack 15% faster, never fall back
+  desert:{cd:.9,arcRange:480,threatR:350,retreat:0}, // guards react to a threat from farther (leash unchanged)
+  kingdom:{cd:1,aggro:1,retreat:.2},           // reference: unchanged, but ordinary soldiers fall back to the castle under 20% health
+  light:{cd:1.3,aggro:.75,retreat:.4}};        // notice the dragon later, attack slower, fall back under 40% health
+const R181={scaled:{vk:0,dark:0,desert:0,kingdom:0,light:0},kRet:0,lFlee:0};
+VK.defendT=A181.vk.defendT;RCV.arcRange=A181.desert.arcRange;RCV.threatR=A181.desert.threatR;
+function fac181(u){if(!u||u.dead)return null;if(u.vk)return'vk';
+  if(u.nr){const k=u.species,S=NRS[k];if(!S||k==='elfchamp'||k==='orcwar'||u.boss)return null;const sd=(u.war&&NR_WARS[k])?NR_WARS[k].side:S.side;return sd==='D'?'dark':sd==='L'?'light':null;}
+  if(u.dsol||u.darch||u.dcam)return'desert';
+  if((u.type==='knight'||u.type==='archer')&&!u.isKingArmor&&!u.isPrince&&!u.isKing&&!u.champ)return'kingdom';return null;}
+function cd181(u,f,keys,b){const m=A181[f].cd;if(m===1)return;for(const k of keys){const a=u[k];if(typeof a==='number'&&a>(b[k]||0)+1e-6){u[k]=a*m;R181.scaled[f]++;}}}
+// ordinary kingdom soldiers (wave hunters, patrols) fall back to the castle when badly hurt
+function kRet181(u){return!u.retreat&&!u.inside&&!u.post&&!u.escort&&!u.raid&&!u.prince&&!u.kbGuard&&!u.militia&&!u.isKing&&u.maxHp>0&&u.hp>0&&u.hp<A181.kingdom.retreat*u.maxHp&&!G.over;}
+function kw181(_f){return function(u,dt){const f=fac181(u);if(!f)return _f.apply(this,arguments);
+  if(f==='kingdom'&&kRet181(u)){u.retreat=true;R181.kRet++;if(dist(u,D)<700)float(u.x,u.y-30,u.type==='archer'?'Fall back!':'Retreat to the castle!','#ffe0a0');}
+  const b={atk:u.atk,atk2:u.atk2,shootT:u.shootT};const r=_f.apply(this,arguments);cd181(u,f,['atk','atk2','shootT'],b);return r;};}
+{const _k=updKnight;updKnight=kw181(_k);}
+{const _a=updArcher;updArcher=kw181(_a);}
+// fantasy: detection range (aggro) and light-side fall back
+{const _n=nrUpd;nrUpd=function(u,dt){const f=fac181(u);if(f!=='dark'&&f!=='light')return _n.apply(this,arguments);
+  const k=u.species,S=(u.war&&NR_WARS[k])?NR_WARS[k]:NRS[k],A=A181[f],base=S.aggro||(S.rng?S.rng+60:300),dd=Math.hypot(u.x-D.x,u.y-D.y);
+  if(f==='light'&&!u.ccRes&&!u.g192&&!u.turf&&!S.civ&&u.hp>0&&u.hp<A.retreat*u.maxHp&&!G.over&&!G.won&&dd<base*A.aggro*1.3&&!(u.dash>0)&&!(u.dgT>0)){
+    u.cd-=dt;u.t-=dt;if(u.webCd>0)u.webCd-=dt;u.vsD=0;u.tgt=null;if(!u.f181){u.f181=1;R181.lFlee++;if(dd<700)float(u.x,u.y-30,'Fall back!','#d8f0ff');}
+    const a=Math.atan2(u.y-D.y,u.x-D.x);moveTo(u,u.x+Math.cos(a)*40,u.y+Math.sin(a)*40,S.sp,dt);u.face=Math.cos(a)>=0?1:-1;nrClamp(u);return;}
+  if(u.f181&&u.hp>=A.retreat*u.maxHp)u.f181=0;
+  const had=Object.prototype.hasOwnProperty.call(S,'aggro'),old=S.aggro,c0=u.cd;S.aggro=base*A.aggro;
+  try{return _n.apply(this,arguments);}finally{if(had)S.aggro=old;else delete S.aggro;if(u.vsD&&typeof u.cd==='number'&&u.cd>(c0||0)+1e-6&&A.cd!==1){u.cd*=A.cd;R181.scaled[f]++;}}};Object.assign(nrUpd,_n);}
+const E181={v:1};

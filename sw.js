@@ -4,7 +4,7 @@
 // index.html / the start page is NETWORK-FIRST (revalidated past the HTTP cache), so an online launch always gets the newest build;
 // the cache is only used when the network is unreachable. manifest + icons are served from the versioned cache.
 // Nothing else (screenshots/, README, other files) is touched.
-const BUILD='9d587eb41fa3';
+const BUILD='7b8d0a02956e';
 const CACHE='dr-'+BUILD;
 const CORE=['./','index.html','manifest.json','icons/icon-192.png','icons/icon-512.png','icons/icon-maskable-512.png','icons/apple-touch-icon.png',
   'icons/splash-1170x2532.png','icons/splash-2532x1170.png'];

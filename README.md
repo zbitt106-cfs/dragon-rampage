@@ -1544,3 +1544,21 @@ Screenshots: q162_before_fleet_{desktop,iphone}, q162_before_fleet_landing_deskt
 - **Fantasy lands (163c):** if the dragon flies into the fantasy lands during a Viking chase, the Vikings do not follow it and do not go to the lair. They walk to the nearest point on the fantasy border and wait there. If the dragon comes back out while the WANTED bar is above zero, they chase it again; when the bar reaches zero they go home.
 
 Screenshots: q163_before_raid_arrow_desktop, q163_before_raid_march_desktop, q163_before_viking_desktop, q163_before_border_desktop, q163a_raid_arrow_desktop, q163a_raid_march_desktop, q163b_viking_chase_desktop, q163c_border_wait_desktop.
+
+
+## Batch 181: faction aggression ranking
+
+The five factions now fight with clearly different temper, from most to least aggressive: **1 Vikings, 2 dark fantasy, 3 desert, 4 kingdom, 5 light fantasy**. The kingdom is the reference and keeps its old attack speed.
+
+| Faction | Attack speed (cooldown) | Notices / reacts to the dragon | Chase persistence | Falls back when hurt | Willingness to engage |
+|---|---|---|---|---|---|
+| 1 Vikings | cooldowns x0.75 (about 1.3x as many attacks) | unchanged (crew AI) | a crew defending the castle after a hit keeps at it for **30 s** (was 20 s) | never | always engage |
+| 2 Dark fantasy (goblins, orcs, trolls, cyclopes, medusas) | cooldowns x0.85 (about 1.15x) | detection range **x1.3** (melee 300 -> 390 px) | follows from the longer detection range | never | engage from farther away |
+| 3 Desert (soldiers, archers, camel riders) | cooldowns x0.9 (about 1.1x) | guards react to a threat from **350 px** (was 300); archers engage from **480 px** (was 420) | guard leash unchanged (165) | never | engage from farther away |
+| 4 Kingdom (ordinary soldiers and archers) | unchanged (x1.0) | unchanged | unchanged | ordinary soldiers fall back to the castle under **20%** health | unchanged |
+| 5 Light fantasy (hobbit soldiers, elves, dwarves, centaurs, unicorn riders) | cooldowns x1.3 (about 0.77x) | detection range **x0.75** (melee 300 -> 225 px) | gives up sooner (shorter range) | fall back away from the dragon under **40%** health | engage only up close |
+
+- Faction wars between fantasy armies are not affected: the faster or slower attacks apply only when they fight the dragon.
+- **Unchanged explicit rules:** royal knight raids (raid-only, 163a), princes and King William and their armies, castle guards and tower posts, escorts, militia, Viking militia-mode chase (163b/c), the desert guard leash (165), light units never crossing the dark border, egg rescues, and champions (elf champion, orc warlord) keep their own behaviour and are left out of the table.
+
+Screenshots: q181_before_vikings_attack_{desktop,iphone}, q181_before_dark_attack_desktop, q181_before_kingdom_retreat_desktop, q181_before_light_fallback_{desktop,iphone}, q181_vikings_attack_{desktop,iphone}, q181_dark_attack_desktop, q181_kingdom_retreat_desktop, q181_light_fallback_{desktop,iphone}.
